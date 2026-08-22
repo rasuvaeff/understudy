@@ -1,0 +1,125 @@
+# rasuvaeff/understudy
+
+Test double library for PHP 8.3+ with a call-closure API. Pre-release: the API
+is not stable until v0.1.0.
+
+## Install
+
+```bash
+composer require --dev rasuvaeff/understudy
+```
+
+Namespace: `Rasuvaeff\Understudy`. Requires `ext-mbstring`. No runtime deps.
+
+## Rules
+
+- A call is specified by making it inside a closure, never by a method-name
+  string: `when(fn () => $repo->find(123))`.
+- The closure must contain **exactly one** direct call on a double. Anything
+  else raises `InvalidCallSpecification`.
+- A double exposes nothing beyond its contract. All operations are static
+  methods on `Understudy`, or the free functions `when()` / `verify()`.
+- Interfaces only in this version. A class target raises `UnsupportedTarget`
+  telling you to double the interface.
+- Static methods are never intercepted; inject the dependency instead.
+- `Understudy::reset()` after each test. Nothing is process-global on purpose:
+  state lives per execution context, and each Fiber gets its own.
+
+## API
+
+### Creating
+
+```php
+use Rasuvaeff\Understudy\Understudy;
+
+$repo = Understudy::for(BookRepository::class);                  // returns BookRepository
+$both = Understudy::for(BookRepository::class, Countable::class); // several interfaces
+```
+
+`for(class-string<T> $target, class-string ...$interfaces): T`
+
+### Stubbing — `when()`
+
+`when()` returns a `WhenBuilder<TReturn>`; each of its methods returns the same
+builder, so actions can be replaced while configuring.
+
+```php
+use function Rasuvaeff\Understudy\when;
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Invocation;
+
+when(fn () => $repo->find(1))->returns($book);
+when(fn () => $repo->find(1))->returns($first, $second);   // one per call, last repeats
+when(fn () => $repo->find(1))->throws(new NotFound());
+when(fn () => $repo->find(Arg::any()))->answers(
+    fn (Invocation $call) => new Book((string) $call->args[0]),
+);
+```
+
+Matching: most recently registered wins, earlier stubs remain as fallbacks.
+Arguments match by `===`, or by matcher. `Arg::any()` is the matcher available
+today.
+
+### Verifying — `verify()`
+
+```php
+use function Rasuvaeff\Understudy\verify;
+
+verify(fn () => $repo->save($book));                  // at least once
+verify(fn () => $repo->save($book), times: 2);        // exactly
+verify(fn () => $repo->save($book), minimum: 2);      // lower bound only
+verify(fn () => $repo->save($book), maximum: 5);
+verify(fn () => $repo->ping(), never: true);
+
+Understudy::unused($repo);                            // no calls at all
+```
+
+Failure raises `VerificationFailed`, whose message names the double, the
+expectation, the actual count, and marks differing arguments with `*`.
+
+### Call log — `calls()`
+
+```php
+$calls = Understudy::calls(fn () => $repo->find(Arg::any())); // list<Invocation>
+```
+
+`Invocation`: `->method`, `->args`, `->sequence`, `->didReturn()`,
+`->didThrow()`, `->returned()`, `->thrown()`. Its outcome is held as an
+`Outcome`, built by `Outcome::returnedValue()` / `Outcome::thrownError()`.
+
+`returned()` on a call that threw raises `OutcomeUnavailable` — `null` is a
+valid return value and cannot signal "nothing".
+
+### Modes and naming
+
+```php
+Understudy::strict($repo);                   // unmatched call fails immediately
+Understudy::label($repo, 'primary cache');   // name it in failure messages
+Understudy::reset();                         // drop all state
+```
+
+Loose (default) answers with a type-safe default: `null` for `void`/`mixed`/
+nullable, `false`, `0`, `0.0`, `''`, `[]`, `new stdClass()`, an empty
+`Generator`, an `EmptyIterator`, a no-op callable. A type with no safe default
+raises `NoDefaultValue`; a `never` method raises `NeverMethodCalled`.
+
+### Exceptions
+
+All implement `Rasuvaeff\Understudy\Exception\UnderstudyError`.
+
+| Exception | Raised when |
+|---|---|
+| `InvalidCallSpecification` | the closure made no call, or threw first |
+| `UnsupportedTarget` | target missing, not an interface, or targets conflict |
+| `StrictModeViolation` | a strict double got an unconfigured call |
+| `NoDefaultValue` | loose mode has no safe value for the return type |
+| `NeverMethodCalled` | a `: never` method was called without a configured throw |
+| `OutcomeUnavailable` | `returned()` asked of a call that threw |
+| `VerificationFailed` | a verification about the tested code failed |
+
+## Not supported
+
+Static method mocking, patching at the point of use, deep stubs, duck doubles,
+sharing state across processes. Class targets, `bypassFinals()`, the full
+matcher vocabulary, `expect()`, ordering and the runner adapters are being
+built next.

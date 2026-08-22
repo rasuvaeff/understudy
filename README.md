@@ -1,51 +1,184 @@
 # rasuvaeff/understudy
 
-> **Work in progress — pre-release.** No stable API yet. The package will be
-> published to Packagist with `v0.1.0`; until then everything here may change
-> without notice.
+> **Pre-release.** The API is not stable until `v0.1.0`. See
+> [CHANGELOG.md](CHANGELOG.md) for what has landed so far.
 
-Test double library for PHP 8.3+ with a call-closure API:
+Test double library for PHP where the call you configure is a **real call**:
 
 ```php
-when(fn () => $repo->find(123))->returns($book);
+when(fn () => $repository->find(123))->returns($book);
 ```
 
-- **Call-closure API** — method and arguments are specified by a real call
-  inside a closure, not by a string. Refactoring and IDE navigation work
-  out of the box; a typo in a method name is impossible by construction.
-- **Zero reserved methods** — a double carries no service methods
-  (`expects`/`allows`/…); configuration lives in free functions.
-- **Framework-agnostic core** — thin `-testo` / `-phpunit` adapters and a
-  separate `-psalm` plugin follow, mirroring the
-  [`rasuvaeff/property-testing-*`](https://packagist.org/packages/rasuvaeff/property-testing-core)
-  split family.
+No method-name strings, so refactoring and IDE navigation work without a
+plugin, and a typo in a method name cannot happen. No service methods on the
+double either — every one of them would be a name the doubled contract can no
+longer use.
 
-## Current state: milestone 0 — feasibility spikes
+> Using an AI coding assistant? [llms.txt](llms.txt) is a compact API reference
+> written for it.
 
-`spikes/` contains executable feasibility fixtures for the mechanics the
-design relies on. Each spike is a standalone script that exits non-zero on
-the first broken promise. CI runs them on PHP 8.3, 8.4 and 8.5.
+## Why another one
 
-| Spike | Proves |
-|---|---|
-| `01-sentinel` | a sentinel exception escapes any native return type, including `never`; recording captures method + args |
-| `02-matcher-union` | contravariant `T\|ArgumentMatcher` parameter widening compiles and runs; scalar coercion follows the calling file's `strict_types`; variadic and by-reference parameters accept matchers |
-| `03-byref-return` | by-reference returns can be dispatched through a runtime with a stable external slot |
-| `04-dnf-multitarget` | `(A&B)\|ArgumentMatcher` DNF parameters work; conflicting multi-target signatures are detected via Reflection before `eval` |
-| `05-fiber-contexts` | per-Fiber runtime contexts don't leak between sibling fibers; a double owned by the main context records calls made inside a child fiber into the owner log |
-| `06-bypass-finals` | a token-aware `file://` stream wrapper strips `final` from an allow-listed class only, preserving `__FILE__`, `__DIR__`, relative includes and sibling classes |
-| `07-psalm-builder` | a Psalm `FunctionReturnTypeProviderInterface` hook can derive `WhenBuilder<TReturn>` from the closure body and flag a `returns()` type mismatch |
+| | Understudy | Mockery / PHPUnit / double |
+|---|---|---|
+| Specifying a call | a real call in a closure | a method-name string |
+| Members added to the double | none | `shouldReceive`, `expects`, `allows`, … |
+| Test runner | any (thin adapters) | tied to PHPUnit/Pest, or none |
+| Fibers | one context per fiber | shared static state |
 
-Run locally (no PHP on the host required):
+The call-closure form comes from [MockK](https://mockk.io) (Kotlin),
+[FakeItEasy](https://fakeiteasy.github.io) and [moq](https://github.com/moq/moq)
+(C#), and [mocktail](https://pub.dev/packages/mocktail) (Dart). No PHP library
+had it.
+
+## Requirements
+
+- PHP 8.3 – 8.5
+- `ext-mbstring`
+
+No runtime dependencies beyond that.
+
+## Installation
 
 ```bash
-docker run --rm -v "$PWD":/app -w /app php:8.3-cli bash spikes/run.sh
-docker run --rm -v "$PWD":/app -w /app php:8.4-cli bash spikes/run.sh
-docker run --rm -v "$PWD":/app -w /app php:8.5-cli bash spikes/run.sh
-# Psalm spike:
-docker run --rm -v "$PWD":/app -w /app composer:2 bash spikes/07-psalm-builder/run.sh
+composer require --dev rasuvaeff/understudy
 ```
+
+## Usage
+
+### Creating a double
+
+```php
+use Rasuvaeff\Understudy\Understudy;
+
+$repository = Understudy::for(BookRepository::class);
+```
+
+`for()` returns the contract's own type, so your IDE and static analyser treat
+`$repository` as a `BookRepository`. Several interfaces can be combined:
+
+```php
+$double = Understudy::for(BookRepository::class, Countable::class);
+```
+
+Interfaces are supported today; class targets and `bypassFinals()` are being
+built next.
+
+### Stubbing
+
+```php
+use function Rasuvaeff\Understudy\when;
+
+when(fn () => $repository->find(123))->returns($book);
+when(fn () => $repository->find(404))->throws(new NotFound());
+when(fn () => $repository->find(Arg::any()))->answers(
+    fn (Invocation $call) => new Book(title: (string) $call->args[0]),
+);
+
+// One value per call, then the last one repeats.
+when(fn () => $repository->mode())->returns('fast', 'slow');
+```
+
+A later stub for the same call wins; earlier ones stay reachable as fallbacks,
+so a broad `Arg::any()` stub can sit underneath a specific one.
+
+### Verifying
+
+```php
+use function Rasuvaeff\Understudy\verify;
+
+verify(fn () => $repository->save($book));                 // at least once
+verify(fn () => $repository->save($book), times: 2);       // exactly twice
+verify(fn () => $repository->save($book), minimum: 2);     // no upper bound
+verify(fn () => $repository->ping(), never: true);
+
+Understudy::unused($repository);                           // nothing at all
+```
+
+Every double records every call, so verification never has to be set up in
+advance.
+
+### Reading the call log
+
+```php
+$calls = Understudy::calls(fn () => $repository->find(Arg::any()));
+
+$calls[0]->args;          // [123]
+$calls[0]->didReturn();   // true
+$calls[0]->returned();    // the value it answered with
+$calls[1]->thrown();      // the throwable, if it threw
+```
+
+`null` is a valid return value, which is why the outcome is asked about
+(`didReturn()`) rather than inferred from the value.
+
+### Modes
+
+| Mode | Unmatched call answers with |
+|---|---|
+| Loose (default) | a type-safe default: `null`, `0`, `''`, `[]`, an empty generator … |
+| Strict (`Understudy::strict($double)`) | an immediate failure naming the method |
+
+A loose double never invents a value by running someone else's constructor and
+never hands back an object whose constructor was skipped. Where no safe value
+exists it says so, and names the way out.
+
+### Failure messages
+
+```
+Understudy `BookRepository` expected `tag('alpha', 2)` to be called exactly 1 time,
+but it was never called.
+
+The following calls to `tag` were made during this test:
+    tag(*'beta'*, 2)
+```
+
+The asterisks mark the argument that differed — borrowed from
+[NSubstitute](https://nsubstitute.github.io). `Understudy::label($double, '…')`
+names a double when several of the same contract are in play.
+
+### Cleaning up
+
+```php
+Understudy::reset();
+```
+
+Adapters for Testo and PHPUnit will call this for you; until they exist, call
+it in your own teardown.
+
+## Security
+
+Understudy generates a class per set of contracts and evaluates it once per
+process. It never loads code from user input, never touches the filesystem, and
+holds all state in `WeakMap`s keyed by the double object — never by
+`spl_object_id()`, which PHP reuses after collection.
+
+It is a development dependency. Do not install it in production.
+
+## Examples
+
+Runnable scripts live in [examples/](examples/).
+
+## Development
+
+```bash
+make build          # validate, normalize, require-checker, cs, psalm, test
+make cs-fix
+make psalm
+make test
+make mutation       # infection, gate at 85% MSI
+make release-check
+```
+
+Or through Docker directly:
+
+```bash
+docker run --rm -v "$PWD":/app -w /app composer:2 composer build
+```
+
+`spikes/` holds the feasibility fixtures the design rests on; `bash
+spikes/run.sh` runs them under any PHP 8.3+ binary.
 
 ## License
 
-BSD-3-Clause.
+BSD-3-Clause. See [LICENSE.md](LICENSE.md).

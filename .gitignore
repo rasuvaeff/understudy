@@ -1,2 +1,8 @@
+vendor/
+composer.lock
+.php-cs-fixer.cache
+/build/*
+!/build/.gitkeep
+
 /spikes/07-psalm-builder/vendor/
 /spikes/07-psalm-builder/composer.lock
