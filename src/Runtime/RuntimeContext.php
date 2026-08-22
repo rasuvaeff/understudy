@@ -29,6 +29,9 @@ final class RuntimeContext
     /** @var int<0, max> */
     private int $sequence = 0;
 
+    /** @var int<0, max> */
+    private int $declarations = 0;
+
     public function __construct()
     {
         /** @var \SplObjectStorage<object, DoubleState> $doubles */
@@ -88,6 +91,18 @@ final class RuntimeContext
     public function nextSequence(): int
     {
         return ++$this->sequence;
+    }
+
+    /**
+     * Counts expectations as they are declared, across every understudy of
+     * this context, so an ordering claim can be read in the order it was
+     * written even when two doubles are interleaved.
+     *
+     * @return positive-int
+     */
+    public function nextDeclaration(): int
+    {
+        return ++$this->declarations;
     }
 
     /**

@@ -6,7 +6,7 @@ namespace Rasuvaeff\Understudy;
 
 use Rasuvaeff\Understudy\Expectation\ComputeAnswer;
 use Rasuvaeff\Understudy\Expectation\Expectation;
-use Rasuvaeff\Understudy\Expectation\ReturnValues;
+use Rasuvaeff\Understudy\Expectation\ReturnValue;
 use Rasuvaeff\Understudy\Expectation\ThrowError;
 
 /**
@@ -22,12 +22,19 @@ use Rasuvaeff\Understudy\Expectation\ThrowError;
  *
  * @api
  */
-final readonly class WhenBuilder
+class WhenBuilder
 {
+    /**
+     * Which link of the action chain the next verb writes to.
+     *
+     * @var int<0, max>
+     */
+    private int $slot = 0;
+
     /**
      * @internal
      */
-    public function __construct(private Expectation $expectation) {}
+    public function __construct(protected readonly Expectation $expectation) {}
 
     /**
      * Returns each value in turn across successive calls, then keeps returning
@@ -35,7 +42,7 @@ final readonly class WhenBuilder
      *
      * @param TReturn ...$values
      */
-    public function returns(mixed ...$values): self
+    public function returns(mixed ...$values): static
     {
         $list = array_values($values);
 
@@ -43,14 +50,23 @@ final readonly class WhenBuilder
             throw new \InvalidArgumentException('returns() needs at least one value');
         }
 
-        $this->expectation->setAction(new ReturnValues($list));
+        // Several values ARE a chain: `returns($a, $b)` is exactly
+        // `returns($a)->then()->returns($b)`. Keeping them as one action with
+        // a position of its own would give the expectation two competing
+        // notions of "the next call", and `returns($a, $b)->then()->returns($c)`
+        // would step over $b without ever answering it.
+        foreach ($list as $offset => $value) {
+            $this->expectation->setAction(new ReturnValue($value), $this->slot + $offset);
+        }
+
+        $this->slot += count($list) - 1;
 
         return $this;
     }
 
-    public function throws(\Throwable $error): self
+    public function throws(\Throwable $error): static
     {
-        $this->expectation->setAction(new ThrowError($error));
+        $this->expectation->setAction(new ThrowError($error), $this->slot);
 
         return $this;
     }
@@ -58,9 +74,49 @@ final readonly class WhenBuilder
     /**
      * @param callable(Invocation): TReturn $answer
      */
-    public function answers(callable $answer): self
+    public function answers(callable $answer): static
     {
-        $this->expectation->setAction(new ComputeAnswer($answer));
+        $this->expectation->setAction(new ComputeAnswer($answer), $this->slot);
+
+        return $this;
+    }
+
+    /**
+     * Opens the next link of the chain, so the verb that follows describes
+     * what the *next* call does:
+     *
+     * ```php
+     * when(fn () => $breaker->call($operation))
+     *     ->returns('ok')
+     *     ->then()->throws(new ConnectionLost());
+     * ```
+     *
+     * Once the chain runs out, its last link keeps answering.
+     */
+    public function then(): static
+    {
+        $this->slot++;
+
+        return $this;
+    }
+
+    /**
+     * Makes the call count part of what `verifyAll()` checks. Without it a
+     * stub is permission, not a claim.
+     *
+     * With one argument the count is exact; with two it is a range, and a
+     * `null` maximum means no upper bound.
+     *
+     * @param int<0, max>      $minimum
+     * @param int<0, max>|null $maximum
+     */
+    public function times(int $minimum, ?int $maximum = null): static
+    {
+        $this->expectation->setCardinality(
+            func_num_args() === 1
+                ? Cardinality::exactly($minimum)
+                : Cardinality::between($minimum, $maximum),
+        );
 
         return $this;
     }
