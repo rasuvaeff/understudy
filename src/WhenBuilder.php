@@ -6,7 +6,7 @@ namespace Rasuvaeff\Understudy;
 
 use Rasuvaeff\Understudy\Expectation\ComputeAnswer;
 use Rasuvaeff\Understudy\Expectation\Expectation;
-use Rasuvaeff\Understudy\Expectation\ReturnValues;
+use Rasuvaeff\Understudy\Expectation\ReturnValue;
 use Rasuvaeff\Understudy\Expectation\ThrowError;
 
 /**
@@ -50,7 +50,16 @@ class WhenBuilder
             throw new \InvalidArgumentException('returns() needs at least one value');
         }
 
-        $this->expectation->setAction(new ReturnValues($list), $this->slot);
+        // Several values ARE a chain: `returns($a, $b)` is exactly
+        // `returns($a)->then()->returns($b)`. Keeping them as one action with
+        // a position of its own would give the expectation two competing
+        // notions of "the next call", and `returns($a, $b)->then()->returns($c)`
+        // would step over $b without ever answering it.
+        foreach ($list as $offset => $value) {
+            $this->expectation->setAction(new ReturnValue($value), $this->slot + $offset);
+        }
+
+        $this->slot += count($list) - 1;
 
         return $this;
     }

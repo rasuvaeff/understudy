@@ -467,8 +467,19 @@ final class EnginePropertyTest
      */
     public static function theOrderOfVerificationsDoesNotMatterGenerators(): array
     {
-        // A permutation of the three claims, each appearing once.
-        return ['order' => Gen::uniqueArrayOf(Gen::elements(['one', 'two', 'any']), 3, 3)];
+        // The permutations spelled out rather than drawn by rejection:
+        // uniqueArrayOf(…, 3, 3) has to keep re-drawing until it happens to
+        // hit all three values, and can give up with GenerationExhausted.
+        return [
+            'order' => Gen::elements([
+                ['one', 'two', 'any'],
+                ['one', 'any', 'two'],
+                ['two', 'one', 'any'],
+                ['two', 'any', 'one'],
+                ['any', 'one', 'two'],
+                ['any', 'two', 'one'],
+            ]),
+        ];
     }
 
     // --- Determinism ---------------------------------------------------------

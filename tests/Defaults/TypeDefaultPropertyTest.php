@@ -27,6 +27,16 @@ use Testo\Test;
 #[Covers(TypeDefaultResolver::class)]
 final class TypeDefaultPropertyTest
 {
+    /**
+     * Leaves PHP allows inside a union: `void` and `mixed` are not among them,
+     * so they never reach the union generator.
+     */
+    private const array UNIONABLE = [
+        'null', 'bool', 'false', 'true', 'int', 'float', 'string',
+        'array', 'iterable', 'object', 'callable', 'Closure', 'Generator',
+        'Traversable', 'Iterator', 'ArrayIterator',
+    ];
+
     /** Every leaf type the resolver claims to know. */
     private const array SAFE_LEAVES = [
         'void', 'null', 'mixed', 'bool', 'false', 'true', 'int', 'float', 'string',
@@ -81,21 +91,40 @@ final class TypeDefaultPropertyTest
      */
     public static function aDefaultIsEitherAcceptedByItsTypeOrRefusedGenerators(): array
     {
-        $leaf = Gen::frequency([
-            [3, Gen::elements(self::SAFE_LEAVES)],
-            [2, Gen::elements(self::VALUE_OBJECTS)],
-        ]);
+        // Each shape draws from the leaves PHP would actually accept there:
+        // `?T` is illegal for `void`, `mixed` and `null`, and a union may not
+        // contain `void` or `mixed` at all. Generating `void|int` would test
+        // the resolver against a string no real signature can produce.
+        $leaf = self::withValueObjects(self::SAFE_LEAVES);
+        $nullable = self::withValueObjects(array_values(
+            array_diff(self::SAFE_LEAVES, ['void', 'mixed', 'null']),
+        ));
+        $unionable = self::withValueObjects(self::UNIONABLE);
 
         return [
             'type' => Gen::frequency([
                 [3, $leaf],
-                [2, Gen::map($leaf, static fn(string $type): string => '?' . $type)],
+                [2, Gen::map($nullable, static fn(string $type): string => '?' . $type)],
                 [2, Gen::map(
-                    Gen::uniqueArrayOf($leaf, 2, 3),
+                    Gen::uniqueArrayOf($unionable, 2, 3),
                     static fn(array $branches): string => implode('|', $branches),
                 )],
             ]),
         ];
+    }
+
+    /**
+     * A leaf generator that draws value objects often enough to keep the
+     * refusal branch above its coverage gate.
+     *
+     * @param non-empty-list<string> $safe
+     */
+    private static function withValueObjects(array $safe): ArbitraryInterface
+    {
+        return Gen::frequency([
+            [3, Gen::elements($safe)],
+            [2, Gen::elements(self::VALUE_OBJECTS)],
+        ]);
     }
 
     /**

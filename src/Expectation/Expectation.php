@@ -35,6 +35,9 @@ final class Expectation
 
     private bool $claim = false;
 
+    /** @var int<0, max> */
+    private int $declarationOrder = 0;
+
     /** @var list<positive-int> */
     private array $matchedSequences = [];
 
@@ -116,6 +119,25 @@ final class Expectation
     public function isClaim(): bool
     {
         return $this->claim;
+    }
+
+    /**
+     * Where this expectation stands among every expectation of its context —
+     * what an ordering claim is measured against.
+     *
+     * @param int<0, max> $order
+     */
+    public function setDeclarationOrder(int $order): void
+    {
+        $this->declarationOrder = $order;
+    }
+
+    /**
+     * @return int<0, max>
+     */
+    public function declarationOrder(): int
+    {
+        return $this->declarationOrder;
     }
 
     /**

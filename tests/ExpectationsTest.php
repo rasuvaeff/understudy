@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\ExpectBuilder;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
@@ -74,6 +75,36 @@ final class ExpectationsTest
 
         Assert::same($repository->count(), 9);
         Assert::same($repository->count(), 9);
+    }
+
+    public function severalValuesAreChainLinksNotACompetingSequence(): void
+    {
+        // returns($a, $b) is exactly returns($a)->then()->returns($b). Two
+        // independent notions of "the next call" would step over $b: the chain
+        // would advance past the link before its own sequence was exhausted.
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->count())
+            ->returns(1, 2)
+            ->then()->returns(9);
+
+        Assert::same($repository->count(), 1);
+        Assert::same($repository->count(), 2);
+        Assert::same($repository->count(), 9);
+        Assert::same($repository->count(), 9);
+    }
+
+    public function aNeverMethodWithAnExpectationButNoActionSaysWhichMistakeItIs(): void
+    {
+        // "you never said what this throws" reads very differently from
+        // "nothing expected this call at all".
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->abort('stop'));
+
+        Expect::exception(NeverMethodCalled::class)->withMessageContaining('an expectation alone cannot answer it');
+
+        $repository->abort('stop');
     }
 
     public function aChainMixesActionKinds(): void

@@ -66,6 +66,7 @@ final class Understudy
     {
         $signal = self::record($call);
         $expectation = new Expectation($signal->method, $signal->args);
+        $expectation->setDeclarationOrder(Runtime::current()->nextDeclaration());
 
         self::stateOf($signal->double)->addExpectation($expectation);
 
@@ -86,6 +87,7 @@ final class Understudy
         $expectation = new Expectation($signal->method, $signal->args);
         $expectation->setCardinality(Cardinality::exactly(1));
         $expectation->declareClaim();
+        $expectation->setDeclarationOrder(Runtime::current()->nextDeclaration());
 
         self::stateOf($signal->double)->addExpectation($expectation);
 
@@ -144,6 +146,19 @@ final class Understudy
                 }
             }
         }
+
+        // Grouped by double above, so sort back into the order the
+        // expectations were actually written: interleaving two doubles is
+        // exactly when ordering claims are worth making.
+        usort(
+            $ordered,
+            /**
+             * @param array{DoubleState, Expectation} $left
+             * @param array{DoubleState, Expectation} $right
+             */
+            static fn(array $left, array $right): int
+                => $left[1]->declarationOrder() <=> $right[1]->declarationOrder(),
+        );
 
         $previousLast = 0;
         $previousLabel = null;

@@ -294,6 +294,43 @@ final class LedgerTest
         Understudy::verifyAll();
     }
 
+    public function orderingFollowsDeclarationOrderAcrossDoubles(): void
+    {
+        // Expectations are stored per double, so checking them double by
+        // double would read this as "clock, then repository" — the order the
+        // doubles were registered in, not the order the claims were written.
+        $repository = Understudy::for(BookRepository::class);
+        $clock = Understudy::for(Clock::class);
+
+        expect(fn() => $repository->count())->ordered();
+        expect(fn() => $clock->now())->ordered();
+        expect(fn() => $repository->titles())->ordered();
+
+        $repository->count();
+        $clock->now();
+        $repository->titles();
+
+        Understudy::verifyAll();
+
+        Assert::true(actual: true);
+    }
+
+    public function interleavedOrderingFailsWhenViolated(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $clock = Understudy::for(Clock::class);
+
+        expect(fn() => $repository->count())->ordered();
+        expect(fn() => $clock->now())->ordered();
+
+        $clock->now();
+        $repository->count();
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining('but it happened first');
+
+        Understudy::verifyAll();
+    }
+
     public function orderedExpectationsFailWhenReversed(): void
     {
         $repository = Understudy::for(BookRepository::class);

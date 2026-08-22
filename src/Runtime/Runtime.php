@@ -255,7 +255,12 @@ final class Runtime
         }
 
         if ($signature !== null && $signature->returnsNever) {
-            throw NeverMethodCalled::withoutExpectation($state->label(), $method);
+            // Which mistake it is depends on whether anything was configured:
+            // "you never said what this throws" reads very differently from
+            // "nothing expected this call at all".
+            throw $matched
+                ? NeverMethodCalled::withoutAnAction($state->label(), $method)
+                : NeverMethodCalled::withoutExpectation($state->label(), $method);
         }
 
         // A matched expectation means the call was expected, so strictness has
