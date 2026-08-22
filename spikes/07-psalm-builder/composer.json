@@ -1,0 +1,14 @@
+{
+    "description": "Spike 07: Psalm FunctionReturnTypeProvider can build WhenBuilder<TReturn> from the closure body. Psalm is pinned to the 6.16 line so this feasibility record stays reproducible and an unrelated 6.x release cannot redden other milestones' PRs; the real understudy-psalm package will carry ^6.16 plus its own prefer-lowest job.",
+    "autoload": {
+        "psr-4": {
+            "UnderstudySpike\\Psalm\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "require-dev": {
+        "vimeo/psalm": "~6.16.0"
+    }
+}
