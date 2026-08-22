@@ -52,13 +52,24 @@ update-deps:
 
 # composer's release-check chain ends in bc-check, which shells out to git —
 # without safe.directory the container's git refuses the bind-mounted repo
-# ("dubious ownership") and the whole target dies with exit 128
+# ("dubious ownership") and the whole target dies with exit 128.
+#
+# The wildcard is deliberate here, and narrowing it to /app is a silent
+# regression: roave clones the repository into a temporary directory of its
+# own, which /app does not cover. git then refuses that clone, `git describe`
+# is swallowed by 2>/dev/null, and the script reports "No previous tag" and
+# exits zero — a green release-check that never ran a compatibility check at
+# all. That is how a major shipped unverified from yii3-webhooks-db on
+# 2026-08-22. Verify by the "Detected last version: vX.Y.Z" line in the
+# output, never by the exit code.
 release-check:
-	$(DOCKER) sh -c 'git config --global --add safe.directory /app; composer release-check'
+	$(DOCKER) sh -c 'git config --global --add safe.directory "*"; composer release-check'
 	$(MAKE) mutation
 
+# Wildcard for the same reason as release-check above: roave's temporary clone
+# lives outside /app.
 bc-check:
-	$(DOCKER) sh -c 'git config --global --add safe.directory /app; \
+	$(DOCKER) sh -c 'git config --global --add safe.directory "*"; \
 	  LATEST=$$(git describe --tags --abbrev=0 2>/dev/null || true); \
 	  if [ -n "$$LATEST" ]; then \
 	    composer bc-check -- --from=$$LATEST; \
