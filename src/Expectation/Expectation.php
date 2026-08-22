@@ -6,6 +6,7 @@ namespace Rasuvaeff\Understudy\Expectation;
 
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
+use Rasuvaeff\Understudy\Matcher\TailMatcher;
 
 /**
  * One configured call: which method with which arguments, and what happens
@@ -45,14 +46,37 @@ final class Expectation
      */
     public function matches(string $method, array $args): bool
     {
-        if ($method !== $this->method || count($args) !== count($this->args)) {
+        if ($method !== $this->method) {
             return false;
         }
 
-        /** @var mixed $expected */
-        foreach ($this->args as $position => $expected) {
-            /** @var mixed $actual */
-            $actual = $args[$position];
+        // Indexed rather than end(), which moves the array pointer and so
+        // counts as modifying a readonly property.
+        /** @var mixed $tail */
+        $tail = $this->args === [] ? null : $this->args[count($this->args) - 1];
+
+        // A tail matcher stands for every remaining argument, so it decides
+        // the arity instead of obeying it.
+        if ($tail instanceof TailMatcher) {
+            $fixed = count($this->args) - 1;
+
+            return count($args) >= $fixed
+                && $this->matchesPositions(array_slice($args, 0, $fixed))
+                && $tail->matchesTail(array_slice($args, $fixed));
+        }
+
+        return count($args) === count($this->args) && $this->matchesPositions($args);
+    }
+
+    /**
+     * @param list<mixed> $args
+     */
+    private function matchesPositions(array $args): bool
+    {
+        /** @var mixed $actual */
+        foreach ($args as $position => $actual) {
+            /** @var mixed $expected */
+            $expected = $this->args[$position];
 
             $matched = $expected instanceof ArgumentMatcher
                 ? $expected->matches($actual)

@@ -57,9 +57,34 @@ when(fn () => $repo->find(Arg::any()))->answers(
 );
 ```
 
-Matching: most recently registered wins, earlier stubs remain as fallbacks.
-Arguments match by `===`, or by matcher. `Arg::any()` is the matcher available
-today.
+Matching: most recently registered wins, earlier stubs remain as fallbacks —
+so register the broad stub FIRST and the specific one after it, or the
+catch-all shadows everything. Arguments match by `===`, or by matcher.
+
+### Matchers — `Arg`
+
+| Matcher | Matches |
+|---|---|
+| `any()` | anything, including null |
+| `int(min:, max:)` | an `int` in range; a numeric string does not match |
+| `float(min:, max:)` | a `float` in range; an `int` does not match |
+| `string(matches:)` | a string, optionally against a PCRE pattern |
+| `bool()` | a boolean |
+| `same($v)` | strict identity; for objects the same instance |
+| `not($v)` | negates a literal or another matcher |
+| `instanceOf($class)` | an instance of the class or interface |
+| `satisfies($fn, $description)` | whatever the predicate accepts |
+| `containing($entries)` | an array holding these entries and possibly more |
+| `count(minimum:, maximum:)` | an array or `Countable` of that size |
+| `which($method, $value)` | an object whose getter answers this value |
+| `none()` | an empty variadic tail; last argument only |
+| `remaining()` | the whole variadic tail, any length; last argument only |
+
+Every `Arg::*` returns `mixed`, so passing one where the contract says `int`
+is not a type error in an IDE. `which()` calls only a public, non-static
+method needing no arguments; anything else, including a getter that throws, is
+a mismatch rather than an error. A matcher that reaches a real call raises
+`MatcherLeaked`.
 
 ### Verifying — `verify()`
 
@@ -116,11 +141,12 @@ All implement `Rasuvaeff\Understudy\Exception\UnderstudyError`.
 | `NoDefaultValue` | loose mode has no safe value for the return type |
 | `NeverMethodCalled` | a `: never` method was called without a configured throw |
 | `OutcomeUnavailable` | `returned()` asked of a call that threw |
+| `MatcherLeaked` | a matcher was passed to a real call, not a specification |
+| `ForgottenDouble` | a double outlived the context that created it |
 | `VerificationFailed` | a verification about the tested code failed |
 
 ## Not supported
 
 Static method mocking, patching at the point of use, deep stubs, duck doubles,
 sharing state across processes. Class targets, `bypassFinals()`, the full
-matcher vocabulary, `expect()`, ordering and the runner adapters are being
-built next.
+`expect()`, ordering and the runner adapters are being built next.
