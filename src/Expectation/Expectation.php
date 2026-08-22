@@ -33,6 +33,11 @@ final class Expectation
 
     private bool $ordered = false;
 
+    private bool $claim = false;
+
+    /** @var list<positive-int> */
+    private array $matchedSequences = [];
+
     /**
      * @param non-empty-string $method
      * @param list<mixed>      $args literal values and/or ArgumentMatcher instances
@@ -96,6 +101,29 @@ final class Expectation
     public function setCardinality(Cardinality $cardinality): void
     {
         $this->cardinality = $cardinality;
+    }
+
+    /**
+     * An expectation from expect() is a claim about what happens, so a call it
+     * matches is accounted for. A when() stub is only permission, and leaves
+     * the call unaccounted — which is what nothingElse() goes on to notice.
+     */
+    public function declareClaim(): void
+    {
+        $this->claim = true;
+    }
+
+    public function isClaim(): bool
+    {
+        return $this->claim;
+    }
+
+    /**
+     * @return list<positive-int>
+     */
+    public function matchedSequences(): array
+    {
+        return $this->matchedSequences;
     }
 
     /**
@@ -174,9 +202,14 @@ final class Expectation
      * Counts this match. Separate from performing an action, because an
      * expectation without one still constrains how often the call may happen.
      */
-    public function recordMatch(): void
+    public function recordMatch(Invocation $invocation): void
     {
         $this->matchCount++;
+        $this->matchedSequences[] = $invocation->sequence;
+
+        if ($this->claim) {
+            $invocation->markAccounted();
+        }
     }
 
     /**

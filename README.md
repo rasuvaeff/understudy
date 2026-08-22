@@ -161,6 +161,40 @@ Understudy::unused($repository);                           // nothing at all
 Every double records every call, so verification never has to be set up in
 advance.
 
+### Has everything been described?
+
+```php
+Understudy::nothingElse($repository);   // every call was accounted for
+Understudy::allVerified($repository);   // expectations met AND nothing else
+Understudy::verifySequence(             // the exact protocol, across doubles
+    fn () => $repository->begin(),
+    fn () => $repository->save($book),
+    fn () => $repository->commit(),
+);
+```
+
+A call counts as accounted for when an `expect()` matched it, or a
+**successful** `verify()` claimed it. A `when()` stub accounts for nothing —
+it is permission, not a description of what happened — and a failed `verify()`
+accounts for nothing either.
+
+`expect(...)->ordered()` constrains the ordered expectations relative to each
+other; unrelated calls may happen in between. When the whole protocol matters,
+`verifySequence()` is the tool.
+
+### Phases, scopes and transcripts
+
+```php
+Understudy::checkpoint();                       // verify, then forget what is settled
+$result = Understudy::scope(fn () => ...);      // nested context, verified on success
+echo Understudy::transcript($repository);       // every call and its outcome
+```
+
+`scope()` returns whatever its callback returns, and drops the nested context
+either way — a failure inside is never replaced by a teardown error.
+`checkpoint()` keeps the understudies, their modes and their labels while
+clearing what the current phase has settled.
+
 ### Reading the call log
 
 ```php

@@ -63,6 +63,19 @@ final class FailureReport
     }
 
     /**
+     * One call as it was made, without the surrounding log.
+     *
+     * @return non-empty-string
+     */
+    public static function renderCall(Invocation $invocation): string
+    {
+        return $invocation->method . '(' . implode(', ', array_map(
+            static fn(mixed $argument): string => ArgumentFormatter::format($argument),
+            $invocation->args,
+        )) . ')';
+    }
+
+    /**
      * @param list<Invocation> $callLog
      * @param list<mixed>      $expectedArgs marked arguments are the ones that differed
      */

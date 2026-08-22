@@ -17,6 +17,8 @@ final class Invocation
 {
     private ?Outcome $outcome = null;
 
+    private bool $accounted = false;
+
     /**
      * @param non-empty-string $method
      * @param list<mixed>      $args
@@ -36,6 +38,25 @@ final class Invocation
     public function recordOutcome(Outcome $outcome): void
     {
         $this->outcome ??= $outcome;
+    }
+
+    /**
+     * Marks this call as accounted for: an expectation matched it, or a
+     * verification claimed it. `nothingElse()` is the question this answers.
+     *
+     * @internal
+     */
+    public function markAccounted(): void
+    {
+        $this->accounted = true;
+    }
+
+    /**
+     * @internal
+     */
+    public function isAccounted(): bool
+    {
+        return $this->accounted;
     }
 
     public function didReturn(): bool

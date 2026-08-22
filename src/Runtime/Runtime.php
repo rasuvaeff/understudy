@@ -20,9 +20,15 @@ use Rasuvaeff\Understudy\Outcome;
  */
 final class Runtime
 {
-    private static ?RuntimeContext $main = null;
+    /**
+     * A stack, not a single context: `scope()` nests one inside another, and
+     * the outer one must come back intact when the inner ends.
+     *
+     * @var list<RuntimeContext>
+     */
+    private static array $main = [];
 
-    /** @var \WeakMap<\Fiber, RuntimeContext>|null */
+    /** @var \WeakMap<\Fiber, list<RuntimeContext>>|null */
     private static ?\WeakMap $fibers = null;
 
     /**
@@ -36,27 +42,85 @@ final class Runtime
 
     public static function current(): RuntimeContext
     {
+        $stack = self::stack();
+
+        if ($stack === []) {
+            $context = new RuntimeContext();
+            self::push($context);
+
+            return $context;
+        }
+
+        return $stack[count($stack) - 1];
+    }
+
+    /**
+     * Opens a nested context, so that everything created inside it is dropped
+     * when it closes and the enclosing context resumes untouched.
+     */
+    public static function pushScope(): RuntimeContext
+    {
+        $context = new RuntimeContext();
+        self::push($context);
+
+        return $context;
+    }
+
+    public static function popScope(): void
+    {
         $fiber = \Fiber::getCurrent();
 
         if ($fiber === null) {
-            return self::$main ??= new RuntimeContext();
+            array_pop(self::$main);
+
+            return;
+        }
+
+        $fibers = self::fibers();
+        /** @var list<RuntimeContext> $stack */
+        $stack = $fibers->offsetExists($fiber) ? $fibers->offsetGet($fiber) : [];
+        array_pop($stack);
+        $fibers->offsetSet($fiber, $stack);
+    }
+
+    /**
+     * @return list<RuntimeContext>
+     */
+    private static function stack(): array
+    {
+        $fiber = \Fiber::getCurrent();
+
+        if ($fiber === null) {
+            return self::$main;
         }
 
         $fibers = self::fibers();
 
         if (!$fibers->offsetExists($fiber)) {
-            $context = new RuntimeContext();
-            $fibers->offsetSet($fiber, $context);
-
-            return $context;
+            return [];
         }
 
         // WeakMap::offsetGet() is typed as nullable regardless of the value
         // type, and offsetExists() above has already ruled that out.
-        /** @var RuntimeContext $context */
-        $context = $fibers->offsetGet($fiber);
+        /** @var list<RuntimeContext> $stack */
+        $stack = $fibers->offsetGet($fiber);
 
-        return $context;
+        return $stack;
+    }
+
+    private static function push(RuntimeContext $context): void
+    {
+        $fiber = \Fiber::getCurrent();
+
+        if ($fiber === null) {
+            self::$main[] = $context;
+
+            return;
+        }
+
+        $stack = self::stack();
+        $stack[] = $context;
+        self::fibers()->offsetSet($fiber, $stack);
     }
 
     public static function adopt(object $double, DoubleState $state): void
@@ -75,12 +139,12 @@ final class Runtime
     }
 
     /**
-     * @return \WeakMap<\Fiber, RuntimeContext>
+     * @return \WeakMap<\Fiber, list<RuntimeContext>>
      */
     private static function fibers(): \WeakMap
     {
         if (self::$fibers === null) {
-            /** @var \WeakMap<\Fiber, RuntimeContext> $fibers */
+            /** @var \WeakMap<\Fiber, list<RuntimeContext>> $fibers */
             $fibers = new \WeakMap();
             self::$fibers = $fibers;
         }
@@ -170,7 +234,7 @@ final class Runtime
             // statement about the count, and forcing a `returns()` onto it
             // would be noise — so a matched expectation with no action falls
             // through to the mode's own answer below, having been counted.
-            $expectation->recordMatch();
+            $expectation->recordMatch($invocation);
             $matched = true;
 
             if (!$expectation->hasAction()) {
@@ -226,7 +290,7 @@ final class Runtime
      */
     public static function reset(): void
     {
-        self::$main = null;
+        self::$main = [];
         self::$fibers = null;
         self::$owners = null;
     }

@@ -72,6 +72,35 @@ final class DoubleState
         return array_reverse($this->expectations);
     }
 
+    /**
+     * In the order they were written, which is what an ordering claim is about
+     * — the reverse of what matching wants.
+     *
+     * @return list<Expectation>
+     */
+    public function declaredExpectations(): array
+    {
+        return $this->expectations;
+    }
+
+    /**
+     * Drops what the current phase has settled: expectations that are done and
+     * the calls already accounted for. Modes, labels and the understudy itself
+     * survive, so the next phase carries on with the same cast.
+     */
+    public function settle(): void
+    {
+        $this->expectations = array_values(array_filter(
+            $this->expectations,
+            static fn(Expectation $expectation): bool => $expectation->cardinality() === null,
+        ));
+
+        $this->callLog = array_values(array_filter(
+            $this->callLog,
+            static fn(Invocation $invocation): bool => !$invocation->isAccounted(),
+        ));
+    }
+
     public function record(Invocation $invocation): void
     {
         $this->callLog[] = $invocation;

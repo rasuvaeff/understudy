@@ -7,6 +7,7 @@ namespace Rasuvaeff\Understudy;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
+use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
 use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
@@ -84,6 +85,7 @@ final class Understudy
         $signal = self::record($call);
         $expectation = new Expectation($signal->method, $signal->args);
         $expectation->setCardinality(Cardinality::exactly(1));
+        $expectation->declareClaim();
 
         self::stateOf($signal->double)->addExpectation($expectation);
 
@@ -111,9 +113,64 @@ final class Understudy
             }
         }
 
-        if ($failures !== []) {
-            throw VerificationFailed::withReport(implode("\n\n", array_reverse($failures)));
+        $failures = array_reverse($failures);
+        $outOfOrder = self::checkOrdering();
+
+        if ($outOfOrder !== null) {
+            $failures[] = $outOfOrder;
         }
+
+        if ($failures !== []) {
+            throw VerificationFailed::withReport(implode("\n\n", $failures));
+        }
+    }
+
+    /**
+     * Ordered expectations must be satisfied in the order they were declared,
+     * relative to each other. Calls in between are none of their business —
+     * `verifySequence()` is the tool for an exact protocol.
+     *
+     * @return non-empty-string|null
+     */
+    private static function checkOrdering(): ?string
+    {
+        /** @var list<array{DoubleState, Expectation}> $ordered */
+        $ordered = [];
+
+        foreach (Runtime::current()->allStates() as $state) {
+            foreach ($state->declaredExpectations() as $expectation) {
+                if ($expectation->isOrdered()) {
+                    $ordered[] = [$state, $expectation];
+                }
+            }
+        }
+
+        $previousLast = 0;
+        $previousLabel = null;
+
+        foreach ($ordered as [$state, $expectation]) {
+            $sequences = $expectation->matchedSequences();
+
+            if ($sequences === []) {
+                continue;
+            }
+
+            $first = min($sequences);
+
+            if ($previousLabel !== null && $first < $previousLast) {
+                return sprintf(
+                    "Understudy `%s` expected `%s` to be called after `%s`, but it happened first.",
+                    $state->label(),
+                    $expectation->describe(),
+                    $previousLabel,
+                );
+            }
+
+            $previousLast = max($sequences);
+            $previousLabel = $expectation->describe();
+        }
+
+        return null;
     }
 
     /**
@@ -170,10 +227,12 @@ final class Understudy
         $probe = new Expectation($signal->method, $signal->args);
 
         $matches = 0;
+        $matched = [];
 
         foreach ($state->callLog() as $invocation) {
             if ($probe->matches($invocation->method, $invocation->args)) {
                 $matches++;
+                $matched[] = $invocation;
             }
         }
 
@@ -184,6 +243,12 @@ final class Understudy
         };
 
         if ($matches >= $low && ($high === null || $matches <= $high)) {
+            // Counting the whole log each time and marking idempotently is
+            // what keeps the order of verify() calls from changing anything.
+            foreach ($matched as $invocation) {
+                $invocation->markAccounted();
+            }
+
             return;
         }
 
@@ -254,6 +319,203 @@ final class Understudy
             count($log),
             FailureReport::renderCallLog($log),
         ));
+    }
+
+    /**
+     * Asserts that every call this understudy received has been accounted for:
+     * matched by an `expect()`, or claimed by a successful `verify()`.
+     */
+    public static function nothingElse(object $double): void
+    {
+        $state = self::stateOf($double);
+
+        $unaccounted = array_values(array_filter(
+            $state->callLog(),
+            static fn(Invocation $invocation): bool => !$invocation->isAccounted(),
+        ));
+
+        if ($unaccounted === []) {
+            return;
+        }
+
+        throw VerificationFailed::withReport(sprintf(
+            "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
+            $state->label(),
+            count($unaccounted),
+            FailureReport::renderCallLog($unaccounted),
+        ));
+    }
+
+    /**
+     * Asserts this understudy's expectations are satisfied and that nothing
+     * else happened to it — the two halves of "I have described everything".
+     */
+    public static function allVerified(object $double): void
+    {
+        $state = self::stateOf($double);
+
+        foreach ($state->expectations() as $expectation) {
+            $failure = self::checkExpectation($state, $expectation, strictStubs: false);
+
+            if ($failure !== null) {
+                throw VerificationFailed::withReport($failure);
+            }
+        }
+
+        self::nothingElse($double);
+    }
+
+    /**
+     * Asserts that these calls are exactly what happened in this context, in
+     * this order, across every understudy — no more, no fewer.
+     *
+     * @param callable(): mixed ...$calls
+     */
+    public static function verifySequence(callable ...$calls): void
+    {
+        $log = Runtime::current()->globalLog();
+        $probes = [];
+
+        foreach ($calls as $call) {
+            $signal = self::record($call);
+            $probes[] = new Expectation($signal->method, $signal->args);
+        }
+
+        $mismatch = self::firstSequenceMismatch($probes, $log);
+
+        if ($mismatch !== null) {
+            throw VerificationFailed::withReport($mismatch);
+        }
+
+        foreach ($log as $invocation) {
+            $invocation->markAccounted();
+        }
+    }
+
+    /**
+     * Every call this understudy received, with its arguments and outcome —
+     * for reading while a failure is being diagnosed, not for asserting on.
+     */
+    public static function transcript(object $double): string
+    {
+        $state = self::stateOf($double);
+        $log = $state->callLog();
+
+        if ($log === []) {
+            return sprintf('Understudy `%s` received no calls.', $state->label());
+        }
+
+        $lines = [sprintf('Understudy `%s` received %d call(s):', $state->label(), count($log))];
+
+        foreach ($log as $invocation) {
+            $lines[] = sprintf(
+                '  #%d %s -> %s',
+                $invocation->sequence,
+                FailureReport::renderCall($invocation),
+                self::describeOutcome($invocation),
+            );
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * @param list<Expectation> $probes
+     * @param list<Invocation>  $log
+     *
+     * @return non-empty-string|null
+     */
+    private static function firstSequenceMismatch(array $probes, array $log): ?string
+    {
+        if (count($log) !== count($probes)) {
+            return sprintf(
+                "Expected exactly %d call(s) in this order, but %d happened:\n%s",
+                count($probes),
+                count($log),
+                FailureReport::renderCallLog($log),
+            );
+        }
+
+        foreach ($probes as $position => $probe) {
+            $invocation = $log[$position];
+
+            if (!$probe->matches($invocation->method, $invocation->args)) {
+                return sprintf(
+                    "Call #%d was expected to be `%s`, but it was `%s`.\n\nThe calls made were:\n%s",
+                    $position + 1,
+                    $probe->describe(),
+                    FailureReport::renderCall($invocation),
+                    FailureReport::renderCallLog($log),
+                );
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private static function describeOutcome(Invocation $invocation): string
+    {
+        if ($invocation->didThrow()) {
+            $thrown = $invocation->thrown();
+            \assert($thrown instanceof \Throwable);
+
+            return 'threw ' . $thrown::class;
+        }
+
+        return 'returned ' . ArgumentFormatter::format($invocation->returned());
+    }
+
+    /**
+     * Runs a callback in a nested context of its own.
+     *
+     * On success the callback's expectations are verified; the context is then
+     * dropped either way. A failure inside the callback is never replaced by a
+     * teardown error — the original is what the reader needs.
+     *
+     * @template T
+     *
+     * @param callable(): T $callback
+     *
+     * @return T
+     */
+    public static function scope(callable $callback, bool $strictStubs = false): mixed
+    {
+        Runtime::pushScope();
+        $succeeded = false;
+
+        try {
+            /** @var T $result */
+            $result = $callback();
+            // An explicit flag, not isset($result): a callback that returns
+            // null — or nothing at all — is a success like any other.
+            $succeeded = true;
+        } finally {
+            try {
+                if ($succeeded) {
+                    self::verifyAll($strictStubs);
+                }
+            } finally {
+                Runtime::popScope();
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Verifies the current context and clears what has been settled, keeping
+     * the understudies themselves — for a long test that runs in phases.
+     */
+    public static function checkpoint(bool $strictStubs = false): void
+    {
+        self::verifyAll($strictStubs);
+
+        foreach (Runtime::current()->allStates() as $state) {
+            $state->settle();
+        }
     }
 
     /**

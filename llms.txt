@@ -140,6 +140,40 @@ verify(fn () => $repo->ping(), never: true);
 Understudy::unused($repo);                            // no calls at all
 ```
 
+### The ledger — has everything been described?
+
+```php
+Understudy::nothingElse($repo);      // every call was accounted for
+Understudy::allVerified($repo);      // expectations met AND nothing else
+Understudy::verifySequence(          // the exact protocol, across doubles
+    fn () => $repo->begin(),
+    fn () => $repo->save($book),
+    fn () => $repo->commit(),
+);
+```
+
+A call is *accounted for* when an `expect()` matched it or a **successful**
+`verify()` claimed it. A `when()` stub accounts for nothing — it is
+permission, not a description. A failed `verify()` accounts for nothing
+either.
+
+`expect(...)->ordered()` requires the ordered expectations to be satisfied in
+declaration order relative to each other; unrelated calls may happen in
+between. `verifySequence()` is the tool when the whole protocol matters.
+
+### Phases and scopes
+
+```php
+Understudy::checkpoint();            // verify, then forget what is settled
+$result = Understudy::scope(fn () => ...);   // nested context, verified on success
+Understudy::transcript($repo);       // every call and outcome, for reading
+```
+
+`scope()` returns whatever the callback returns and drops its context either
+way; a failure inside the callback is never replaced by a teardown error.
+`checkpoint()` keeps the understudies, their modes and their labels, and
+clears the expectations and calls the current phase has settled.
+
 Failure raises `VerificationFailed`, whose message names the double, the
 expectation, the actual count, and marks differing arguments with `*`.
 
