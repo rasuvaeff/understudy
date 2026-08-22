@@ -75,7 +75,9 @@ final class FinalStripWrapper
 
     private static function transform(string $source): string
     {
-        if (!str_contains($source, 'final')) {
+        // `final` is a case-insensitive keyword: the pre-filter must match
+        // the tokenizer, which already handles `Final`/`FINAL`.
+        if (stripos($source, 'final') === false) {
             return $source;
         }
 
@@ -242,4 +244,20 @@ assertTrue(
 assertTrue(
     class_exists(\Understudy\Spikes\BypassFinals\Fixture\FinalSibling::class, false),
     'already-loaded sibling stays loaded — a later bypass attempt on it is detectable via class_exists',
+);
+
+// Case-insensitive keyword: `FINAL class` and `Final class` must strip too,
+// while a non-allow-listed neighbour in the same file keeps its modifier.
+FinalStripWrapper::allow('Understudy\Spikes\BypassFinals\Fixture\ShoutingFinalService');
+
+require __DIR__ . '/fixture/shouting.php';
+
+assertTrue(
+    !(new \ReflectionClass(\Understudy\Spikes\BypassFinals\Fixture\ShoutingFinalService::class))->isFinal(),
+    '`FINAL class` (upper case keyword) is stripped as well',
+);
+
+assertTrue(
+    (new \ReflectionClass(\Understudy\Spikes\BypassFinals\Fixture\TitleCaseFinalService::class))->isFinal(),
+    '`Final class` neighbour outside the allow-list keeps its modifier',
 );

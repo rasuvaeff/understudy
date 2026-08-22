@@ -26,25 +26,56 @@ interface Registry
     public function &values(): array;
 }
 
+/**
+ * A WeakMap value cannot be modified by reference directly, so each double
+ * owns a holder object whose property the reference points into.
+ */
+final class SlotHolder
+{
+    /** @var array<string, array<mixed>> */
+    public array $slots = [];
+}
+
 final class Runtime
 {
-    /** @var array<string, array<mixed>> keyed by object id + method */
-    private static array $slots = [];
+    /**
+     * Keyed by the double OBJECT, never by `spl_object_id()`: PHP reuses an
+     * object id after collection, so an id-keyed store would hand a fresh
+     * double the previous one's slot (plan §5.2 — SplObjectStorage/WeakMap).
+     *
+     * @var \WeakMap<object, SlotHolder>|null
+     */
+    private static ?\WeakMap $slots = null;
 
     public static function &dispatchReference(object $double, string $method): array
     {
-        $key = spl_object_id($double) . ':' . $method;
+        self::$slots ??= new \WeakMap();
 
-        if (!array_key_exists($key, self::$slots)) {
-            self::$slots[$key] = [];
+        if (!isset(self::$slots[$double])) {
+            self::$slots[$double] = new SlotHolder();
         }
 
-        return self::$slots[$key];
+        $holder = self::$slots[$double];
+
+        if (!array_key_exists($method, $holder->slots)) {
+            $holder->slots[$method] = [];
+        }
+
+        return $holder->slots[$method];
     }
 
     public static function peek(object $double, string $method): array
     {
-        return self::$slots[spl_object_id($double) . ':' . $method] ?? [];
+        if (self::$slots === null || !isset(self::$slots[$double])) {
+            return [];
+        }
+
+        return self::$slots[$double]->slots[$method] ?? [];
+    }
+
+    public static function trackedDoubles(): int
+    {
+        return count(self::$slots ?? []);
     }
 }
 
@@ -80,3 +111,17 @@ assertTrue($otherValues === [], 'slots are per-double, not shared');
 $copy = $double->values();
 $copy['c'] = 3;
 assertSame(Runtime::peek($double, 'values'), ['a' => 1, 'b' => 2], 'plain (non-reference) read copies and cannot corrupt the slot');
+
+// Weak keying: a collected double takes its slot with it, so a later double
+// that happens to reuse its object id can never inherit stale values.
+$tracked = Runtime::trackedDoubles();
+$temporary = new RegistryDouble();
+$temporarySlot = &$temporary->values();
+$temporarySlot['stale'] = true;
+
+assertSame(Runtime::trackedDoubles(), $tracked + 1, 'a new double adds one weakly-held entry');
+
+unset($temporary, $temporarySlot);
+gc_collect_cycles();
+
+assertSame(Runtime::trackedDoubles(), $tracked, 'the entry is released once the double is collected');

@@ -50,11 +50,20 @@ final class InvocationSignal extends \Exception
 
 final class Runtime
 {
-    public static bool $recording = false;
+    /**
+     * Recording is a DEPTH counter, not a boolean (plan §4.2): a nested
+     * recording phase must not switch the outer one off when it unwinds.
+     */
+    public static int $recordingDepth = 0;
+
+    public static function isRecording(): bool
+    {
+        return self::$recordingDepth > 0;
+    }
 
     public static function dispatch(object $double, string $method, array $args): mixed
     {
-        if (self::$recording) {
+        if (self::isRecording()) {
             throw new InvocationSignal(spl_object_id($double), $method, $args);
         }
 
@@ -87,14 +96,14 @@ final class BookRepositoryDouble implements BookRepository
  */
 function record(callable $closure): InvocationSignal
 {
-    Runtime::$recording = true;
+    Runtime::$recordingDepth++;
 
     try {
         $closure();
     } catch (InvocationSignal $signal) {
         return $signal;
     } finally {
-        Runtime::$recording = false;
+        Runtime::$recordingDepth--;
     }
 
     throw new \LogicException('closure did not hit a double');
@@ -116,3 +125,26 @@ $double->touch();
 assertTrue(true, '`: void` method dispatches normally outside recording');
 
 assertSame($double->find(5), null, 'normal phase returns the dispatcher value under `: ?Book`');
+
+// A nested recording phase must not switch the outer one off when it unwinds
+// (this is why the flag is a depth counter, plan §4.2).
+$outer = null;
+$inner = null;
+Runtime::$recordingDepth++;
+
+try {
+    $inner = record(fn () => $double->touch());
+
+    try {
+        $double->find(7);
+    } catch (InvocationSignal $signal) {
+        $outer = $signal;
+    }
+} finally {
+    Runtime::$recordingDepth--;
+}
+
+assertSame($inner?->method, 'touch', 'nested recording phase captures its own signal');
+assertSame($outer?->method, 'find', 'outer recording phase survives the nested one');
+assertSame(Runtime::$recordingDepth, 0, 'recording depth unwinds back to zero');
+

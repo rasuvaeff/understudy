@@ -124,84 +124,216 @@ interface WriterC
     public function write(int $chunk): void;
 }
 
+interface ArityA
+{
+    public function emit(int $a): void;
+}
+
+interface ArityB
+{
+    public function emit(int $a, int $b): void;
+}
+
+interface ReaderInt
+{
+    public function read(): int;
+}
+
+interface ReaderString
+{
+    public function read(): string;
+}
+
+interface FeederByRef
+{
+    public function feed(int &$slot): void;
+}
+
+interface FeederByValue
+{
+    public function feed(int $slot): void;
+}
+
 final class SignatureConflict extends \LogicException
 {
 }
 
 /**
- * Minimal stand-in for the codegen pre-check: renders each declaration and
- * requires one target's method to be compatible with every other declaration
- * of the same name. The real implementation compares structured signatures;
- * for the spike a rendered normal form is enough to prove detectability.
+ * Codegen pre-check: multi-target compatibility is UNIFICATION, not equality.
+ *
+ * PHP parameters are contravariant, so `write(int)` and `write(string)` share
+ * a valid implementation — `write(int|string)`. Rejecting them on rendered
+ * equality would refuse a doublable pair. A conflict exists only where no
+ * single declaration can satisfy every target:
+ *
+ * - return types are covariant, so they must agree (`int` vs `string` cannot
+ *   be satisfied — verified against PHP below);
+ * - by-reference-ness must match exactly;
+ * - parameter types unify into a union;
+ * - a parameter missing from (or optional in) any target must be optional.
  *
  * @param list<class-string> $targets
+ *
+ * @return array<string, string> method name => generated parameter list
  */
-function assertCompatibleTargets(array $targets): void
+function unifyTargets(array $targets): array
 {
-    /** @var array<string, array{class-string, string}> $seen */
-    $seen = [];
+    /** @var array<string, list<array{class-string, \ReflectionMethod}>> $byName */
+    $byName = [];
 
     foreach ($targets as $target) {
-        $reflection = new \ReflectionClass($target);
-
-        foreach ($reflection->getMethods() as $method) {
-            $signature = render($method);
-
-            if (isset($seen[$method->getName()]) && $seen[$method->getName()][1] !== $signature) {
-                throw new SignatureConflict(sprintf(
-                    'Method %s() is declared incompatibly: %s::%s vs %s::%s',
-                    $method->getName(),
-                    $seen[$method->getName()][0],
-                    $seen[$method->getName()][1],
-                    $target,
-                    $signature,
-                ));
-            }
-
-            $seen[$method->getName()] = [$target, $signature];
+        foreach ((new \ReflectionClass($target))->getMethods() as $method) {
+            $byName[$method->getName()][] = [$target, $method];
         }
     }
+
+    $signatures = [];
+
+    foreach ($byName as $name => $declarations) {
+        $signatures[$name] = unifyMethod($name, $declarations);
+    }
+
+    return $signatures;
 }
 
-function render(\ReflectionMethod $method): string
+/**
+ * @param non-empty-list<array{class-string, \ReflectionMethod}> $declarations
+ */
+function unifyMethod(string $name, array $declarations): string
 {
-    $params = array_map(
-        static fn (\ReflectionParameter $p): string => (string) $p->getType() . ($p->isVariadic() ? '...' : '') . ($p->isPassedByReference() ? '&' : ''),
-        $method->getParameters(),
-    );
+    /** @var array<string, list<class-string>> $returns */
+    $returns = [];
 
-    return sprintf('(%s): %s', implode(', ', $params), (string) $method->getReturnType());
+    foreach ($declarations as [$class, $method]) {
+        $returns[(string) $method->getReturnType() ?: 'mixed'][] = $class;
+    }
+
+    if (count($returns) > 1) {
+        throw new SignatureConflict(sprintf(
+            'Method %s() has irreconcilable return types: %s',
+            $name,
+            implode(' vs ', array_map(
+                static fn (string $type, array $classes): string => implode('+', $classes) . ' declares `: ' . $type . '`',
+                array_keys($returns),
+                $returns,
+            )),
+        ));
+    }
+
+    $arity = max(array_map(
+        static fn (array $d): int => $d[1]->getNumberOfParameters(),
+        $declarations,
+    ));
+
+    $parameters = [];
+
+    for ($position = 0; $position < $arity; $position++) {
+        /** @var array<string, true> $types */
+        $types = [];
+        /** @var array<string, list<class-string>> $byReference */
+        $byReference = [];
+        $requiredEverywhere = true;
+
+        foreach ($declarations as [$class, $method]) {
+            $parameter = $method->getParameters()[$position] ?? null;
+
+            if ($parameter === null) {
+                $requiredEverywhere = false;
+
+                continue;
+            }
+
+            foreach (explode('|', (string) $parameter->getType()) as $type) {
+                $types[ltrim($type, '?')] = true;
+            }
+
+            if ($parameter->allowsNull()) {
+                $types['null'] = true;
+            }
+
+            $byReference[$parameter->isPassedByReference() ? 'by-reference' : 'by-value'][] = $class;
+            $requiredEverywhere = $requiredEverywhere && !$parameter->isOptional();
+        }
+
+        if (count($byReference) > 1) {
+            throw new SignatureConflict(sprintf(
+                'Method %s() parameter #%d is %s',
+                $name,
+                $position + 1,
+                implode(' but ', array_map(
+                    static fn (string $mode, array $classes): string => $mode . ' in ' . implode('+', $classes),
+                    array_keys($byReference),
+                    $byReference,
+                )),
+            ));
+        }
+
+        $reference = array_key_first($byReference) === 'by-reference' ? '&' : '';
+        $types['ArgumentMatcher'] = true;
+
+        $parameters[] = sprintf(
+            '%s %s$p%d%s',
+            implode('|', array_keys($types)),
+            $reference,
+            $position,
+            $requiredEverywhere ? '' : ' = null',
+        );
+    }
+
+    return implode(', ', $parameters);
 }
+
+$signatures = unifyTargets([WriterA::class, WriterB::class]);
+assertSame(
+    $signatures['write'],
+    'int|string|ArgumentMatcher $p0',
+    'contravariant parameters unify into a union instead of being rejected',
+);
+
+// The unified declaration must really satisfy both interfaces.
+eval(sprintf(
+    'namespace Understudy\Spikes\DnfMultiTarget; final class UnifiedDouble implements WriterA, WriterB { public function write(%s): void { Runtime::dispatch($this, __FUNCTION__, [$p0]); } }',
+    $signatures['write'],
+));
+
+$unified = new UnifiedDouble();
+assertTrue(
+    $unified instanceof WriterA && $unified instanceof WriterB,
+    'the unified declaration satisfies BOTH `write(int)` and `write(string)`',
+);
+
+$unified->write(1);
+$unified->write('one');
+assertSame(Runtime::$log[array_key_last(Runtime::$log)][1], ['one'], 'unified multi-target dispatch works for either branch');
+
+assertSame(
+    unifyTargets([ArityA::class, ArityB::class])['emit'],
+    'int|ArgumentMatcher $p0, int|ArgumentMatcher $p1 = null',
+    'a parameter absent from one target becomes optional',
+);
+
+assertSame(
+    unifyTargets([WriterA::class, WriterC::class])['write'],
+    'int|ArgumentMatcher $p0',
+    'identical declarations unify to themselves',
+);
 
 $conflict = expectThrows(
-    static fn () => assertCompatibleTargets([WriterA::class, WriterB::class]),
+    static fn () => unifyTargets([ReaderInt::class, ReaderString::class]),
     SignatureConflict::class,
-    'conflicting `write(int)` vs `write(string)` is detected before eval',
+    'irreconcilable return types are rejected before eval (covariance leaves no common subtype)',
 );
 assertTrue(
-    str_contains($conflict->getMessage(), 'WriterA') && str_contains($conflict->getMessage(), 'WriterB'),
+    str_contains($conflict->getMessage(), 'ReaderInt') && str_contains($conflict->getMessage(), 'ReaderString'),
     'the error names both conflicting targets',
 );
 
-assertCompatibleTargets([WriterA::class, WriterC::class]);
-assertTrue(true, 'identical declarations across targets are compatible');
-
-$multiCode = <<<'PHP'
-namespace Understudy\Spikes\DnfMultiTarget;
-
-final class MultiDouble implements WriterA, WriterC
-{
-    public function write(int|ArgumentMatcher $chunk): void
-    {
-        Runtime::dispatch($this, __FUNCTION__, [$chunk]);
-    }
-}
-PHP;
-
-eval($multiCode);
-
-$multi = new MultiDouble();
-assertTrue($multi instanceof WriterA && $multi instanceof WriterC, 'compatible multi-target double implements both interfaces');
-
-$multi->write(1);
-assertSame(Runtime::$log[array_key_last(Runtime::$log)][1], [1], 'multi-target dispatch works');
+$conflict = expectThrows(
+    static fn () => unifyTargets([FeederByRef::class, FeederByValue::class]),
+    SignatureConflict::class,
+    'by-reference mismatch across targets is rejected before eval',
+);
+assertTrue(
+    str_contains($conflict->getMessage(), 'by-reference') && str_contains($conflict->getMessage(), 'by-value'),
+    'the error explains which mode each target declares',
+);

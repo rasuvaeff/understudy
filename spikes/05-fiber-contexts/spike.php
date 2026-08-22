@@ -72,6 +72,17 @@ final class Runtime
         return (self::$owners ?? new \WeakMap())[$double] ?? self::current();
     }
 
+    /**
+     * @return array{fibers: int, owners: int}
+     */
+    public static function indexSizes(): array
+    {
+        return [
+            'fibers' => count(self::$fibers ?? []),
+            'owners' => count(self::$owners ?? []),
+        ];
+    }
+
     public static function dispatch(object $double, string $method, array $args): mixed
     {
         $owner = self::ownerOf($double);
@@ -166,3 +177,31 @@ assertTrue($mainContext->recording === false, 'main context never saw a recordin
 
 $mainDouble->send('after');
 assertSame(count($mainContext->log), 2, 'main-owned double keeps logging into the main context');
+
+// Both indexes must be genuinely WEAK: with strong references every assertion
+// above would still pass while leaking one Context per fiber and one entry
+// per double for the lifetime of the process.
+$before = Runtime::indexSizes();
+
+$temporary = new \Fiber(static function (): void {
+    $double = makeDouble();
+    $double->send('temporary');
+
+    // Suspend while still holding the double, so both are observably alive.
+    \Fiber::suspend();
+});
+$temporary->start();
+
+$during = Runtime::indexSizes();
+assertSame($during['fibers'], $before['fibers'] + 1, 'a live fiber holds exactly one context');
+assertSame($during['owners'], $before['owners'] + 1, 'its double holds exactly one owner entry');
+
+$temporary->resume();
+unset($temporary);
+gc_collect_cycles();
+
+assertSame(
+    Runtime::indexSizes(),
+    $before,
+    'both indexes release the fiber context and the owner entry once collected',
+);
