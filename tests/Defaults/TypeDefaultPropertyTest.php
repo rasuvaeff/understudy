@@ -25,6 +25,7 @@ use Testo\Test;
  */
 #[Test]
 #[Covers(TypeDefaultResolver::class)]
+#[Covers(NoDefaultValue::class)]
 final class TypeDefaultPropertyTest
 {
     /**

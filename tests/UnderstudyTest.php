@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
@@ -12,10 +15,20 @@ use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
+use Rasuvaeff\Understudy\Expectation\Expectation;
+use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Outcome;
+use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\InvocationSignal;
+use Rasuvaeff\Understudy\Runtime\Mode;
+use Rasuvaeff\Understudy\Runtime\Runtime;
+use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
+use Rasuvaeff\Understudy\Tests\Fixture\HashedContract;
+use Rasuvaeff\Understudy\Tests\Fixture\HashedContractToo;
 use Rasuvaeff\Understudy\Tests\Fixture\Named;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionAlpha;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionBeta;
@@ -37,11 +50,31 @@ use Testo\Expect;
 use Testo\Lifecycle\AfterTest;
 use Testo\Test;
 
+use function Rasuvaeff\Understudy\expect;
 use function Rasuvaeff\Understudy\verify;
 use function Rasuvaeff\Understudy\when;
 
 #[Test]
 #[Covers(Understudy::class)]
+#[Covers(Runtime::class)]
+#[Covers(RuntimeContext::class)]
+#[Covers(DoubleState::class)]
+#[Covers(InvocationSignal::class)]
+#[Covers(Mode::class)]
+#[Covers(Invocation::class)]
+#[Covers(Outcome::class)]
+#[Covers(FailureReport::class)]
+#[Covers(Expectation::class)]
+#[Covers(DoubleFactory::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
+#[Covers(ForgottenDouble::class)]
+#[Covers(InvalidCallSpecification::class)]
+#[Covers(MatcherLeaked::class)]
+#[Covers(NeverMethodCalled::class)]
+#[Covers(StrictModeViolation::class)]
+#[Covers(UnsupportedTarget::class)]
+#[Covers(VerificationFailed::class)]
 final class UnderstudyTest
 {
     #[AfterTest]
@@ -77,7 +110,10 @@ final class UnderstudyTest
     {
         $double = Understudy::for(WriterInt::class);
 
-        Expect::exception(InvalidCallSpecification::class)->withMessageContaining('Static method `describe()`');
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            "Static method `describe()` cannot be called on an understudy because static calls have no instance state.\n"
+            . 'Inject an instance dependency and double that contract instead.',
+        );
 
         $double::describe();
     }
@@ -220,7 +256,10 @@ final class UnderstudyTest
     {
         $repository = Understudy::for(BookRepository::class);
 
-        Expect::exception(NeverMethodCalled::class)->withMessageContaining('abort()');
+        Expect::exception(NeverMethodCalled::class)->withMessage(
+            "Understudy `BookRepository` received a call to `abort()`, which is declared `: never` and cannot return.\n"
+            . 'Configure what it throws: when(fn () => $double->abort(...))->throws(new SomeException())',
+        );
 
         $repository->abort('stop');
     }
@@ -241,7 +280,10 @@ final class UnderstudyTest
         $repository = Understudy::for(BookRepository::class);
         Understudy::strict($repository);
 
-        Expect::exception(StrictModeViolation::class)->withMessageContaining('count()');
+        Expect::exception(StrictModeViolation::class)->withMessage(
+            "Understudy `BookRepository` is strict and received an unexpected call to `count()`.\n"
+            . 'Configure it first: when(fn () => $double->count(...))->returns(...)',
+        );
 
         $repository->count();
     }
@@ -414,14 +456,20 @@ final class UnderstudyTest
 
     public function specificationClosureWithoutACallIsRejected(): void
     {
-        Expect::exception(InvalidCallSpecification::class)->withMessageContaining('exactly one direct call');
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            'The specification closure did not call a method on an understudy. '
+            . 'It must contain exactly one direct call, for example: '
+            . 'when(fn () => $repository->find(123))',
+        );
 
         Understudy::when(static fn(): bool => true);
     }
 
     public function specificationClosureFailureKeepsTheOriginalCause(): void
     {
-        Expect::exception(InvalidCallSpecification::class)->withPrevious(\DomainException::class);
+        Expect::exception(InvalidCallSpecification::class)
+            ->withPrevious(\DomainException::class)
+            ->withMessage('The specification closure threw before it reached an understudy: closure blew up');
 
         Understudy::when(static function (): never {
             throw new \DomainException('closure blew up');
@@ -430,7 +478,11 @@ final class UnderstudyTest
 
     public function classTargetsAreRejectedWithAnActionableMessage(): void
     {
-        Expect::exception(UnsupportedTarget::class)->withMessageContaining('interface');
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            'Cannot create an understudy for `' . Book::class . '`: only interfaces can be doubled in this '
+            . 'version. Double the interface it implements, or introduce one for the dependency you need to '
+            . 'stand in for.',
+        );
 
         Understudy::for(Book::class);
     }
@@ -476,7 +528,23 @@ final class UnderstudyTest
 
         when(fn() => $registry->slots())->returns(['a' => 1]);
 
-        Assert::same($registry->slots(), ['a' => 1]);
+        $notices = [];
+        set_error_handler(static function (int $severity, string $message) use (&$notices): bool {
+            $notices[] = $message;
+
+            return true;
+        });
+
+        try {
+            $value = $registry->slots();
+        } finally {
+            restore_error_handler();
+        }
+
+        Assert::same($value, ['a' => 1]);
+        // Returning the dispatch expression directly raises "Only variable
+        // references should be returned by reference".
+        Assert::same($notices, []);
     }
 
     public function aNeverMethodConfiguredToReturnIsRejected(): void
@@ -487,7 +555,10 @@ final class UnderstudyTest
 
         when(fn() => $repository->abort('stop'))->returns('nope');
 
-        Expect::exception(NeverMethodCalled::class)->withMessageContaining('cannot');
+        Expect::exception(NeverMethodCalled::class)->withMessage(
+            "Understudy `BookRepository` has `abort()` configured to return, but the method is declared `: never` and cannot.\n"
+            . 'Configure it to throw instead: when(fn () => $double->abort(...))->throws(new SomeException())',
+        );
 
         $repository->abort('stop');
     }
@@ -499,7 +570,11 @@ final class UnderstudyTest
         $repository = Understudy::for(BookRepository::class);
         Understudy::reset();
 
-        Expect::exception(ForgottenDouble::class)->withMessageContaining('count()');
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            "This understudy is no longer known to Understudy, but `count()` was called on it.\n"
+            . 'It was created before a reset(); create doubles inside the test that uses them '
+            . 'rather than sharing one across tests.',
+        );
 
         $repository->count();
     }
@@ -559,10 +634,11 @@ final class UnderstudyTest
         // wildcard for that one argument — worse than any error message.
         $sink = Understudy::for(VariadicSink::class);
 
-        Expect::exception(InvalidCallSpecification::class)
-            ->withMessageContaining('remaining()')
-            ->withMessageContaining('argument #1')
-            ->withMessageContaining('write()');
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            '`remaining()` stands for the whole variadic tail, so it may only be the last argument, '
+            . "but it was given as argument #1 of `write()`.\n"
+            . 'Move it to the end, or use Arg::any() to match that one argument.',
+        );
 
         Understudy::when(fn() => $sink->write(Arg::remaining(), 1));
     }
@@ -571,7 +647,11 @@ final class UnderstudyTest
     {
         $sink = Understudy::for(VariadicSink::class);
 
-        Expect::exception(InvalidCallSpecification::class)->withMessageContaining('none()');
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            '`none()` stands for the whole variadic tail, so it may only be the last argument, '
+            . "but it was given as argument #1 of `write()`.\n"
+            . 'Move it to the end, or use Arg::any() to match that one argument.',
+        );
 
         Understudy::when(fn() => $sink->write(Arg::none(), 1));
     }
@@ -600,9 +680,10 @@ final class UnderstudyTest
         // receive one.
         $repository = Understudy::for(BookRepository::class);
 
-        Expect::exception(MatcherLeaked::class)
-            ->withMessageContaining('find()')
-            ->withMessageContaining('any()');
+        Expect::exception(MatcherLeaked::class)->withMessage(
+            "Argument #1 of `find()` was given the matcher `any()` during a real call.\n"
+            . 'Matchers belong inside when()/verify()/calls(), not in the call the code under test makes.',
+        );
 
         $repository->find(Arg::any());
     }
@@ -637,5 +718,143 @@ final class UnderstudyTest
 
         Assert::same($first->now(), 100);
         Assert::same($second->now(), 0);
+    }
+
+    // --- verify() failure reports --------------------------------------------
+
+    public function aMethodThatWasNeverCalledSaysExactlyThat(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        // Another method was called, so there is a log — but none of it is
+        // about `count()`, and listing it would be noise.
+        $repository->titles();
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            'Understudy `BookRepository` expected `count()` to be called at least 1 time, but it was never called.',
+        );
+
+        verify(fn() => $repository->count());
+    }
+
+    public function callsToTheSameMethodAreListedWithTheDifferingArgumentMarked(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        $repository->tag('alpha');
+        $repository->tag('beta');
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            "Understudy `BookRepository` expected `tag('gamma', 1)` to be called at least 1 time, but it was never called.\n\n"
+            . "The following calls to `tag` were made during this test:\n"
+            . "    tag(*'alpha'*, 1)\n"
+            . "    tag(*'beta'*, 1)",
+        );
+
+        verify(fn() => $repository->tag('gamma'));
+    }
+
+    public function aPlainCountMismatchNeedsNoCallLog(): void
+    {
+        // Every call to the method matched: repeating them under "these are
+        // the calls" would tell the reader nothing new.
+        $repository = Understudy::for(BookRepository::class);
+
+        $repository->count();
+        $repository->count();
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            'Understudy `BookRepository` expected `count()` to be called exactly 3 times, but it was called 2 times.',
+        );
+
+        verify(fn() => $repository->count(), times: 3);
+    }
+
+    public function aRangeIsSpelledOutAsARange(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        $repository->count();
+        $repository->count();
+        $repository->count();
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            'Understudy `BookRepository` expected `count()` to be called between 0 and 2 times, but it was called 3 times.',
+        );
+
+        verify(fn() => $repository->count(), minimum: 0, maximum: 2);
+    }
+
+    public function anAtLeastFailureNamesTheLowerBound(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            'Understudy `BookRepository` expected `count()` to be called at least 2 times, but it was never called.',
+        );
+
+        verify(fn() => $repository->count(), minimum: 2);
+    }
+
+    public function averificationThatWantedNothingSaysNever(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        $repository->count();
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            'Understudy `BookRepository` expected `count()` to be called never, but it was called 1 time.',
+        );
+
+        verify(fn() => $repository->count(), never: true);
+    }
+
+    public function theGeneratedClassIsNamedAfterAHashOfItsContracts(): void
+    {
+        // The suffix is a fixed-width digest: a shorter or longer slice would
+        // change how likely two contract sets are to collide.
+        // A contract no other test doubles: otherwise the blueprint cache
+        // answers and the naming code never runs here.
+        $double = Understudy::for(HashedContract::class);
+
+        Assert::true((bool) preg_match(
+            '/^Rasuvaeff\\\\Understudy\\\\Codegen\\\\Generated\\\\Understudy_[0-9a-f]{16}$/',
+            $double::class,
+        ));
+    }
+
+    public function twoContractSetsGetTwoGeneratedClasses(): void
+    {
+        Assert::true(
+            Understudy::for(HashedContract::class)::class !== Understudy::for(HashedContractToo::class)::class,
+        );
+    }
+
+    public function configuringAForgottenDoubleIsRejected(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        Understudy::reset();
+
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            'The specification closure did not call a method on an understudy. '
+            . 'It must contain exactly one direct call, for example: '
+            . 'when(fn () => $repository->find(123))',
+        );
+
+        Understudy::label($repository, 'catalogue');
+    }
+
+    public function anExpectationWithoutAnActionStopsTheSearch(): void
+    {
+        // The expectation matched first and has no action of its own, so the
+        // mode's default answers; the stub behind it is not consulted.
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->tag(Arg::any()))->returns('stub');
+        expect(fn() => $repository->tag('alpha'));
+
+        Assert::same($repository->tag('alpha'), '');
+
+        Understudy::verifyAll();
     }
 }

@@ -71,14 +71,16 @@ final class CardinalityTest
 
     public function aNegativeMinimumIsRejected(): void
     {
-        Expect::exception(\InvalidArgumentException::class)->withMessageContaining('cannot be negative');
+        Expect::exception(\InvalidArgumentException::class)->withMessage('A call count cannot be negative, got -1');
 
         Cardinality::exactly(-1);
     }
 
     public function aMaximumBelowTheMinimumIsRejected(): void
     {
-        Expect::exception(\InvalidArgumentException::class)->withMessageContaining('below the minimum');
+        Expect::exception(\InvalidArgumentException::class)->withMessage(
+            'A maximum call count cannot be below the minimum, got minimum 3 and maximum 1',
+        );
 
         Cardinality::between(3, 1);
     }

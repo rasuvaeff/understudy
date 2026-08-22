@@ -7,7 +7,15 @@ namespace Rasuvaeff\Understudy\Tests;
 use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
+use Rasuvaeff\Understudy\Expectation\ComputeAnswer;
+use Rasuvaeff\Understudy\Expectation\Expectation;
+use Rasuvaeff\Understudy\Expectation\ReturnValue;
+use Rasuvaeff\Understudy\Expectation\ThrowError;
 use Rasuvaeff\Understudy\ExpectBuilder;
+use Rasuvaeff\Understudy\FailureReport;
+use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Understudy;
@@ -25,6 +33,16 @@ use function Rasuvaeff\Understudy\when;
 #[Test]
 #[Covers(ExpectBuilder::class)]
 #[Covers(WhenBuilder::class)]
+#[Covers(Runtime::class)]
+#[Covers(DoubleState::class)]
+#[Covers(Expectation::class)]
+#[Covers(ReturnValue::class)]
+#[Covers(ThrowError::class)]
+#[Covers(ComputeAnswer::class)]
+#[Covers(Invocation::class)]
+#[Covers(FailureReport::class)]
+#[Covers(NeverMethodCalled::class)]
+#[Covers(VerificationFailed::class)]
 final class ExpectationsTest
 {
     #[AfterTest]
@@ -102,7 +120,10 @@ final class ExpectationsTest
 
         expect(fn() => $repository->abort('stop'));
 
-        Expect::exception(NeverMethodCalled::class)->withMessageContaining('an expectation alone cannot answer it');
+        Expect::exception(NeverMethodCalled::class)->withMessage(
+            "Understudy `BookRepository` expects `abort()`, but the method is declared `: never` and an expectation alone cannot answer it.\n"
+            . 'Say what it throws: expect(fn () => $double->abort(...))->throws(new SomeException())',
+        );
 
         $repository->abort('stop');
     }
@@ -329,5 +350,23 @@ final class ExpectationsTest
         Understudy::for(BookRepository::class);
 
         Understudy::verifyAll();
+    }
+
+    public function chainedReturnsAnswerInOrder(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->count())->returns(1, 2)->then()->returns(3, 4)->then()->returns(5);
+
+        Assert::same(
+            [
+                $repository->count(),
+                $repository->count(),
+                $repository->count(),
+                $repository->count(),
+                $repository->count(),
+            ],
+            [1, 2, 3, 4, 5],
+        );
     }
 }

@@ -8,29 +8,72 @@ use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\AggregateUnion;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ArityOne;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ArityTwo;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ArrayAll;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ArrayObjectValue;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\BetaOnly;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\BoolFlag;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\BothIterableCountable;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\CallableFactory;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ClassUnionFirst;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ClosureFactory;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\CountableValue;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\DnfParam;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\DnfParamToo;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\FeederByRef;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\FeederByValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\FixedArityTwo;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\GeneratorAll;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\InstanceDescribe;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\InterfaceUnionSecond;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\InterfaceValue;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectedInt;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectedPair;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionAlpha;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionBeta;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntReturn;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntTailPlain;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\IterableAll;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedTail;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedWriter;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\NarrowPartsUnion;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\NarrowReturn;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\NeverValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\NullableParam;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\NullableString;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ObjectTail;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ObjectValueToo;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\PrimaryNamed;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderInt;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderString;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderStringy;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SecondaryNamed;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfReturn;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\Showcase;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByRef;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticReturn;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticValue;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StdClassAll;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StdClassFactory;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StringFlag;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StringyOnly;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\TraversableAlphaUnion;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\TripleUnion;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\TrueFlag;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\TypedUntypedTail;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\UnionAlphaBeta;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\UnionAlphaStringy;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\UnionReaderInt;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\UnionReaderString;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\VariadicByValueTail;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\VariadicShapes;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\VariadicShapesToo;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\WidePartsUnion;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WideReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterInt;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterIntToo;
@@ -43,6 +86,8 @@ use Testo\Test;
 
 #[Test]
 #[Covers(TargetUnifier::class)]
+#[Covers(MethodSignature::class)]
+#[Covers(UnsupportedTarget::class)]
 final class TargetUnifierTest
 {
     private const string MATCHER = TypeRenderer::MATCHER;
@@ -334,6 +379,325 @@ final class TargetUnifierTest
         Expect::exception(UnsupportedTarget::class)->withMessageContaining('read()');
 
         $this->unify(ReaderInt::class, ReaderString::class, FeederByRef::class);
+    }
+
+    // --- Return-type compatibility rules -------------------------------------
+
+    public function aNullableReturnKeepsTheShorthandReflectionReports(): void
+    {
+        // The compatible-candidate path renders the declaration as it stands;
+        // falling through to the intersection fallback would spell the same
+        // type `string|null`, which is legal but not what the contract says.
+        Assert::same($this->unify(NullableString::class)['fetch']->returnType, '?string');
+    }
+
+    public function aNeverReturnSatisfiesEveryOtherTarget(): void
+    {
+        // `never` is a subtype of everything: a method that cannot return
+        // satisfies any declared return type.
+        $signature = $this->unify(NeverValue::class, IntReturn::class)['value'];
+
+        Assert::same($signature->returnType, 'never');
+        Assert::true($signature->returnsNever);
+    }
+
+    public function mixedIsSatisfiedByAnyNarrowerReturn(): void
+    {
+        Assert::same($this->unify(IntReturn::class, MixedValue::class)['value']->returnType, 'int');
+    }
+
+    public function objectIsSatisfiedByAnInterfaceReturn(): void
+    {
+        Assert::same(
+            $this->unify(WideReturn::class, InterfaceValue::class)['value']->returnType,
+            '\\' . ReaderInt::class,
+        );
+    }
+
+    public function objectIsSatisfiedByASelfReturn(): void
+    {
+        // Either rendering satisfies both contracts, and which one Reflection
+        // reports is a PHP-version difference: 8.3/8.4 keep `self`, 8.5
+        // resolves it to the declaring interface.
+        Assert::true(in_array(
+            $this->unify(WideReturn::class, SelfValue::class)['value']->returnType,
+            ['self', '\\' . SelfValue::class],
+            strict: true,
+        ));
+    }
+
+    public function objectIsSatisfiedByAStaticReturn(): void
+    {
+        Assert::same($this->unify(WideReturn::class, StaticValue::class)['value']->returnType, 'static');
+    }
+
+    public function twoObjectReturnsStayObject(): void
+    {
+        Assert::same($this->unify(WideReturn::class, ObjectValueToo::class)['value']->returnType, 'object');
+    }
+
+    public function boolIsSatisfiedByTheTrueLiteral(): void
+    {
+        Assert::same($this->unify(BoolFlag::class, TrueFlag::class)['flag']->returnType, 'true');
+    }
+
+    public function iterableIsSatisfiedByArray(): void
+    {
+        Assert::same($this->unify(IterableAll::class, ArrayAll::class)['all']->returnType, 'array');
+    }
+
+    public function iterableIsSatisfiedByATraversableClass(): void
+    {
+        Assert::same($this->unify(IterableAll::class, GeneratorAll::class)['all']->returnType, '\\Generator');
+    }
+
+    public function callableIsSatisfiedByClosure(): void
+    {
+        Assert::same($this->unify(CallableFactory::class, ClosureFactory::class)['factory']->returnType, '\\Closure');
+    }
+
+    public function aClassReturnSatisfiesAnInterfaceItImplements(): void
+    {
+        // The class-to-class rule is the last one tried, and it is the only
+        // one that has to strip the leading backslash before asking is_a().
+        Assert::same(
+            $this->unify(CountableValue::class, ArrayObjectValue::class)['value']->returnType,
+            '\\ArrayObject',
+        );
+    }
+
+    public function aBuiltinReturnNeverSatisfiesAClassReturn(): void
+    {
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `value()` has no implementation that satisfies all of them.\n"
+            . '  `' . CountableValue::class . "::value()` declares `: \\Countable`\n"
+            . '  `' . IntReturn::class . '::value()` declares `: int`',
+        );
+
+        $this->unify(CountableValue::class, IntReturn::class);
+    }
+
+    public function unionReturnsCollapseToTheBranchTheyShare(): void
+    {
+        // Neither union satisfies the other, but they overlap in one branch —
+        // that overlap is the only return type a class could declare.
+        Assert::same(
+            $this->unify(UnionReaderInt::class, UnionReaderString::class)['value']->returnType,
+            '\\' . ReaderInt::class,
+        );
+    }
+
+    public function aStaticAndAnInstanceMethodOfTheSameNameCannotBeUnified(): void
+    {
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `describe()` has no implementation that satisfies all of them.\n"
+            . '  `' . WriterInt::class . "::describe()` is static\n"
+            . '  `' . InstanceDescribe::class . '::describe()` is an instance method',
+        );
+
+        $this->unify(WriterInt::class, InstanceDescribe::class);
+    }
+
+    // --- Parameter rendering -------------------------------------------------
+
+    public function anObjectVariadicTailIsNotWidened(): void
+    {
+        // `object` already accepts a matcher instance, so a matcher branch
+        // would only make the rendered type redundant.
+        Assert::same($this->unify(ObjectTail::class)['sink']->parameters, 'object ...$items');
+    }
+
+    public function anObjectTailStaysUnwidenedWhenAnotherTargetIsTyped(): void
+    {
+        Assert::same(
+            $this->unify(ObjectTail::class, IntTailPlain::class)['sink']->parameters,
+            'object|int ...$items',
+        );
+    }
+
+    public function aDnfParameterSplitsOnTheTopLevelUnionOnly(): void
+    {
+        // `(A&B)|null` is two branches, not four fragments: splitting inside
+        // the parentheses would emit `(A` and `B)` as separate types.
+        $signature = $this->unify(DnfParam::class, DnfParamToo::class)['store'];
+
+        Assert::same(
+            $signature->parameters,
+            '(\\' . ReaderInt::class . '&\\' . ReaderStringy::class . ')|null|' . self::MATCHER . ' $slot',
+        );
+    }
+
+    public function aVariadicTailByReferenceInOneTargetOnlyIsRejected(): void
+    {
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `byRefTail()` has no implementation that satisfies all of them.\n"
+            . '  `' . VariadicShapes::class . "::byRefTail()` takes its variadic tail by reference\n"
+            . '  `' . VariadicByValueTail::class . '::byRefTail()` takes it by value',
+        );
+
+        $this->unify(VariadicShapes::class, VariadicByValueTail::class);
+    }
+
+    public function theTrueLiteralDoesNotSatisfyAnUnrelatedReturn(): void
+    {
+        // `true` is a subtype of `bool` only: naming it alone would let any
+        // scalar contract through.
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `flag()` has no implementation that satisfies all of them.\n"
+            . '  `' . TrueFlag::class . "::flag()` declares `: true`\n"
+            . '  `' . StringFlag::class . '::flag()` declares `: string`',
+        );
+
+        $this->unify(TrueFlag::class, StringFlag::class);
+    }
+
+    public function iterableIsNotSatisfiedByANonTraversableClass(): void
+    {
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `all()` has no implementation that satisfies all of them.\n"
+            . '  `' . IterableAll::class . "::all()` declares `: iterable`\n"
+            . '  `' . StdClassAll::class . '::all()` declares `: \stdClass`',
+        );
+
+        $this->unify(IterableAll::class, StdClassAll::class);
+    }
+
+    public function callableIsNotSatisfiedByAnArbitraryObject(): void
+    {
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `factory()` has no implementation that satisfies all of them.\n"
+            . '  `' . CallableFactory::class . "::factory()` declares `: callable`\n"
+            . '  `' . StdClassFactory::class . '::factory()` declares `: \stdClass`',
+        );
+
+        $this->unify(CallableFactory::class, StdClassFactory::class);
+    }
+
+    public function unionsThatOverlapPartiallyRenderAsDnf(): void
+    {
+        // (A|B) and (A|S) share A outright, and their remaining branches can
+        // only be satisfied together — `A|(B&S)` is exactly that.
+        $signature = $this->unify(UnionAlphaBeta::class, UnionAlphaStringy::class)['pick'];
+
+        Assert::same(
+            $signature->returnType,
+            '\\' . IntersectionAlpha::class
+            . '|(\\' . IntersectionBeta::class . '&\\' . ReaderStringy::class . ')',
+        );
+    }
+
+    public function aUnionBranchNarrowerThanTheOtherTargetsWins(): void
+    {
+        // `\ArrayObject` implements `\Countable`, so it is the only branch a
+        // class could declare for both targets.
+        $signatures = $this->unify(ClassUnionFirst::class, InterfaceUnionSecond::class);
+
+        Assert::same($signatures['narrow']->returnType, '\ArrayObject');
+        Assert::same($signatures['wide']->returnType, '\ArrayObject');
+    }
+
+    public function aThreeBranchUnionKeepsTheBranchTheOtherTargetNeeds(): void
+    {
+        $signature = $this->unify(TripleUnion::class, StringyOnly::class)['pick'];
+
+        Assert::same($signature->returnType, '\\' . ReaderStringy::class);
+    }
+
+    public function theReportedConflictSkipsPairsThatDoIntersect(): void
+    {
+        // Alpha and Beta unify into `Alpha&Beta`; the pair worth naming is the
+        // one that no class could satisfy at all.
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `intersected()` has no implementation that satisfies all of them.\n"
+            . '  `' . IntersectionAlpha::class . "::intersected()` declares `: \\" . IntersectionAlpha::class . "`\n"
+            . '  `' . IntersectedInt::class . '::intersected()` declares `: int`',
+        );
+
+        $this->unify(IntersectionAlpha::class, IntersectionBeta::class, IntersectedInt::class);
+    }
+
+    public function anUntypedTailStaysUntypedEvenWhenAnotherTargetTypesIt(): void
+    {
+        // One untyped target means the union cannot be expressed: rendering
+        // the other target's `int` would reject calls the contract allows.
+        $signature = $this->unify(VariadicShapes::class, TypedUntypedTail::class)['untypedTail'];
+
+        Assert::same($signature->parameters, '...$anything');
+    }
+
+    public function aMixedTailAbsorbsEveryOtherTargetsType(): void
+    {
+        Assert::same($this->unify(MixedTail::class, IntTailPlain::class)['sink']->parameters, 'mixed ...$items');
+    }
+
+    public function theReportedConflictIsNotSimplyTheFirstAndLastTarget(): void
+    {
+        // Alpha and Beta do intersect; the pair that cannot be satisfied sits
+        // in the middle of the list, and naming the outer two would mislead.
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `intersected()` has no implementation that satisfies all of them.\n"
+            . '  `' . IntersectionAlpha::class . "::intersected()` declares `: \\" . IntersectionAlpha::class . "`\n"
+            . '  `' . IntersectedInt::class . '::intersected()` declares `: int`',
+        );
+
+        $this->unify(IntersectionAlpha::class, IntersectedInt::class, IntersectionBeta::class);
+    }
+
+    public function anIntersectionReturnKeepsEveryAtomWhenItIsNarrowedFurther(): void
+    {
+        $signature = $this->unify(IntersectedPair::class, StringyOnly::class)['pick'];
+
+        Assert::same(
+            $signature->returnType,
+            '\\' . IntersectionAlpha::class
+            . '&\\' . IntersectionBeta::class
+            . '&\\' . ReaderStringy::class,
+        );
+    }
+
+    public function anIntersectionDropsTheAtomAnotherAtomAlreadyImplies(): void
+    {
+        // `\IteratorAggregate` already is a `\Traversable`: keeping both would
+        // render an intersection PHP rejects as redundant.
+        $signature = $this->unify(TraversableAlphaUnion::class, AggregateUnion::class)['pick'];
+
+        Assert::same(
+            $signature->returnType,
+            '\\' . IntersectionAlpha::class . '&\IteratorAggregate',
+        );
+    }
+
+    public function aMiddleUnionBranchIsKeptLikeAnyOther(): void
+    {
+        $signature = $this->unify(TripleUnion::class, BetaOnly::class)['pick'];
+
+        Assert::same($signature->returnType, '\\' . IntersectionBeta::class);
+    }
+
+    public function anIntersectionKeepsEveryAtomWhenTheNarrowingSideComesSecond(): void
+    {
+        // Same pair as above with the targets swapped: the atoms of the second
+        // target must survive too, not just its first one.
+        $signature = $this->unify(StringyOnly::class, IntersectedPair::class)['pick'];
+
+        Assert::same(
+            $signature->returnType,
+            '\\' . ReaderStringy::class
+            . '&\\' . IntersectionAlpha::class
+            . '&\\' . IntersectionBeta::class,
+        );
+    }
+
+    public function oneAtomCanSupersedeSeveralAlreadyCollected(): void
+    {
+        // `BothIterableCountable` implies `\Traversable` *and* `\Countable`;
+        // stopping after the first of them would leave a redundant atom.
+        $signature = $this->unify(WidePartsUnion::class, NarrowPartsUnion::class)['pick'];
+
+        Assert::same(
+            $signature->returnType,
+            '\Stringable&\\' . BothIterableCountable::class . '&\JsonSerializable',
+        );
     }
 
     /**

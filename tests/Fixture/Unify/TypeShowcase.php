@@ -26,5 +26,9 @@ interface TypeShowcase
 
     public function returnsNullableObject(): ?TypeShowcase;
 
+    public function dnf((ReaderInt&ReaderStringy)|null $a): void;
+
+    public function returnsDnf(): (ReaderInt&ReaderStringy)|null;
+
     public function returnsNever(): never;
 }

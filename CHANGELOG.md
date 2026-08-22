@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Multi-target unification: a variadic tail declared by reference in one target
+  and by value in another now names both targets in the rejection instead of
+  reporting the same one twice.
 - Initial engine: interface doubles generated from Reflection, the sentinel
   recording mechanism behind the call-closure API, `when()` with
   `returns()`/`throws()`/`answers()`, `verify()` with count bounds,

@@ -8,6 +8,13 @@ use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
+use Rasuvaeff\Understudy\Expectation\Expectation;
+use Rasuvaeff\Understudy\FailureReport;
+use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Outcome;
+use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Runtime;
+use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
@@ -29,6 +36,16 @@ use function Rasuvaeff\Understudy\when;
  */
 #[Test]
 #[Covers(Understudy::class)]
+#[Covers(Runtime::class)]
+#[Covers(RuntimeContext::class)]
+#[Covers(DoubleState::class)]
+#[Covers(Expectation::class)]
+#[Covers(Invocation::class)]
+#[Covers(Outcome::class)]
+#[Covers(FailureReport::class)]
+#[Covers(ContextOwnershipViolation::class)]
+#[Covers(ForgottenDouble::class)]
+#[Covers(VerificationFailed::class)]
 final class LedgerTest
 {
     #[AfterTest]
@@ -298,7 +315,11 @@ final class LedgerTest
     {
         $repository = Understudy::for(BookRepository::class);
 
-        Expect::exception(ContextOwnershipViolation::class);
+        Expect::exception(ContextOwnershipViolation::class)->withMessage(
+            'This understudy belongs to a different runtime context. '
+            . 'Configure and verify it in the scope or Fiber that created it; '
+            . 'only normal method calls may cross context boundaries.',
+        );
 
         Understudy::scope(
             static fn() => Understudy::verifySequence(fn() => $repository->count()),
@@ -458,7 +479,11 @@ final class LedgerTest
     {
         $outer = Understudy::for(BookRepository::class);
 
-        Expect::exception(ContextOwnershipViolation::class);
+        Expect::exception(ContextOwnershipViolation::class)->withMessage(
+            'This understudy belongs to a different runtime context. '
+            . 'Configure and verify it in the scope or Fiber that created it; '
+            . 'only normal method calls may cross context boundaries.',
+        );
 
         Understudy::scope(static function () use ($outer): void {
             expect(fn() => $outer->count());
@@ -469,7 +494,11 @@ final class LedgerTest
     {
         $escaped = Understudy::scope(static fn(): BookRepository => Understudy::for(BookRepository::class));
 
-        Expect::exception(ForgottenDouble::class)->withMessageContaining('count()');
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            "This understudy is no longer known to Understudy, but `count()` was called on it.\n"
+            . 'It was created before a reset(); create doubles inside the test that uses them '
+            . 'rather than sharing one across tests.',
+        );
 
         $escaped->count();
     }
@@ -538,7 +567,329 @@ final class LedgerTest
         Assert::same($repository->count(), 7);
     }
 
+    // --- verifyAll reporting -------------------------------------------------
+
+    public function verifyAllReportsEveryUnmetExpectationInOneMessage(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->count());
+        expect(fn() => $repository->titles());
+
+        // Reported in the order the claims were written, which is not the
+        // order the ledger keeps them in.
+        Expect::exception(VerificationFailed::class)->withMessage(
+            "Understudy `BookRepository` expected `count()` to be called exactly 1 time, but it was called never.\n\n"
+            . 'Understudy `BookRepository` expected `titles()` to be called exactly 1 time, but it was called never.',
+        );
+
+        Understudy::verifyAll();
+    }
+
+    public function theActualCountIsSpelledOutInTheFailure(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->count())->times(3);
+
+        $repository->count();
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            'Understudy `BookRepository` expected `count()` to be called exactly 3 times, but it was called 1 time.',
+        );
+
+        Understudy::verifyAll();
+    }
+
+    public function aRepeatedCallIsCountedInThePlural(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->count())->times(3);
+
+        $repository->count();
+        $repository->count();
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            'Understudy `BookRepository` expected `count()` to be called exactly 3 times, but it was called 2 times.',
+        );
+
+        Understudy::verifyAll();
+    }
+
+    #[ExpectNoAssertions]
+    public function strictStubsAcceptsAStubThatWasUsed(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->count())->returns(7);
+        $repository->count();
+
+        Understudy::verifyAll(strictStubs: true);
+    }
+
+    #[ExpectNoAssertions]
+    public function anUnusedStubIsFineWithoutStrictStubs(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->count())->returns(7);
+
+        Understudy::verifyAll();
+    }
+
+    #[ExpectNoAssertions]
+    public function allVerifiedIgnoresAnUnusedStub(): void
+    {
+        // `allVerified()` is about claims and stray calls, not about stubs
+        // that turned out to be unnecessary.
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->count())->returns(7);
+        expect(fn() => $repository->titles())->returns([]);
+
+        $repository->titles();
+
+        Understudy::allVerified($repository);
+    }
+
+    #[ExpectNoAssertions]
+    public function allVerifiedIgnoresAnotherDoublesOrdering(): void
+    {
+        $primary = Understudy::for(BookRepository::class);
+        $secondary = Understudy::for(BookRepository::class);
+
+        expect(fn() => $secondary->count())->ordered();
+        expect(fn() => $secondary->titles())->ordered();
+        expect(fn() => $primary->count());
+
+        $secondary->titles();
+        $secondary->count();
+        $primary->count();
+
+        Understudy::allVerified($primary);
+    }
+
+    #[ExpectNoAssertions]
+    public function checkpointRetiresTheExpectationsItSettled(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->count());
+        $repository->count();
+
+        Understudy::checkpoint();
+
+        // The claim was settled at the checkpoint: a later call is no longer
+        // its business, so it cannot fail on the count.
+        $repository->count();
+
+        Understudy::verifyAll();
+    }
+
+    #[ExpectNoAssertions]
+    public function aScopeIsLeftEvenWhenItsCallbackThrows(): void
+    {
+        $outer = Understudy::for(BookRepository::class);
+
+        try {
+            Understudy::scope(static function (): void {
+                throw new \DomainException('the real problem');
+            });
+        } catch (\DomainException) {
+            // The point is what happens next, not the exception itself.
+        }
+
+        // Still inside the scope, this would be a ContextOwnershipViolation.
+        when(fn() => $outer->count())->returns(1);
+    }
+
+    #[ExpectNoAssertions]
+    public function aScopeIsLeftEvenWhenItsOwnVerificationFails(): void
+    {
+        $outer = Understudy::for(BookRepository::class);
+
+        try {
+            Understudy::scope(static function (): void {
+                $inner = Understudy::for(BookRepository::class);
+                expect(fn() => $inner->count());
+            });
+        } catch (VerificationFailed) {
+            // Same again: the scope must be popped before this is rethrown.
+        }
+
+        when(fn() => $outer->count())->returns(1);
+    }
+
+    public function allVerifiedFindsAnOrderingViolationOnALaterDouble(): void
+    {
+        // The double under verification is not the first one registered, so
+        // the scan has to skip past the others rather than stop at them.
+        $primary = Understudy::for(BookRepository::class);
+        $secondary = Understudy::for(BookRepository::class);
+
+        expect(fn() => $primary->count());
+        expect(fn() => $secondary->count())->ordered();
+        expect(fn() => $secondary->titles())->ordered();
+
+        $primary->count();
+        $secondary->titles();
+        $secondary->count();
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining('but it happened first');
+
+        Understudy::allVerified($secondary);
+    }
+
+    // --- fibers --------------------------------------------------------------
+
+    public function aCallFromAnotherFiberIsRecordedByTheOwner(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        $fiber = new \Fiber(static function () use ($repository): void {
+            $repository->count();
+        });
+        $fiber->start();
+
+        Assert::same(count(Understudy::calls(fn() => $repository->count())), 1);
+    }
+
+    public function aResetInsideAFiberForgetsThatFibersDoubles(): void
+    {
+        $fiber = new \Fiber(static function (): BookRepository {
+            $inside = Understudy::for(BookRepository::class);
+            Understudy::reset();
+
+            return $inside;
+        });
+        $fiber->start();
+        /** @var BookRepository $escaped */
+        $escaped = $fiber->getReturn();
+
+        Expect::exception(ForgottenDouble::class)->withMessageContaining('count()');
+
+        $escaped->count();
+    }
+
+    public function aResetInsideAFiberStartsTheCallOrderAgain(): void
+    {
+        $sequences = [];
+
+        $fiber = new \Fiber(static function () use (&$sequences): void {
+            $first = Understudy::for(BookRepository::class);
+            $first->count();
+
+            Understudy::reset();
+
+            $second = Understudy::for(BookRepository::class);
+            $second->count();
+
+            /** @var list<int> $sequences */
+            $sequences = array_map(
+                static fn(Invocation $invocation): int => $invocation->sequence,
+                Understudy::calls(fn() => $second->count()),
+            );
+        });
+        $fiber->start();
+
+        Assert::same($sequences, [1]);
+    }
+
+    public function scopesNestInsideAFiberLikeAnywhereElse(): void
+    {
+        $escaped = null;
+
+        $fiber = new \Fiber(static function () use (&$escaped): void {
+            $outer = Understudy::for(BookRepository::class);
+            when(fn() => $outer->count())->returns(1);
+
+            $escaped = Understudy::scope(static function (): Clock {
+                $inner = Understudy::for(Clock::class);
+                when(fn() => $inner->now())->returns(5);
+
+                Assert::same($inner->now(), 5);
+
+                return $inner;
+            });
+
+            Assert::same($outer->count(), 1);
+
+            // Back in the fiber's own context: configuring the outer double
+            // would be a ContextOwnershipViolation from inside the scope.
+            when(fn() => $outer->titles())->returns(['Dune']);
+
+            Assert::same($outer->titles(), ['Dune']);
+        });
+        $fiber->start();
+
+        Assert::instanceOf($escaped, Clock::class);
+
+        Expect::exception(ForgottenDouble::class)->withMessageContaining('now()');
+
+        $escaped->now();
+    }
+
+    // --- invocations in flight -----------------------------------------------
+
+    public function anInFlightInvocationHasNoOutcomeYet(): void
+    {
+        // `answers()` runs while the call is still in progress: the outcome
+        // is filled in by the dispatcher only once the answer is known.
+        $repository = Understudy::for(BookRepository::class);
+        $seen = [];
+
+        when(fn() => $repository->count())->answers(
+            static function (Invocation $invocation) use (&$seen): int {
+                $seen = [
+                    'returned' => $invocation->didReturn(),
+                    'threw' => $invocation->didThrow(),
+                    'value' => $invocation->returned(),
+                    'error' => $invocation->thrown(),
+                ];
+
+                return 7;
+            },
+        );
+
+        Assert::same($repository->count(), 7);
+        Assert::same($seen, ['returned' => false, 'threw' => false, 'value' => null, 'error' => null]);
+    }
+
+    public function aCheckpointDropsTheCallsItAccountedFor(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->count());
+        $repository->count();
+        $repository->titles();
+
+        Understudy::checkpoint();
+
+        // The settled call is gone; the one nothing claimed is still there to
+        // be explained.
+        Assert::same(Understudy::calls(fn() => $repository->count()), []);
+        Assert::same(count(Understudy::calls(fn() => $repository->titles())), 1);
+    }
+
+    #[ExpectNoAssertions]
+    public function verifySequenceAfterACheckpointSeesOnlyTheNewCalls(): void
+    {
+        // The settled calls are dropped from the log, and what remains has to
+        // be a list again — verifySequence() reads it by position.
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->count());
+        $repository->count();
+        $repository->titles();
+
+        Understudy::checkpoint();
+
+        Understudy::verifySequence(fn() => $repository->titles());
+    }
+
     // --- transcript ----------------------------------------------------------
+
 
     public function transcriptShowsEveryCallWithItsOutcome(): void
     {
@@ -556,11 +907,19 @@ final class LedgerTest
             // Recorded either way.
         }
 
+        $repository->tag('alpha');
+
         $transcript = Understudy::transcript($repository);
 
-        Assert::string($transcript)->contains('catalogue');
-        Assert::string($transcript)->contains('count() -> returned 7');
-        Assert::string($transcript)->contains('titles() -> threw RuntimeException');
+        // Asserted whole: the transcript is read by a human looking for the
+        // call that surprised them, so every part of the line is contract.
+        Assert::same(
+            $transcript,
+            "Understudy `catalogue` received 3 call(s):\n"
+            . "  #1 count() -> returned 7\n"
+            . "  #2 titles() -> threw RuntimeException\n"
+            . "  #3 tag('alpha', 1) -> returned ''",
+        );
     }
 
     public function transcriptSaysSoWhenNothingHappened(): void

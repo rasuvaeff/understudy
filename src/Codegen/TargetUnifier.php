@@ -574,6 +574,7 @@ final class TargetUnifier
         /** @var array<string, true> $types */
         $types = [];
         $byReference = null;
+        $byReferenceSource = null;
         $tailName = self::DEFAULT_TAIL_NAME;
         $untyped = false;
         $acceptsMatcher = false;
@@ -593,14 +594,19 @@ final class TargetUnifier
                 $acceptsMatcher = $acceptsMatcher || TypeRenderer::acceptsMatcher($parameter->getType());
 
                 if ($byReference !== null && $byReference !== $parameter->isPassedByReference()) {
+                    // Naming `$declaration` on both lines would report the same
+                    // target twice; the other side is whoever set the mode.
+                    \assert($byReferenceSource !== null);
+
                     throw UnsupportedTarget::signatureConflict(
                         $name,
-                        self::describe($declaration) . ' takes its variadic tail by ' . ($byReference ? 'reference' : 'value'),
+                        self::describe($byReferenceSource) . ' takes its variadic tail by ' . ($byReference ? 'reference' : 'value'),
                         self::describe($declaration) . ' takes it by ' . ($parameter->isPassedByReference() ? 'reference' : 'value'),
                     );
                 }
 
                 $byReference = $parameter->isPassedByReference();
+                $byReferenceSource = $declaration;
 
                 if ($parameter->isVariadic() && $tailName === self::DEFAULT_TAIL_NAME) {
                     // First target wins: `for($primary, ...$interfaces)` treats

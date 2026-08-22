@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests\Codegen;
 
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderInt;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderStringy;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\TypeShowcase;
 use Testo\Assert;
 use Testo\Codecov\Covers;
@@ -113,8 +115,40 @@ final class TypeRendererTest
         Assert::same(TypeRenderer::returnType(null), 'mixed');
     }
 
+
+    public function aDnfParameterKeepsItsParenthesesInsideTheUnion(): void
+    {
+        // Only the intersection is parenthesised, and every branch is
+        // rendered — a union of one branch would be a different type.
+        Assert::same(
+            TypeRenderer::parameterType($this->typeOf('dnf')),
+            '(\\' . ReaderInt::class . '&\\' . ReaderStringy::class . ')|null',
+        );
+    }
+
+    public function aDnfReturnTypeIsRenderedTheSameWay(): void
+    {
+        Assert::same(
+            TypeRenderer::returnType($this->returnTypeOf('returnsDnf')),
+            '(\\' . ReaderInt::class . '&\\' . ReaderStringy::class . ')|null',
+        );
+    }
+
+    public function anIntersectionRendersEveryAtom(): void
+    {
+        Assert::same(
+            TypeRenderer::parameterType($this->typeOf('intersection')),
+            '(\\' . ReaderInt::class . '&\\' . ReaderStringy::class . ')',
+        );
+    }
+
     private function typeOf(string $method): ?\ReflectionType
     {
         return (new \ReflectionMethod(TypeShowcase::class, $method))->getParameters()[0]->getType();
+    }
+
+    private function returnTypeOf(string $method): ?\ReflectionType
+    {
+        return (new \ReflectionMethod(TypeShowcase::class, $method))->getReturnType();
     }
 }
