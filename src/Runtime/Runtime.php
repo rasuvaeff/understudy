@@ -157,14 +157,28 @@ final class Runtime
     private static function answer(DoubleState $state, string $method, Invocation $invocation): mixed
     {
         $signature = $state->blueprint->method($method);
+        $matched = false;
 
         foreach ($state->expectations() as $expectation) {
             if (!$expectation->matches($method, $invocation->args)) {
                 continue;
             }
 
+            // Counting and answering are separate concerns: an expectation
+            // says how often a call may happen, an action says what it
+            // answers. `expect(fn () => $repo->count())` is a complete
+            // statement about the count, and forcing a `returns()` onto it
+            // would be noise — so a matched expectation with no action falls
+            // through to the mode's own answer below, having been counted.
+            $expectation->recordMatch();
+            $matched = true;
+
+            if (!$expectation->hasAction()) {
+                break;
+            }
+
             /** @var mixed $answer */
-            $answer = $expectation->answer($invocation);
+            $answer = $expectation->performAction($invocation);
 
             if ($signature !== null && $signature->returnsNever) {
                 // The expectation returned instead of throwing; returning from
@@ -180,7 +194,9 @@ final class Runtime
             throw NeverMethodCalled::withoutExpectation($state->label(), $method);
         }
 
-        if ($state->mode() === Mode::Strict) {
+        // A matched expectation means the call was expected, so strictness has
+        // nothing left to complain about.
+        if (!$matched && $state->mode() === Mode::Strict) {
             throw StrictModeViolation::unexpectedCall($state->label(), $method);
         }
 

@@ -86,6 +86,46 @@ method needing no arguments; anything else, including a getter that throws, is
 a mismatch rather than an error. A matcher that reaches a real call raises
 `MatcherLeaked`.
 
+### Expecting — `expect()`
+
+```php
+use function Rasuvaeff\Understudy\expect;
+
+expect(fn () => $repo->save($book));                 // exactly once
+expect(fn () => $repo->count())->times(2);           // exactly twice
+expect(fn () => $repo->count())->times(1, 3);        // a range
+expect(fn () => $repo->count())->times(1, null);     // no upper bound
+expect(fn () => $repo->find(1))->returns($book);     // behaviour too
+
+Understudy::verifyAll();                             // checks them all
+Understudy::verifyAll(strictStubs: true);            // and unused stubs
+```
+
+`expect()` is a claim about how often a call happens, checked by
+`verifyAll()`. A plain `when()` stub is permission rather than a claim, and
+becomes checkable only through `times()`.
+
+An expectation without an action still answers: counting and answering are
+separate concerns, so `expect(fn () => $repo->count())` is complete on its own
+and the mode's type-safe default supplies the value. A matched expectation
+also satisfies a strict double — the call was expected.
+
+Pest declares its own global `expect()`. Import this one as
+`use function Rasuvaeff\Understudy\expect as expectCall;`, or call
+`Understudy::expect()`.
+
+### Chaining behaviour — `then()`
+
+```php
+when(fn () => $breaker->call($operation))
+    ->returns('ok')
+    ->then()->throws(new ConnectionLost())
+    ->then()->answers(fn (Invocation $i) => 'recovered');
+```
+
+One link per call; the last link keeps answering after the chain runs out.
+A verb without `then()` refines the same link rather than adding one.
+
 ### Verifying — `verify()`
 
 ```php

@@ -113,6 +113,40 @@ when(fn () => $repository->mode())->returns('fast', 'slow');
 должен быть тем, что его ломает.
 
 
+### Ожидание вызова
+
+```php
+use function Rasuvaeff\Understudy\expect;
+
+expect(fn () => $repository->save($book));            // ровно один раз
+expect(fn () => $repository->count())->times(1, 3);   // диапазон
+
+Understudy::verifyAll();
+```
+
+`expect()` заявляет, сколько раз вызов обязан произойти, а `verifyAll()` это
+проверяет. Стаб `when()` — разрешение, а не заявление; `->times(2)` делает его
+заявлением. `verifyAll(strictStubs: true)` дополнительно валит ни разу не
+использованный стаб.
+
+`returns()` при этом не обязателен: счёт и ответ — разные вещи, значение даёт
+типобезопасный дефолт режима, а совпавшее ожидание удовлетворяет и строгий
+дубль — вызов ведь ожидался.
+
+В Pest есть свой глобальный `expect()` — импортируйте наш как `expect as
+expectCall` либо зовите `Understudy::expect()`.
+
+### Цепочки поведения
+
+```php
+when(fn () => $breaker->call($operation))
+    ->returns('ok')
+    ->then()->throws(new ConnectionLost());
+```
+
+Одно звено на вызов; когда цепочка кончается, последнее звено продолжает
+отвечать.
+
 ### Проверки
 
 ```php

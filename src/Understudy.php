@@ -72,6 +72,85 @@ final class Understudy
     }
 
     /**
+     * Declares a call the code under test is expected to make: exactly once
+     * unless `times()` says otherwise, and checked by `verifyAll()`.
+     *
+     * @param callable(): mixed $call
+     *
+     * @return ExpectBuilder<mixed>
+     */
+    public static function expect(callable $call): ExpectBuilder
+    {
+        $signal = self::record($call);
+        $expectation = new Expectation($signal->method, $signal->args);
+        $expectation->setCardinality(Cardinality::exactly(1));
+
+        self::stateOf($signal->double)->addExpectation($expectation);
+
+        return new ExpectBuilder($expectation);
+    }
+
+    /**
+     * Checks every expectation of the current context: the ones `expect()`
+     * declared, and the stubs that opted in through `times()`.
+     *
+     * With `strictStubs`, a stub that was never called fails too — the
+     * Mockito reading of "why did you configure it, then?".
+     */
+    public static function verifyAll(bool $strictStubs = false): void
+    {
+        $failures = [];
+
+        foreach (Runtime::current()->allStates() as $state) {
+            foreach ($state->expectations() as $expectation) {
+                $failure = self::checkExpectation($state, $expectation, $strictStubs);
+
+                if ($failure !== null) {
+                    $failures[] = $failure;
+                }
+            }
+        }
+
+        if ($failures !== []) {
+            throw VerificationFailed::withReport(implode("\n\n", array_reverse($failures)));
+        }
+    }
+
+    /**
+     * @return non-empty-string|null
+     */
+    private static function checkExpectation(DoubleState $state, Expectation $expectation, bool $strictStubs): ?string
+    {
+        $cardinality = $expectation->cardinality();
+        $count = $expectation->matchCount();
+
+        if ($cardinality === null) {
+            // A plain stub is permission, not a claim — unless strict stubs
+            // turn "configured but never used" into a failure of its own.
+            return $strictStubs && $count === 0
+                ? sprintf(
+                    "Understudy `%s` has a stub for `%s` that was never used.\n"
+                    . 'Remove it, or drop strictStubs if the call is genuinely optional.',
+                    $state->label(),
+                    $expectation->describe(),
+                )
+                : null;
+        }
+
+        if ($cardinality->allows($count)) {
+            return null;
+        }
+
+        return sprintf(
+            'Understudy `%s` expected `%s` to be called %s, but it was called %s.',
+            $state->label(),
+            $expectation->describe(),
+            $cardinality->describe(),
+            $count === 0 ? 'never' : ($count === 1 ? '1 time' : $count . ' times'),
+        );
+    }
+
+    /**
      * Asserts, after the fact, how many times a call was made.
      *
      * @param callable(): mixed $call

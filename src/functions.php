@@ -23,6 +23,29 @@ function when(callable $call): WhenBuilder
 }
 
 /**
+ * Declares a call the code under test is expected to make: exactly once unless
+ * `times()` says otherwise, checked by `Understudy::verifyAll()`.
+ *
+ * ```php
+ * expect(fn () => $repository->save($book));
+ * ```
+ *
+ * Pest declares a global `expect()` of its own. In a Pest suite either import
+ * this one under another name — `use function Rasuvaeff\Understudy\expect as
+ * expectCall;` — or call `Understudy::expect()`, which cannot collide.
+ *
+ * @param callable(): mixed $call
+ *
+ * @return ExpectBuilder<mixed>
+ *
+ * @api
+ */
+function expect(callable $call): ExpectBuilder
+{
+    return Understudy::expect($call);
+}
+
+/**
  * Asserts, after the fact, how many times a call was made.
  *
  * ```php
