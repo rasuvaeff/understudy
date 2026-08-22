@@ -15,5 +15,6 @@
   configuration and verification, scoped-double invalidation, and reset of
   only the current execution context.
 - Compatible multi-interface signature unification, including contravariant
-  parameters, covariant return types, deterministic primary-interface
-  parameter names, and safe handling of `mixed` and static contract methods.
+  parameters, covariant and synthesised intersection return types,
+  deterministic primary-interface parameter names, and safe handling of
+  `mixed` and static contract methods.

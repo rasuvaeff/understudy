@@ -62,11 +62,12 @@ $double = Understudy::for(BookRepository::class, Countable::class);
 ```
 
 Understudy unifies compatible signatures across those interfaces: parameter
-types are widened, return types use the narrowest compatible declaration, and
-named arguments follow the first (primary) interface. Static contract methods
-exist on the generated class so the interface can be implemented, but calling
-one raises `InvalidCallSpecification`: a static call has no double instance to
-own its state.
+types are widened, return types use the narrowest compatible declaration or a
+synthesised interface intersection, and named arguments follow the first
+(primary) interface. Static contract methods exist on the generated class so
+the interface can be implemented, but calling one raises
+`InvalidCallSpecification`: a static call has no double instance to own its
+state.
 
 Interfaces are supported today; class targets and `bypassFinals()` are being
 built next.

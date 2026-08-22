@@ -17,11 +17,15 @@ use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
 use Rasuvaeff\Understudy\Tests\Fixture\Named;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionAlpha;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionBeta;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedWriter;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\NarrowReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\PrimaryNamed;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SecondaryNamed;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByRef;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WideReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterInt;
 use Rasuvaeff\Understudy\Tests\Fixture\VariadicSink;
@@ -86,6 +90,25 @@ final class UnderstudyTest
         when(fn() => $double->value())->returns($value);
 
         Assert::same($double->value(), $value);
+    }
+
+    public function aSelfAndStaticReturnCanReturnTheGeneratedDouble(): void
+    {
+        $double = Understudy::for(SelfReturn::class, StaticReturn::class);
+
+        when(fn() => $double->copy())->returns($double);
+
+        Assert::same($double->copy(), $double);
+    }
+
+    public function unrelatedInterfaceReturnsCanReturnTheirIntersection(): void
+    {
+        $double = Understudy::for(IntersectionAlpha::class, IntersectionBeta::class);
+
+        when(fn() => $double->intersected())->returns($double);
+
+        Assert::same($double->intersected(), $double);
+        Assert::null($double->nullableIntersection());
     }
 
     #[ExpectNoAssertions]

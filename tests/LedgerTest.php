@@ -284,11 +284,24 @@ final class LedgerTest
         $first->count();
         $second->count();
 
-        Expect::exception(VerificationFailed::class)->withMessageContaining('Call #1');
+        Expect::exception(VerificationFailed::class)
+            ->withMessageContaining('Call #1')
+            ->withMessageContaining('different understudy');
 
         Understudy::verifySequence(
             fn() => $second->count(),
             fn() => $first->count(),
+        );
+    }
+
+    public function verifySequenceRejectsADoubleOwnedByAnotherContext(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        Expect::exception(ContextOwnershipViolation::class);
+
+        Understudy::scope(
+            static fn() => Understudy::verifySequence(fn() => $repository->count()),
         );
     }
 

@@ -406,6 +406,7 @@ final class Understudy
 
         foreach ($calls as $call) {
             $signal = self::record($call);
+            self::stateOf($signal->double);
             $probes[] = [$signal->double, new Expectation($signal->method, $signal->args)];
         }
 
@@ -467,7 +468,16 @@ final class Understudy
         foreach ($probes as $position => [$double, $probe]) {
             $invocation = $log[$position];
 
-            if (!$invocation->belongsTo($double) || !$probe->matches($invocation->method, $invocation->args)) {
+            if (!$invocation->belongsTo($double)) {
+                return sprintf(
+                    "Call #%d was expected to be `%s` on one understudy, but the same call was made on a different understudy.\n\nThe calls made were:\n%s",
+                    $position + 1,
+                    $probe->describe(),
+                    FailureReport::renderCallLog($log),
+                );
+            }
+
+            if (!$probe->matches($invocation->method, $invocation->args)) {
                 return sprintf(
                     "Call #%d was expected to be `%s`, but it was `%s`.\n\nThe calls made were:\n%s",
                     $position + 1,
@@ -547,7 +557,8 @@ final class Understudy
     }
 
     /**
-     * Drops every context. Adapters call this after each test, unconditionally.
+     * Drops the current context. Adapters call this after each test,
+     * unconditionally; sibling Fiber contexts remain intact.
      */
     public static function reset(): void
     {

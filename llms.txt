@@ -42,9 +42,10 @@ $both = Understudy::for(BookRepository::class, Countable::class); // several int
 
 `for(class-string<T> $target, class-string ...$interfaces): T`
 
-For several interfaces, parameters are widened contravariantly, the narrowest
-compatible covariant return is used, and parameter names come from the first
-(primary) interface so named arguments are deterministic.
+For several interfaces, parameters are widened contravariantly, returns use the
+narrowest compatible declaration or a synthesised interface intersection, and
+parameter names come from the first (primary) interface so named arguments are
+deterministic.
 
 ### Stubbing — `when()`
 
@@ -242,5 +243,5 @@ All implement `Rasuvaeff\Understudy\Exception\UnderstudyError`.
 ## Not supported
 
 Static method mocking, patching at the point of use, deep stubs, duck doubles,
-sharing state across processes. Class targets, `bypassFinals()`, the full
-`expect()`, ordering and the runner adapters are being built next.
+sharing state across processes. Class targets, `bypassFinals()` and the runner
+adapters are being built next.
