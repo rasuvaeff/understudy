@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
+use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
@@ -168,6 +170,21 @@ final class LedgerTest
         Understudy::allVerified($repository);
     }
 
+    public function allVerifiedChecksOrderedExpectationsToo(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->count())->ordered();
+        expect(fn() => $repository->titles())->ordered();
+
+        $repository->titles();
+        $repository->count();
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining('but it happened first');
+
+        Understudy::allVerified($repository);
+    }
+
     // --- verifySequence ------------------------------------------------------
 
     #[ExpectNoAssertions]
@@ -257,6 +274,22 @@ final class LedgerTest
         $repository->tag('alpha', 2);
 
         Understudy::verifySequence(fn() => $repository->tag(Arg::any(), Arg::int(min: 1)));
+    }
+
+    public function verifySequenceDistinguishesDoublesOfTheSameContract(): void
+    {
+        $first = Understudy::for(BookRepository::class);
+        $second = Understudy::for(BookRepository::class);
+
+        $first->count();
+        $second->count();
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining('Call #1');
+
+        Understudy::verifySequence(
+            fn() => $second->count(),
+            fn() => $first->count(),
+        );
     }
 
     // --- ordered -------------------------------------------------------------
@@ -406,6 +439,49 @@ final class LedgerTest
         });
 
         Assert::same($outer->count(), 7);
+    }
+
+    public function aScopeRejectsConfigurationOfAnEnclosingDouble(): void
+    {
+        $outer = Understudy::for(BookRepository::class);
+
+        Expect::exception(ContextOwnershipViolation::class);
+
+        Understudy::scope(static function () use ($outer): void {
+            expect(fn() => $outer->count());
+        });
+    }
+
+    public function aDoubleCannotOutliveItsScope(): void
+    {
+        $escaped = Understudy::scope(static fn(): BookRepository => Understudy::for(BookRepository::class));
+
+        Expect::exception(ForgottenDouble::class)->withMessageContaining('count()');
+
+        $escaped->count();
+    }
+
+    public function resetLeavesASiblingFiberContextIntact(): void
+    {
+        $resetter = new \Fiber(static function (): void {
+            Understudy::for(BookRepository::class);
+            \Fiber::suspend();
+            Understudy::reset();
+        });
+        $worker = new \Fiber(static function (): void {
+            $repository = Understudy::for(BookRepository::class);
+            \Fiber::suspend();
+
+            Assert::same($repository->count(), 0);
+        });
+
+        $resetter->start();
+        $worker->start();
+        $resetter->resume();
+        $worker->resume();
+
+        Assert::true($resetter->isTerminated());
+        Assert::true($worker->isTerminated());
     }
 
     #[ExpectNoAssertions]

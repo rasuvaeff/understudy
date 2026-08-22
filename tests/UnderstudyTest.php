@@ -17,7 +17,13 @@ use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
 use Rasuvaeff\Understudy\Tests\Fixture\Named;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedWriter;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\NarrowReturn;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\PrimaryNamed;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\SecondaryNamed;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByRef;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\WideReturn;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterInt;
 use Rasuvaeff\Understudy\Tests\Fixture\VariadicSink;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
@@ -51,6 +57,43 @@ final class UnderstudyTest
 
         Assert::instanceOf($double, BookRepository::class);
         Assert::instanceOf($double, Named::class);
+    }
+
+    public function mixedAndNarrowParameterContractsProduceAUsableDouble(): void
+    {
+        $double = Understudy::for(MixedWriter::class, WriterInt::class);
+
+        $double->write(1);
+        $double->write('anything');
+
+        Assert::same(count(Understudy::calls(fn() => $double->write(Arg::any()))), 2);
+    }
+
+    public function aStaticContractMemberFailsWithAnActionableError(): void
+    {
+        $double = Understudy::for(WriterInt::class);
+
+        Expect::exception(InvalidCallSpecification::class)->withMessageContaining('Static method `describe()`');
+
+        $double::describe();
+    }
+
+    public function aCovariantMultiTargetDoubleUsesTheNarrowestReturn(): void
+    {
+        $double = Understudy::for(WideReturn::class, NarrowReturn::class);
+        $value = new \stdClass();
+
+        when(fn() => $double->value())->returns($value);
+
+        Assert::same($double->value(), $value);
+    }
+
+    #[ExpectNoAssertions]
+    public function aMultiTargetDoubleKeepsThePrimaryParameterName(): void
+    {
+        $double = Understudy::for(PrimaryNamed::class, SecondaryNamed::class);
+
+        $double->send(primary: 'message');
     }
 
     public function stubbedCallReturnsTheConfiguredValue(): void

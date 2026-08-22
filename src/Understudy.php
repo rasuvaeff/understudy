@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy;
 
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
@@ -66,9 +67,10 @@ final class Understudy
     {
         $signal = self::record($call);
         $expectation = new Expectation($signal->method, $signal->args);
+        $state = self::stateOf($signal->double);
         $expectation->setDeclarationOrder(Runtime::current()->nextDeclaration());
 
-        self::stateOf($signal->double)->addExpectation($expectation);
+        $state->addExpectation($expectation);
 
         return new WhenBuilder($expectation);
     }
@@ -87,9 +89,10 @@ final class Understudy
         $expectation = new Expectation($signal->method, $signal->args);
         $expectation->setCardinality(Cardinality::exactly(1));
         $expectation->declareClaim();
+        $state = self::stateOf($signal->double);
         $expectation->setDeclarationOrder(Runtime::current()->nextDeclaration());
 
-        self::stateOf($signal->double)->addExpectation($expectation);
+        $state->addExpectation($expectation);
 
         return new ExpectBuilder($expectation);
     }
@@ -134,12 +137,16 @@ final class Understudy
      *
      * @return non-empty-string|null
      */
-    private static function checkOrdering(): ?string
+    private static function checkOrdering(?DoubleState $only = null): ?string
     {
         /** @var list<array{DoubleState, Expectation}> $ordered */
         $ordered = [];
 
         foreach (Runtime::current()->allStates() as $state) {
+            if ($only !== null && $state !== $only) {
+                continue;
+            }
+
             foreach ($state->declaredExpectations() as $expectation) {
                 if ($expectation->isOrdered()) {
                     $ordered[] = [$state, $expectation];
@@ -377,6 +384,12 @@ final class Understudy
             }
         }
 
+        $outOfOrder = self::checkOrdering($state);
+
+        if ($outOfOrder !== null) {
+            throw VerificationFailed::withReport($outOfOrder);
+        }
+
         self::nothingElse($double);
     }
 
@@ -393,7 +406,7 @@ final class Understudy
 
         foreach ($calls as $call) {
             $signal = self::record($call);
-            $probes[] = new Expectation($signal->method, $signal->args);
+            $probes[] = [$signal->double, new Expectation($signal->method, $signal->args)];
         }
 
         $mismatch = self::firstSequenceMismatch($probes, $log);
@@ -435,8 +448,8 @@ final class Understudy
     }
 
     /**
-     * @param list<Expectation> $probes
-     * @param list<Invocation>  $log
+     * @param list<array{object, Expectation}> $probes
+     * @param list<Invocation>                 $log
      *
      * @return non-empty-string|null
      */
@@ -451,10 +464,10 @@ final class Understudy
             );
         }
 
-        foreach ($probes as $position => $probe) {
+        foreach ($probes as $position => [$double, $probe]) {
             $invocation = $log[$position];
 
-            if (!$probe->matches($invocation->method, $invocation->args)) {
+            if (!$invocation->belongsTo($double) || !$probe->matches($invocation->method, $invocation->args)) {
                 return sprintf(
                     "Call #%d was expected to be `%s`, but it was `%s`.\n\nThe calls made were:\n%s",
                     $position + 1,
@@ -569,6 +582,10 @@ final class Understudy
 
         if ($state === null) {
             throw InvalidCallSpecification::noCallRecorded();
+        }
+
+        if (!Runtime::isOwnedByCurrentContext($double)) {
+            throw ContextOwnershipViolation::forDouble();
         }
 
         return $state;

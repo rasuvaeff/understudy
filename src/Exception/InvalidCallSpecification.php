@@ -46,4 +46,16 @@ final class InvalidCallSpecification extends \LogicException implements Understu
             previous: $previous,
         );
     }
+
+    /**
+     * @param non-empty-string $method
+     */
+    public static function staticMethodCalled(string $method): self
+    {
+        return new self(sprintf(
+            "Static method `%s()` cannot be called on an understudy because static calls have no instance state.\n"
+            . 'Inject an instance dependency and double that contract instead.',
+            $method,
+        ));
+    }
 }

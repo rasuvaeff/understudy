@@ -71,7 +71,11 @@ final class Runtime
         $fiber = \Fiber::getCurrent();
 
         if ($fiber === null) {
-            array_pop(self::$main);
+            $context = array_pop(self::$main);
+
+            if ($context instanceof RuntimeContext) {
+                self::forget($context);
+            }
 
             return;
         }
@@ -79,7 +83,12 @@ final class Runtime
         $fibers = self::fibers();
         /** @var list<RuntimeContext> $stack */
         $stack = $fibers->offsetExists($fiber) ? $fibers->offsetGet($fiber) : [];
-        array_pop($stack);
+        $context = array_pop($stack);
+
+        if ($context instanceof RuntimeContext) {
+            self::forget($context);
+        }
+
         $fibers->offsetSet($fiber, $stack);
     }
 
@@ -171,6 +180,13 @@ final class Runtime
         return self::ownerOf($double)?->stateOf($double);
     }
 
+    public static function isOwnedByCurrentContext(object $double): bool
+    {
+        $owner = self::ownerOf($double);
+
+        return $owner !== null && $owner === self::current();
+    }
+
     /**
      * Entry point of every generated method.
      *
@@ -198,7 +214,12 @@ final class Runtime
             throw ForgottenDouble::afterReset($method);
         }
 
-        $invocation = new Invocation($method, $args, $context->nextSequence());
+        $invocation = new Invocation(
+            method: $method,
+            args: $args,
+            sequence: $context->nextSequence(),
+            double: $double,
+        );
         $state->record($invocation);
 
         try {
@@ -291,12 +312,60 @@ final class Runtime
     }
 
     /**
-     * Drops every context. Adapters call this unconditionally after each test.
+     * Drops the current execution context. Adapters call this unconditionally
+     * after each test; sibling Fibers must remain untouched.
      */
     public static function reset(): void
     {
-        self::$main = [];
-        self::$fibers = null;
-        self::$owners = null;
+        $fiber = \Fiber::getCurrent();
+
+        if ($fiber === null) {
+            if (self::$main === []) {
+                return;
+            }
+
+            $position = count(self::$main) - 1;
+            self::forget(self::$main[$position]);
+            self::$main[$position] = new RuntimeContext();
+
+            return;
+        }
+
+        $fibers = self::fibers();
+
+        if (!$fibers->offsetExists($fiber)) {
+            return;
+        }
+
+        /** @var list<RuntimeContext> $stack */
+        $stack = $fibers->offsetGet($fiber);
+
+        if ($stack === []) {
+            return;
+        }
+
+        $position = count($stack) - 1;
+        self::forget($stack[$position]);
+        $stack[$position] = new RuntimeContext();
+        $fibers->offsetSet($fiber, $stack);
+    }
+
+    private static function forget(RuntimeContext $context): void
+    {
+        if (self::$owners === null) {
+            return;
+        }
+
+        $forgotten = [];
+
+        foreach (self::$owners as $double => $owner) {
+            if ($owner === $context) {
+                $forgotten[] = $double;
+            }
+        }
+
+        foreach ($forgotten as $double) {
+            unset(self::$owners[$double]);
+        }
     }
 }

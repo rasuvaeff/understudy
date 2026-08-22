@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Codegen;
 
+use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 
@@ -113,13 +114,19 @@ final class DoubleFactory
         // an expression raises "Only variable references should be returned by
         // reference".
         $statement = match (true) {
+            $signature->static => sprintf(
+                'throw \\%s::staticMethodCalled(%s);',
+                InvalidCallSpecification::class,
+                var_export($signature->name, return: true),
+            ),
             $signature->returnsVoid, $signature->returnsNever => $dispatch . ';',
             $signature->returnsReference => '$result = ' . $dispatch . ";\n\n        return \$result;",
             default => 'return ' . $dispatch . ';',
         };
 
         return sprintf(
-            "    public function %s%s(%s): %s\n    {\n        %s\n    }\n\n",
+            "    public%s function %s%s(%s): %s\n    {\n        %s\n    }\n\n",
+            $signature->static ? ' static' : '',
             $signature->returnsReference ? '&' : '',
             $signature->name,
             $signature->parameters,
