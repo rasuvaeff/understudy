@@ -54,11 +54,11 @@ update-deps:
 # without safe.directory the container's git refuses the bind-mounted repo
 # ("dubious ownership") and the whole target dies with exit 128
 release-check:
-	$(DOCKER) sh -c 'git config --global --add safe.directory "*"; composer release-check'
+	$(DOCKER) sh -c 'git config --global --add safe.directory /app; composer release-check'
 	$(MAKE) mutation
 
 bc-check:
-	$(DOCKER) sh -c 'git config --global --add safe.directory "*"; \
+	$(DOCKER) sh -c 'git config --global --add safe.directory /app; \
 	  LATEST=$$(git describe --tags --abbrev=0 2>/dev/null || true); \
 	  if [ -n "$$LATEST" ]; then \
 	    composer bc-check -- --from=$$LATEST; \

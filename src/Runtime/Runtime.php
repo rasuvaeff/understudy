@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Runtime;
 
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
+use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Invocation;
@@ -112,18 +113,21 @@ final class Runtime
      */
     public static function dispatch(object $double, string $method, array $args): mixed
     {
-        $context = self::ownerOf($double) ?? self::current();
-
-        if ($context->isRecording()) {
+        // Recording is a property of the caller, not of the double: when()
+        // opens the phase in whichever context it runs in, and a double
+        // created elsewhere must still signal instead of being treated as a
+        // real call.
+        if (self::current()->isRecording()) {
             throw new InvocationSignal($double, $method, $args);
         }
 
+        $context = self::ownerOf($double) ?? self::current();
         $state = $context->stateOf($double);
 
         if ($state === null) {
-            // Only reachable if a double outlived a reset(); treat it as loose
-            // with no configuration rather than corrupting another context.
-            return null;
+            // Returning null here would violate the declared return type of
+            // any non-nullable method, so say what actually happened.
+            throw ForgottenDouble::afterReset($method);
         }
 
         $invocation = new Invocation($method, $args, $context->nextSequence());
@@ -148,13 +152,25 @@ final class Runtime
      */
     private static function answer(DoubleState $state, string $method, Invocation $invocation): mixed
     {
-        foreach ($state->expectations() as $expectation) {
-            if ($expectation->matches($method, $invocation->args)) {
-                return $expectation->answer($invocation);
-            }
-        }
-
         $signature = $state->blueprint->method($method);
+
+        foreach ($state->expectations() as $expectation) {
+            if (!$expectation->matches($method, $invocation->args)) {
+                continue;
+            }
+
+            /** @var mixed $answer */
+            $answer = $expectation->answer($invocation);
+
+            if ($signature !== null && $signature->returnsNever) {
+                // The expectation returned instead of throwing; returning from
+                // a `: never` method is a TypeError by language rule, so name
+                // the real mistake rather than leaking that.
+                throw NeverMethodCalled::configuredToReturn($state->label(), $method);
+            }
+
+            return $answer;
+        }
 
         if ($signature !== null && $signature->returnsNever) {
             throw NeverMethodCalled::withoutExpectation($state->label(), $method);

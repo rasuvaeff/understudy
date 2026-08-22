@@ -12,12 +12,16 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\ArityOne;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ArityTwo;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\FeederByRef;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\FeederByValue;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\FixedArityTwo;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\NullableParam;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderInt;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderString;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderStringy;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\Showcase;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByRef;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByValue;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\VariadicShapes;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\VariadicShapesToo;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterInt;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterIntToo;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterString;
@@ -170,6 +174,47 @@ final class TargetUnifierTest
             $signature->parameters,
             'int|' . self::MATCHER . ' $a, int|' . self::MATCHER . '|null $b = null',
         );
+    }
+
+    public function aVariadicAbsorbsALongerTargetsFixedParameters(): void
+    {
+        // `tail(int, string...)` and `tail(int, string)` are compatible: a
+        // variadic accepts any number of arguments. Rendering the second
+        // target's fixed parameter after `...$rest` would be a parse error.
+        $signature = self::unify(NullableParam::class, FixedArityTwo::class)['tail'];
+
+        Assert::same(substr_count($signature->parameters, '...'), 1);
+        Assert::true(str_ends_with($signature->parameters, '...$rest'));
+        Assert::same($signature->arguments, '[$first, ...$rest]');
+    }
+
+    public function aVariadicTailKeepsItsByReferenceMarker(): void
+    {
+        $signature = self::unify(VariadicShapes::class)['byRefTail'];
+
+        Assert::true(str_contains($signature->parameters, '&...$slots'));
+        Assert::same($signature->arguments, '[...$slots]');
+    }
+
+    public function anUntypedVariadicTailStaysUntyped(): void
+    {
+        // Nothing to union onto: every value is already allowed.
+        Assert::same(self::unify(VariadicShapes::class)['untypedTail']->parameters, '...$anything');
+    }
+
+    public function aVariadicTailUnionsEveryTargetsElementType(): void
+    {
+        $signature = self::unify(VariadicShapes::class, VariadicShapesToo::class)['intTail'];
+
+        Assert::string($signature->parameters)->contains('int|string|');
+        Assert::true(str_ends_with($signature->parameters, '...$numbers'));
+    }
+
+    public function aVariadicTailCarriesTheMatcherBranchOnce(): void
+    {
+        $signature = self::unify(VariadicShapes::class)['intTail'];
+
+        Assert::same(substr_count($signature->parameters, self::MATCHER), 1);
     }
 
     public function divergentReturnTypesAreRejected(): void

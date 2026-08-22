@@ -42,7 +42,12 @@ final class TypeRenderer
         }
 
         if ($type instanceof \ReflectionNamedType && $type->allowsNull() && $type->getName() !== 'null') {
-            return $type->getName() === 'mixed' ? 'mixed' : $type->getName() . '|null';
+            $name = $type->getName();
+
+            // `?Book` has to expand to `\Book|null`, keeping the leading
+            // backslash: the generated class lives in its own namespace, and a
+            // relative name would resolve to a class that does not exist.
+            return $name === 'mixed' ? 'mixed' : self::qualify($type) . '|null';
         }
 
         return self::render($type);
@@ -90,9 +95,23 @@ final class TypeRenderer
         \assert($type instanceof \ReflectionNamedType);
 
         $name = $type->getName();
-        $prefix = $type->isBuiltin() || in_array($name, ['self', 'static', 'parent'], strict: true) ? '' : '\\';
         $nullable = $type->allowsNull() && $name !== 'null' && $name !== 'mixed' ? '?' : '';
 
-        return $nullable . $prefix . $name;
+        return $nullable . self::qualify($type);
+    }
+
+    /**
+     * A class name written into generated source must be absolute; a builtin
+     * or a relative keyword must not be.
+     *
+     * @return non-empty-string
+     */
+    private static function qualify(\ReflectionNamedType $type): string
+    {
+        $name = $type->getName();
+
+        return $type->isBuiltin() || in_array($name, ['self', 'static', 'parent'], strict: true)
+            ? $name
+            : '\\' . $name;
     }
 }

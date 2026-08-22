@@ -22,6 +22,8 @@ interface TypeShowcase
 
     public function objectParam(TypeShowcase $a): void;
 
+    public function nullableObject(?TypeShowcase $a): void;
+
     public function returnsNullableObject(): ?TypeShowcase;
 
     public function returnsNever(): never;

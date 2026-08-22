@@ -66,6 +66,42 @@ final class ArgumentFormatterTest
         Assert::same(ArgumentFormatter::format(new Book('Dune')), Book::class);
     }
 
+    #[DataProvider('escapeProvider')]
+    public function escapesWhatWouldBreakTheLine(string $value, string $expected): void
+    {
+        // A failure message renders each argument on one line; a raw newline
+        // or quote would hide what actually differed.
+        Assert::same(ArgumentFormatter::format($value), $expected);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function escapeProvider(): iterable
+    {
+        yield 'single quote' => ["it's", "'it\\'s'"];
+        yield 'backslash' => ['a\\b', "'a\\\\b'"];
+        yield 'newline' => ["a\nb", "'a\\nb'"];
+        yield 'carriage return' => ["a\rb", "'a\\rb'"];
+        yield 'tab' => ["a\tb", "'a\\tb'"];
+    }
+
+    public function boundsDeeplyNestedArrays(): void
+    {
+        // Deep structures belong in a debugger, not in a failure message.
+        $deep = [1, [2, [3, [4, [5, [6]]]]]];
+
+        $rendered = ArgumentFormatter::format($deep);
+
+        Assert::string($rendered)->contains('…');
+        Assert::false(str_contains($rendered, '6'));
+    }
+
+    public function keepsShallowNestingReadable(): void
+    {
+        Assert::same(ArgumentFormatter::format([1, [2, 3]]), '[1, [2, 3]]');
+    }
+
     public function rendersAnEnumCaseByName(): void
     {
         Assert::same(ArgumentFormatter::format(Suit::Hearts), Suit::class . '::Hearts');

@@ -21,6 +21,9 @@ use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
  */
 final class TargetUnifier
 {
+    /** Used when a target declares a variadic without a usable name. */
+    private const string DEFAULT_TAIL_NAME = 'rest';
+
     private function __construct() {}
 
     /**
@@ -68,6 +71,13 @@ final class TargetUnifier
             $declarations,
         ));
 
+        // A variadic absorbs every parameter after it, in the contract and in
+        // the override alike. Rendering the later fixed parameters of another
+        // target would put them after `...$rest` — which is a parse error, not
+        // a wider signature.
+        $variadicAt = self::firstVariadicPosition($declarations);
+        $arity = $variadicAt ?? $arity;
+
         $parameters = [];
         $arguments = [];
 
@@ -79,7 +89,13 @@ final class TargetUnifier
             // parameters the caller left at their default: the call log must
             // show the arguments the method actually received, so that
             // `tag('alpha')` and `tag('alpha', 1)` verify as the same call.
-            $arguments[] = ($parameter['variadic'] ? '...$' : '$') . $parameter['name'];
+            $arguments[] = '$' . $parameter['name'];
+        }
+
+        if ($variadicAt !== null) {
+            $tail = self::unifyVariadicTail($name, $declarations, $variadicAt);
+            $parameters[] = $tail['rendered'];
+            $arguments[] = '...$' . $tail['name'];
         }
 
         $reference = $declarations[0]->returnsReference();
@@ -88,8 +104,8 @@ final class TargetUnifier
             if ($declaration->returnsReference() !== $reference) {
                 throw UnsupportedTarget::signatureConflict(
                     $name,
-                    self::describe($declarations[0]) . ($reference ? ' returns by reference' : ' returns by value'),
-                    self::describe($declaration) . ($reference ? ' returns by value' : ' returns by reference'),
+                    self::describe($declarations[0]) . ' returns by ' . ($reference ? 'reference' : 'value'),
+                    self::describe($declaration) . ' returns by ' . ($reference ? 'value' : 'reference'),
                 );
             }
         }
@@ -139,17 +155,102 @@ final class TargetUnifier
     }
 
     /**
+     * The earliest position at which any target declares a variadic, or null
+     * when none does.
+     *
+     * @param non-empty-list<\ReflectionMethod> $declarations
+     *
+     * @return int<0, max>|null
+     */
+    private static function firstVariadicPosition(array $declarations): ?int
+    {
+        $earliest = null;
+
+        foreach ($declarations as $declaration) {
+            foreach ($declaration->getParameters() as $position => $parameter) {
+                if ($parameter->isVariadic()) {
+                    $earliest = $earliest === null ? $position : min($earliest, $position);
+
+                    break;
+                }
+            }
+        }
+
+        return $earliest;
+    }
+
+    /**
+     * Everything from the first variadic position onwards collapses into one
+     * variadic tail whose type is the union of every parameter any target
+     * declares there or later.
+     *
+     * @param non-empty-string                  $name
+     * @param non-empty-list<\ReflectionMethod> $declarations
+     *
+     * @return array{rendered: non-empty-string, name: non-empty-string}
+     */
+    private static function unifyVariadicTail(string $name, array $declarations, int $from): array
+    {
+        /** @var array<string, true> $types */
+        $types = [];
+        $byReference = null;
+        $tailName = self::DEFAULT_TAIL_NAME;
+        $untyped = false;
+
+        foreach ($declarations as $declaration) {
+            foreach (array_slice($declaration->getParameters(), $from) as $parameter) {
+                $rendered = TypeRenderer::parameterType($parameter->getType());
+
+                if ($rendered === '') {
+                    $untyped = true;
+                } else {
+                    foreach (self::splitUnion($rendered) as $part) {
+                        $types[$part] = true;
+                    }
+                }
+
+                if ($byReference !== null && $byReference !== $parameter->isPassedByReference()) {
+                    throw UnsupportedTarget::signatureConflict(
+                        $name,
+                        self::describe($declaration) . ' takes its variadic tail by ' . ($byReference ? 'reference' : 'value'),
+                        self::describe($declaration) . ' takes it by ' . ($parameter->isPassedByReference() ? 'reference' : 'value'),
+                    );
+                }
+
+                $byReference = $parameter->isPassedByReference();
+
+                if ($parameter->isVariadic() && $tailName === self::DEFAULT_TAIL_NAME) {
+                    // First target wins: `for($primary, ...$interfaces)` treats
+                    // the first contract as the primary one, and the name is
+                    // what a named argument would have to use.
+                    $tailName = $parameter->getName();
+                }
+            }
+        }
+
+        if (!$untyped && $types !== []) {
+            $types[TypeRenderer::MATCHER] = true;
+        }
+
+        $type = $untyped ? '' : implode('|', array_keys($types));
+        $rendered = trim($type . ' ' . ($byReference === true ? '&' : '') . '...$' . $tailName);
+        \assert($rendered !== '');
+
+        return ['rendered' => $rendered, 'name' => $tailName];
+    }
+
+    /**
      * @param non-empty-string              $name
      * @param non-empty-list<\ReflectionMethod> $declarations
      *
-     * @return array{rendered: non-empty-string, name: non-empty-string, variadic: bool}
+     * @return array{rendered: non-empty-string, name: non-empty-string}
      */
     private static function unifyParameter(string $name, array $declarations, int $position): array
     {
         /** @var array<string, true> $types */
         $types = [];
         $byReference = null;
-        $variadic = false;
+        $firstToDeclare = null;
         $declaredEverywhere = true;
         $requiredEverywhere = true;
         $parameterName = 'p' . $position;
@@ -179,19 +280,23 @@ final class TargetUnifier
             $acceptsMatcher = $acceptsMatcher && TypeRenderer::acceptsMatcher($parameter->getType());
 
             if ($byReference !== null && $byReference !== $parameter->isPassedByReference()) {
+                // `$declarations[0]` may not declare this position at all;
+                // name the target that actually did.
+                \assert($firstToDeclare instanceof \ReflectionMethod);
+
                 throw UnsupportedTarget::signatureConflict(
                     $name,
-                    self::describe($declarations[0]) . ' takes parameter #' . ($position + 1) . ' by ' . ($byReference ? 'reference' : 'value'),
+                    self::describe($firstToDeclare) . ' takes parameter #' . ($position + 1) . ' by ' . ($byReference ? 'reference' : 'value'),
                     self::describe($declaration) . ' takes it by ' . ($parameter->isPassedByReference() ? 'reference' : 'value'),
                 );
             }
 
+            $firstToDeclare ??= $declaration;
             $byReference = $parameter->isPassedByReference();
-            $variadic = $variadic || $parameter->isVariadic();
             $requiredEverywhere = $requiredEverywhere && !$parameter->isOptional();
             $parameterName = $parameter->getName();
 
-            if (!$parameter->isVariadic() && $parameter->isDefaultValueAvailable()) {
+            if ($parameter->isDefaultValueAvailable()) {
                 $declaredDefaults[self::renderDefault($parameter->getDefaultValue())] = true;
             }
         }
@@ -210,14 +315,6 @@ final class TargetUnifier
             }
 
             $type = implode('|', array_keys($types));
-        }
-
-        if ($variadic) {
-            // A variadic tail is optional by nature and cannot carry a default.
-            $rendered = trim($type . ' ' . ($byReference === true ? '&' : '') . '...$' . $parameterName);
-            \assert($rendered !== '');
-
-            return ['rendered' => $rendered, 'name' => $parameterName, 'variadic' => true];
         }
 
         $optional = !$declaredEverywhere || !$requiredEverywhere;
@@ -242,7 +339,7 @@ final class TargetUnifier
         ));
         \assert($rendered !== '');
 
-        return ['rendered' => $rendered, 'name' => $parameterName, 'variadic' => false];
+        return ['rendered' => $rendered, 'name' => $parameterName];
     }
 
     /**

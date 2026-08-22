@@ -67,6 +67,9 @@ built next.
 ### Stubbing
 
 ```php
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Invocation;
+
 use function Rasuvaeff\Understudy\when;
 
 when(fn () => $repository->find(123))->returns($book);
@@ -101,6 +104,8 @@ advance.
 ### Reading the call log
 
 ```php
+use Rasuvaeff\Understudy\Arg;
+
 $calls = Understudy::calls(fn () => $repository->find(Arg::any()));
 
 $calls[0]->args;          // [123]
@@ -125,7 +130,7 @@ exists it says so, and names the way out.
 
 ### Failure messages
 
-```
+```text
 Understudy `BookRepository` expected `tag('alpha', 2)` to be called exactly 1 time,
 but it was never called.
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
@@ -15,6 +16,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
 use Rasuvaeff\Understudy\Tests\Fixture\Named;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByRef;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
@@ -383,6 +385,68 @@ final class UnderstudyTest
         $fresh = Understudy::for(BookRepository::class);
 
         Assert::same($fresh->count(), 0);
+    }
+
+    public function returnsPreservesAConfiguredNull(): void
+    {
+        // `??` cannot tell a configured null from a missing entry, and would
+        // skip straight to the last value.
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('second');
+
+        when(fn() => $repository->find(1))->returns(null, $book);
+
+        Assert::null($repository->find(1));
+        Assert::same($repository->find(1), $book);
+    }
+
+    public function aByReferenceMethodDispatchesWithoutANotice(): void
+    {
+        // PHP can only bind a reference to a variable, so the generated body
+        // must assign the dispatch result before returning it.
+        $registry = Understudy::for(SlotsByRef::class);
+
+        when(fn() => $registry->slots())->returns(['a' => 1]);
+
+        Assert::same($registry->slots(), ['a' => 1]);
+    }
+
+    public function aNeverMethodConfiguredToReturnIsRejected(): void
+    {
+        // Returning from a `: never` method is a TypeError by language rule;
+        // the message has to name the real mistake instead.
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->abort('stop'))->returns('nope');
+
+        Expect::exception(NeverMethodCalled::class)->withMessageContaining('cannot');
+
+        $repository->abort('stop');
+    }
+
+    public function aDoubleUsedAfterResetSaysSo(): void
+    {
+        // Answering with null would violate the declared return type and
+        // surface far from the actual mistake.
+        $repository = Understudy::for(BookRepository::class);
+        Understudy::reset();
+
+        Expect::exception(ForgottenDouble::class)->withMessageContaining('count()');
+
+        $repository->count();
+    }
+
+    public function aMatcherFromAnotherContextStillRecords(): void
+    {
+        // Recording belongs to the caller: a double created before the
+        // specification closure runs must still signal, not log a real call.
+        $repository = Understudy::for(BookRepository::class);
+        $repository->count();
+
+        when(fn() => $repository->count())->returns(9);
+
+        Assert::same($repository->count(), 9);
+        Assert::same(count(Understudy::calls(fn() => $repository->count())), 2);
     }
 
     public function doublesOfTheSameContractKeepSeparateState(): void

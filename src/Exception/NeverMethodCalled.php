@@ -27,4 +27,19 @@ final class NeverMethodCalled extends \RuntimeException implements UnderstudyErr
             $method,
         ));
     }
+
+    /**
+     * @param non-empty-string $label
+     * @param non-empty-string $method
+     */
+    public static function configuredToReturn(string $label, string $method): self
+    {
+        return new self(sprintf(
+            "Understudy `%s` has `%s()` configured to return, but the method is declared `: never` and cannot.\n"
+            . 'Configure it to throw instead: when(fn () => $double->%s(...))->throws(new SomeException())',
+            $label,
+            $method,
+            $method,
+        ));
+    }
 }

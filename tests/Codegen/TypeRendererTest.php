@@ -60,6 +60,17 @@ final class TypeRendererTest
         Assert::true(str_starts_with(TypeRenderer::parameterType($this->typeOf('objectParam')), '\\'));
     }
 
+    public function aNullableClassKeepsItsLeadingBackslash(): void
+    {
+        // Generated code lives in its own namespace, so `?Book` must expand to
+        // `\Book|null`: a relative name would resolve to a class that does not
+        // exist, and only at call time.
+        Assert::same(
+            TypeRenderer::parameterType($this->typeOf('nullableObject')),
+            '\\' . TypeShowcase::class . '|null',
+        );
+    }
+
     #[DataProvider('matcherProvider')]
     public function reportsWhichTypesAlreadyAcceptAMatcher(string $method, bool $expected): void
     {

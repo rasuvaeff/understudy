@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Exception;
 
 /**
- * The closure handed to when()/expect()/verify() did not contain exactly one
- * direct call on an understudy.
+ * The closure handed to when()/verify() did not contain exactly one direct
+ * call on an understudy.
  *
  * @api
  */

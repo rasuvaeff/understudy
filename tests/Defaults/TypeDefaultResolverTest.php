@@ -74,6 +74,32 @@ final class TypeDefaultResolverTest
         Assert::true(is_callable($value));
     }
 
+    public function aUnionFallsBackToTheFirstBranchWithASafeDefault(): void
+    {
+        // `Book|string` must answer `''` rather than failing on `Book`.
+        Assert::same(
+            TypeDefaultResolver::forSignature('Contract', $this->signature('\\DateTimeImmutable|string'), 'method'),
+            '',
+        );
+    }
+
+    public function aBranchIsMatchedExactlyNotAsASubstring(): void
+    {
+        // A class whose name merely contains "null" is not a null branch, and
+        // a union of two such classes has no safe default at all.
+        Expect::exception(NoDefaultValue::class);
+
+        TypeDefaultResolver::forSignature('Contract', $this->signature('\\NullableThing|\\AnnullableThing'), 'method');
+    }
+
+    public function anIntersectionBranchSurvivesUnionSplitting(): void
+    {
+        // `(A&B)|null` has two branches, not three.
+        Assert::null(
+            TypeDefaultResolver::forSignature('Contract', $this->signature('(\\A&\\B)|null'), 'method'),
+        );
+    }
+
     public function anUnknownSignatureAnswersWithNull(): void
     {
         Assert::null(TypeDefaultResolver::forSignature('Contract', null, 'method'));
@@ -86,7 +112,7 @@ final class TypeDefaultResolverTest
         // there is nothing safe to return.
         Expect::exception(NoDefaultValue::class)
             ->withMessageContaining('no safe default')
-            ->withMessageContaining('Understudy::defaults');
+            ->withMessageContaining('when(fn () => $double->method(...))->returns(...)');
 
         TypeDefaultResolver::forSignature('Contract', $this->signature('\\DateTimeImmutable'), 'method');
     }

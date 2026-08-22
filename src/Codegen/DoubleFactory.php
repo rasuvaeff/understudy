@@ -107,9 +107,16 @@ final class DoubleFactory
 
         // A `void` method must not return a value, and a `never` method must
         // not return at all — the dispatcher throws for it before returning.
-        $statement = $signature->returnsVoid || $signature->returnsNever
-            ? $dispatch . ';'
-            : 'return ' . $dispatch . ';';
+        //
+        // A by-reference method must not return a call's result directly
+        // either: PHP can only bind a reference to a variable, and returning
+        // an expression raises "Only variable references should be returned by
+        // reference".
+        $statement = match (true) {
+            $signature->returnsVoid, $signature->returnsNever => $dispatch . ';',
+            $signature->returnsReference => '$result = ' . $dispatch . ";\n\n        return \$result;",
+            default => 'return ' . $dispatch . ';',
+        };
 
         return sprintf(
             "    public function %s%s(%s): %s\n    {\n        %s\n    }\n\n",

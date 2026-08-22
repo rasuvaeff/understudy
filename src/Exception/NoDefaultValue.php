@@ -21,13 +21,11 @@ final class NoDefaultValue extends \RuntimeException implements UnderstudyError
     {
         return new self(sprintf(
             "Understudy `%s` cannot answer `%s()`: there is no safe default for the declared return type `%s`.\n"
-            . "- Configure the call: when(fn () => \$double->%s(...))->returns(...)\n"
-            . '- Or register a default for the type: Understudy::defaults(%s::class, fn () => ...)',
+            . 'Configure the call: when(fn () => $double->%s(...))->returns(...)',
             $label,
             $method,
             $type,
             $method,
-            $type,
         ));
     }
 }

@@ -25,10 +25,14 @@ final class ReturnValues implements Action
     #[\Override]
     public function perform(Invocation $invocation): mixed
     {
+        // array_key_exists, not `??`: returns(null, 'x') configures null as
+        // the first answer, and a coalesce would skip straight to the last.
         // Indexed rather than end(), which moves the array pointer and so
         // cannot be applied to a readonly property.
         /** @var mixed $value */
-        $value = $this->values[$this->position] ?? $this->values[count($this->values) - 1];
+        $value = array_key_exists($this->position, $this->values)
+            ? $this->values[$this->position]
+            : $this->values[count($this->values) - 1];
 
         if ($this->position < count($this->values) - 1) {
             $this->position++;

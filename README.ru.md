@@ -68,6 +68,9 @@ $double = Understudy::for(BookRepository::class, Countable::class);
 ### Стабы
 
 ```php
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Invocation;
+
 use function Rasuvaeff\Understudy\when;
 
 when(fn () => $repository->find(123))->returns($book);
@@ -101,6 +104,8 @@ Understudy::unused($repository);                           // вообще ни 
 ### Чтение лога вызовов
 
 ```php
+use Rasuvaeff\Understudy\Arg;
+
 $calls = Understudy::calls(fn () => $repository->find(Arg::any()));
 
 $calls[0]->args;          // [123]
@@ -125,7 +130,7 @@ Loose-дубль никогда не выдумывает значение, за
 
 ### Сообщения об ошибках
 
-```
+```text
 Understudy `BookRepository` expected `tag('alpha', 2)` to be called exactly 1 time,
 but it was never called.
 

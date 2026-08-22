@@ -43,14 +43,27 @@ final class TypeDefaultResolver
             return null;
         }
 
-        // A union is satisfied by any one branch, and `null` is the safest
-        // branch there is.
+        // A union is satisfied by any one branch. Branches are compared
+        // exactly, never as substrings: a class called `Nullable` is not a
+        // `null` branch. `null` wins when present; otherwise the first branch
+        // that has a safe default does, so `Book|string` answers with `''`
+        // rather than failing on `Book`.
         if (str_contains($type, '|')) {
-            return str_contains($type, 'null') ? null : self::forType(
-                $label,
-                self::firstBranch($type),
-                $method,
-            );
+            $branches = self::branchesOf($type);
+
+            if (in_array('null', $branches, strict: true)) {
+                return null;
+            }
+
+            foreach ($branches as $branch) {
+                try {
+                    return self::forType($label, $branch, $method);
+                } catch (NoDefaultValue) {
+                    continue;
+                }
+            }
+
+            throw NoDefaultValue::forReturnType($label, $method, $type);
         }
 
         return match (ltrim($type, '\\')) {
@@ -82,13 +95,39 @@ final class TypeDefaultResolver
     }
 
     /**
-     * @return non-empty-string
+     * Splits a union while leaving a DNF intersection intact, so `(A&B)|null`
+     * yields `(A&B)` and `null`.
+     *
+     * @return list<non-empty-string>
      */
-    private static function firstBranch(string $type): string
+    private static function branchesOf(string $type): array
     {
-        $branch = explode('|', $type)[0];
-        \assert($branch !== '');
+        $branches = [];
+        $depth = 0;
+        $buffer = '';
 
-        return $branch;
+        foreach (str_split($type) as $character) {
+            $depth += match ($character) {
+                '(' => 1,
+                ')' => -1,
+                default => 0,
+            };
+
+            if ($character === '|' && $depth === 0) {
+                $branches[] = $buffer;
+                $buffer = '';
+
+                continue;
+            }
+
+            $buffer .= $character;
+        }
+
+        $branches[] = $buffer;
+
+        return array_values(array_filter(
+            $branches,
+            static fn(string $branch): bool => $branch !== '',
+        ));
     }
 }

@@ -1,7 +1,7 @@
 # rasuvaeff/understudy
 
-Test double library for PHP 8.3+ with a call-closure API. Pre-release: the API
-is not stable until v0.1.0.
+Test double library for PHP 8.3 - 8.5 with a call-closure API. Pre-release:
+the API is not stable until v0.1.0.
 
 ## Install
 
@@ -9,7 +9,8 @@ is not stable until v0.1.0.
 composer require --dev rasuvaeff/understudy
 ```
 
-Namespace: `Rasuvaeff\Understudy`. Requires `ext-mbstring`. No runtime deps.
+Namespace: `Rasuvaeff\Understudy`. Requires PHP 8.3 - 8.5 and `ext-mbstring`.
+No runtime deps.
 
 ## Rules
 
