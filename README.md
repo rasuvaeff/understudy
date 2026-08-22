@@ -85,6 +85,33 @@ when(fn () => $repository->mode())->returns('fast', 'slow');
 A later stub for the same call wins; earlier ones stay reachable as fallbacks,
 so a broad `Arg::any()` stub can sit underneath a specific one.
 
+| Matcher | Matches |
+|---|---|
+| `Arg::any()` | anything, including `null` |
+| `Arg::int(min:, max:)` | an `int` in range — a numeric string does not match |
+| `Arg::float(min:, max:)` | a `float` in range — an `int` does not match |
+| `Arg::string(matches:)` | a string, optionally against a PCRE pattern |
+| `Arg::bool()` | a boolean |
+| `Arg::same($v)` | strict identity; for objects, the same instance |
+| `Arg::not($v)` | negates a literal or another matcher |
+| `Arg::instanceOf($class)` | an instance of the class or interface |
+| `Arg::satisfies($fn)` | whatever the predicate accepts |
+| `Arg::containing($entries)` | an array holding these entries and possibly more |
+| `Arg::count(minimum:, maximum:)` | an array or `Countable` of that size |
+| `Arg::which($method, $value)` | an object whose getter answers this value |
+| `Arg::none()` | an empty variadic tail — last argument only |
+| `Arg::remaining()` | the whole variadic tail, any length — last argument only |
+
+The type matchers are deliberately strict: `Arg::int()` rejects `'5'`, and
+`Arg::float()` rejects `1`. A matcher pins the declared type as much as the
+value, which is the point in a codebase that runs with `strict_types`.
+
+`Arg::which()` calls only a public, non-static method that needs no arguments.
+A getter that throws counts as a mismatch, never as an error — matching runs
+while the code under test is executing, and a matcher must not be the thing
+that breaks it.
+
+
 ### Verifying
 
 ```php

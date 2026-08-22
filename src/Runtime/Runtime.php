@@ -6,9 +6,11 @@ namespace Rasuvaeff\Understudy\Runtime;
 
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
+use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
 use Rasuvaeff\Understudy\Outcome;
 
 /**
@@ -121,6 +123,8 @@ final class Runtime
             throw new InvocationSignal($double, $method, $args);
         }
 
+        self::rejectLeakedMatchers($method, $args);
+
         $context = self::ownerOf($double) ?? self::current();
         $state = $context->stateOf($double);
 
@@ -181,6 +185,24 @@ final class Runtime
         }
 
         return TypeDefaultResolver::forSignature($state->label(), $signature, $method);
+    }
+
+    /**
+     * A matcher is part of the specification protocol, never a value. If one
+     * arrives during a real call, the specification closure leaked it — say so
+     * instead of letting the code under test receive a matcher object.
+     *
+     * @param non-empty-string $method
+     * @param list<mixed>      $args
+     */
+    private static function rejectLeakedMatchers(string $method, array $args): void
+    {
+        /** @var mixed $argument */
+        foreach ($args as $position => $argument) {
+            if ($argument instanceof ArgumentMatcher) {
+                throw MatcherLeaked::intoRealCall($method, $position, $argument->describe());
+            }
+        }
     }
 
     /**

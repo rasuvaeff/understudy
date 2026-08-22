@@ -7,6 +7,7 @@ namespace Rasuvaeff\Understudy\Tests;
 use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
+use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
@@ -17,6 +18,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
 use Rasuvaeff\Understudy\Tests\Fixture\Named;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByRef;
+use Rasuvaeff\Understudy\Tests\Fixture\VariadicSink;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
@@ -447,6 +449,117 @@ final class UnderstudyTest
 
         Assert::same($repository->count(), 9);
         Assert::same(count(Understudy::calls(fn() => $repository->count())), 2);
+    }
+
+    public function matchersSelectTheStubByArgumentShape(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        // Broad first, specific second: the most recently registered stub is
+        // tried first, so a catch-all registered last would shadow everything.
+        when(fn() => $repository->tag(Arg::any(), Arg::any()))->returns('anything');
+        when(fn() => $repository->tag(Arg::string(matches: '/^ord-/'), Arg::int(min: 5)))->returns('big order');
+
+        Assert::same($repository->tag('ord-1', 9), 'big order');
+        Assert::same($repository->tag('ord-1', 1), 'anything');
+        Assert::same($repository->tag('inv-1', 9), 'anything');
+    }
+
+    public function remainingMatchesAVariadicTailOfAnyLength(): void
+    {
+        $sink = Understudy::for(VariadicSink::class);
+
+        when(fn() => $sink->write('a', Arg::remaining()))->returns(true);
+
+        Assert::true($sink->write('a'));
+        Assert::true($sink->write('a', 1));
+        Assert::true($sink->write('a', 1, 2, 3));
+        Assert::false($sink->write('b', 1));
+    }
+
+    public function noneRequiresAnEmptyVariadicTail(): void
+    {
+        $sink = Understudy::for(VariadicSink::class);
+
+        when(fn() => $sink->write('a', Arg::none()))->returns(true);
+
+        Assert::true($sink->write('a'));
+        Assert::false($sink->write('a', 1));
+    }
+
+    public function aTailMatcherOutsideTheLastSlotIsRejected(): void
+    {
+        // Left to matching, a misplaced remaining() behaves as a silent
+        // wildcard for that one argument — worse than any error message.
+        $sink = Understudy::for(VariadicSink::class);
+
+        Expect::exception(InvalidCallSpecification::class)
+            ->withMessageContaining('remaining()')
+            ->withMessageContaining('argument #1')
+            ->withMessageContaining('write()');
+
+        Understudy::when(fn() => $sink->write(Arg::remaining(), 1));
+    }
+
+    public function aMisplacedEmptyTailIsRejectedToo(): void
+    {
+        $sink = Understudy::for(VariadicSink::class);
+
+        Expect::exception(InvalidCallSpecification::class)->withMessageContaining('none()');
+
+        Understudy::when(fn() => $sink->write(Arg::none(), 1));
+    }
+
+    public function aTailMatcherInTheLastSlotIsAccepted(): void
+    {
+        $sink = Understudy::for(VariadicSink::class);
+
+        when(fn() => $sink->write('a', Arg::remaining()))->returns(true);
+
+        Assert::true($sink->write('a', 1, 2));
+    }
+
+    public function verifyRejectsAMisplacedTailMatcherAsWell(): void
+    {
+        $sink = Understudy::for(VariadicSink::class);
+
+        Expect::exception(InvalidCallSpecification::class);
+
+        Understudy::verify(fn() => $sink->write(Arg::remaining(), 1));
+    }
+
+    public function aMatcherReachingARealCallIsRejected(): void
+    {
+        // Matchers are protocol, not values: the code under test must never
+        // receive one.
+        $repository = Understudy::for(BookRepository::class);
+
+        Expect::exception(MatcherLeaked::class)
+            ->withMessageContaining('find()')
+            ->withMessageContaining('any()');
+
+        $repository->find(Arg::any());
+    }
+
+    #[ExpectNoAssertions]
+    public function verifyAcceptsMatchersToo(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        $repository->tag('ord-1', 9);
+        $repository->tag('ord-2', 3);
+
+        verify(fn() => $repository->tag(Arg::string(matches: '/^ord-/'), Arg::any()), times: 2);
+        verify(fn() => $repository->tag(Arg::any(), Arg::int(min: 5)), times: 1);
+    }
+
+    public function aFailureMessageDescribesTheMatcher(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining("tag(string(matches: /^ord-/), int(min: 5))");
+
+        Understudy::verify(fn() => $repository->tag(Arg::string(matches: '/^ord-/'), Arg::int(min: 5)));
     }
 
     public function doublesOfTheSameContractKeepSeparateState(): void
