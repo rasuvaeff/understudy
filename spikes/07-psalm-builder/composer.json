@@ -1,0 +1,14 @@
+{
+    "description": "Spike 07: Psalm FunctionReturnTypeProvider can build WhenBuilder<TReturn> from the closure body",
+    "autoload": {
+        "psr-4": {
+            "UnderstudySpike\\Psalm\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "require-dev": {
+        "vimeo/psalm": "^6.16"
+    }
+}
