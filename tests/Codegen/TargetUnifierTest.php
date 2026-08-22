@@ -13,15 +13,25 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\ArityTwo;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\FeederByRef;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\FeederByValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\FixedArityTwo;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionAlpha;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionBeta;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntReturn;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedWriter;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\NarrowReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\NullableParam;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\PrimaryNamed;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderInt;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderString;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderStringy;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\SecondaryNamed;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\Showcase;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByRef;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByValue;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\VariadicShapes;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\VariadicShapesToo;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\WideReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterInt;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterIntToo;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterString;
@@ -128,12 +138,13 @@ final class TargetUnifierTest
         Assert::same($this->showcase('scalar')->name, 'scalar');
     }
 
-    public function staticMethodsAreNotIntercepted(): void
+    public function staticMethodsAreRenderedButMarkedAsStatic(): void
     {
         // A static method has no instance state for a double to stand in for.
         $signatures = TargetUnifier::unify([new \ReflectionClass(WriterInt::class)]);
 
-        Assert::false(array_key_exists('describe', $signatures));
+        Assert::true($signatures['describe']->static);
+        Assert::false($signatures['write']->static);
         Assert::true(array_key_exists('write', $signatures));
     }
 
@@ -161,6 +172,21 @@ final class TargetUnifierTest
         $signature = $this->unify(WriterInt::class, WriterIntToo::class)['write'];
 
         Assert::same($signature->parameters, 'int|' . self::MATCHER . ' $chunk');
+    }
+
+    public function mixedAbsorbsNarrowerParameterTypes(): void
+    {
+        $signature = $this->unify(MixedWriter::class, WriterInt::class)['write'];
+
+        Assert::same($signature->parameters, 'mixed $chunk');
+    }
+
+    public function thePrimaryTargetsParameterNameWins(): void
+    {
+        $signature = $this->unify(PrimaryNamed::class, SecondaryNamed::class)['send'];
+
+        Assert::same($signature->parameters, 'string|' . self::MATCHER . ' $primary');
+        Assert::same($signature->arguments, '[$primary]');
     }
 
     public function aParameterMissingFromOneTargetBecomesOptional(): void
@@ -229,6 +255,52 @@ final class TargetUnifierTest
         );
 
         $this->unify(ReaderInt::class, ReaderString::class);
+    }
+
+    public function aNarrowerCovariantReturnSatisfiesAllTargets(): void
+    {
+        $signature = $this->unify(WideReturn::class, NarrowReturn::class)['value'];
+
+        Assert::same($signature->returnType, '\\stdClass');
+    }
+
+    public function selfAndStaticReturnsUseTheNarrowerStaticType(): void
+    {
+        $signature = $this->unify(SelfReturn::class, StaticReturn::class)['copy'];
+
+        Assert::same($signature->returnType, 'static');
+    }
+
+    public function unrelatedInterfaceReturnsUnifyIntoAnIntersection(): void
+    {
+        $signature = $this->unify(IntersectionAlpha::class, IntersectionBeta::class)['intersected'];
+
+        Assert::same(
+            $signature->returnType,
+            '\\' . IntersectionAlpha::class . '&\\' . IntersectionBeta::class,
+        );
+    }
+
+    public function nullableInterfaceReturnsKeepTheirSharedNullBranch(): void
+    {
+        $signature = $this->unify(
+            IntersectionAlpha::class,
+            IntersectionBeta::class,
+        )['nullableIntersection'];
+
+        Assert::same(
+            $signature->returnType,
+            '(\\' . IntersectionAlpha::class . '&\\' . IntersectionBeta::class . ')|null',
+        );
+    }
+
+    public function aLaterReturnConflictNamesTheActuallyIncompatiblePair(): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining(WideReturn::class . '::value()')
+            ->withMessageContaining(IntReturn::class . '::value()');
+
+        $this->unify(WideReturn::class, NarrowReturn::class, IntReturn::class);
     }
 
     public function byReferenceMismatchIsRejected(): void

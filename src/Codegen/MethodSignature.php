@@ -26,5 +26,6 @@ final readonly class MethodSignature
         public bool $returnsNever,
         public bool $returnsVoid,
         public bool $returnsReference,
+        public bool $static = false,
     ) {}
 }

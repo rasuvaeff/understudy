@@ -30,7 +30,16 @@ final class Invocation
         public readonly int $sequence,
         public readonly ?string $file = null,
         public readonly ?int $line = null,
+        private readonly ?object $double = null,
     ) {}
+
+    /**
+     * @internal
+     */
+    public function belongsTo(object $double): bool
+    {
+        return $this->double === $double;
+    }
 
     /**
      * @internal called once by the dispatcher when the call finishes

@@ -61,6 +61,14 @@ $repository = Understudy::for(BookRepository::class);
 $double = Understudy::for(BookRepository::class, Countable::class);
 ```
 
+Understudy unifies compatible signatures across those interfaces: parameter
+types are widened, return types use the narrowest compatible declaration or a
+synthesised interface intersection, and named arguments follow the first
+(primary) interface. Static contract methods exist on the generated class so
+the interface can be implemented, but calling one raises
+`InvalidCallSpecification`: a static call has no double instance to own its
+state.
+
 Interfaces are supported today; class targets and `bypassFinals()` are being
 built next.
 
@@ -180,7 +188,9 @@ accounts for nothing either.
 
 `expect(...)->ordered()` constrains the ordered expectations relative to each
 other; unrelated calls may happen in between. When the whole protocol matters,
-`verifySequence()` is the tool.
+`verifySequence()` is the tool. It compares the double identity as well as the
+method and arguments, even when several doubles implement the same contract.
+`allVerified()` checks ordered expectations too.
 
 ### Phases, scopes and transcripts
 
@@ -191,7 +201,10 @@ echo Understudy::transcript($repository);       // every call and its outcome
 ```
 
 `scope()` returns whatever its callback returns, and drops the nested context
-either way — a failure inside is never replaced by a teardown error.
+either way — a failure inside is never replaced by a teardown error. A double
+created in a scope is invalid after that scope closes. Configuration and
+verification must run in the context that owns the double; normal calls may be
+made from another Fiber and are still recorded in the owner's log.
 `checkpoint()` keeps the understudies, their modes and their labels while
 clearing what the current phase has settled.
 
@@ -243,7 +256,8 @@ Understudy::reset();
 ```
 
 Adapters for Testo and PHPUnit will call this for you; until they exist, call
-it in your own teardown.
+it in your own teardown. Reset drops only the current execution context; it
+does not erase sibling Fiber contexts.
 
 ## Security
 

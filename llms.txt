@@ -22,9 +22,12 @@ No runtime deps.
   methods on `Understudy`, or the free functions `when()` / `verify()`.
 - Interfaces only in this version. A class target raises `UnsupportedTarget`
   telling you to double the interface.
-- Static methods are never intercepted; inject the dependency instead.
+- Static contract methods are implemented only so the generated class is
+  concrete. Calling one raises `InvalidCallSpecification`; inject an instance
+  dependency instead.
 - `Understudy::reset()` after each test. Nothing is process-global on purpose:
-  state lives per execution context, and each Fiber gets its own.
+  state lives per execution context, each Fiber gets its own, and reset drops
+  only the current context.
 
 ## API
 
@@ -38,6 +41,11 @@ $both = Understudy::for(BookRepository::class, Countable::class); // several int
 ```
 
 `for(class-string<T> $target, class-string ...$interfaces): T`
+
+For several interfaces, parameters are widened contravariantly, returns use the
+narrowest compatible declaration or a synthesised interface intersection, and
+parameter names come from the first (primary) interface so named arguments are
+deterministic.
 
 ### Stubbing — `when()`
 
@@ -88,6 +96,9 @@ a mismatch rather than an error. A matcher that reaches a real call raises
 
 ### Expecting — `expect()`
 
+`expect()` returns an `ExpectBuilder<TReturn>`, which extends
+`WhenBuilder<TReturn>` and adds `ordered()`.
+
 ```php
 use function Rasuvaeff\Understudy\expect;
 
@@ -113,6 +124,10 @@ also satisfies a strict double — the call was expected.
 Pest declares its own global `expect()`. Import this one as
 `use function Rasuvaeff\Understudy\expect as expectCall;`, or call
 `Understudy::expect()`.
+
+`Cardinality` is the immutable call-count value object. Its factories are
+`exactly()`, `atLeast()`, `between()`, `any()`, and `never()`; `allows()` tests
+a count and `describe()` renders it for diagnostics.
 
 ### Chaining behaviour — `then()`
 
@@ -159,7 +174,9 @@ either.
 
 `expect(...)->ordered()` requires the ordered expectations to be satisfied in
 declaration order relative to each other; unrelated calls may happen in
-between. `verifySequence()` is the tool when the whole protocol matters.
+between. `allVerified()` checks ordering as well. `verifySequence()` is the
+tool when the whole protocol matters; it compares double identity in addition
+to method and arguments.
 
 ### Phases and scopes
 
@@ -170,7 +187,10 @@ Understudy::transcript($repo);       // every call and outcome, for reading
 ```
 
 `scope()` returns whatever the callback returns and drops its context either
-way; a failure inside the callback is never replaced by a teardown error.
+way; a failure inside the callback is never replaced by a teardown error. A
+double created there becomes forgotten when the scope closes. Configuration
+and verification require the owning context; normal calls from another Fiber
+are allowed and are routed to the owner's log.
 `checkpoint()` keeps the understudies, their modes and their labels, and
 clears the expectations and calls the current phase has settled.
 
@@ -195,7 +215,7 @@ valid return value and cannot signal "nothing".
 ```php
 Understudy::strict($repo);                   // unmatched call fails immediately
 Understudy::label($repo, 'primary cache');   // name it in failure messages
-Understudy::reset();                         // drop all state
+Understudy::reset();                         // drop the current context
 ```
 
 Loose (default) answers with a type-safe default: `null` for `void`/`mixed`/
@@ -217,10 +237,11 @@ All implement `Rasuvaeff\Understudy\Exception\UnderstudyError`.
 | `OutcomeUnavailable` | `returned()` asked of a call that threw |
 | `MatcherLeaked` | a matcher was passed to a real call, not a specification |
 | `ForgottenDouble` | a double outlived the context that created it |
+| `ContextOwnershipViolation` | configuration or verification used a double from another context |
 | `VerificationFailed` | a verification about the tested code failed |
 
 ## Not supported
 
 Static method mocking, patching at the point of use, deep stubs, duck doubles,
-sharing state across processes. Class targets, `bypassFinals()`, the full
-`expect()`, ordering and the runner adapters are being built next.
+sharing state across processes. Class targets, `bypassFinals()` and the runner
+adapters are being built next.
