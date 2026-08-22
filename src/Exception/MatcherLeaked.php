@@ -21,7 +21,7 @@ final class MatcherLeaked extends \LogicException implements UnderstudyError
     {
         return new self(sprintf(
             "Argument #%d of `%s()` was given the matcher `%s` during a real call.\n"
-            . 'Matchers belong inside when()/verify(), not in the call the code under test makes.',
+            . 'Matchers belong inside when()/verify()/calls(), not in the call the code under test makes.',
             $position + 1,
             $method,
             $matcher,

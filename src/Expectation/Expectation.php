@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Expectation;
 
+use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
 use Rasuvaeff\Understudy\Matcher\TailMatcher;
@@ -28,7 +29,23 @@ final class Expectation
     public function __construct(
         public readonly string $method,
         public readonly array $args,
-    ) {}
+    ) {
+        $last = count($args) - 1;
+
+        /** @var mixed $argument */
+        foreach ($args as $position => $argument) {
+            if ($argument instanceof TailMatcher && $position !== $last) {
+                // Caught here rather than while matching: a misplaced
+                // remaining() otherwise behaves as a silent wildcard for that
+                // one argument, which is worse than any error message.
+                throw InvalidCallSpecification::misplacedTailMatcher(
+                    $method,
+                    $position,
+                    $argument->describe(),
+                );
+            }
+        }
+    }
 
     public function setAction(Action $action): void
     {

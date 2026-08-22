@@ -487,6 +487,47 @@ final class UnderstudyTest
         Assert::false($sink->write('a', 1));
     }
 
+    public function aTailMatcherOutsideTheLastSlotIsRejected(): void
+    {
+        // Left to matching, a misplaced remaining() behaves as a silent
+        // wildcard for that one argument — worse than any error message.
+        $sink = Understudy::for(VariadicSink::class);
+
+        Expect::exception(InvalidCallSpecification::class)
+            ->withMessageContaining('remaining()')
+            ->withMessageContaining('argument #1')
+            ->withMessageContaining('write()');
+
+        Understudy::when(fn() => $sink->write(Arg::remaining(), 1));
+    }
+
+    public function aMisplacedEmptyTailIsRejectedToo(): void
+    {
+        $sink = Understudy::for(VariadicSink::class);
+
+        Expect::exception(InvalidCallSpecification::class)->withMessageContaining('none()');
+
+        Understudy::when(fn() => $sink->write(Arg::none(), 1));
+    }
+
+    public function aTailMatcherInTheLastSlotIsAccepted(): void
+    {
+        $sink = Understudy::for(VariadicSink::class);
+
+        when(fn() => $sink->write('a', Arg::remaining()))->returns(true);
+
+        Assert::true($sink->write('a', 1, 2));
+    }
+
+    public function verifyRejectsAMisplacedTailMatcherAsWell(): void
+    {
+        $sink = Understudy::for(VariadicSink::class);
+
+        Expect::exception(InvalidCallSpecification::class);
+
+        Understudy::verify(fn() => $sink->write(Arg::remaining(), 1));
+    }
+
     public function aMatcherReachingARealCallIsRejected(): void
     {
         // Matchers are protocol, not values: the code under test must never
