@@ -236,6 +236,14 @@ make release-check
   `RuntimeContext` uses `SplObjectStorage`.
 - **Recording is a depth counter, not a boolean.** A nested recording phase
   must not switch the enclosing one off when it unwinds.
+- **An abstract static has nothing to inherit, so the double declares it.**
+  Both shapes reach this: a class target's own `abstract public static`, and an
+  interface static an abstract class implementing that interface never fills
+  in — Reflection reports the latter with the *interface* as its declaring
+  class. Treating either as inherited leaves the generated concrete subclass
+  without an implementation, and PHP answers that with a fatal error naming the
+  method, not an exception. `isOverridable()` is what routes them; only an
+  implemented static on a class target belongs in `$classStatics`.
 - **Multi-target methods are unified, not compared.** Parameters are
   contravariant, so `write(int)` and `write(string)` share the implementation
   `write(int|string)`; refusing them on signature difference would reject a

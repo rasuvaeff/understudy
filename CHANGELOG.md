@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- `for()` on an abstract class no longer dies on an abstract static. A static
+  the target leaves unimplemented — its own, or one an interface declares and
+  the abstract class never fills in — has nothing for the generated subclass to
+  inherit, so it is declared there like any other contract member. It was being
+  treated as inherited instead, and PHP answered the generated class with a
+  fatal error naming the missing method: not an exception, so nothing could
+  report it. Calling it still refuses with the usual `InvalidCallSpecification`;
+  a static has no instance state to dispatch.
 - `wire()` accepts an override for a variadic tail. It takes a list, every
   element is checked against the declared type, and anything else is refused by
   name before the constructor runs. Filling a tail passes the parameters before
