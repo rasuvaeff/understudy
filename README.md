@@ -270,6 +270,7 @@ advance.
 
 ```php
 Understudy::nothingElse($repository);   // every call was accounted for
+Understudy::nothingElse($repository, $clock, $mailer);   // across several doubles
 Understudy::allVerified($repository);   // expectations met AND nothing else
 Understudy::verifySequence(             // the exact protocol, across doubles
     fn () => $repository->begin(),
@@ -281,7 +282,9 @@ Understudy::verifySequence(             // the exact protocol, across doubles
 A call counts as accounted for when an `expect()` matched it, or a
 **successful** `verify()` claimed it. A `when()` stub accounts for nothing —
 it is permission, not a description of what happened — and a failed `verify()`
-accounts for nothing either.
+accounts for nothing either. `nothingElse()` takes any number of doubles: one
+line closes out the whole test, and a failure names every offender rather
+than stopping at the first.
 
 `expect(...)->ordered()` constrains the ordered expectations relative to each
 other; unrelated calls may happen in between. When the whole protocol matters,
