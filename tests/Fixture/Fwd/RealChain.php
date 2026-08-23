@@ -24,6 +24,12 @@ class RealChain implements Chainable
     }
 
     #[\Override]
+    public function spawn(): Chainable
+    {
+        return new static();
+    }
+
+    #[\Override]
     public function label(): string
     {
         return 'real';

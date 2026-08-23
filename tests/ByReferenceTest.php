@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Ref\RealRegistry;
@@ -20,6 +22,8 @@ use function Rasuvaeff\Understudy\when;
 #[Test]
 #[Covers(Runtime::class)]
 #[Covers(DoubleState::class)]
+#[Covers(TargetUnifier::class)]
+#[Covers(DoubleFactory::class)]
 final class ByReferenceTest
 {
     #[AfterTest]
@@ -178,6 +182,32 @@ final class ByReferenceTest
         Assert::same($slot, 'after');
         Assert::same($call->args[0], 'before');
         Assert::same($call->argsAfter()[0], 'after');
+    }
+
+    /**
+     * The snapshot follows nested arrays to a fixed depth and no further:
+     * `$a[] = &$a` is legal PHP, and a copy that followed it would not return.
+     * Below the cap the reading is a copy; at it, the value is kept as it is.
+     */
+    public function theSnapshotFollowsNestedArraysToItsCapAndStops(): void
+    {
+        $registry = Understudy::for(Registry::class);
+        Understudy::forwarding($registry, new RealRegistry());
+
+        // Eight levels is the cap: 'shallow' sits inside it, 'deep' beyond it.
+        $shallow = ['l1' => ['l2' => ['l3' => 'before']]];
+        $deep = ['l1' => ['l2' => ['l3' => ['l4' => ['l5' => ['l6' => ['l7' => ['l8' => ['l9' => 'before']]]]]]]]];
+
+        $rows = ['nested' => ['deep' => 'before'], 'shallow' => $shallow, 'far' => $deep];
+        $registry->absorb($rows);
+
+        $call = Understudy::calls(static fn() => $registry->absorb(Arg::any()))[0];
+
+        // Copied: the reading kept the value the call was given.
+        Assert::same($call->args[0]['shallow']['l1']['l2']['l3'], 'before');
+        Assert::same($call->args[0]['nested']['deep'], 'before');
+        // And the reading is the whole structure, not a truncated one.
+        Assert::true(\is_array($call->args[0]['far']['l1']['l2']['l3']));
     }
 
     /**

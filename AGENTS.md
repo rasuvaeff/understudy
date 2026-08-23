@@ -61,6 +61,18 @@ make release-check
 
 ## Invariants & gotchas
 
+- **A class not named by any `#[Covers]` is invisible to mutation testing, even
+  when every test drives it.** `TargetUnifier` compiles every double in the
+  suite and was claimed by one test class, so Infection never used the rest to
+  kill its mutants. Attribution is a claim about what a test exercises, and it
+  has to be made; coverage does not infer it. Fixing it took Mutation Code
+  Coverage to 100% — and raised the denominator, which is why honest attribution
+  can make the percentage fall before it rises.
+- **Rector can quietly undo a guard.** `withoutWrapper()` lost its
+  `self::$registered` check when `LocallyCalledStaticMethodToNonStaticRector`
+  turned the method non-static, and the defect shipped. After a `rector:fix`,
+  read the diff for what moved, not only for what compiles.
+
 - **The strip removes the `final` token and the one space after it, never a
   newline.** Dropping whitespace that holds a newline would move every line
   below it, and a stack trace or coverage report one line off is worse than a

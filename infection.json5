@@ -8,28 +8,40 @@
         "summary": "build/infection-summary.log"
     },
     "testFramework": "testo",
-    // 95 -> 94 with milestone 2b, 94 -> 92 with milestone 3. Both are debt, and
-    // both have an address; neither is a statement about how well this engine
-    // is tested.
+    // 95 -> 94 (milestone 2b), 94 -> 92 (milestone 3), and 92 -> 93 here, which
+    // is the first move upward and also the last one this shape of debt has in
+    // it. What that pass found is worth more than the number:
     //
-    // Where the survivors are, and why they are hard rather than neglected:
+    //   - `FileWrapper` was the real debt, and paying it turned up a defect
+    //     that had shipped: `withoutWrapper()` installed the wrapper as a side
+    //     effect of reading one file, because rector had turned the method
+    //     non-static and taken the guard with it.
+    //   - Attribution was hiding the rest. `TargetUnifier` compiles every
+    //     double in the suite and was claimed by exactly one test class, so
+    //     Infection never used the others to kill its mutants. Fixing the
+    //     `#[Covers]` raised Mutation Code Coverage to 100% and, with it, the
+    //     denominator — which is why the number moved less than the work did.
+    //   - Of what is left, the samples examined are mostly equivalent by
+    //     construction: scanning-loop offsets in the tokenizer that find the
+    //     same token either way, `array_values()` calls that exist for
+    //     `list<T>` and nothing else (the mutator is off below), and branches
+    //     in `Wire` an earlier `return` makes unreachable.
     //
-    //   TargetUnifier (48)  milestone-1 return-type machinery, untouched since.
-    //                       Its survivors grow with the denominator as later
-    //                       milestones add mutants. PR #13 pays this back.
-    //   FileWrapper (42)    a `file://` stream wrapper. What it decides is under
-    //                       mutation; what it delegates needs a real side effect
-    //                       on disk to observe, and the pure passthroughs are in
-    //                       global-ignore below.
-    //   Bypass (15)         the strip itself is covered by 19 source cases; the
-    //                       rest of its branches only run inside a subprocess,
-    //                       which coverage cannot see into at all.
-    //
-    // The number goes back up in PR #13, not by drifting down again. A third
-    // drop is a signal to stop and pay the debt first.
-    "minMsi": 92,
+    // 95 was calibrated when this engine was pure logic. It now contains a
+    // tokenizer, a stream wrapper and a code generator, whose mutants are
+    // killed by processes and filesystems rather than by assertions. Raising
+    // the number further means either a dishonest ignore list or a redesign;
+    // neither belongs in a gate.
+    "minMsi": 93,
     "mutators": {
         "@default": true,
+        // `array_values()` here is never about behaviour: it exists so that a
+        // return is a `list<T>` rather than an `array<int, T>`, which is what
+        // Psalm level 1 asks for. Every consumer of these returns iterates or
+        // reindexes, so removing the call changes nothing a test could observe
+        // — the mutant is equivalent by construction, and the eleven of them
+        // were noise in every report.
+        "UnwrapArrayValues": false,
         // Raw-I/O passthroughs. Each of these forwards one call to the native
         // filesystem and returns what it answered; a mutant either changes
         // nothing observable or needs a real side effect on disk to see. The

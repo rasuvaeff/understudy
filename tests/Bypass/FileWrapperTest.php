@@ -157,6 +157,131 @@ final class FileWrapperTest
         ));
     }
 
+    /**
+     * Both targets arrive in one call, so the list has to take all of them —
+     * not the first, and not the last.
+     */
+    public function oneInstallCanNameSeveralClasses(): void
+    {
+        $namespace = 'Rasuvaeff\\Understudy\\Tests\\Fixture\\Bypass';
+
+        FileWrapper::install([
+            ['namespace' => $namespace, 'class' => 'OpenedNeighbour'],
+            ['namespace' => $namespace, 'class' => 'SealedNeighbour'],
+        ]);
+
+        $read = $this->read(\dirname(__DIR__) . '/Fixture/Bypass/Neighbours.php');
+
+        Assert::false(str_contains($read, 'final class OpenedNeighbour'));
+        Assert::false(str_contains($read, 'final class SealedNeighbour'));
+    }
+
+    /**
+     * Through `file://`, not through an instance this test built: what is under
+     * test is that the registration actually took, and reading a file is the
+     * only way to see that from outside.
+     */
+    public function aRegisteredWrapperTransformsWhatPhpItselfReads(): void
+    {
+        $path = \dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php';
+
+        Assert::string((string) file_get_contents($path))->contains('final class SealedGate');
+
+        FileWrapper::install([[
+            'namespace' => 'Rasuvaeff\\Understudy\\Tests\\Fixture\\Bypass',
+            'class' => 'SealedGate',
+        ]]);
+
+        Assert::false(str_contains((string) file_get_contents($path), 'final class SealedGate'));
+
+        FileWrapper::uninstall();
+
+        Assert::string((string) file_get_contents($path))->contains('final class SealedGate');
+    }
+
+    /**
+     * A delegated operation borrows the native wrapper and has to give it back.
+     * Without that, the first `stat()` would be the last thing transformed.
+     */
+    public function theWrapperIsStillInPlaceAfterADelegatedOperation(): void
+    {
+        $path = \dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php';
+
+        FileWrapper::install([[
+            'namespace' => 'Rasuvaeff\\Understudy\\Tests\\Fixture\\Bypass',
+            'class' => 'SealedGate',
+        ]]);
+
+        Assert::true(\is_array(stat($path)));
+        Assert::true(\is_array(scandir(\dirname($path))));
+        Assert::false(str_contains((string) file_get_contents($path), 'final class SealedGate'));
+    }
+
+    // --- What counts as PHP source --------------------------------------------
+
+    public function anUppercaseExtensionIsStillPhp(): void
+    {
+        FileWrapper::targetOnly(null);
+
+        $read = $this->read(\dirname(__DIR__) . '/Fixture/Bypass/Uppercase.PHP');
+
+        Assert::false(str_contains($read, 'final class Uppercase'));
+        Assert::string($read)->contains('class Uppercase');
+    }
+
+    /**
+     * A read-write handle is not a compile, and rewriting what somebody is
+     * about to edit would be a different program than the one on disk.
+     */
+    public function aReadWriteHandleIsNotTransformed(): void
+    {
+        FileWrapper::targetOnly(null);
+
+        Assert::string($this->read(\dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php', 'r+'))
+            ->contains('final class SealedGate');
+    }
+
+    public function aWriteHandleIsNotTransformed(): void
+    {
+        FileWrapper::targetOnly(null);
+        $path = sys_get_temp_dir() . '/understudy-write-' . getmypid() . '.php';
+        file_put_contents($path, '<?php final class Written {}');
+
+        try {
+            $wrapper = new FileWrapper();
+            $opened = null;
+
+            Assert::true($wrapper->stream_open($path, 'a', 0, $opened));
+
+            $wrapper->stream_close();
+
+            Assert::string((string) file_get_contents($path))->contains('final class Written');
+        } finally {
+            unlink($path);
+        }
+    }
+
+    /**
+     * Reading a file through a wrapper nobody installed must leave `file://`
+     * alone.
+     *
+     * Every delegated operation borrows the native wrapper and puts ours back
+     * afterwards — but "back" means *back*, and there is nothing to restore
+     * when nothing was registered. Without the guard, one read through a bare
+     * instance installs the wrapper for the rest of the process, and rector
+     * removed that guard once already by turning the method non-static.
+     */
+    public function readingThroughAnUninstalledWrapperDoesNotInstallIt(): void
+    {
+        $path = \dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php';
+
+        FileWrapper::targetOnly(null);
+        $this->read($path);
+
+        Assert::false(FileWrapper::isInstalled());
+        Assert::string((string) file_get_contents($path))->contains('final class SealedGate');
+    }
+
     // --- The rest of the stream protocol --------------------------------------
 
     public function theStreamReportsPositionSizeAndEnd(): void
@@ -295,12 +420,15 @@ final class FileWrapperTest
         }
     }
 
-    private function read(string $path): string
+    private function read(string $path, string $mode = 'r'): string
     {
         $wrapper = new FileWrapper();
         $opened = null;
 
-        Assert::true($wrapper->stream_open($path, 'r', 0, $opened));
+        Assert::true($wrapper->stream_open($path, $mode, 0, $opened));
+        // Not asked for, so not answered: `$openedPath` is what `__FILE__`
+        // becomes, and PHP only wants it when STREAM_USE_PATH is set.
+        Assert::null($opened);
 
         $read = '';
 

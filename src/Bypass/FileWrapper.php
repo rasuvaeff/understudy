@@ -207,13 +207,13 @@ final class FileWrapper
      */
     public function url_stat(string $path, int $flags): array|false
     {
-        return $this->withoutWrapper(static function () use ($path, $flags): array|false {
-            if (($flags & STREAM_URL_STAT_LINK) !== 0) {
-                return ($flags & STREAM_URL_STAT_QUIET) !== 0 ? @lstat($path) : lstat($path);
-            }
-
-            return ($flags & STREAM_URL_STAT_QUIET) !== 0 ? @stat($path) : stat($path);
-        });
+        // Always quiet, and `STREAM_URL_STAT_QUIET` is therefore not consulted:
+        // a `false` is the answer, and a warning raised in here is one the
+        // caller cannot suppress. The same reason `stream_open()` is silent —
+        // and one fewer branch whose mutant would talk.
+        return $this->withoutWrapper(static fn(): array|false => ($flags & STREAM_URL_STAT_LINK) !== 0
+            ? @lstat($path)
+            : @stat($path));
     }
 
     public function unlink(string $path): bool
@@ -336,6 +336,15 @@ final class FileWrapper
      */
     private function withoutWrapper(callable $operation): mixed
     {
+        if (!self::$registered) {
+            // Nobody installed this instance — a test driving the methods
+            // directly, or PHP holding one after `uninstall()`. Restoring and
+            // re-registering here would install the wrapper as a side effect of
+            // reading one file, and every read after it would be transformed by
+            // a wrapper the process never asked for.
+            return $operation();
+        }
+
         stream_wrapper_restore(self::PROTOCOL);
 
         try {

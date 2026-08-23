@@ -12,6 +12,9 @@ interface Chainable
     /** Returns a *different* instance of the same class. */
     public function detach(): static;
 
+    /** The same thing without `static`: another instance is a legal answer. */
+    public function spawn(): Chainable;
+
     public function label(): string;
 
     /** Calls `label()` on itself, so a proxy can be told from an instrumented object. */

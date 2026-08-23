@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Reading a file through a `Bypass\FileWrapper` nobody installed no longer
+  installs it. `withoutWrapper()` restored and re-registered unconditionally, so
+  one such read made the wrapper `file://`'s owner for the rest of the process
+  — every read after it transformed by something the process never asked for.
+  The guard existed and was lost when rector turned the method non-static.
+- `url_stat()` is quiet unconditionally, like `stream_open()`: a `false` is the
+  answer, and a warning raised inside a wrapper is one the caller cannot
+  suppress.
+- The mutation gate rises from 92 to 93, the first move upward, with what the
+  pass found written into `infection.json5` — including why 95 is no longer the
+  right target for an engine that now contains a tokenizer and a stream
+  wrapper.
 - `Understudy::bypassFinals()` lifts `final` off a class so it can be doubled —
   one class by name, or every class the process loads from then on. It is opt-in
   because the technique has limits worth meeting knowingly: it works only for a

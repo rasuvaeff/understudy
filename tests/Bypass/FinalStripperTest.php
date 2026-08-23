@@ -108,6 +108,18 @@ final class FinalStripperTest
             '<?php namespace App; /** here */ class Gate {}',
         ];
 
+        yield 'a newline between final and class is kept' => [
+            "<?php namespace App; final\nclass Gate {}",
+            [['namespace' => 'App', 'class' => 'Gate']],
+            "<?php namespace App; \nclass Gate {}",
+        ];
+
+        yield 'a newline is kept in global mode too' => [
+            "<?php namespace App;\nfinal\nclass Gate {}\nfinal\nclass Wall {}",
+            null,
+            "<?php namespace App;\n\nclass Gate {}\n\nclass Wall {}",
+        ];
+
         yield 'a file without the word is returned untouched' => [
             '<?php namespace App; class Gate {}',
             null,
