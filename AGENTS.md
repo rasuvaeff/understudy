@@ -72,6 +72,19 @@ make release-check
   looks. `Runtime::referenceSlot()` hands back a plain `ReferenceSlot` object by
   value, and the generated method returns `$slot->value` from its `&` signature.
   Zero `@psalm-suppress`, zero baseline, zero `issueHandlers` — keep it that way.
+- **`DoubleState::hasActionFor()` must walk expectations exactly as the
+  dispatcher does.** Same accessor, same order, stop at the first match and
+  answer with *its* `hasAction()`. Asking "does some matching expectation have
+  an action" disagrees with dispatch precisely when a newer
+  `expect(...)->times(1)` shadows an older stub, and the by-reference slot is
+  then replaced by a value dispatch never returned.
+- **A snapshot has to reach nested references.** `array_map()` detaches only the
+  top level, and a by-reference parameter is often an array with a `&$row`
+  inside it. The recursion is depth-capped because `$a[] = &$a` is legal PHP.
+- **`Invocation` carries the live arguments separately from the logged ones.**
+  `callOriginal()` delegates with the live ones — a real method is expected to
+  be able to write through a by-reference parameter — while `args` stays the
+  reading taken before the call.
 - **A by-reference argument is snapshotted on both sides, and only where it can
   move.** `MethodSignature::$hasReferenceParameters` gates it: taking two
   readings of every call would cost the whole suite for a rare case.

@@ -29,6 +29,9 @@ final class Invocation
      * @param non-empty-string $method
      * @param list<mixed>      $args
      * @param positive-int     $sequence position in this context's global call order
+     * @param list<mixed>      $liveArgs the arguments as the caller still holds them,
+     *                                   references included — what delegation needs,
+     *                                   where {@see $args} is a reading of them
      */
     public function __construct(
         public readonly string $method,
@@ -37,6 +40,7 @@ final class Invocation
         public readonly ?string $file = null,
         public readonly ?int $line = null,
         private readonly ?object $double = null,
+        private readonly array $liveArgs = [],
     ) {}
 
     /**
@@ -94,7 +98,10 @@ final class Invocation
             throw OriginalCallUnavailable::withoutTarget('understudy', $this->method);
         }
 
-        return Runtime::callOriginal($this->double, $this->method, $this->args);
+        // The live arguments, not the log's reading of them: a by-reference
+        // parameter is the caller's variable, and the real method is expected
+        // to be able to write to it.
+        return Runtime::callOriginal($this->double, $this->method, $this->liveArgs);
     }
 
     public function recordOutcome(Outcome $outcome): void

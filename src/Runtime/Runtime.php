@@ -23,6 +23,9 @@ use Rasuvaeff\Understudy\Outcome;
  */
 final class Runtime
 {
+    /** How deep an argument snapshot follows nested arrays. */
+    private const int SNAPSHOT_DEPTH = 8;
+
     /**
      * A stack, not a single context: `scope()` nests one inside another, and
      * the outer one must come back intact when the inner ends.
@@ -289,6 +292,7 @@ final class Runtime
             args: $tracksReferences ? self::detached($args) : $args,
             sequence: $context->nextSequence(),
             double: $double,
+            liveArgs: $args,
         );
         $state->record($invocation);
 
@@ -532,9 +536,34 @@ final class Runtime
      */
     private static function detached(array $args): array
     {
-        // Through array_map rather than a loop: the callback receives each
-        // element by value, which is what breaks the reference.
-        return array_map(static fn(mixed $argument): mixed => $argument, $args);
+        return array_map(static fn(mixed $argument): mixed => self::detachValue($argument, 0), $args);
+    }
+
+    /**
+     * One value, with the references inside it broken as well as the one on it.
+     *
+     * A by-reference parameter is often an array, and a reference can sit at any
+     * depth in one: passing the top level through by value leaves a nested
+     * `&$row` shared, and the "before" reading would then change under the
+     * answer that wrote to it.
+     *
+     * Depth is capped for the same reason {@see ArgumentFormatter} caps it —
+     * `$a[] = &$a` is legal PHP, and a snapshot that followed it would not
+     * return. Past the cap the value is kept as it is: bounded work, and a
+     * reading that is honest about how deep it looked. Objects are never
+     * copied; a snapshot of one is the same object, which is what a caller
+     * would see too.
+     */
+    private static function detachValue(mixed $value, int $depth): mixed
+    {
+        if (!\is_array($value) || $depth >= self::SNAPSHOT_DEPTH) {
+            return $value;
+        }
+
+        return array_map(
+            static fn(mixed $item): mixed => self::detachValue($item, $depth + 1),
+            $value,
+        );
     }
 
     /**

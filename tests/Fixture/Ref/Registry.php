@@ -14,5 +14,13 @@ interface Registry
 
     public function fill(string &$slot, string $value): void;
 
+    /**
+     * An array argument taken by reference, whose rows may themselves be
+     * references — which is where a top-level-only snapshot leaks.
+     *
+     * @param array<string, mixed> $rows
+     */
+    public function absorb(array &$rows): void;
+
     public function count(): int;
 }

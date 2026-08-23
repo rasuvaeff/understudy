@@ -111,8 +111,8 @@ final class DoubleState
     }
 
     /**
-     * Whether a call would be answered by something the test configured, as
-     * opposed to falling through to the mode's own answer.
+     * Whether the expectation that would answer this call has an action, as
+     * opposed to the call falling through to the mode's own answer.
      *
      * Asked only on the by-reference path, where the difference decides whether
      * the stable slot is replaced or left alone.
@@ -122,9 +122,14 @@ final class DoubleState
      */
     public function hasActionFor(string $method, array $args): bool
     {
-        foreach ($this->expectations as $expectation) {
-            if ($expectation->matches($method, $args) && $expectation->hasAction()) {
-                return true;
+        // The same walk the dispatcher makes, in the same order, stopping at
+        // the same place. Scanning declaration order and answering "some
+        // matching expectation has an action" would disagree with it exactly
+        // when a newer `expect(...)->times(1)` shadows an older stub — and the
+        // slot would then be replaced by a value dispatch never returned.
+        foreach ($this->expectations() as $expectation) {
+            if ($expectation->matches($method, $args)) {
+                return $expectation->hasAction();
             }
         }
 

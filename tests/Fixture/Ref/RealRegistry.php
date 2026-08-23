@@ -32,6 +32,13 @@ class RealRegistry implements Registry
         $slot = $value;
     }
 
+    /** @param array<string, mixed> $rows */
+    #[\Override]
+    public function absorb(array &$rows): void
+    {
+        $rows['nested']['deep'] = 'written';
+    }
+
     #[\Override]
     public function count(): int
     {

@@ -195,25 +195,75 @@ final class ByReferenceTest
 
     /**
      * The second reading is taken whichever way the call ended: an answer that
-     * wrote through the reference and then threw still wrote.
+     * wrote through the reference and then threw still wrote. Asserting the
+     * value rather than its presence is what keeps a pre-call snapshot from
+     * passing for a post-call one.
      */
-    public function aThrownCallStillRecordsTheSecondReading(): void
+    public function aThrownCallStillRecordsWhatWasWritten(): void
     {
         $registry = Understudy::for(Registry::class);
+        Understudy::forwarding($registry, new RealRegistry());
 
         when(static fn() => $registry->fill(Arg::any(), Arg::any()))
             ->answers(static function (\Rasuvaeff\Understudy\Invocation $call): never {
+                $call->callOriginal();
+
                 throw new \DomainException('after writing');
             });
 
         $slot = 'before';
 
         try {
-            $registry->fill($slot, 'ignored');
+            $registry->fill($slot, 'written');
         } catch (\DomainException) {
             // The outcome is not what this asserts.
         }
 
-        Assert::notNull(Understudy::calls(static fn() => $registry->fill(Arg::any(), Arg::any()))[0]->argsAfter());
+        $call = Understudy::calls(static fn() => $registry->fill(Arg::any(), Arg::any()))[0];
+
+        Assert::same($call->args[0], 'before');
+        Assert::same($call->argsAfter()[0], 'written');
+        Assert::same($slot, 'written');
+    }
+
+    /**
+     * A reference can sit at any depth inside an array argument. Detaching only
+     * the top level would leave a nested row shared, and the "before" reading
+     * would change under the answer that wrote to it.
+     */
+    public function theFirstReadingSurvivesAWriteNestedInsideAnArrayArgument(): void
+    {
+        $registry = Understudy::for(Registry::class);
+        Understudy::forwarding($registry, new RealRegistry());
+
+        $rows = ['nested' => ['deep' => 'before']];
+        $registry->absorb($rows);
+
+        $call = Understudy::calls(static fn() => $registry->absorb(Arg::any()))[0];
+
+        Assert::same($rows['nested']['deep'], 'written');
+        Assert::same($call->args[0]['nested']['deep'], 'before');
+        Assert::same($call->argsAfter()[0]['nested']['deep'], 'written');
+    }
+
+    /**
+     * The expectation that would answer the call decides whether the slot is
+     * replaced, and "would answer" means the dispatcher's own precedence: the
+     * newest match wins, and a match without an action is not an answer.
+     */
+    public function aNewerCountingExpectationDoesNotCountAsAConfiguredAnswer(): void
+    {
+        $registry = Understudy::for(Registry::class);
+
+        when(static fn(): array => $registry->values())->returns(['stubbed' => true]);
+
+        $values = &$registry->values();
+        $values['written'] = true;
+
+        \Rasuvaeff\Understudy\expect(static fn(): array => $registry->values())->times(1);
+
+        Assert::same($registry->values(), ['stubbed' => true, 'written' => true]);
+
+        Understudy::verifyAll();
     }
 }

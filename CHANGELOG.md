@@ -14,6 +14,9 @@
   mode's own answer and then kept — a loose default recomputes an empty value
   every time, and writing that back would undo what the caller wrote — while a
   configured answer still replaces it.
+- `Invocation::callOriginal()` delegates with the arguments the caller still
+  holds, so a real method can write through a by-reference parameter. It used to
+  pass the log's reading of them, which is a copy.
 - The call log keeps both readings of a by-reference argument:
   `Invocation::args` is what the call received, `Invocation::argsAfter()` what it
   became once answered. Taken only for methods that declare such a parameter, so

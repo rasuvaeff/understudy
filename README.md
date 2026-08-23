@@ -387,7 +387,7 @@ when(fn () => $spy->get('key'))
     ->answers(fn (Invocation $call) => strtoupper((string) $call->callOriginal()));
 ```
 
-Three things are worth knowing before relying on it:
+Five things are worth knowing before relying on it:
 
 - **Only the call at the boundary is recorded.** If the real method calls
   another method on itself, that happens inside the real object. Understudy
