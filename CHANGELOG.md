@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- A model-based property over the ledger lifecycle — stub/expect → dispatch →
+  verify → checkpoint — driven by `Gen::commands()` + `StateMachine`. Any
+  random interleaving of configuration, dispatch and verification commands has
+  to keep the double's answers, its call log and its accounting in lock-step
+  with a pure model, including most-recent-first matching, claim accounting,
+  verify marking, `nothingElse()` accounting and checkpoint settling. Four
+  pinned examples carry the layerings that were wrong before: a newer claim
+  shadowing an older stub, checkpoint survival of stubs, accounting through an
+  explicit verify, and a violated claim failing both checks.
 - The comparative benchmarks are re-measured after the dispatch work, and both
   READMEs carry the new figures. Per-call cost went from 1.75µs to 0.82µs and
   building a double from 2.08µs to 1.28µs; PHPUnit improved by more, and is now
