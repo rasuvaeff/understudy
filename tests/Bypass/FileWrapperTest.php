@@ -152,6 +152,7 @@ final class FileWrapperTest
         $wrapper = new FileWrapper();
         $opened = null;
 
+        // Likewise silent: no STREAM_REPORT_ERRORS, no warning.
         Assert::false($wrapper->stream_open(__DIR__ . '/nothing-here.php', 'r', 0, $opened));
     }
 
@@ -261,7 +262,10 @@ final class FileWrapperTest
     {
         $wrapper = new FileWrapper();
 
-        Assert::false(@$wrapper->dir_opendir(__DIR__ . '/no-such-directory'));
+        // No `@`: a wrapper reports failures only when asked to, and this call
+        // does not ask. A warning here would land on STDERR, which is enough to
+        // make Infection abandon a run.
+        Assert::false($wrapper->dir_opendir(__DIR__ . '/no-such-directory'));
     }
 
     private function read(string $path): string

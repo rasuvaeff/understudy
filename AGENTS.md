@@ -65,6 +65,11 @@ make release-check
   newline.** Dropping whitespace that holds a newline would move every line
   below it, and a stack trace or coverage report one line off is worse than a
   double space.
+- **A wrapper reports failures only when `STREAM_REPORT_ERRORS` is set.**
+  Calling `fopen()` unguarded put a PHP warning on STDERR for a caller that
+  passed no such flag and was expecting `false` — and one line on STDERR is
+  enough to make Infection abandon the whole run, which is how this was found:
+  green locally, red in CI. See [[infection-stderr-kills-whole-run]].
 - **A wrapper method must not install the wrapper as a side effect.**
   `withoutWrapper()` restores and re-registers only when the wrapper is actually
   registered; without that guard, a unit test calling `stream_open()` on a bare
