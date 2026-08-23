@@ -16,9 +16,11 @@ namespace Rasuvaeff\Understudy\Codegen;
  *
  * What is deliberately left uninitialized: anything typed as an object or
  * intersection — a double has no business inventing one, and a real collaborator
- * or an accessor method is the honest answer; anything `readonly`, `final`, or
- * carrying property hooks or asymmetric visibility, because the language either
- * forbids the write or routes it through code the target expects to have run.
+ * or an accessor method is the honest answer; anything `readonly`, or carrying
+ * property hooks or asymmetric visibility, because the language either forbids
+ * the write or routes it through code the target expects to have run. A `final`
+ * property is not in that list: `final` stops a subclass from redeclaring it,
+ * not the outside from writing it.
  *
  * @internal
  */
@@ -64,8 +66,10 @@ final class PropertyDefaults
             return false;
         }
 
-        // PHP 8.4 members; on 8.3 no property can have them.
-        foreach (['hasHooks', 'isFinal', 'isPrivateSet', 'isProtectedSet'] as $check) {
+        // PHP 8.4 members; on 8.3 no property can have them. `final` is not
+        // among them on purpose: it forbids a subclass from redeclaring the
+        // property, not the outside world from writing it.
+        foreach (['hasHooks', 'isPrivateSet', 'isProtectedSet'] as $check) {
             if (method_exists($property, $check) && $property->{$check}()) {
                 return false;
             }

@@ -27,10 +27,16 @@ No runtime deps.
   `clone` is a double of its own.
 - Refused before generation, each with the reason: a `final` class, a class with
   a non-private `final` instance method, an enum, a trait, an internal class, an
-  anonymous class, a class that is not the first target. A parameter default
-  that cannot be reproduced exactly — one resolving `self`/`static`/`parent`
-  inside a `new`, or holding an object — refuses the target rather than becoming
-  a silent `null`.
+  anonymous class, a class that is not the first target.
+- Parameter defaults are reproduced, not approximated. An object default is
+  rendered from its own source expression — `new Foo(1)` and `[new Foo(1)]`
+  alike — which is never evaluated during generation. Refusal is narrow: a
+  default whose source names `self`, `static` or `parent` (they would resolve
+  against the generated class), or an object value with no source form to
+  render. A default is never silently replaced with `null`.
+- A `clone` belongs to the context that cloned it, like anything `for()` builds:
+  `__clone()` gets no reference to the original, so its owner cannot be
+  recovered. Clone in the scope that will configure or verify the copy.
 - Static contract methods are implemented only so the generated class is
   concrete. Calling one raises `InvalidCallSpecification`; inject an instance
   dependency instead.

@@ -851,8 +851,8 @@ final class TargetUnifier
     {
         $source = self::defaultSource($parameter);
 
-        if ($source !== null && str_starts_with($source, 'new ')) {
-            return self::renderObjectDefault($parameter, $method, $source);
+        if ($source !== null && self::buildsAnObject($source)) {
+            return self::renderSourceDefault($parameter, $method, $source);
         }
 
         if ($parameter->isDefaultValueConstant()) {
@@ -887,18 +887,47 @@ final class TargetUnifier
     }
 
     /**
-     * `new` defaults are rendered verbatim: Reflection qualifies the class name
-     * for us. What it does not qualify is `self`, `static` and `parent` — those
-     * would resolve against the generated class, which is a different class
-     * with different constants — so a target using them is rejected by name.
+     * True when the default builds an object anywhere inside it — `new Foo()`,
+     * but also `[new Foo()]` or `['k' => new Foo()]`, which are just as legal in
+     * an initializer and just as destructive to evaluate: `getDefaultValue()`
+     * runs every constructor in there.
+     *
+     * Quoted text is blanked out first, so a string default that merely contains
+     * the word is not mistaken for an expression.
+     */
+    private static function buildsAnObject(string $source): bool
+    {
+        return preg_match('/\bnew\s+[\\\\A-Za-z_]/', self::withoutStringLiterals($source)) === 1;
+    }
+
+    /**
+     * Blanks out single- and double-quoted runs, keeping the length so nothing
+     * else shifts. An escaped quote stays inside its run.
+     */
+    private static function withoutStringLiterals(string $source): string
+    {
+        return (string) preg_replace_callback(
+            '/\'(?:\\\\.|[^\'\\\\])*\'|"(?:\\\\.|[^"\\\\])*"/s',
+            static fn(array $match): string => str_repeat(' ', \strlen($match[0])),
+            $source,
+        );
+    }
+
+    /**
+     * Renders the default from its own source, which Reflection has already
+     * qualified — and which is the only form reproducible without evaluating it.
+     *
+     * What Reflection does not qualify is `self`, `static` and `parent`: they
+     * would resolve against the generated class, a different class with
+     * different constants, so a target using them is rejected by name.
      *
      * @param non-empty-string $method
      *
      * @return non-empty-string
      */
-    private static function renderObjectDefault(\ReflectionParameter $parameter, string $method, string $source): string
+    private static function renderSourceDefault(\ReflectionParameter $parameter, string $method, string $source): string
     {
-        if (preg_match('/\b(self|static|parent)\s*::/i', $source) === 1) {
+        if (preg_match('/\b(self|static|parent)\s*::/i', self::withoutStringLiterals($source)) === 1) {
             throw UnsupportedTarget::notDoublable(
                 $parameter->getDeclaringClass()?->getName() ?? $method,
                 sprintf(

@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests\Fixture\Cls;
 
-abstract class PrivateConstantHolder
-{
-    protected const int STEP = 4;
-}
-
 /**
  * A default naming a constant the generated class cannot reach. Reflection
- * reports it as `self::STEP`, which would resolve against the double.
+ * reports it as `self::STEP`, and `self` inside the double is a different
+ * class — a subclass, which a *protected* constant would still reach. Private
+ * is what makes the fallback the only way to answer correctly.
  */
-abstract class PrivateConstantContract extends PrivateConstantHolder
+abstract class PrivateConstantContract
 {
+    private const int STEP = 4;
+
     abstract public function step(int $n = self::STEP): int;
 }

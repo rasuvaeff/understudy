@@ -7,13 +7,16 @@ namespace Rasuvaeff\Understudy\Tests;
 use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\PropertyDefaults;
+use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\AbstractLedger;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Bookkeeper;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Countable;
+use Rasuvaeff\Understudy\Tests\Fixture\Cls\CountingStamp;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\DefaultsContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\FinalLedger;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Ledger;
+use Rasuvaeff\Understudy\Tests\Fixture\Cls\NestedObjectDefaultContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\ObjectDefaultContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\PrivateConstantContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\PropertyLedger;
@@ -221,8 +224,9 @@ final class ClassDoubleTest
 
         Expect::exception(\Error::class)->withMessageContaining('must not be accessed before initialization');
 
-        // @phpstan-ignore-next-line reading it is the assertion
-        $ledger->sealed;
+        // Read through an assertion: a bare property read is a statement with
+        // no effect, which rector removes as dead code.
+        Assert::string($ledger->sealed);
     }
 
     /**
@@ -239,14 +243,16 @@ final class ClassDoubleTest
     }
 
     /**
-     * Property hooks, `final` properties and asymmetric visibility all exist
-     * only from PHP 8.4, and none of them may be written from outside: the
-     * language either forbids it or routes the write through code the target
-     * expects to have run. The fixture is built by eval because its syntax is a
-     * parse error on 8.3 — a file carrying it would take the whole suite down
-     * there, not skip a test.
+     * Property hooks and asymmetric visibility exist only from PHP 8.4 and
+     * cannot be written from outside — the language either forbids it or routes
+     * the write through code the target expects to have run. A `final` property
+     * is a different thing: it stops a subclass from redeclaring the property,
+     * and stays writable, so it is filled like any other.
+     *
+     * The fixture is built by eval because its syntax is a parse error on 8.3 —
+     * a file carrying it would take the whole suite down there, not skip a test.
      */
-    public function hooksFinalAndAsymmetricPropertiesAreLeftAlone(): void
+    public function hookedAndAsymmetricPropertiesAreLeftAloneButFinalOnesAreNot(): void
     {
         if (PHP_VERSION_ID < 80400) {
             // Nothing to skip: the language cannot express any of them yet.
@@ -267,7 +273,7 @@ final class ClassDoubleTest
         /** @var class-string $fqcn */
         $fqcn = __NAMESPACE__ . '\\' . $class;
 
-        Assert::same(array_keys(PropertyDefaults::forTarget(new \ReflectionClass($fqcn))), ['plain']);
+        Assert::same(PropertyDefaults::forTarget(new \ReflectionClass($fqcn)), ['plain' => 0, 'sealed' => 0]);
     }
 
     // --- Rejections ---------------------------------------------------------
@@ -397,6 +403,30 @@ final class ClassDoubleTest
     }
 
     /**
+     * Building the double must not evaluate the default, and calling the method
+     * without the argument must produce exactly what the contract promises. The
+     * counter separates the two: generation leaves it at zero, the call moves it
+     * to one.
+     */
+    public function anObjectNestedInAnArrayDefaultIsNeitherEvaluatedNorLost(): void
+    {
+        CountingStamp::$constructed = 0;
+
+        $contract = Understudy::for(NestedObjectDefaultContract::class);
+
+        Assert::same(CountingStamp::$constructed, 0);
+
+        $contract->batched();
+
+        Assert::same(CountingStamp::$constructed, 1);
+
+        $args = Understudy::calls(static fn(): int => $contract->batched(Arg::any()))[0]->args;
+
+        Assert::instanceOf($args[0][0], CountingStamp::class);
+        Assert::same($args[0][0]->at, 3);
+    }
+
+    /**
      * Reflection reports the default as `self::STEP`, and `self` inside the
      * generated class is a class that never had the constant. The value is used
      * instead, so the double still answers what the contract promises.
@@ -411,6 +441,31 @@ final class ClassDoubleTest
     }
 
     // --- Cloning ------------------------------------------------------------
+
+    /**
+     * `__clone()` runs on the copy and PHP gives it no reference to the
+     * original, so the copy is owned by whoever cloned it — the same rule
+     * `for()` follows. A Fiber that clones a double owns the copy, and the
+     * outer context cannot configure or verify it.
+     */
+    public function aCloneBelongsToTheContextThatMadeIt(): void
+    {
+        $ledger = Understudy::for(Ledger::class);
+        $copy = null;
+
+        $fiber = new \Fiber(static function () use ($ledger, &$copy): void {
+            $copy = clone $ledger;
+        });
+        $fiber->start();
+
+        Assert::instanceOf($copy, Ledger::class);
+
+        Expect::exception(ContextOwnershipViolation::class)->withMessageContaining(
+            'This understudy belongs to a different runtime context',
+        );
+
+        when(static fn(): string => $copy->describe())->returns('from outside');
+    }
 
     /**
      * A copy is a double of its own. Sharing the original's expectations would

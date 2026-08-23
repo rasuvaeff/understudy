@@ -113,7 +113,7 @@ What a class double does and does not do:
 | private and static methods | untouched — the target keeps them, because there is no instance state to intercept |
 | the destructor | replaced with an empty one, so nothing is torn down that was never built |
 | writable public properties | start at an empty value of their type; object-typed, hooked, `final`, `readonly` and `private(set)` ones are left uninitialized, and reading one raises PHP's own error |
-| `clone` | produces a double of its own: same contracts, no expectations, no call log |
+| `clone` | produces a double of its own: same contracts, no expectations, no call log, owned by the context that cloned it |
 
 A `readonly` target produces a `readonly` double, which PHP requires and which
 costs nothing — the double declares no properties of its own.
@@ -124,6 +124,14 @@ method, an enum, a trait, an internal class, an anonymous class, and any class
 that is not the first target. A double that cannot intercept every method would
 run the target's real code against an object whose constructor never ran, which
 is worse than not building it at all.
+
+Parameter defaults are reproduced rather than approximated: a class constant is
+rendered through its declaring class, an enum case as itself, and an object
+default from its own source expression — `new Stamp(7)` and `[new Stamp(7)]`
+alike — which is never evaluated while the double is generated. A default whose
+source names `self`, `static` or `parent` refuses the target, because those
+resolve against the generated class and would answer something the contract
+never promised.
 
 `bypassFinals()`, which lifts the first two, is being built next.
 

@@ -149,9 +149,14 @@ final class Runtime
      * a double the code under test produced satisfy a verification written
      * against the one the test set up.
      *
-     * The clone joins the context that owns the original, not whichever context
-     * happens to be current: `clone` inside a Fiber must not hand the copy to
-     * that Fiber while the test that configured the original is elsewhere.
+     * The copy belongs to the context that performed the `clone`, which is the
+     * same rule `Understudy::for()` follows: whoever creates a double owns it.
+     * That is a decision, not an oversight — `__clone()` runs on the copy and
+     * PHP hands it no reference to the original, so the owner of the original
+     * cannot be recovered here at all. A `clone` inside a Fiber therefore
+     * produces a copy that Fiber owns, and configuring or verifying it from
+     * outside raises `ContextOwnershipViolation` like any other cross-context
+     * access. Clone in the scope that will use it.
      */
     public static function adoptClone(object $clone): void
     {

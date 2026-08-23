@@ -83,6 +83,17 @@ make release-check
 - **A default that cannot be reproduced exactly refuses the target.** Answering
   with a different default than the contract's is a test that passes for the
   wrong reason.
+- **An object default is not always at the front of the expression.**
+  `[new Foo()]` and `['k' => new Foo()]` are legal initializers, and evaluating
+  either runs a constructor. Detection scans the whole source with quoted runs
+  blanked out, never just the first token.
+- **`final` on a property is not `readonly`.** It stops a subclass from
+  redeclaring the property; the outside can still write it, so the initializer
+  fills it like any other.
+- **A clone belongs to the context that cloned it.** `__clone()` runs on the
+  copy and PHP hands it no reference to the original, so the original's owner
+  cannot be recovered — this is a language limit, not a shortcut. Cloning inside
+  a Fiber gives that Fiber the copy.
 - **8.4-only syntax belongs in `eval`, never in a fixture file.** Property hooks,
   `final` properties and asymmetric visibility are a parse error on 8.3 — a file
   carrying them takes the whole suite down there rather than skipping a test.

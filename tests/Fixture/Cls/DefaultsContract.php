@@ -6,11 +6,6 @@ namespace Rasuvaeff\Understudy\Tests\Fixture\Cls;
 
 use Rasuvaeff\Understudy\Tests\Fixture\Suit;
 
-final class Stamp
-{
-    public function __construct(public int $at = 0, public string $tag = '') {}
-}
-
 /**
  * One method per shape a parameter default can take. Each is called without the
  * argument, so the double's default is compared against the contract's rather

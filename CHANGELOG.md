@@ -14,11 +14,13 @@
   `final` instance method, an enum, a trait, an internal or anonymous class, or
   a class after the first target.
 - Parameter defaults are reproduced instead of approximated. A class constant is
-  rendered through its declaring class, an enum case as itself, a `new`
-  expression from the parameter's own source rendering — which also avoids
-  running the constructor that `getDefaultValue()` would have. A default that
-  cannot be reproduced exactly refuses the target; it used to become `null`,
-  quietly making the double answer something the contract never promised.
+  rendered through its declaring class, an enum case as itself, and an object
+  default from the parameter's own source rendering — `new Foo(1)` and
+  `[new Foo(1)]` alike — which also avoids running the constructors that
+  `getDefaultValue()` would have. Refusal is narrow: a source naming `self`,
+  `static` or `parent`, which would resolve against the generated class. A
+  default is never silently replaced with `null`, as it used to be — that made
+  the double answer something the contract never promised.
 - Comparative benchmark harness in `perf/` — understudy against Mockery,
   Prophecy and PHPUnit's `MockObject`, plus cold-start and retained-memory
   measurements. A separate Composer project, `export-ignore`d from the
