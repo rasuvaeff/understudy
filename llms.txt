@@ -47,6 +47,19 @@ No runtime deps.
   visible. A fluent method that returned the real instance comes back as the
   double; a `static` method returning another instance of the real class raises
   `OriginalReturnTypeViolation`.
+- `Understudy::defaults(Contract::class, fn () => $value)` says what a loose
+  default should be. Nearest registration wins by distance in the type graph;
+  an equal-distance tie raises `AmbiguousDefaultFactory`, a wrong-typed result
+  raises `InvalidDefaultValue`. Per context, dropped by `reset()`.
+- Without a registration, a doublable return type becomes a double of its own,
+  one level deep, adopted into the context that owns the outer double.
+- `Understudy::wire(Sut::class, $overrides)` returns
+  `array{sut: object, doubles: array<string, object>}`. It reads the constructor
+  only. Object parameters become doubles; a nullable object still does; an
+  intersection becomes one double of both; a union of several object types, a
+  scalar without a default, and a by-reference parameter are refused. A variadic
+  tail is left empty. Overrides replace by parameter name and are not repeated in
+  `doubles`. Every refusal happens before the constructor runs.
 - A `clone` belongs to the context that cloned it, like anything `for()` builds:
   `__clone()` gets no reference to the original, so its owner cannot be
   recovered. Clone in the scope that will configure or verify the copy.
@@ -268,6 +281,9 @@ All implement `Rasuvaeff\Understudy\Exception\UnderstudyError`.
 | `MatcherLeaked` | a matcher was passed to a real call, not a specification |
 | `ForgottenDouble` | a double outlived the context that created it |
 | `ContextOwnershipViolation` | configuration or verification used a double from another context |
+| `AmbiguousDefaultFactory` | two registered factories are equally close to the requested type |
+| `InvalidDefaultValue` | a registered factory produced something the contract cannot hold |
+| `CannotWire` | the subject cannot be built, or a constructor parameter cannot be decided |
 | `ForwardingTargetMismatch` | the instance offered to `forwarding()` misses a contract of the double |
 | `OriginalCallUnavailable` | forwarding or `callOriginal()` with no real instance to delegate to |
 | `OriginalReturnTypeViolation` | a forwarded `static` method returned another instance of the real class |

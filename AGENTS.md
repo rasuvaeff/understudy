@@ -61,6 +61,36 @@ make release-check
 
 ## Invariants & gotchas
 
+- **Never autoload on the dispatch path.** `class_exists($name)` does, by
+  default, and an autoloader round trip per unmatched call cost about half the
+  dispatch time — caught by `make perf` against the recorded baseline, not by
+  any test. `class_exists($name, autoload: false)` is a hash lookup and is
+  fine; that is what guards the registry's reflection, and it is load-bearing,
+  because a builtin type name would otherwise reach `new ReflectionClass()`.
+  The registry itself is asked only when something was registered.
+- **The defaults registry lives in the context, and the depth-1 double is
+  adopted into the *owner* context.** A nested double handed to a call made from
+  another Fiber must belong to whoever owns the outer double, or the test that
+  configured it can neither configure nor verify what it got back.
+- **Depth stops at one, and it is enforced, not described.** A double created
+  by a loose default is marked `nested`, and asked for another one it refuses.
+  The comment saying "depth stops here" was true of intent and false of code
+  until review caught it: nothing stopped `$a->b()->c()` from inventing a third
+  collaborator. A registered factory still answers at any depth — that is the
+  test saying it meant this one.
+- **`wire()` never evaluates a constructor parameter default.** A parameter
+  that has one is omitted from the call, and PHP applies it — reading it would
+  run `= new Foo()` during wiring. Same trap as the codegen defaults in
+  milestone 2a, different file.
+- **`wire()` is Reflection glue, so it gets a fixture matrix, not property
+  tests.** Every branch is a shape a constructor can have, and each refusal
+  happens before the constructor runs — a half-built subject would show the test
+  a `TypeError` from inside code it did not write.
+- **Fixtures are one class per file, or PSR-4 cannot find them.** Two of the
+  wire fixtures were written into one file and every test that did not touch the
+  other class failed with "there is no such class"; the same mistake reached
+  review once already with `Fixture\Cls\Stamp`.
+
 - **Forwarding is not gated on `$matched`, and strictness is.** Strict mode is a
   complaint that a matched expectation answers; forwarding is the mode's own
   answer, and an expectation that only counts the call —

@@ -7,6 +7,7 @@ namespace Rasuvaeff\Understudy\Tests\Defaults;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
+use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Data\DataProvider;
@@ -22,7 +23,7 @@ final class TypeDefaultResolverTest
     #[DataProvider('safeDefaultProvider')]
     public function returnsATypeSafeDefault(string $returnType, mixed $expected): void
     {
-        Assert::same(TypeDefaultResolver::forSignature('Contract', $this->signature($returnType), 'method'), $expected);
+        Assert::same(TypeDefaultResolver::forSignature('Contract', $this->signature($returnType), 'method', new RuntimeContext()), $expected);
     }
 
     /**
@@ -48,7 +49,7 @@ final class TypeDefaultResolverTest
 
     public function objectDefaultIsAnEmptyStdClass(): void
     {
-        $value = TypeDefaultResolver::forSignature('Contract', $this->signature('object'), 'method');
+        $value = TypeDefaultResolver::forSignature('Contract', $this->signature('object'), 'method', new RuntimeContext());
 
         Assert::instanceOf($value, \stdClass::class);
     }
@@ -56,7 +57,7 @@ final class TypeDefaultResolverTest
     public function generatorDefaultIsAnEmptyGeneratorNotAnArray(): void
     {
         // `[]` would violate a declared `: Generator`.
-        $value = TypeDefaultResolver::forSignature('Contract', $this->signature('Generator'), 'method');
+        $value = TypeDefaultResolver::forSignature('Contract', $this->signature('Generator'), 'method', new RuntimeContext());
 
         Assert::instanceOf($value, \Generator::class);
         Assert::same(iterator_to_array($value), []);
@@ -64,14 +65,14 @@ final class TypeDefaultResolverTest
 
     public function traversableDefaultIsAnEmptyIterator(): void
     {
-        $value = TypeDefaultResolver::forSignature('Contract', $this->signature('Traversable'), 'method');
+        $value = TypeDefaultResolver::forSignature('Contract', $this->signature('Traversable'), 'method', new RuntimeContext());
 
         Assert::instanceOf($value, \EmptyIterator::class);
     }
 
     public function callableDefaultIsInvokable(): void
     {
-        $value = TypeDefaultResolver::forSignature('Contract', $this->signature('callable'), 'method');
+        $value = TypeDefaultResolver::forSignature('Contract', $this->signature('callable'), 'method', new RuntimeContext());
 
         Assert::true(is_callable($value));
     }
@@ -80,7 +81,7 @@ final class TypeDefaultResolverTest
     {
         // `Book|string` must answer `''` rather than failing on `Book`.
         Assert::same(
-            TypeDefaultResolver::forSignature('Contract', $this->signature('\\DateTimeImmutable|string'), 'method'),
+            TypeDefaultResolver::forSignature('Contract', $this->signature('\\DateTimeImmutable|string'), 'method', new RuntimeContext()),
             '',
         );
     }
@@ -91,20 +92,20 @@ final class TypeDefaultResolverTest
         // a union of two such classes has no safe default at all.
         Expect::exception(NoDefaultValue::class);
 
-        TypeDefaultResolver::forSignature('Contract', $this->signature('\\NullableThing|\\AnnullableThing'), 'method');
+        TypeDefaultResolver::forSignature('Contract', $this->signature('\\NullableThing|\\AnnullableThing'), 'method', new RuntimeContext());
     }
 
     public function anIntersectionBranchSurvivesUnionSplitting(): void
     {
         // `(A&B)|null` has two branches, not three.
         Assert::null(
-            TypeDefaultResolver::forSignature('Contract', $this->signature('(\\A&\\B)|null'), 'method'),
+            TypeDefaultResolver::forSignature('Contract', $this->signature('(\\A&\\B)|null'), 'method', new RuntimeContext()),
         );
     }
 
     public function anUnknownSignatureAnswersWithNull(): void
     {
-        Assert::null(TypeDefaultResolver::forSignature('Contract', null, 'method'));
+        Assert::null(TypeDefaultResolver::forSignature('Contract', null, 'method', new RuntimeContext()));
     }
 
     public function anArbitraryClassHasNoSafeDefault(): void
@@ -116,7 +117,7 @@ final class TypeDefaultResolverTest
             ->withMessageContaining('no safe default')
             ->withMessageContaining('when(fn () => $double->method(...))->returns(...)');
 
-        TypeDefaultResolver::forSignature('Contract', $this->signature('\\DateTimeImmutable'), 'method');
+        TypeDefaultResolver::forSignature('Contract', $this->signature('\\DateTimeImmutable'), 'method', new RuntimeContext());
     }
 
 
@@ -165,7 +166,7 @@ final class TypeDefaultResolverTest
 
     private function resolve(string $returnType): mixed
     {
-        return TypeDefaultResolver::forSignature('Contract', $this->signature($returnType), 'method');
+        return TypeDefaultResolver::forSignature('Contract', $this->signature($returnType), 'method', new RuntimeContext());
     }
 
     private function signature(string $returnType): MethodSignature

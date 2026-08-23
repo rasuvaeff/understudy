@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Runtime;
 
+use Rasuvaeff\Understudy\Defaults\DefaultFactories;
 use Rasuvaeff\Understudy\Invocation;
 
 /**
@@ -32,11 +33,24 @@ final class RuntimeContext
     /** @var int<0, max> */
     private int $declarations = 0;
 
+    private readonly DefaultFactories $defaultFactories;
+
     public function __construct()
     {
         /** @var \SplObjectStorage<object, DoubleState> $doubles */
         $doubles = new \SplObjectStorage();
         $this->doubles = $doubles;
+        $this->defaultFactories = new DefaultFactories();
+    }
+
+    /**
+     * The loose-default factories this context knows. Per context on purpose:
+     * sibling Fibers do not see each other's registrations, and `reset()` drops
+     * them with the rest of the test rather than leaking into the next one.
+     */
+    public function defaultFactories(): DefaultFactories
+    {
+        return $this->defaultFactories;
     }
 
     public function isRecording(): bool

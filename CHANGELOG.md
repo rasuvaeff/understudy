@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+- `Understudy::defaults(Contract::class, $factory)` says what a loose double
+  should hand back for a contract, instead of a nested double that answers
+  everything with a default and tells the test nothing. The nearest registration
+  wins, measured as distance in the type graph, so the answer does not depend on
+  registration order; an equal-distance tie raises `AmbiguousDefaultFactory` and
+  a wrong-typed result raises `InvalidDefaultValue`. Registrations belong to the
+  context and are dropped by `reset()`.
+- A return type that can itself be doubled now becomes one — a double of its
+  own, one level deep, adopted into the context that owns the outer double
+  rather than whichever Fiber happened to be running. It used to raise
+  `NoDefaultValue`. The depth limit is enforced: a double created this way
+  refuses to produce another, so a chain of implicit collaborators says so
+  instead of growing silently. A registered factory still answers at any depth.
+- The loose-default lookup asks the registry only when something was registered.
+  Reaching for `class_exists()` first autoloads, and an autoloader round trip on
+  every unmatched call cost about half the dispatch time — the comparative
+  benchmark caught it against the recorded baseline; no test would have.
+- `Understudy::wire(Sut::class)` builds a real subject with an understudy for
+  every constructor dependency and hands back both. It reads the constructor and
+  nothing else. Object parameters become doubles, an intersection becomes one
+  double of both contracts, a scalar with a default keeps it; a union of several
+  object types, a scalar without a default, a by-reference parameter, an
+  inaccessible constructor and a non-concrete subject are each refused by name,
+  before the constructor runs. A parameter that has a default is omitted from
+  the call so PHP applies it — reading it would run `= new Foo()` during wiring
+  — and an object that cannot be doubled falls back to its own default rather
+  than refusing the whole subject.
 - Forwarding. `Understudy::forwarding($double, $real)` delegates every call the
   test did not configure to a real instance and records it like any other. The
   target must satisfy every contract the double stands in for. `for($real)`

@@ -56,7 +56,7 @@ final class Invocation
      * than reaching for the parent implementation: the double's constructor
      * never ran, so the parent body would work over state that does not exist.
      *
-     * @throws \Rasuvaeff\Understudy\Exception\OriginalCallUnavailable
+     * @throws OriginalCallUnavailable
      */
     public function callOriginal(): mixed
     {
