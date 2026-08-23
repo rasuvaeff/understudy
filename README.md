@@ -383,6 +383,19 @@ double you built yourself; those are yours already, so they do not appear in
 `doubles`. Every refusal happens before the constructor runs, so a wrong type is
 reported by `wire()` rather than as a `TypeError` from inside the subject.
 
+A variadic tail takes a list, and every element is checked against the declared
+type before the constructor runs:
+
+```php
+['sut' => $service] = Understudy::wire(TaggedService::class, ['tags' => ['a', 'b']]);
+```
+
+Anything that is not a list — a bare value, a string-keyed array — is refused by
+name, as is an element of the wrong type. Filling a tail this way means the
+parameters before it are passed positionally, so an omitted optional one has its
+declared default materialized; that is the one place `wire()` evaluates a
+default rather than letting PHP apply it.
+
 ### Forwarding to a real object
 
 ```php

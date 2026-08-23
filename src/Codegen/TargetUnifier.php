@@ -38,6 +38,8 @@ final class TargetUnifier
     {
         /** @var array<non-empty-string, list<\ReflectionMethod>> $byName */
         $byName = [];
+        /** @var array<non-empty-string, \ReflectionMethod> $classStatics */
+        $classStatics = [];
 
         foreach ($targets as $target) {
             $filter = \ReflectionMethod::IS_PUBLIC | \ReflectionMethod::IS_PROTECTED;
@@ -45,11 +47,56 @@ final class TargetUnifier
             foreach ($target->getMethods($filter) as $method) {
                 if (self::isOverridable($method, $target)) {
                     $byName[$method->getName()][] = $method;
+                } elseif (!$target->isInterface()
+                    && $method->isStatic()
+                    && !$method->getDeclaringClass()->isInterface()
+                ) {
+                    // A class static method is inherited by the generated
+                    // subclass. Keep it only for compatibility checks against
+                    // same-named interface declarations; it must not be
+                    // rendered as a dispatcher of its own.
+                    $classStatics[$method->getName()] = $method;
                 }
             }
         }
 
         $signatures = [];
+
+        foreach ($classStatics as $name => $classStatic) {
+            $interfaceDeclarations = $byName[$name] ?? [];
+
+            foreach ($interfaceDeclarations as $interfaceDeclaration) {
+                if (!$interfaceDeclaration->isStatic()) {
+                    throw UnsupportedTarget::signatureConflict(
+                        $name,
+                        self::describe($classStatic) . ' is static',
+                        self::describe($interfaceDeclaration) . ' is an instance method',
+                    );
+                }
+
+                if (!self::returnTypeSatisfies($classStatic, $interfaceDeclaration)) {
+                    throw UnsupportedTarget::signatureConflict(
+                        $name,
+                        self::describe($classStatic) . ' declares `: '
+                        . TypeRenderer::returnType($classStatic->getReturnType()) . '`',
+                        self::describe($interfaceDeclaration) . ' declares `: '
+                        . TypeRenderer::returnType($interfaceDeclaration->getReturnType()) . '`',
+                    );
+                }
+
+                if (!self::staticContractSatisfies($classStatic, $interfaceDeclaration)) {
+                    throw UnsupportedTarget::signatureConflict(
+                        $name,
+                        self::describe($classStatic) . ' has an incompatible static signature',
+                        self::describe($interfaceDeclaration) . ' requires a compatible static signature',
+                    );
+                }
+            }
+
+            // The inherited implementation is the correct behavior for a
+            // class static method. There is no instance state to dispatch.
+            unset($byName[$name]);
+        }
 
         foreach ($byName as $name => $declarations) {
             \assert($declarations !== []);
@@ -84,6 +131,114 @@ final class TargetUnifier
         }
 
         return !$method->isStatic() || $target->isInterface();
+    }
+
+    private static function staticContractSatisfies(
+        \ReflectionMethod $implementation,
+        \ReflectionMethod $required,
+    ): bool {
+        if (!$implementation->isPublic()
+            || $implementation->returnsReference() !== $required->returnsReference()
+        ) {
+            return false;
+        }
+
+        $implementationParameters = $implementation->getParameters();
+        $requiredParameters = $required->getParameters();
+        $requiredCount = count($requiredParameters);
+
+        if ($implementation->getNumberOfRequiredParameters() > $requiredCount) {
+            return false;
+        }
+
+        // Past its fixed parameters an implementation has only a variadic tail
+        // to align the contract's remaining ones against. Without one it is
+        // simply too short, which is what the `null` below stands for.
+        $tail = $implementation->isVariadic()
+            ? array_slice($implementationParameters, -1)[0] ?? null
+            : null;
+
+        foreach ($requiredParameters as $position => $requiredParameter) {
+            $implementationParameter = $implementationParameters[$position] ?? $tail;
+
+            if ($implementationParameter === null) {
+                return false;
+            }
+
+            if ($requiredParameter->isVariadic() && !$implementationParameter->isVariadic()) {
+                return false;
+            }
+
+            if ($requiredParameter->isPassedByReference() !== $implementationParameter->isPassedByReference()
+                || !self::parameterTypeSatisfies(
+                    $implementationParameter->getType(),
+                    $requiredParameter->getType(),
+                    $implementation->getDeclaringClass(),
+                    $required->getDeclaringClass(),
+                )
+            ) {
+                return false;
+            }
+
+            if ($requiredParameter->isOptional() && !$implementationParameter->isOptional()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static function parameterTypeSatisfies(
+        ?\ReflectionType $implementation,
+        ?\ReflectionType $required,
+        \ReflectionClass $implementationClass,
+        \ReflectionClass $requiredClass,
+    ): bool {
+        $implementationBranches = self::returnTypeBranches($implementation, $implementationClass);
+        $requiredBranches = self::returnTypeBranches($required, $requiredClass);
+
+        foreach ($requiredBranches as $requiredBranch) {
+            $accepted = false;
+
+            foreach ($implementationBranches as $implementationBranch) {
+                if (self::typeBranchSubsetOf($requiredBranch, $implementationBranch)) {
+                    $accepted = true;
+
+                    break;
+                }
+            }
+
+            if (!$accepted) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param non-empty-list<non-empty-string> $required
+     * @param non-empty-list<non-empty-string> $implementation
+     */
+    private static function typeBranchSubsetOf(array $required, array $implementation): bool
+    {
+        foreach ($implementation as $implementationAtom) {
+            $accepted = false;
+
+            foreach ($required as $requiredAtom) {
+                if (self::returnAtomSatisfies($requiredAtom, $implementationAtom)) {
+                    $accepted = true;
+
+                    break;
+                }
+            }
+
+            if (!$accepted) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

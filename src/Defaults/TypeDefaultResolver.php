@@ -93,7 +93,7 @@ final class TypeDefaultResolver
 
         if (!$factories->isEmpty()) {
             /** @var class-string $name */
-            $registered = $factories->valueFor($name);
+            $registered = $factories->valueFor($name, $context);
 
             if ($registered !== null) {
                 return $registered[0];

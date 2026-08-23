@@ -46,6 +46,11 @@ final class Runtime
      */
     private static ?\WeakMap $owners = null;
 
+    /**
+     * @var \WeakMap<object, true>|null
+     */
+    private static ?\WeakMap $forgotten = null;
+
     public static function current(): RuntimeContext
     {
         $stack = self::stack();
@@ -215,6 +220,18 @@ final class Runtime
     }
 
     /**
+     * Whether a double's context was torn down under it.
+     *
+     * A one-way latch on purpose: a double belongs to exactly one context for
+     * its whole life, and `for()` hands back a new object every time, so
+     * nothing that was forgotten can become known again.
+     */
+    public static function isForgotten(object $double): bool
+    {
+        return self::$forgotten?->offsetExists($double) ?? false;
+    }
+
+    /**
      * @return \WeakMap<\Fiber, list<RuntimeContext>>
      */
     private static function fibers(): \WeakMap
@@ -240,6 +257,20 @@ final class Runtime
         }
 
         return self::$owners;
+    }
+
+    /**
+     * @return \WeakMap<object, true>
+     */
+    private static function forgotten(): \WeakMap
+    {
+        if (self::$forgotten === null) {
+            /** @var \WeakMap<object, true> $forgotten */
+            $forgotten = new \WeakMap();
+            self::$forgotten = $forgotten;
+        }
+
+        return self::$forgotten;
     }
 
     public static function stateOf(object $double): ?DoubleState
@@ -638,6 +669,7 @@ final class Runtime
         }
 
         foreach ($forgotten as $double) {
+            self::forgotten()[$double] = true;
             unset(self::$owners[$double]);
         }
     }

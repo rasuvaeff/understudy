@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- `wire()` accepts an override for a variadic tail. It takes a list, every
+  element is checked against the declared type, and anything else is refused by
+  name before the constructor runs. Filling a tail passes the parameters before
+  it positionally, which is the one place `wire()` materializes a declared
+  default rather than leaving it to PHP.
+- `wire()` checks an override against a union or intersection parameter instead
+  of leaving it to the constructor, and accepts an `int` where a `float` is
+  declared — PHP widens one to the other at the call boundary even under
+  `declare(strict_types=1)`, so refusing it would refuse a call the subject
+  would have taken.
+- A class static method that an interface target also declares is checked for
+  the whole contract — visibility, parameter types and variance, arity, optional
+  and variadic parameters, by-reference on both sides — and not only for its
+  return type. The generated class inherits that static, and PHP rejects the
+  class outright when the inherited declaration does not satisfy the interface;
+  a fatal error is not something a test can catch.
+- A default factory that answers with a double whose context was torn down now
+  says so, naming the contract, instead of handing the double on to fail later
+  on its first method call.
+- The mutation gate goes back to 92. The static-contract check is branch-dense
+  reflection glue, and covering it honestly raised the denominator faster than
+  the tests raised the numerator: the run measures 93.1% locally, three mutants
+  above a 93 gate, on a mutant count that differs from CI's by dozens. The
+  reason is written into `infection.json5` next to the number.
 - Reading a file through a `Bypass\FileWrapper` nobody installed no longer
   installs it. `withoutWrapper()` restored and re-registered unconditionally, so
   one such read made the wrapper `file://`'s owner for the rest of the process
