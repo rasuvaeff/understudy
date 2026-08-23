@@ -476,12 +476,12 @@ final class UnderstudyTest
         });
     }
 
-    public function classTargetsAreRejectedWithAnActionableMessage(): void
+    public function aFinalClassTargetIsRejectedWithAnActionableMessage(): void
     {
         Expect::exception(UnsupportedTarget::class)->withMessage(
-            'Cannot create an understudy for `' . Book::class . '`: only interfaces can be doubled in this '
-            . 'version. Double the interface it implements, or introduce one for the dependency you need to '
-            . 'stand in for.',
+            'Cannot create an understudy for `' . Book::class . '`: a final class cannot be extended. '
+            . 'Double the interface it implements, or introduce one; stripping final at load time is a '
+            . 'separate, opt-in mechanism.',
         );
 
         Understudy::for(Book::class);

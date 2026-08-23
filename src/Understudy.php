@@ -51,6 +51,15 @@ final class Understudy
         /** @var T $double */
         $double = (new \ReflectionClass($blueprint->generatedClass))->newInstanceWithoutConstructor();
 
+        // The skipped constructor leaves every typed property uninitialized;
+        // the ones that can hold an empty scalar or array get one, so that
+        // reading them raises nothing. See Codegen\PropertyDefaults for what is
+        // deliberately left alone.
+        /** @var mixed $value */
+        foreach ($blueprint->propertyDefaults as $property => $value) {
+            $double->{$property} = $value;
+        }
+
         Runtime::adopt($double, new DoubleState($blueprint));
 
         return $double;

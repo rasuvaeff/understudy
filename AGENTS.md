@@ -61,6 +61,32 @@ make release-check
 
 ## Invariants & gotchas
 
+- **A fixture's shape is the test input, so `tests/Fixture` is skipped by
+  rector.** Rector once rewrote `Fixture\Cls\Ledger` into a promoted
+  constructor property, which silently turned "this property has a declared
+  default" into "this property has none" and made the property-initialization
+  test assert the opposite of what it was written for. Improving a fixture is
+  changing the contract under test.
+- **A generated `__destruct()` must not declare a return type.** PHP rejects one
+  with a fatal, not an exception, so it is rendered by hand rather than through
+  the signature path. Every other magic method — including `__get`, `__set`,
+  `__call`, `__invoke` and `__toString` — accepts the widened
+  `OriginalType|ArgumentMatcher` parameter union on 8.3, 8.4 and 8.5.
+- **Never call `getDefaultValue()` to find out what a default is.** On
+  `= new Foo()` it runs the constructor. The default's source expression comes
+  from `ReflectionParameter::__toString()`, which renders it fully qualified
+  without reading the declaring file — and is the only way to see a `new`
+  default without evaluating it. Two things it does not qualify:
+  `self`/`static`/`parent`, which would resolve against the generated class, and
+  a global constant, which Reflection reports prefixed with the declaring
+  namespace and therefore under a name that does not exist.
+- **A default that cannot be reproduced exactly refuses the target.** Answering
+  with a different default than the contract's is a test that passes for the
+  wrong reason.
+- **8.4-only syntax belongs in `eval`, never in a fixture file.** Property hooks,
+  `final` properties and asymmetric visibility are a parse error on 8.3 — a file
+  carrying them takes the whole suite down there rather than skipping a test.
+
 - **`perf/` is a separate Composer project and must stay one.** Mockery,
   Prophecy and PHPUnit belong to the comparative benchmark harness, never to
   this package's `require-dev` — they would slow every `composer build` and

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Runtime;
 
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
@@ -138,6 +139,34 @@ final class Runtime
         $context->register($double, $state);
 
         self::owners()->offsetSet($double, $context);
+    }
+
+    /**
+     * Registers a freshly cloned double, called from the generated `__clone()`.
+     *
+     * The copy gets a state of its own built from the same blueprint: no
+     * expectations, no call log, no label, no mode. Copying any of it would let
+     * a double the code under test produced satisfy a verification written
+     * against the one the test set up.
+     *
+     * The clone joins the context that owns the original, not whichever context
+     * happens to be current: `clone` inside a Fiber must not hand the copy to
+     * that Fiber while the test that configured the original is elsewhere.
+     */
+    public static function adoptClone(object $clone): void
+    {
+        $blueprint = DoubleFactory::blueprintOfGenerated($clone::class);
+
+        if ($blueprint === null) {
+            // Only a generated class reaches this method, and every one of them
+            // is registered when it is compiled.
+            return;
+        }
+
+        $context = self::current();
+        $context->register($clone, new DoubleState($blueprint));
+
+        self::owners()->offsetSet($clone, $context);
     }
 
     public static function ownerOf(object $double): ?RuntimeContext

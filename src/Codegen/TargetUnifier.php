@@ -40,8 +40,12 @@ final class TargetUnifier
         $byName = [];
 
         foreach ($targets as $target) {
-            foreach ($target->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-                $byName[$method->getName()][] = $method;
+            $filter = \ReflectionMethod::IS_PUBLIC | \ReflectionMethod::IS_PROTECTED;
+
+            foreach ($target->getMethods($filter) as $method) {
+                if (self::isOverridable($method, $target)) {
+                    $byName[$method->getName()][] = $method;
+                }
             }
         }
 
@@ -54,6 +58,32 @@ final class TargetUnifier
         }
 
         return $signatures;
+    }
+
+    /**
+     * Which of a target's methods the generated class redeclares.
+     *
+     * The constructor is never one of them: a double is built with
+     * `newInstanceWithoutConstructor()`, so redeclaring it would only invite
+     * somebody to call it. `__destruct` and `__clone` are generated separately
+     * — a destructor cannot carry a return type at all, and a clone has to
+     * register the copy as a double of its own rather than dispatch.
+     *
+     * A static method declared by a *class* keeps the parent's implementation:
+     * there is no instance state to intercept and silently replacing it would
+     * change what the target does. An interface leaves no implementation to
+     * keep, so its static declarations still get the override that rejects the
+     * call and points at dependency injection.
+     *
+     * @param \ReflectionClass<object> $target
+     */
+    private static function isOverridable(\ReflectionMethod $method, \ReflectionClass $target): bool
+    {
+        if (\in_array($method->getName(), ['__construct', '__destruct', '__clone'], strict: true)) {
+            return false;
+        }
+
+        return !$method->isStatic() || $target->isInterface();
     }
 
     /**
@@ -127,7 +157,26 @@ final class TargetUnifier
             returnsVoid: $returnType === 'void',
             returnsReference: $reference,
             static: $static,
+            // An override may widen visibility but never narrow it, so one
+            // public declaration makes the whole override public.
+            visibility: self::visibilityOf($declarations),
         );
+    }
+
+    /**
+     * @param non-empty-list<\ReflectionMethod> $declarations
+     *
+     * @return 'public'|'protected'
+     */
+    private static function visibilityOf(array $declarations): string
+    {
+        foreach ($declarations as $declaration) {
+            if ($declaration->isPublic()) {
+                return 'public';
+            }
+        }
+
+        return 'protected';
     }
 
     /**
@@ -691,7 +740,7 @@ final class TargetUnifier
             $requiredEverywhere = $requiredEverywhere && !$parameter->isOptional();
 
             if ($parameter->isDefaultValueAvailable()) {
-                $declaredDefaults[self::renderDefault($parameter->getDefaultValue())] = true;
+                $declaredDefaults[self::renderDefault($parameter, $name)] = true;
             }
         }
 
@@ -779,27 +828,224 @@ final class TargetUnifier
     }
 
     /**
-     * Only values that round-trip through source are kept; anything else falls
-     * back to `null`, which is always a legal default once the type is widened.
+     * Renders a parameter's default as source the generated class can carry.
+     *
+     * Faithfulness is the point: an omitted argument has to be logged as the
+     * value the target would have received, or `tag('a')` and `tag('a', 1)`
+     * stop verifying as the same call. Anything that cannot be reproduced
+     * exactly rejects the target instead of quietly becoming `null` — a double
+     * that answers with a different default than the real thing is a test that
+     * passes for the wrong reason.
+     *
+     * The source expression comes from `ReflectionParameter::__toString()`,
+     * which renders it fully qualified and without reading the declaring file,
+     * so it works for `eval`'d and internal declarations too. It is also the
+     * only way to *see* an object default without evaluating it:
+     * `getDefaultValue()` on `= new Foo()` runs the constructor.
+     *
+     * @param non-empty-string $method
      *
      * @return non-empty-string
      */
-    private static function renderDefault(mixed $value): string
+    private static function renderDefault(\ReflectionParameter $parameter, string $method): string
     {
-        if ($value instanceof \UnitEnum) {
-            return '\\' . $value::class . '::' . $value->name;
+        $source = self::defaultSource($parameter);
+
+        if ($source !== null && str_starts_with($source, 'new ')) {
+            return self::renderObjectDefault($parameter, $method, $source);
         }
 
-        if ($value === null || is_object($value)) {
-            // var_export() would render `NULL`, which is legal but jarring in
-            // generated source next to hand-written PHP.
-            return 'null';
+        if ($parameter->isDefaultValueConstant()) {
+            $rendered = self::renderConstantDefault($parameter);
+
+            if ($rendered !== null) {
+                return $rendered;
+            }
         }
 
-        $rendered = var_export($value, return: true);
+        return self::renderValueDefault($parameter, $method);
+    }
+
+    /**
+     * The default expression as PHP would print it, or null when Reflection
+     * reports none.
+     */
+    private static function defaultSource(\ReflectionParameter $parameter): ?string
+    {
+        $rendered = (string) $parameter;
+        $position = strpos($rendered, ' = ');
+
+        if ($position === false) {
+            return null;
+        }
+
+        if (!str_ends_with($rendered, ' ]')) {
+            return null;
+        }
+
+        return substr($rendered, $position + \strlen(' = '), -\strlen(' ]'));
+    }
+
+    /**
+     * `new` defaults are rendered verbatim: Reflection qualifies the class name
+     * for us. What it does not qualify is `self`, `static` and `parent` — those
+     * would resolve against the generated class, which is a different class
+     * with different constants — so a target using them is rejected by name.
+     *
+     * @param non-empty-string $method
+     *
+     * @return non-empty-string
+     */
+    private static function renderObjectDefault(\ReflectionParameter $parameter, string $method, string $source): string
+    {
+        if (preg_match('/\b(self|static|parent)\s*::/i', $source) === 1) {
+            throw UnsupportedTarget::notDoublable(
+                $parameter->getDeclaringClass()?->getName() ?? $method,
+                sprintf(
+                    'the default of `$%s` in `%s()` is `%s`, which resolves `self`, `static` or `parent` '
+                    . 'against the declaring class. The generated double is a different class, so the value '
+                    . 'cannot be reproduced. Give the parameter a default the double can build, or double '
+                    . 'an interface.',
+                    $parameter->getName(),
+                    $method,
+                    $source,
+                ),
+            );
+        }
+
+        \assert($source !== '');
+
+        return $source;
+    }
+
+    /**
+     * A class constant or enum case, rendered through its declaring class so
+     * that `self::` does not follow the double into a class that never had the
+     * constant. Returns null when the constant cannot be named from outside —
+     * a private or protected one, or a global constant, which Reflection
+     * reports prefixed with the declaring namespace and therefore under a name
+     * that does not exist.
+     *
+     * @return non-empty-string|null
+     */
+    private static function renderConstantDefault(\ReflectionParameter $parameter): ?string
+    {
+        $name = $parameter->getDefaultValueConstantName();
+
+        if ($name === null) {
+            return null;
+        }
+
+        if (!str_contains($name, '::')) {
+            return null;
+        }
+
+        $parts = explode('::', $name, 2);
+        $class = $parts[0];
+        $constant = $parts[1] ?? '';
+        $declaring = $parameter->getDeclaringClass();
+
+        if (\in_array(strtolower($class), ['self', 'static', 'parent'], strict: true)) {
+            if ($declaring === null) {
+                return null;
+            }
+
+            if (strtolower($class) === 'parent') {
+                $parent = $declaring->getParentClass();
+
+                if ($parent === false) {
+                    return null;
+                }
+
+                $class = $parent->getName();
+            } else {
+                $class = $declaring->getName();
+            }
+        }
+
+        if (!class_exists($class) && !interface_exists($class) && !enum_exists($class)) {
+            return null;
+        }
+
+        $reflection = new \ReflectionClass($class);
+
+        if (!$reflection->hasConstant($constant)) {
+            return null;
+        }
+
+        $declared = $reflection->getReflectionConstant($constant);
+
+        if ($declared === false || !$declared->isPublic()) {
+            // Reachable only from inside the declaring hierarchy, which the
+            // generated class is not part of; fall back to the value.
+            return null;
+        }
+
+        return '\\' . $class . '::' . $constant;
+    }
+
+    /**
+     * The evaluated value, for everything that survives `var_export()`: scalars,
+     * null, arrays of them, and enum cases. An object anywhere inside would be
+     * rendered as a `::__set_state()` call the double cannot honour, so the
+     * target is rejected rather than given a default that differs from the
+     * contract's.
+     *
+     * @param non-empty-string $method
+     *
+     * @return non-empty-string
+     */
+    private static function renderValueDefault(\ReflectionParameter $parameter, string $method): string
+    {
+        /** @var mixed $value */
+        $value = $parameter->getDefaultValue();
+
+        if (self::holdsPlainObject($value)) {
+            throw UnsupportedTarget::notDoublable(
+                $parameter->getDeclaringClass()?->getName() ?? $method,
+                sprintf(
+                    'the default of `$%s` in `%s()` holds an object that cannot be written back as source. '
+                    . 'Give the parameter a scalar, array or enum default, or double an interface.',
+                    $parameter->getName(),
+                    $method,
+                ),
+            );
+        }
+
+        // `var_export()` renders null as `NULL`, which is legal but jarring in
+        // generated source next to hand-written PHP.
+        $rendered = $value === null ? 'null' : var_export($value, return: true);
         \assert($rendered !== '');
 
         return $rendered;
+    }
+
+    /**
+     * True when the value is, or contains, an object that is not an enum case.
+     * Enum cases round-trip through `var_export()`; nothing else does.
+     */
+    private static function holdsPlainObject(mixed $value): bool
+    {
+        if ($value instanceof \UnitEnum) {
+            return false;
+        }
+
+        if (\is_object($value)) {
+            return true;
+        }
+
+        if (!\is_array($value)) {
+            return false;
+        }
+
+        /** @var mixed $item */
+        foreach ($value as $item) {
+            if (self::holdsPlainObject($item)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function describe(\ReflectionMethod $method): string

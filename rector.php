@@ -27,6 +27,13 @@ return RectorConfig::configure()
         RemoveUselessVarTagRector::class,
         // `$x === null` reads clearer than `!$x instanceof FQCN` in guards.
         FlipTypeControlToUseExclusiveTypeRector::class,
+        // A fixture's *shape* is the input under test: a promoted constructor
+        // property, a default moved onto a declaration, an unused parameter
+        // dropped — each is an improvement to ordinary code and a silent change
+        // to what the codegen is asked to reproduce. Rector rewrote
+        // `Fixture\\Cls\\Ledger` into promoted form once, which quietly turned
+        // "this property has a declared default" into "this property has none".
+        __DIR__ . '/tests/Fixture',
         // The test suite drives generated classes through Reflection, so the
         // dead-code rules cannot see the call sites of fixture members.
         RemoveUnusedPrivateMethodRector::class => [__DIR__ . '/tests'],

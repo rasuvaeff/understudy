@@ -17,6 +17,8 @@ final readonly class MethodSignature
      * @param string           $parameters rendered parameter list; empty for a method without parameters
      * @param non-empty-string $arguments  expression collecting every parameter, defaults included
      * @param non-empty-string $returnType rendered return type of the override
+     * @param 'public'|'protected' $visibility a protected method is overridden and dispatched like any
+     *                                         other, but native visibility keeps it out of setup closures
      */
     public function __construct(
         public string $name,
@@ -27,5 +29,6 @@ final readonly class MethodSignature
         public bool $returnsVoid,
         public bool $returnsReference,
         public bool $static = false,
+        public string $visibility = 'public',
     ) {}
 }

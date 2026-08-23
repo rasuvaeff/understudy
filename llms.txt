@@ -20,8 +20,17 @@ No runtime deps.
   else raises `InvalidCallSpecification`.
 - A double exposes nothing beyond its contract. All operations are static
   methods on `Understudy`, or the free functions `when()` / `verify()`.
-- Interfaces only in this version. A class target raises `UnsupportedTarget`
-  telling you to double the interface.
+- Interfaces and classes. A class may be the first target only (PHP has single
+  inheritance); interfaces follow it. The target's constructor and destructor
+  never run, private and static methods are left alone, protected ones are
+  dispatched but unconfigurable, writable public properties start empty, and a
+  `clone` is a double of its own.
+- Refused before generation, each with the reason: a `final` class, a class with
+  a non-private `final` instance method, an enum, a trait, an internal class, an
+  anonymous class, a class that is not the first target. A parameter default
+  that cannot be reproduced exactly — one resolving `self`/`static`/`parent`
+  inside a `new`, or holding an object — refuses the target rather than becoming
+  a silent `null`.
 - Static contract methods are implemented only so the generated class is
   concrete. Calling one raises `InvalidCallSpecification`; inject an instance
   dependency instead.
@@ -38,6 +47,7 @@ use Rasuvaeff\Understudy\Understudy;
 
 $repo = Understudy::for(BookRepository::class);                  // returns BookRepository
 $both = Understudy::for(BookRepository::class, Countable::class); // several interfaces
+$cls  = Understudy::for(DoctrineBookRepository::class);           // a class target
 ```
 
 `for(class-string<T> $target, class-string ...$interfaces): T`
@@ -243,5 +253,5 @@ All implement `Rasuvaeff\Understudy\Exception\UnderstudyError`.
 ## Not supported
 
 Static method mocking, patching at the point of use, deep stubs, duck doubles,
-sharing state across processes. Class targets, `bypassFinals()` and the runner
-adapters are being built next.
+sharing state across processes. `bypassFinals()` and the runner adapters are
+being built next.

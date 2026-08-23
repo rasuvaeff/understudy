@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Class targets. `Understudy::for()` accepts a class as its first target, with
+  interfaces after it: the constructor and destructor never run, public and
+  protected methods are dispatched, private and static ones are left to the
+  target, writable public properties start at an empty value of their type, and
+  a `readonly` target produces a `readonly` double. `clone` now yields a double
+  of its own — same contracts, no expectations, no call log — instead of an
+  object the runtime had never heard of.
+- A target that cannot be doubled faithfully is refused before anything is
+  generated, with the reason and the alternative: a `final` class, a non-private
+  `final` instance method, an enum, a trait, an internal or anonymous class, or
+  a class after the first target.
+- Parameter defaults are reproduced instead of approximated. A class constant is
+  rendered through its declaring class, an enum case as itself, a `new`
+  expression from the parameter's own source rendering — which also avoids
+  running the constructor that `getDefaultValue()` would have. A default that
+  cannot be reproduced exactly refuses the target; it used to become `null`,
+  quietly making the double answer something the contract never promised.
 - Comparative benchmark harness in `perf/` — understudy against Mockery,
   Prophecy and PHPUnit's `MockObject`, plus cold-start and retained-memory
   measurements. A separate Composer project, `export-ignore`d from the

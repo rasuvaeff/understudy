@@ -98,8 +98,34 @@ the interface can be implemented, but calling one raises
 `InvalidCallSpecification`: a static call has no double instance to own its
 state.
 
-Interfaces are supported today; class targets and `bypassFinals()` are being
-built next.
+A class can be the first target, with interfaces after it:
+
+```php
+$repository = Understudy::for(DoctrineBookRepository::class, Countable::class);
+```
+
+What a class double does and does not do:
+
+| | |
+|---|---|
+| the target's constructor | never runs — the double is built without it, so no side effect of construction reaches your test |
+| public and protected methods | overridden and dispatched; a protected one shows up in the transcript and under strict mode, but PHP's own visibility keeps it out of a setup closure |
+| private and static methods | untouched — the target keeps them, because there is no instance state to intercept |
+| the destructor | replaced with an empty one, so nothing is torn down that was never built |
+| writable public properties | start at an empty value of their type; object-typed, hooked, `final`, `readonly` and `private(set)` ones are left uninitialized, and reading one raises PHP's own error |
+| `clone` | produces a double of its own: same contracts, no expectations, no call log |
+
+A `readonly` target produces a `readonly` double, which PHP requires and which
+costs nothing — the double declares no properties of its own.
+
+Some targets are refused before anything is generated, each with the reason and
+what to do instead: a `final` class, a class with a non-private `final` instance
+method, an enum, a trait, an internal class, an anonymous class, and any class
+that is not the first target. A double that cannot intercept every method would
+run the target's real code against an object whose constructor never ran, which
+is worse than not building it at all.
+
+`bypassFinals()`, which lifts the first two, is being built next.
 
 ### Stubbing
 
