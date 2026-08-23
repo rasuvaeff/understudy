@@ -16,4 +16,7 @@ enum Mode
 
     /** Fail immediately, naming the method. */
     case Strict;
+
+    /** Delegate to a real instance, recording the call and its outcome. */
+    case Forwarding;
 }

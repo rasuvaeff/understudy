@@ -61,6 +61,15 @@ make release-check
 
 ## Invariants & gotchas
 
+- **Forwarding is not gated on `$matched`, and strictness is.** Strict mode is a
+  complaint that a matched expectation answers; forwarding is the mode's own
+  answer, and an expectation that only counts the call —
+  `expect(...)->times(1)` with no action — still has to get one. Gating it would
+  make counting a call change what it returns.
+- **`for($real)` remembers, `forwarding()` decides.** A double that started
+  running real code the moment it was built would be a surprise rather than a
+  shorthand, and `callOriginal()` needs the target either way.
+
 - **A fixture's shape is the test input, so `tests/Fixture` is skipped by
   rector.** Rector once rewrote `Fixture\Cls\Ledger` into a promoted
   constructor property, which silently turned "this property has a declared

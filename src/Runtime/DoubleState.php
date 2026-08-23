@@ -25,6 +25,8 @@ final class DoubleState
     /** @var non-empty-string|null */
     private ?string $label = null;
 
+    private ?object $forwardingTarget = null;
+
     public function __construct(
         public readonly Blueprint $blueprint,
         private Mode $mode = Mode::Loose,
@@ -46,6 +48,25 @@ final class DoubleState
     public function label(): string
     {
         return $this->label ?? $this->blueprint->displayName();
+    }
+
+    /**
+     * @param non-empty-string $label
+     */
+    /**
+     * The real instance a forwarding call delegates to, or null when the double
+     * stands alone. Remembered separately from the mode: `for($real)` records
+     * the instance so `callOriginal()` works, without making every unmatched
+     * call go through it.
+     */
+    public function forwardingTarget(): ?object
+    {
+        return $this->forwardingTarget;
+    }
+
+    public function setForwardingTarget(object $target): void
+    {
+        $this->forwardingTarget = $target;
     }
 
     /**

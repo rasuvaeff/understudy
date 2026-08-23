@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Forwarding. `Understudy::forwarding($double, $real)` delegates every call the
+  test did not configure to a real instance and records it like any other. The
+  target must satisfy every contract the double stands in for. `for($real)`
+  builds a double of that object's class and remembers the object without
+  turning delegation on — wrapping is not delegating — and refuses a final
+  class, whose concrete type a double cannot keep.
+- `Invocation::callOriginal()` delegates a single call from inside `answers()`,
+  whatever the mode. With no target it raises `OriginalCallUnavailable` rather
+  than reaching for the parent implementation over a constructor that never ran.
+- Forwarding records the boundary call only: a real method calling itself is not
+  visible, because understudy proxies an object rather than instrumenting one.
+  A fluent method that returned the real instance comes back as the double, so a
+  chain stays doubled; a `static` method returning a different instance of the
+  real class raises `OriginalReturnTypeViolation`.
 - Class targets. `Understudy::for()` accepts a class as its first target, with
   interfaces after it: the constructor and destructor never run, public and
   protected methods are dispatched, private and static ones are left to the
