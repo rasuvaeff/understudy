@@ -152,8 +152,9 @@ final class FileWrapperTest
         $wrapper = new FileWrapper();
         $opened = null;
 
-        // Likewise silent: no STREAM_REPORT_ERRORS, no warning.
-        Assert::false($wrapper->stream_open(__DIR__ . '/nothing-here.php', 'r', 0, $opened));
+        Assert::false($this->quietly(
+            static fn(): bool => $wrapper->stream_open(__DIR__ . '/nothing-here.php', 'r', 0, $opened),
+        ));
     }
 
     // --- The rest of the stream protocol --------------------------------------
@@ -262,10 +263,36 @@ final class FileWrapperTest
     {
         $wrapper = new FileWrapper();
 
-        // No `@`: a wrapper reports failures only when asked to, and this call
-        // does not ask. A warning here would land on STDERR, which is enough to
-        // make Infection abandon a run.
-        Assert::false($wrapper->dir_opendir(__DIR__ . '/no-such-directory'));
+        Assert::false($this->quietly(
+            static fn(): bool => $wrapper->dir_opendir(__DIR__ . '/no-such-directory'),
+        ));
+    }
+
+    /**
+     * Runs one call with diagnostics swallowed.
+     *
+     * What is under test here is a return value, not whether PHP said anything
+     * on the way. `@` is not enough: a handler that does not consult
+     * `error_reporting()` fires through it, and Infection installs one — a
+     * single line on STDERR makes it abandon the whole run. Since any mutant of
+     * the code being called may be the one that talks, the silence has to be
+     * imposed from out here.
+     *
+     * @template T
+     *
+     * @param callable(): T $call
+     *
+     * @return T
+     */
+    private function quietly(callable $call): mixed
+    {
+        set_error_handler(static fn(): bool => true);
+
+        try {
+            return $call();
+        } finally {
+            restore_error_handler();
+        }
     }
 
     private function read(string $path): string
