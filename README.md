@@ -332,6 +332,11 @@ Two things are worth knowing before relying on it:
 - **Only the call at the boundary is recorded.** If the real method calls
   another method on itself, that happens inside the real object. Understudy
   proxies an object; it does not instrument one.
+- **A `: never` method reaches the real implementation.** Its throw lives
+  there, and a forwarding double has something that can answer for itself.
+- **An understudy is not a valid target.** Forwarding to one — itself included
+  — sends every call back into a dispatcher, and an unmatched one keeps coming
+  back until the stack runs out.
 - **A fluent method comes back as the double.** When the real instance returns
   itself, the double is returned instead, so a chain stays doubled. A `static`
   method that returns a *different* instance of the real class is refused —

@@ -66,6 +66,13 @@ make release-check
   answer, and an expectation that only counts the call —
   `expect(...)->times(1)` with no action — still has to get one. Gating it would
   make counting a call change what it returns.
+- **Forwarding comes before the `never` fallback.** A `: never` method on a
+  forwarding double has a real implementation to reach, and that implementation
+  is where the throw lives.
+- **A by-reference parameter is collected as `[&$slot]`, not `[$slot]`.** The
+  copy would make `&` a promise the double cannot keep once the call is
+  forwarded. Verified on 8.3 and 8.5: a reference survives both the array
+  literal and the `...` spread; a copy does not.
 - **`for($real)` remembers, `forwarding()` decides.** A double that started
   running real code the moment it was built would be a surprise rather than a
   shorthand, and `callOriginal()` needs the target either way.

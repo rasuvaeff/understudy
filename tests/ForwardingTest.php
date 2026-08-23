@@ -12,7 +12,9 @@ use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Bookkeeper;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\Chainable;
+use Rasuvaeff\Understudy\Tests\Fixture\Fwd\Filler;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\RealChain;
+use Rasuvaeff\Understudy\Tests\Fixture\Fwd\RealFiller;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\SealedChain;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
@@ -129,6 +131,38 @@ final class ForwardingTest
         $double->detach();
     }
 
+    /**
+     * `&` promises the caller's variable will be written. Collecting the
+     * argument as `[$slot]` would copy it, and a forwarded method could never
+     * keep that promise.
+     */
+    public function aByReferenceArgumentReachesTheCallersVariable(): void
+    {
+        $double = Understudy::for(Filler::class);
+        Understudy::forwarding($double, new RealFiller());
+
+        $slot = 'before';
+        $double->fill($slot, 'after');
+
+        Assert::same($slot, 'after');
+    }
+
+    /**
+     * A `: never` method on a forwarding double has a real implementation to
+     * reach, and that implementation is where the throw lives. Complaining
+     * that nothing was configured would be answering for an object that can
+     * answer for itself.
+     */
+    public function aNeverMethodReachesTheRealImplementation(): void
+    {
+        $double = Understudy::for(Filler::class);
+        Understudy::forwarding($double, new RealFiller());
+
+        Expect::exception(\DomainException::class)->withMessage('the real implementation refused');
+
+        $double->collapse();
+    }
+
     // --- callOriginal() -----------------------------------------------------
 
     /**
@@ -216,6 +250,32 @@ final class ForwardingTest
             ->withMessageContaining('`' . RealChain::class . '` is not one');
 
         Understudy::forwarding($double, new RealChain());
+    }
+
+    /**
+     * A double delegating to a double — itself included — sends every call back
+     * into the dispatcher it came from, and an unmatched one keeps coming back
+     * until the stack runs out.
+     */
+    public function anUnderstudyCannotBeAForwardingTarget(): void
+    {
+        $double = Understudy::for(Chainable::class);
+        $other = Understudy::for(Chainable::class);
+
+        Expect::exception(ForwardingTargetMismatch::class)
+            ->withMessageContaining('cannot forward to an understudy')
+            ->withMessageContaining('until the stack runs out');
+
+        Understudy::forwarding($double, $other);
+    }
+
+    public function aDoubleCannotForwardToItself(): void
+    {
+        $double = Understudy::for(Chainable::class);
+
+        Expect::exception(ForwardingTargetMismatch::class)->withMessageContaining('cannot forward to an understudy');
+
+        Understudy::forwarding($double, $double);
     }
 
     public function turningForwardingOnWithoutATargetIsRejected(): void

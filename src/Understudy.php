@@ -383,6 +383,12 @@ final class Understudy
         $state = self::stateOf($double);
 
         if ($real !== null) {
+            // A double delegating to a double — itself included — sends every
+            // call back into the dispatcher it came from.
+            if (Runtime::ownerOf($real) !== null) {
+                throw ForwardingTargetMismatch::understudyTarget($state->label());
+            }
+
             foreach ($state->blueprint->contracts as $contract) {
                 if (!$real instanceof $contract) {
                     throw ForwardingTargetMismatch::missingContract($state->label(), $contract, $real::class);

@@ -127,7 +127,11 @@ final class TargetUnifier
             // parameters the caller left at their default: the call log must
             // show the arguments the method actually received, so that
             // `tag('alpha')` and `tag('alpha', 1)` verify as the same call.
-            $arguments[] = '$' . $parameter['name'];
+            //
+            // A by-reference parameter is collected as a reference. `[$slot]`
+            // would copy it, and a forwarded method could never write back to
+            // the caller's variable — the one thing declaring `&` promises.
+            $arguments[] = ($parameter['byReference'] ? '&$' : '$') . $parameter['name'];
         }
 
         if ($variadicAt !== null) {
@@ -685,7 +689,7 @@ final class TargetUnifier
      * @param non-empty-string              $name
      * @param non-empty-list<\ReflectionMethod> $declarations
      *
-     * @return array{rendered: non-empty-string, name: non-empty-string}
+     * @return array{rendered: non-empty-string, name: non-empty-string, byReference: bool}
      */
     private static function unifyParameter(string $name, array $declarations, int $position): array
     {
@@ -784,7 +788,7 @@ final class TargetUnifier
         ));
         \assert($rendered !== '');
 
-        return ['rendered' => $rendered, 'name' => $parameterName];
+        return ['rendered' => $rendered, 'name' => $parameterName, 'byReference' => $byReference === true];
     }
 
     /**

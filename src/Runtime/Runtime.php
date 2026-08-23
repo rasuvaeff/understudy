@@ -315,6 +315,20 @@ final class Runtime
             return $answer;
         }
 
+        // Before the `never` fallback, because a forwarding double has a real
+        // implementation to reach and that implementation is where a `: never`
+        // method's throw lives. Complaining that nothing was configured would
+        // be answering for an object that can answer for itself.
+        //
+        // Not gated on `$matched`, unlike strictness. Strict mode is a
+        // complaint, and a matched expectation answers it; forwarding is the
+        // mode's own answer, and an expectation that only counted the call —
+        // `expect(...)->times(1)` with no action — still needs one. Returning a
+        // default there would make counting a call change what it answers.
+        if ($state->mode() === Mode::Forwarding) {
+            return self::forward($state, $double, $method, $invocation->args);
+        }
+
         if ($signature !== null && $signature->returnsNever) {
             // Which mistake it is depends on whether anything was configured:
             // "you never said what this throws" reads very differently from
@@ -328,15 +342,6 @@ final class Runtime
         // nothing left to complain about.
         if (!$matched && $state->mode() === Mode::Strict) {
             throw StrictModeViolation::unexpectedCall($state->label(), $method);
-        }
-
-        // Not gated on `$matched`, unlike strictness. Strict mode is a
-        // complaint, and a matched expectation answers it; forwarding is the
-        // mode's own answer, and an expectation that only counted the call —
-        // `expect(...)->times(1)` with no action — still needs one. Returning a
-        // default there would make counting a call change what it answers.
-        if ($state->mode() === Mode::Forwarding) {
-            return self::forward($state, $double, $method, $invocation->args);
         }
 
         return TypeDefaultResolver::forSignature($state->label(), $signature, $method);

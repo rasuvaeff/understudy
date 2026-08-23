@@ -11,11 +11,16 @@
 - `Invocation::callOriginal()` delegates a single call from inside `answers()`,
   whatever the mode. With no target it raises `OriginalCallUnavailable` rather
   than reaching for the parent implementation over a constructor that never ran.
+- A by-reference parameter is collected as a reference, so a forwarded method
+  can write back to the caller's variable — the one thing declaring `&`
+  promises. It used to be copied on the way into the dispatcher.
 - Forwarding records the boundary call only: a real method calling itself is not
   visible, because understudy proxies an object rather than instrumenting one.
   A fluent method that returned the real instance comes back as the double, so a
   chain stays doubled; a `static` method returning a different instance of the
-  real class raises `OriginalReturnTypeViolation`.
+  real class raises `OriginalReturnTypeViolation`. An understudy is refused as a
+  forwarding target: every call would come straight back to a dispatcher, and an
+  unmatched one would keep coming back until the stack ran out.
 - Class targets. `Understudy::for()` accepts a class as its first target, with
   interfaces after it: the constructor and destructor never run, public and
   protected methods are dispatched, private and static ones are left to the

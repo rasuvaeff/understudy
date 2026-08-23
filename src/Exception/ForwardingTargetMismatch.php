@@ -14,6 +14,19 @@ final class ForwardingTargetMismatch extends \InvalidArgumentException implement
 {
     /**
      * @param non-empty-string $label
+     */
+    public static function understudyTarget(string $label): self
+    {
+        return new self(sprintf(
+            "Understudy `%s` cannot forward to an understudy.\n"
+            . 'Every call would come straight back to a dispatcher, and an unmatched one would keep coming '
+            . 'back until the stack runs out. Forward to the real object instead.',
+            $label,
+        ));
+    }
+
+    /**
+     * @param non-empty-string $label
      * @param class-string     $contract
      */
     public static function missingContract(string $label, string $contract, string $given): self
