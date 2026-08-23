@@ -34,28 +34,32 @@ had it.
 ## Performance
 
 Against Mockery 1.6.15, Prophecy 1.26.1 and PHPUnit 12.5.33 on PHP 8.5.6.
-Medians after outlier filtering; understudy is the baseline. Full methodology,
-raw tables and the environment in [perf/README.md](perf/README.md).
+Filtered means, three runs; understudy is the baseline. Full methodology, raw
+tables and the environment in [perf/README.md](perf/README.md).
 
 | | understudy | Mockery | Prophecy | PHPUnit |
 |---|---|---|---|---|
-| build a double (1-method contract) | **2.08µs** | +355% | +1013% | +304%¹ |
-| build a double (8-method contract) | **2.32µs** | +341% | +954% | +278%¹ |
-| stub: build, stub, one call, tear down | **14.7µs** | +45% | +125% | +27%¹ |
-| mock: build, expect, call, verify | **18.0µs** | +30% | +175% | +16%² |
-| marginal cost of one call to a stub | 1.75µs | 2.58µs | —³ | **1.08µs**¹ |
-| added to process start (cold) | **3.9ms** | 7.3ms | 16.5ms | 17.0ms |
-| retained per live double | **~350 B** | 513 B | ~8.5 KB | ~1.25 KB |
+| build a double (1-method contract) | **1.28µs** | +359% | +936% | +255%¹ |
+| build a double (8-method contract) | **1.29µs** | +354% | +919% | +254%¹ |
+| stub: build, stub, one call, tear down | 8.74µs | +30% | +81% | **−7%**¹ |
+| mock: build, expect, call, verify | 10.8µs | +19% | +159% | **−10%**² |
+| marginal cost of one call to a stub | 0.82µs | 1.64µs | —³ | **0.71µs**¹ |
+| added to process start (cold) | **1.00×** | 1.30–1.53× | 3.62–4.43× | 3.86–4.94×⁴ |
+| retained per live double | **435–450 B** | 513 B | ~8.5 KB | ~1.25 KB |
 
 ¹ `createStub()` ² `createMock()` ³ too unstable to quote — Prophecy's per-call
 path allocates enough that garbage collection, not the call, dominates the
-measurement.
+measurement. ⁴ a ratio rather than milliseconds: cold start spans 29% between
+runs, so its absolute figures are not stable enough to quote.
 
-Understudy builds doubles roughly four times cheaper than the next fastest, and
-holds a live double in a third to a twenty-fifth of the memory. It does **not**
-win everywhere: PHPUnit dispatches a stubbed call in 1.08µs against understudy's
-1.75µs, so past roughly thirty calls to the same stub a PHPUnit test is the
-cheaper one.
+Understudy builds doubles roughly three and a half times cheaper than the next
+fastest, and starts a process in a third of the added time. It does **not** win
+everywhere, and less than it used to: PHPUnit is now ahead on both stub and
+mock scenarios end to end — it dispatches a call in 0.71µs against understudy's
+0.82µs and no longer pays enough at build time to make up for it. Per-double
+memory has also grown, from ~350 B, and the reason is in `perf/README.md`: the
+dispatch work that took per-call cost from 1.75µs to 0.82µs keeps a second list
+per double to do it.
 
 These numbers are informational and gate nothing. Regenerate them with `make
 perf` before quoting them anywhere.

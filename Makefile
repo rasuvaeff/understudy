@@ -15,7 +15,10 @@ bench:
 # The comparative harness is a separate Composer project (see perf/README.md),
 # so it needs the repository root mounted, not just the package directory: its
 # path repository resolves `..`.
-PERF := docker run --rm -v "$(PWD)":/repo -w /repo/perf composer:2
+# Pinned and prioritised because the README quotes the environment its
+# numbers were taken in. Leaving that in a shell history makes the
+# figures unreproducible by anyone who was not there.
+PERF := docker run --rm --cpuset-cpus=0-5 --cpu-shares=2048 -v "$(PWD)":/repo -w /repo/perf composer:2
 
 perf-install:
 	$(PERF) sh -c 'git config --global --add safe.directory "*"; composer update --no-interaction --no-progress'

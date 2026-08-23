@@ -240,6 +240,14 @@ make release-check
   `final` properties and asymmetric visibility are a parse error on 8.3 — a file
   carrying them takes the whole suite down there rather than skipping a test.
 
+- **A perf figure that cannot be reproduced from the repository is not a
+  figure.** The recorded environment said "pinned to six cores"; the `make perf`
+  target did no pinning, so the numbers depended on flags in someone's shell
+  history and could not be re-taken. The pinning lives in the `PERF` variable
+  now. Before replacing any figure, re-run the harness at the commit the old one
+  was taken at: doing that showed the environment was comparable and the
+  movement was ours, which is the difference between attributing a regression
+  and shrugging at it.
 - **`perf/` is a separate Composer project and must stay one.** Mockery,
   Prophecy and PHPUnit belong to the comparative benchmark harness, never to
   this package's `require-dev` — they would slow every `composer build` and
