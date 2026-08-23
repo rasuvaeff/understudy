@@ -61,6 +61,18 @@ make release-check
 
 ## Invariants & gotchas
 
+- **`perf/` is a separate Composer project and must stay one.** Mockery,
+  Prophecy and PHPUnit belong to the comparative benchmark harness, never to
+  this package's `require-dev` — they would slow every `composer build` and
+  mutation run for no gain, and the root `AGENTS.md` allows extra dev
+  dependencies only for integration tests. It is `export-ignore`d, installed
+  through a path repository, and run with `make perf` / `perf-cold` /
+  `perf-memory`. Methodology and its traps live in `perf/README.md`; the rules
+  there (teardown and verification inside the measured unit, no unbounded call
+  history, scenarios defined by behaviour) are what make the numbers mean
+  anything. Never edit a recorded figure without rerunning the harness that
+  produced it.
+
 - **State is keyed by the double object, never by `spl_object_id()`.** PHP
   reuses an object id after collection, so an id-keyed store would hand a
   fresh double the previous one's state. `Runtime` uses `WeakMap`s and

@@ -10,7 +10,11 @@ $finder = (new Finder())
         __DIR__ . '/src',
         __DIR__ . '/tests',
         __DIR__ . '/examples',
-    ]);
+        __DIR__ . '/benchmarks',
+        __DIR__ . '/perf',
+    ])
+    // perf/ is a Composer project of its own; its vendor tree is not ours to style
+    ->exclude(['vendor']);
 
 return (new Config())
     ->setUsingCache(false)

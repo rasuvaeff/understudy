@@ -82,7 +82,7 @@ final class DispatchBench
     private static function makeStubbed(): Clock
     {
         $double = Understudy::for(Clock::class);
-        when(static fn (): int => $double->now())->returns(1_700_000_000);
+        when(static fn(): int => $double->now())->returns(1_700_000_000);
 
         return $double;
     }
@@ -112,9 +112,7 @@ final class HandwrittenRepository implements BookRepository
     }
 
     #[\Override]
-    public function save(Book $book): void
-    {
-    }
+    public function save(Book $book): void {}
 
     #[\Override]
     public function titles(): array
