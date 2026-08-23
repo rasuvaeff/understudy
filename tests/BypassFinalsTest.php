@@ -70,16 +70,37 @@ final class BypassFinalsTest
             'refused, naming the PHAR',
             ['phar.readonly=0'],
         ];
-        yield 'a preloaded class is already loaded' => [
-            'preloaded',
-            'refused',
-            ['opcache.enable_cli=1', 'opcache.preload=' . __DIR__ . '/Fixture/Bypass/preload.php'],
-        ];
         yield 'a warm opcode cache does not reseal the class' => [
             'opcache-warm',
             'doubled, still open, opcache on',
             ['opcache.enable_cli=1'],
         ];
+    }
+
+    /**
+     * Preloading runs before any bootstrap could ask for bypass, so the class
+     * is in memory already and the refusal says exactly that.
+     *
+     * Windows makes the same point from the other side: PHP refuses
+     * `opcache.preload` at startup, so there is no process to make the claim
+     * in. That is asserted rather than skipped — a scenario quietly not run is
+     * indistinguishable from one that passed.
+     */
+    public function aPreloadedClassIsAlreadyLoaded(): void
+    {
+        $ini = [
+            'opcache.enable_cli=1',
+            'opcache.preload=' . __DIR__ . '/Fixture/Bypass/preload.php',
+        ];
+
+        if (\DIRECTORY_SEPARATOR === '\\') {
+            Assert::string($this->execute('preloaded', $ini)['output'])
+                ->contains('Preloading is not supported on Windows');
+
+            return;
+        }
+
+        Assert::same($this->run('preloaded', $ini), 'refused');
     }
 
     /**
@@ -136,6 +157,30 @@ final class BypassFinalsTest
      */
     private function run(string $scenario, array $ini = []): string
     {
+        ['status' => $status, 'output' => $output] = $this->execute($scenario, $ini);
+
+        Assert::same($status, 0, 'the scenario process exited with ' . $status . ': ' . $output);
+
+        // A scenario answers in one line, but the engine may have said
+        // something first — a coverage driver makes PHP warn that JIT is off,
+        // on stdout, before anything of ours runs. The answer is the last
+        // line; everything above it is already in the failure message when the
+        // process exits non-zero.
+        $lines = array_values(array_filter(
+            array_map(trim(...), explode("\n", $output)),
+            static fn(string $line): bool => $line !== '',
+        ));
+
+        return $lines === [] ? '' : $lines[array_key_last($lines)];
+    }
+
+    /**
+     * @param list<string> $ini
+     *
+     * @return array{status: int, output: string}
+     */
+    private function execute(string $scenario, array $ini): array
+    {
         $flags = '';
 
         foreach ($ini as $setting) {
@@ -156,15 +201,6 @@ final class BypassFinalsTest
         $output = [];
         exec($command, $output, $status);
 
-        Assert::same($status, 0, 'the scenario process exited with ' . $status . ': ' . implode("\n", $output));
-
-        // A scenario answers in one line, but the engine may have said
-        // something first — a coverage driver makes PHP warn that JIT is off,
-        // on stdout, before anything of ours runs. The answer is the last
-        // line; everything above it is already in the failure message when the
-        // process exits non-zero.
-        $lines = array_values(array_filter(array_map(trim(...), $output), static fn(string $line): bool => $line !== ''));
-
-        return $lines === [] ? '' : $lines[array_key_last($lines)];
+        return ['status' => $status, 'output' => implode("\n", $output)];
     }
 }

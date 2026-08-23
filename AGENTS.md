@@ -95,6 +95,10 @@ make release-check
   What holds everywhere is the behaviour, so that is what the scenario asserts.
   Asserting on what an opcode cache chose to keep is asserting on its
   implementation.
+- **Windows refuses `opcache.preload` at startup**, so a scenario that needs
+  one has no process to run in there. It is asserted from the other side — PHP's
+  own refusal — rather than skipped: a scenario quietly not run looks exactly
+  like one that passed.
 - **A scenario answers in its last line, not its whole output.** With a
   coverage driver loaded PHP warns on stdout that JIT is disabled before any
   of our code runs, and a harness reading the whole stream compares that
