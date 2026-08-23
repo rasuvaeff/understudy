@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- The comparative benchmarks are re-measured after the dispatch work, and both
+  READMEs carry the new figures. Per-call cost went from 1.75µs to 0.82µs and
+  building a double from 2.08µs to 1.28µs; PHPUnit improved by more, and is now
+  ahead of understudy end to end on both the stub and the mock scenario rather
+  than only per call. Per-double memory grew from ~350 B to 435–450 B — 32 of
+  those bytes are the second, reverse-ordered expectation list that made the
+  dispatch cheap, and the trade is written down next to the number.
+- `make perf` pins the container to six cores and raises its CPU share. The
+  environment the old figures quoted was produced by flags that lived outside
+  the repository, which is why they are replaced rather than compared against.
 - The refusal to double a `final` class says which of three situations it is:
   bypass was never enabled, it was enabled for other classes but not this one,
   or it was asked for and could not reach the source. The last one names the
