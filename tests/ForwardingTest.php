@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests;
 
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Exception\ForwardingTargetMismatch;
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
 use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
@@ -29,6 +31,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Runtime::class)]
 #[Covers(Understudy::class)]
 #[Covers(Invocation::class)]
+#[Covers(TargetUnifier::class)]
+#[Covers(DoubleFactory::class)]
 final class ForwardingTest
 {
     #[AfterTest]
@@ -161,6 +165,45 @@ final class ForwardingTest
         Expect::exception(\DomainException::class)->withMessage('the real implementation refused');
 
         $double->collapse();
+    }
+
+    /**
+     * The identity rule is about `static`, and only about `static`. A method
+     * whose return type is the interface may legally answer with another
+     * instance, and refusing that would forbid a factory.
+     */
+    public function aMethodWithoutStaticMayReturnAnotherInstance(): void
+    {
+        $real = new RealChain();
+        $double = Understudy::for(Chainable::class);
+        Understudy::forwarding($double, $real);
+
+        $spawned = $double->spawn();
+
+        Assert::instanceOf($spawned, RealChain::class);
+        Assert::true($spawned !== $double);
+    }
+
+    /**
+     * A call from another Fiber is answered by the context that owns the
+     * double, not by the one that happens to be running: the test that
+     * configured it is the one that must be able to verify it.
+     */
+    public function aCallFromAnotherFiberIsRecordedByTheOwner(): void
+    {
+        $real = new RealChain();
+        $double = Understudy::for(Chainable::class);
+        Understudy::forwarding($double, $real);
+
+        $answered = null;
+
+        $fiber = new \Fiber(static function () use ($double, &$answered): void {
+            $answered = $double->label();
+        });
+        $fiber->start();
+
+        Assert::same($answered, 'real');
+        Assert::same(count(Understudy::calls(static fn(): string => $double->label())), 1);
     }
 
     // --- callOriginal() -----------------------------------------------------
