@@ -118,6 +118,7 @@ final class TargetUnifier
 
         $parameters = [];
         $arguments = [];
+        $byReferenceParameters = false;
 
         for ($position = 0; $position < $arity; $position++) {
             $parameter = self::unifyParameter($name, $declarations, $position);
@@ -131,6 +132,7 @@ final class TargetUnifier
             // A by-reference parameter is collected as a reference. `[$slot]`
             // would copy it, and a forwarded method could never write back to
             // the caller's variable — the one thing declaring `&` promises.
+            $byReferenceParameters = $byReferenceParameters || $parameter['byReference'];
             $arguments[] = ($parameter['byReference'] ? '&$' : '$') . $parameter['name'];
         }
 
@@ -160,6 +162,7 @@ final class TargetUnifier
             returnsNever: $returnType === 'never',
             returnsVoid: $returnType === 'void',
             returnsReference: $reference,
+            hasReferenceParameters: $byReferenceParameters,
             static: $static,
             // An override may widen visibility but never narrow it, so one
             // public declaration makes the whole override public.

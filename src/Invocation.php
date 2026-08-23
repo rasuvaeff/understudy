@@ -22,10 +22,16 @@ final class Invocation
 
     private bool $accounted = false;
 
+    /** @var list<mixed>|null */
+    private ?array $argsAfter = null;
+
     /**
      * @param non-empty-string $method
      * @param list<mixed>      $args
      * @param positive-int     $sequence position in this context's global call order
+     * @param list<mixed>      $liveArgs the arguments as the caller still holds them,
+     *                                   references included — what delegation needs,
+     *                                   where {@see $args} is a reading of them
      */
     public function __construct(
         public readonly string $method,
@@ -34,7 +40,33 @@ final class Invocation
         public readonly ?string $file = null,
         public readonly ?int $line = null,
         private readonly ?object $double = null,
+        private readonly array $liveArgs = [],
     ) {}
+
+    /**
+     * What the arguments were once the call had been answered.
+     *
+     * Only a method with a by-reference parameter has one: for every other
+     * method the answer cannot change what was passed, and taking the snapshot
+     * anyway would cost every call in the suite. Null means "same as
+     * {@see $args}".
+     *
+     * @return list<mixed>|null
+     */
+    public function argsAfter(): ?array
+    {
+        return $this->argsAfter;
+    }
+
+    /**
+     * @param list<mixed> $args
+     *
+     * @internal
+     */
+    public function recordFinalArguments(array $args): void
+    {
+        $this->argsAfter = $args;
+    }
 
     /**
      * @internal
@@ -66,7 +98,10 @@ final class Invocation
             throw OriginalCallUnavailable::withoutTarget('understudy', $this->method);
         }
 
-        return Runtime::callOriginal($this->double, $this->method, $this->args);
+        // The live arguments, not the log's reading of them: a by-reference
+        // parameter is the caller's variable, and the real method is expected
+        // to be able to write to it.
+        return Runtime::callOriginal($this->double, $this->method, $this->liveArgs);
     }
 
     public function recordOutcome(Outcome $outcome): void

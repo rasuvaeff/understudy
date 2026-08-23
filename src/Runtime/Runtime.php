@@ -23,6 +23,9 @@ use Rasuvaeff\Understudy\Outcome;
  */
 final class Runtime
 {
+    /** How deep an argument snapshot follows nested arrays. */
+    private const int SNAPSHOT_DEPTH = 8;
+
     /**
      * A stack, not a single context: `scope()` nests one inside another, and
      * the outer one must come back intact when the inner ends.
@@ -278,21 +281,36 @@ final class Runtime
             throw ForgottenDouble::afterReset($method);
         }
 
+        // A by-reference argument is live: whatever answers the call can write
+        // through it, and the log would then show a value the caller never
+        // passed. Both sides are kept, and only for the methods that can move —
+        // snapshotting every call would cost the whole suite for a rare case.
+        $tracksReferences = $state->blueprint->method($method)?->hasReferenceParameters ?? false;
+
         $invocation = new Invocation(
             method: $method,
-            args: $args,
+            args: $tracksReferences ? self::detached($args) : $args,
             sequence: $context->nextSequence(),
             double: $double,
+            liveArgs: $args,
         );
         $state->record($invocation);
 
         try {
             /** @var mixed $value */
-            $value = self::answer($state, $double, $method, $invocation, $context);
+            $value = self::answer($state, $double, $method, $invocation, $context, $args);
         } catch (\Throwable $thrown) {
+            if ($tracksReferences) {
+                $invocation->recordFinalArguments(self::detached($args));
+            }
+
             $invocation->recordOutcome(Outcome::thrownError($thrown));
 
             throw $thrown;
+        }
+
+        if ($tracksReferences) {
+            $invocation->recordFinalArguments(self::detached($args));
         }
 
         $invocation->recordOutcome(Outcome::returnedValue($value));
@@ -302,6 +320,7 @@ final class Runtime
 
     /**
      * @param non-empty-string $method
+     * @param list<mixed>      $args live arguments, references included
      */
     private static function answer(
         DoubleState $state,
@@ -309,6 +328,7 @@ final class Runtime
         string $method,
         Invocation $invocation,
         RuntimeContext $context,
+        array $args,
     ): mixed {
         $signature = $state->blueprint->method($method);
         $matched = false;
@@ -355,7 +375,10 @@ final class Runtime
         // `expect(...)->times(1)` with no action — still needs one. Returning a
         // default there would make counting a call change what it answers.
         if ($state->mode() === Mode::Forwarding) {
-            return self::forward($state, $double, $method, $invocation->args);
+            // The live arguments, not the log's reading of them: a by-reference
+            // parameter is the caller's variable, and the whole point of
+            // forwarding is that the real method can write to it.
+            return self::forward($state, $double, $method, $args);
         }
 
         if ($signature !== null && $signature->returnsNever) {
@@ -374,6 +397,40 @@ final class Runtime
         }
 
         return TypeDefaultResolver::forSignature($state->label(), $signature, $method, $context, $state->nested);
+    }
+
+    /**
+     * Dispatches a call whose return type is by reference and hands back the
+     * slot the generated method will return a reference into.
+     *
+     * The slot is seeded by the first call and then kept: a loose default
+     * recomputes an empty value every time, and writing that back would undo
+     * what the caller wrote through the reference it was given. An answer that
+     * was actually configured still replaces it — a test that says what a
+     * method returns means it.
+     *
+     * No `&` anywhere in this file: the reference is taken in the generated
+     * method, on a plain property of the returned holder.
+     *
+     * @param non-empty-string $method
+     * @param list<mixed>      $args
+     */
+    public static function referenceSlot(object $double, string $method, array $args): ReferenceSlot
+    {
+        $state = (self::ownerOf($double) ?? self::current())->stateOf($double);
+        $configured = $state?->hasActionFor($method, $args) ?? false;
+
+        /** @var mixed $value */
+        $value = self::dispatch($double, $method, $args);
+
+        $context = self::ownerOf($double) ?? self::current();
+        $state = $context->stateOf($double);
+
+        if ($state === null) {
+            throw ForgottenDouble::afterReset($method);
+        }
+
+        return $state->referenceSlot($method, $value, replace: $configured);
     }
 
     /**
@@ -464,6 +521,49 @@ final class Runtime
         }
 
         return $value;
+    }
+
+    /**
+     * The same values, without the references.
+     *
+     * Copying an array whose elements are references keeps them references, so
+     * a snapshot has to be built element by element. Without this the log would
+     * hold one live view of the arguments rather than two readings of them.
+     *
+     * @param list<mixed> $args
+     *
+     * @return list<mixed>
+     */
+    private static function detached(array $args): array
+    {
+        return array_map(static fn(mixed $argument): mixed => self::detachValue($argument, 0), $args);
+    }
+
+    /**
+     * One value, with the references inside it broken as well as the one on it.
+     *
+     * A by-reference parameter is often an array, and a reference can sit at any
+     * depth in one: passing the top level through by value leaves a nested
+     * `&$row` shared, and the "before" reading would then change under the
+     * answer that wrote to it.
+     *
+     * Depth is capped for the same reason {@see ArgumentFormatter} caps it —
+     * `$a[] = &$a` is legal PHP, and a snapshot that followed it would not
+     * return. Past the cap the value is kept as it is: bounded work, and a
+     * reading that is honest about how deep it looked. Objects are never
+     * copied; a snapshot of one is the same object, which is what a caller
+     * would see too.
+     */
+    private static function detachValue(mixed $value, int $depth): mixed
+    {
+        if (!\is_array($value) || $depth >= self::SNAPSHOT_DEPTH) {
+            return $value;
+        }
+
+        return array_map(
+            static fn(mixed $item): mixed => self::detachValue($item, $depth + 1),
+            $value,
+        );
     }
 
     /**

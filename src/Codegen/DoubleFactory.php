@@ -283,7 +283,15 @@ final class DoubleFactory
                 var_export($signature->name, return: true),
             ),
             $signature->returnsVoid, $signature->returnsNever => $dispatch . ';',
-            $signature->returnsReference => '$result = ' . $dispatch . ";\n\n        return \$result;",
+            // The one place a reference is taken. Returning `$slot->value`
+            // from a `&` method points the caller at storage that outlives the
+            // call; a local would be replaced by the next one.
+            $signature->returnsReference => sprintf(
+                "\$slot = \\%s::referenceSlot(\$this, %s, %s);\n\n        return \$slot->value;",
+                Runtime::class,
+                var_export($signature->name, return: true),
+                $signature->arguments,
+            ),
             default => 'return ' . $dispatch . ';',
         };
 

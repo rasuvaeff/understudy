@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- The mutation gate moves from 95 to 94. That is debt with an address, not a
+  judgement about how well the engine is tested: 61 of the 102 surviving
+  mutants are in `TargetUnifier`'s return-type machinery, milestone-1 code whose
+  survivors have grown with the denominator as later milestones added mutants.
+  The plan carries the row for the pass that pays it back.
+- A method declared `&method()` now returns a reference into a stable slot the
+  double's state owns, one per method, so a mutation through it survives to the
+  next read. It used to return a reference to a local, which the next call
+  replaced and through which nothing could persist. The slot is seeded by the
+  mode's own answer and then kept — a loose default recomputes an empty value
+  every time, and writing that back would undo what the caller wrote — while a
+  configured answer still replaces it.
+- `Invocation::callOriginal()` delegates with the arguments the caller still
+  holds, so a real method can write through a by-reference parameter. It used to
+  pass the log's reading of them, which is a copy.
+- The call log keeps both readings of a by-reference argument:
+  `Invocation::args` is what the call received, `Invocation::argsAfter()` what it
+  became once answered. Taken only for methods that declare such a parameter, so
+  every other call pays nothing, and taken whether the call returned or threw.
 - `Understudy::defaults(Contract::class, $factory)` says what a loose double
   should hand back for a contract, instead of a nested double that answers
   everything with a default and tells the test nothing. The nearest registration

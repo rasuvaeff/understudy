@@ -60,6 +60,13 @@ No runtime deps.
   scalar without a default, and a by-reference parameter are refused. A variadic
   tail is left empty. Overrides replace by parameter name and are not repeated in
   `doubles`. Every refusal happens before the constructor runs.
+- A method declared `&method()` returns a reference into a stable per-double,
+  per-method slot, so a mutation through it survives to the next read. The slot
+  is seeded by the mode's own answer and then kept; a configured answer replaces
+  it, a loose default does not.
+- `Invocation::args` is what the call received; `Invocation::argsAfter()` is what
+  the arguments became once it was answered, and is null unless the method has a
+  by-reference parameter.
 - A `clone` belongs to the context that cloned it, like anything `for()` builds:
   `__clone()` gets no reference to the original, so its owner cannot be
   recovered. Clone in the scope that will configure or verify the copy.

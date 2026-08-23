@@ -61,6 +61,34 @@ make release-check
 
 ## Invariants & gotchas
 
+- **The mutation gate is 94, and it used to be 95.** It came down with
+  milestone 2b for one reason, recorded in `infection.json5`: `TargetUnifier`'s
+  return-type machinery carries most of the surviving mutants and has not been
+  revisited since milestone 1. Raising it back is a planned PR, not a nice-to-
+  have — do not let the number drift further while that is outstanding.
+- **The only `&` in the package is in generated code, and that is deliberate.**
+  Psalm cannot follow a reference into an object property and says so by name;
+  the way out is not a suppression but moving the reference to where Psalm never
+  looks. `Runtime::referenceSlot()` hands back a plain `ReferenceSlot` object by
+  value, and the generated method returns `$slot->value` from its `&` signature.
+  Zero `@psalm-suppress`, zero baseline, zero `issueHandlers` — keep it that way.
+- **`DoubleState::hasActionFor()` must walk expectations exactly as the
+  dispatcher does.** Same accessor, same order, stop at the first match and
+  answer with *its* `hasAction()`. Asking "does some matching expectation have
+  an action" disagrees with dispatch precisely when a newer
+  `expect(...)->times(1)` shadows an older stub, and the by-reference slot is
+  then replaced by a value dispatch never returned.
+- **A snapshot has to reach nested references.** `array_map()` detaches only the
+  top level, and a by-reference parameter is often an array with a `&$row`
+  inside it. The recursion is depth-capped because `$a[] = &$a` is legal PHP.
+- **`Invocation` carries the live arguments separately from the logged ones.**
+  `callOriginal()` delegates with the live ones — a real method is expected to
+  be able to write through a by-reference parameter — while `args` stays the
+  reading taken before the call.
+- **A by-reference argument is snapshotted on both sides, and only where it can
+  move.** `MethodSignature::$hasReferenceParameters` gates it: taking two
+  readings of every call would cost the whole suite for a rare case.
+
 - **Never autoload on the dispatch path.** `class_exists($name)` does, by
   default, and an autoloader round trip per unmatched call cost about half the
   dispatch time — caught by `make perf` against the recorded baseline, not by

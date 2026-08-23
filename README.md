@@ -387,7 +387,7 @@ when(fn () => $spy->get('key'))
     ->answers(fn (Invocation $call) => strtoupper((string) $call->callOriginal()));
 ```
 
-Two things are worth knowing before relying on it:
+Five things are worth knowing before relying on it:
 
 - **Only the call at the boundary is recorded.** If the real method calls
   another method on itself, that happens inside the real object. Understudy
@@ -397,6 +397,9 @@ Two things are worth knowing before relying on it:
 - **An understudy is not a valid target.** Forwarding to one — itself included
   — sends every call back into a dispatcher, and an unmatched one keeps coming
   back until the stack runs out.
+- **A by-reference argument is the caller's variable.** A forwarded method
+  writes to it, and the call log keeps both readings — what was passed and what
+  it became — so a verification still sees the value the caller handed over.
 - **A fluent method comes back as the double.** When the real instance returns
   itself, the double is returned instead, so a chain stays doubled. A `static`
   method that returns a *different* instance of the real class is refused —

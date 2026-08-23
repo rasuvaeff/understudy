@@ -27,6 +27,12 @@ final class DoubleState
 
     private ?object $forwardingTarget = null;
 
+    /** @var array<non-empty-string, ReferenceSlot> */
+    private array $referenceSlots = [];
+
+    /** @var array<non-empty-string, bool> */
+    private array $seededSlots = [];
+
     /**
      * @param bool $nested true when a loose default created this double rather
      *                     than the test asking for it, which is what stops the
@@ -81,6 +87,53 @@ final class DoubleState
     public function setLabel(string $label): void
     {
         $this->label = $label;
+    }
+
+    /**
+     * The stable place a by-reference return points into, seeded on first use.
+     *
+     * Kept per method so that two by-reference methods on one double do not
+     * alias each other, and handed back as an object so that the reference is
+     * taken in the generated method rather than here.
+     *
+     * @param non-empty-string $method
+     */
+    public function referenceSlot(string $method, mixed $seed, bool $replace): ReferenceSlot
+    {
+        $slot = $this->referenceSlots[$method] ??= new ReferenceSlot();
+
+        if ($replace || !($this->seededSlots[$method] ?? false)) {
+            $slot->value = $seed;
+            $this->seededSlots[$method] = true;
+        }
+
+        return $slot;
+    }
+
+    /**
+     * Whether the expectation that would answer this call has an action, as
+     * opposed to the call falling through to the mode's own answer.
+     *
+     * Asked only on the by-reference path, where the difference decides whether
+     * the stable slot is replaced or left alone.
+     *
+     * @param non-empty-string $method
+     * @param list<mixed>      $args
+     */
+    public function hasActionFor(string $method, array $args): bool
+    {
+        // The same walk the dispatcher makes, in the same order, stopping at
+        // the same place. Scanning declaration order and answering "some
+        // matching expectation has an action" would disagree with it exactly
+        // when a newer `expect(...)->times(1)` shadows an older stub — and the
+        // slot would then be replaced by a value dispatch never returned.
+        foreach ($this->expectations() as $expectation) {
+            if ($expectation->matches($method, $args)) {
+                return $expectation->hasAction();
+            }
+        }
+
+        return false;
     }
 
     public function addExpectation(Expectation $expectation): void
