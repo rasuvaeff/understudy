@@ -6,25 +6,38 @@ namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Exception\CannotWire;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\AbstractSubject;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\ArrayVariadic;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\BoolVariadic;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\CallableVariadic;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\CatalogService;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\CountingDefault;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\CountingRepository;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\FalseVariadic;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\FloatOrObjectUnion;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\FloatVariadicService;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\IntersectionDependency;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\IntVariadic;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\IterableVariadic;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\MixedVariadic;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\NoConstructor;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\NullableDependency;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\NullableScalar;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\ObjectDefaultSubject;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\ObjectVariadic;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\PrivateConstructor;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\ReferenceConstructor;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\Reporter;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\Repository;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\ScalarWithoutDefault;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\TrueVariadic;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\TwoObjectUnion;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\VariadicObjectDefaultSubject;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\VariadicService;
 use Rasuvaeff\Understudy\Understudy;
 use Rasuvaeff\Understudy\Wiring\Wire;
 use Testo\Assert;
 use Testo\Codecov\Covers;
+use Testo\Data\DataProvider;
 use Testo\Expect;
 use Testo\Lifecycle\AfterTest;
 use Testo\Test;
@@ -33,6 +46,7 @@ use function Rasuvaeff\Understudy\when;
 
 #[Test]
 #[Covers(Wire::class)]
+#[Covers(CannotWire::class)]
 final class WireTest
 {
     #[AfterTest]
@@ -124,6 +138,107 @@ final class WireTest
         Understudy::wire(VariadicService::class, ['tags' => ['one', 2]]);
     }
 
+    public function aVariadicOverrideRejectsANonListBeforeConstruction(): void
+    {
+        Expect::exception(CannotWire::class)
+            ->withMessageContaining('list<string>')
+            ->withMessageContaining('string');
+
+        Understudy::wire(VariadicService::class, ['tags' => 'one']);
+    }
+
+    public function anObjectDefaultBeforeAVariadicTailIsMaterializedOnce(): void
+    {
+        CountingDefault::$constructed = 0;
+
+        ['sut' => $subject] = Understudy::wire(
+            VariadicObjectDefaultSubject::class,
+            ['tags' => ['one']],
+        );
+
+        Assert::same(CountingDefault::$constructed, 1);
+        Assert::instanceOf($subject->stamp, CountingDefault::class);
+        Assert::same($subject->tags, ['one']);
+    }
+
+    /**
+     * Every branch of the override type check, including the ones a scalar
+     * variadic is the only way to reach: `rejectIncompatibleOverride()` hands
+     * a plain builtin straight to PHP, so a tail is where they are decided.
+     *
+     * @param class-string $subject
+     * @param list<mixed>  $accepted
+     */
+    #[DataProvider('variadicTypeProvider')]
+    public function aVariadicOverrideIsCheckedAgainstItsDeclaredType(
+        string $subject,
+        array $accepted,
+        mixed $rejected,
+        string $rejectedType,
+        string $declared,
+    ): void {
+        ['sut' => $built] = Understudy::wire($subject, ['values' => $accepted]);
+
+        Assert::same($built->values, $accepted);
+
+        Expect::exception(CannotWire::class)
+            ->withMessageContaining('is a `' . $rejectedType . '`')
+            ->withMessageContaining('declares `list<' . $declared . '>`');
+
+        Understudy::wire($subject, ['values' => [$rejected]]);
+    }
+
+    /**
+     * @return iterable<string, array{class-string, list<mixed>, mixed, string, string}>
+     */
+    public static function variadicTypeProvider(): iterable
+    {
+        yield 'bool' => [BoolVariadic::class, [true, false], 1, 'int', 'bool'];
+        yield 'true' => [TrueVariadic::class, [true], false, 'bool', 'true'];
+        yield 'false' => [FalseVariadic::class, [false], true, 'bool', 'false'];
+        yield 'int' => [IntVariadic::class, [1, 2], '1', 'string', 'int'];
+        yield 'array' => [ArrayVariadic::class, [[], ['a']], 'a', 'string', 'array'];
+        yield 'object' => [ObjectVariadic::class, [new \stdClass()], 'a', 'string', 'object'];
+        yield 'callable' => [CallableVariadic::class, ['strlen'], 1, 'int', 'callable'];
+        yield 'iterable' => [IterableVariadic::class, [[], ['a']], 'a', 'string', 'iterable'];
+    }
+
+    public function aMixedVariadicOverrideAcceptsAnything(): void
+    {
+        ['sut' => $built] = Understudy::wire(MixedVariadic::class, ['values' => [1, 'a', null]]);
+
+        Assert::same($built->values, [1, 'a', null]);
+    }
+
+    /**
+     * PHP widens `int` to `float` at the call boundary even under
+     * `declare(strict_types=1)`, so refusing one here would refuse a call the
+     * subject would have accepted.
+     */
+    public function anIntIsAcceptedWhereAFloatIsDeclared(): void
+    {
+        ['sut' => $subject] = Understudy::wire(
+            FloatVariadicService::class,
+            ['rates' => [1, 2.5]],
+        );
+
+        Assert::same($subject->rates, [1.0, 2.5]);
+    }
+
+    public function anIntIsAcceptedInAUnionBranchDeclaringFloat(): void
+    {
+        ['sut' => $subject] = Understudy::wire(FloatOrObjectUnion::class, ['either' => 3]);
+
+        Assert::same($subject->either, 3.0);
+    }
+
+    public function aStringIsRefusedInAUnionOfFloatAndAnObject(): void
+    {
+        Expect::exception(CannotWire::class)->withMessageContaining('string');
+
+        Understudy::wire(FloatOrObjectUnion::class, ['either' => 'three']);
+    }
+
     public function aUnionOverrideIsCheckedBeforeConstruction(): void
     {
         Expect::exception(CannotWire::class)
@@ -194,8 +309,12 @@ final class WireTest
     public function anIncompatibleOverrideIsRefusedBeforeTheConstructorRuns(): void
     {
         Expect::exception(CannotWire::class)
-            ->withMessageContaining('the override for `$repository` is a `stdClass`')
-            ->withMessageContaining('the constructor declares `' . Repository::class . '`');
+            ->withMessage(
+                'Cannot wire `' . CatalogService::class . '`: the override for `$repository` is a `stdClass`, '
+                . 'and the constructor declares `' . Repository::class . "`.\n"
+                . 'The check happens before the constructor runs, so a wrong type is reported here rather '
+                . 'than as a TypeError from inside the subject.',
+            );
 
         Understudy::wire(CatalogService::class, ['repository' => new \stdClass()]);
     }
@@ -261,8 +380,11 @@ final class WireTest
     public function aPrivateConstructorIsRefused(): void
     {
         Expect::exception(CannotWire::class)
-            ->withMessageContaining('its constructor is private')
-            ->withMessageContaining('Use the named constructor the class offers');
+            ->withMessage(
+                'Cannot wire `' . PrivateConstructor::class . "`: its constructor is private.\n"
+                . 'Use the named constructor the class offers, or build the subject yourself and double '
+                . 'its dependencies with Understudy::for().',
+            );
 
         Understudy::wire(PrivateConstructor::class);
     }
@@ -277,8 +399,11 @@ final class WireTest
     public function anInterfaceSubjectIsRefused(): void
     {
         Expect::exception(CannotWire::class)
-            ->withMessageContaining('it is an interface')
-            ->withMessageContaining('the subject itself is not a double');
+            ->withMessage(
+                'Cannot wire `' . Repository::class . "`: it is an interface.\n"
+                . 'wire() builds a real subject out of doubled dependencies; the subject itself is not '
+                . 'a double.',
+            );
 
         Understudy::wire(Repository::class);
     }

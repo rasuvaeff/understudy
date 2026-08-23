@@ -151,14 +151,13 @@ final class Wire
 
             // This is an omitted optional before the variadic tail. Passing a
             // later positional value requires materializing its declared
-            // default, just as an ordinary caller would have to do.
+            // default, just as an ordinary caller would have to do. Unlike
+            // the ordinary omitted-parameter path, getDefaultValue() may
+            // evaluate an object default here so the positional call is valid.
             $arguments[] = self::asArgument($sut, $name, $parameter->getDefaultValue());
         }
 
-        /** @var list<Argument> $tailValues */
-        $tailValues = $tail;
-
-        foreach ($tailValues as $item) {
+        foreach ($tail as $item) {
             $arguments[] = self::asArgument($sut, $tailName, $item);
         }
 
@@ -251,10 +250,7 @@ final class Wire
 
         $type = $parameter->getType();
 
-        /** @var list<Argument> $items */
-        $items = $value;
-
-        foreach ($items as $item) {
+        foreach ($value as $item) {
             if ($type !== null && !self::matchesType($type, $item)) {
                 throw CannotWire::incompatibleOverride($sut, $parameter->getName(), 'list<' . self::typeName($type) . '>', get_debug_type($item));
             }
@@ -296,7 +292,7 @@ final class Wire
             'true' => $value === true,
             'false' => $value === false,
             'int' => is_int($value),
-            'float' => is_float($value),
+            'float' => is_float($value) || is_int($value),
             'string' => is_string($value),
             'array' => is_array($value),
             'object' => is_object($value),

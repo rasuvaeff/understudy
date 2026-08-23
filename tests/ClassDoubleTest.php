@@ -27,6 +27,8 @@ use Rasuvaeff\Understudy\Tests\Fixture\Cls\ReadonlyLedger;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\SealedLedger;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Stamp;
 use Rasuvaeff\Understudy\Tests\Fixture\Suit;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingWiderParameter;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Codecov\Covers;
@@ -170,15 +172,40 @@ final class ClassDoubleTest
         Assert::same($double::ping(), 7);
     }
 
+    /**
+     * The compatible case end to end: the class static survives into the
+     * generated subclass and answers there, which is what dropping the
+     * interface's declaration from the dispatchers is claiming.
+     */
+    public function aWiderClassStaticStillAnswersThroughTheDouble(): void
+    {
+        $double = Understudy::for(StaticPingWiderParameter::class, StaticPingContract::class);
+
+        Assert::same($double::ping('abc'), 3);
+        Assert::same($double::ping(7), 7);
+        Assert::instanceOf($double, StaticPingContract::class);
+    }
+
     public function aStaticMultiTargetReturnConflictIsReportedBeforeEval(): void
     {
         eval('interface StaticConflictContractForReview { public static function ping(): string; }');
         eval('class StaticConflictTargetForReview { public static function ping(): int { return 7; } }');
 
-        Expect::exception(\Rasuvaeff\Understudy\Exception\UnsupportedTarget::class)
+        Expect::exception(UnsupportedTarget::class)
             ->withMessageContaining('method `ping()`');
 
         Understudy::for(\StaticConflictTargetForReview::class, \StaticConflictContractForReview::class);
+    }
+
+    public function aStaticMultiTargetParameterConflictIsReportedBeforeEval(): void
+    {
+        eval('interface StaticParameterContractForReview { public static function ping(string $value): int; }');
+        eval('class StaticParameterTargetForReview { public static function ping(int $value): int { return $value; } }');
+
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining('incompatible static signature');
+
+        Understudy::for(\StaticParameterTargetForReview::class, \StaticParameterContractForReview::class);
     }
 
     /**

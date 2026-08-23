@@ -8,6 +8,7 @@ use Rasuvaeff\Understudy\Defaults\DefaultFactories;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\AmbiguousDefaultFactory;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
+use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\InvalidDefaultValue;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Audited;
@@ -28,6 +29,7 @@ use Testo\Test;
 
 #[Test]
 #[Covers(DefaultFactories::class)]
+#[Covers(ForgottenDouble::class)]
 #[Covers(TypeDefaultResolver::class)]
 final class DefaultFactoriesTest
 {
@@ -332,8 +334,41 @@ final class DefaultFactoriesTest
 
         Expect::exception(ContextOwnershipViolation::class);
 
+        try {
+            $workspace->logger();
+        } finally {
+            $fiber->resume();
+        }
+    }
+
+    public function aFactoryCannotReturnADoubleForgottenByScopeTeardown(): void
+    {
+        $forgotten = Understudy::scope(static fn(): Logger => Understudy::for(Logger::class));
+        Understudy::defaults(Logger::class, static fn(): Logger => $forgotten);
+        $workspace = Understudy::for(Workspace::class);
+
+        Expect::exception(ForgottenDouble::class)
+            ->withMessageContaining('The default factory for `' . Logger::class . '` answered with an understudy');
+
         $workspace->logger();
-        $fiber->resume();
+    }
+
+    public function aFactoryCannotReturnADoubleForgottenByFiberTeardown(): void
+    {
+        $forgotten = null;
+        $fiber = new \Fiber(static function () use (&$forgotten): void {
+            $forgotten = Understudy::for(Logger::class);
+            Understudy::reset();
+        });
+        $fiber->start();
+
+        Understudy::defaults(Logger::class, static fn(): Logger => $forgotten);
+        $workspace = Understudy::for(Workspace::class);
+
+        Expect::exception(ForgottenDouble::class)
+            ->withMessageContaining('register the factory inside the test that uses it');
+
+        $workspace->logger();
     }
 
     public function resetDropsTheRegistry(): void

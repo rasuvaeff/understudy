@@ -58,7 +58,29 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\Showcase;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\Sibling;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByRef;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByValue;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticMixedPartsContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticOptionalContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPartsContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingAsInstanceContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingByValueReturn;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingByValueSlot;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingExtraRequired;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingFixedInsteadOfTail;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingFixedThenTail;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingNarrowerParameter;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingOptional;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingOptionalInsteadOfTail;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingProtected;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingRequiredParameter;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingTooFewParameters;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingVariadicTail;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingWiderParameter;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticReferenceReturnContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticReturn;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticSlotContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticStringReturnContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticTailContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StdClassAll;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StdClassFactory;
@@ -499,6 +521,143 @@ final class TargetUnifierTest
         );
 
         $this->unify(WriterInt::class, InstanceDescribe::class);
+    }
+
+    // --- Class statics against an interface contract -------------------------
+
+    /**
+     * The generated class inherits the class static, so the whole declaration
+     * has to satisfy the interface — PHP rejects the class outright otherwise,
+     * and a fatal error is not something a test can catch.
+     */
+    public function aWiderStaticParameterStillSatisfiesTheContract(): void
+    {
+        Assert::false(
+            array_key_exists('ping', $this->unify(StaticPingWiderParameter::class, StaticPingContract::class)),
+        );
+    }
+
+    public function extraOptionalStaticParametersStillSatisfyTheContract(): void
+    {
+        Assert::false(
+            array_key_exists('ping', $this->unify(StaticPingOptional::class, StaticPingContract::class)),
+        );
+    }
+
+    public function aStaticVariadicTailCoversTheContractsFixedParameters(): void
+    {
+        Assert::false(
+            array_key_exists('ping', $this->unify(StaticPingVariadicTail::class, StaticPartsContract::class)),
+        );
+    }
+
+    /**
+     * The tail is the *last* declared parameter, not the first: `$first` is
+     * fixed and only `...$rest` stretches to cover what the contract declares
+     * beyond it.
+     */
+    public function aStaticVariadicTailAlignsFromTheEndOfTheDeclaration(): void
+    {
+        Assert::false(
+            array_key_exists('ping', $this->unify(StaticPingFixedThenTail::class, StaticMixedPartsContract::class)),
+        );
+    }
+
+    public function anOptionalStaticParameterCannotSatisfyAVariadicContract(): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining('has an incompatible static signature');
+
+        $this->unify(StaticPingOptionalInsteadOfTail::class, StaticTailContract::class);
+    }
+
+    public function aNarrowerStaticParameterCannotSatisfyTheContract(): void
+    {
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `ping()` has no implementation that satisfies all of them.\n"
+            . '  `' . StaticPingNarrowerParameter::class . "::ping()` has an incompatible static signature\n"
+            . '  `' . StaticPingContract::class . '::ping()` requires a compatible static signature',
+        );
+
+        $this->unify(StaticPingNarrowerParameter::class, StaticPingContract::class);
+    }
+
+    public function aStaticReturnConflictNamesBothDeclarations(): void
+    {
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `ping()` has no implementation that satisfies all of them.\n"
+            . '  `' . StaticPingRequiredParameter::class . "::ping()` declares `: int`\n"
+            . '  `' . StaticStringReturnContract::class . '::ping()` declares `: string`',
+        );
+
+        $this->unify(StaticPingRequiredParameter::class, StaticStringReturnContract::class);
+    }
+
+    public function aClassStaticCannotStandInForAnInstanceMethod(): void
+    {
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `ping()` has no implementation that satisfies all of them.\n"
+            . '  `' . StaticPingRequiredParameter::class . "::ping()` is static\n"
+            . '  `' . StaticPingAsInstanceContract::class . '::ping()` is an instance method',
+        );
+
+        $this->unify(StaticPingRequiredParameter::class, StaticPingAsInstanceContract::class);
+    }
+
+    public function aProtectedStaticCannotSatisfyAPublicContract(): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining('has an incompatible static signature');
+
+        $this->unify(StaticPingProtected::class, StaticPingContract::class);
+    }
+
+    public function aStaticThatDemandsMoreParametersCannotSatisfyTheContract(): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining('has an incompatible static signature');
+
+        $this->unify(StaticPingExtraRequired::class, StaticPingContract::class);
+    }
+
+    public function aStaticThatDeclaresFewerParametersCannotSatisfyTheContract(): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining('has an incompatible static signature');
+
+        $this->unify(StaticPingTooFewParameters::class, StaticPingContract::class);
+    }
+
+    public function aFixedStaticParameterCannotSatisfyAVariadicContract(): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining('has an incompatible static signature');
+
+        $this->unify(StaticPingFixedInsteadOfTail::class, StaticTailContract::class);
+    }
+
+    public function aByValueStaticParameterCannotSatisfyAByReferenceContract(): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining('has an incompatible static signature');
+
+        $this->unify(StaticPingByValueSlot::class, StaticSlotContract::class);
+    }
+
+    public function aRequiredStaticParameterCannotSatisfyAnOptionalContract(): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining('has an incompatible static signature');
+
+        $this->unify(StaticPingRequiredParameter::class, StaticOptionalContract::class);
+    }
+
+    public function aByValueStaticReturnCannotSatisfyAByReferenceContract(): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining('has an incompatible static signature');
+
+        $this->unify(StaticPingByValueReturn::class, StaticReferenceReturnContract::class);
     }
 
     // --- Parameter rendering -------------------------------------------------

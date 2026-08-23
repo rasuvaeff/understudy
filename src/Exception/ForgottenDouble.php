@@ -27,4 +27,17 @@ final class ForgottenDouble extends \LogicException implements UnderstudyError
             $method,
         ));
     }
+
+    /**
+     * @param class-string $contract
+     */
+    public static function fromDefaultFactory(string $contract): self
+    {
+        return new self(sprintf(
+            "The default factory for `%s` answered with an understudy that is no longer known to Understudy.\n"
+            . 'It was created before a reset(); register the factory inside the test that uses it '
+            . 'rather than sharing one double across tests.',
+            $contract,
+        ));
+    }
 }

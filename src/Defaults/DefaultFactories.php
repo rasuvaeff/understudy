@@ -6,6 +6,7 @@ namespace Rasuvaeff\Understudy\Defaults;
 
 use Rasuvaeff\Understudy\Exception\AmbiguousDefaultFactory;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
+use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\InvalidDefaultValue;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
@@ -71,6 +72,10 @@ final class DefaultFactories
 
         /** @var mixed $value */
         $value = $factory();
+
+        if (is_object($value) && Runtime::isForgotten($value)) {
+            throw ForgottenDouble::fromDefaultFactory($requested);
+        }
 
         $valueOwner = is_object($value) ? Runtime::ownerOf($value) : null;
 

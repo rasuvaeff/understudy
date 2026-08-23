@@ -63,8 +63,11 @@ No runtime deps.
   only. Object parameters become doubles; a nullable object still does; an
   intersection becomes one double of both; a union of several object types, a
   scalar without a default, and a by-reference parameter are refused. A variadic
-  tail is left empty. Overrides replace by parameter name and are not repeated in
-  `doubles`. Every refusal happens before the constructor runs.
+  tail is left empty unless an override fills it, which takes a list and checks
+  every element against the declared type. Overrides replace by parameter name
+  and are not repeated in `doubles`. Every refusal happens before the constructor
+  runs. Filling a variadic tail passes the parameters before it positionally, so
+  an omitted optional one has its declared default materialized.
 - A method declared `&method()` returns a reference into a stable per-double,
   per-method slot, so a mutation through it survives to the next read. The slot
   is seeded by the mode's own answer and then kept; a configured answer replaces

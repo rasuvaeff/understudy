@@ -100,11 +100,14 @@ make release-check
   class')` matched the words "final classes" in a fixture's own docblock and
   turned three passing tests red for the wrong reason.
 
-- **The mutation gate is 94, and it used to be 95.** It came down with
-  milestone 2b for one reason, recorded in `infection.json5`: `TargetUnifier`'s
-  return-type machinery carries most of the surviving mutants and has not been
-  revisited since milestone 1. Raising it back is a planned PR, not a nice-to-
-  have — do not let the number drift further while that is outstanding.
+- **The mutation gate is 92, and every move it has made is written down next
+  to the number.** 95 -> 94 -> 92 -> 93 -> 92, and `infection.json5` says why
+  each time. `TargetUnifier` still carries most of the surviving mutants: it is
+  reflection glue whose branches are combinations of what a signature can be,
+  so honest `#[Covers]` attribution grows the denominator about as fast as new
+  tests grow the numerator. Read the reasons before moving the number, and add
+  one when you do — a gate whose verdict flips on which PHP built the run is
+  measuring the environment, not the suite.
 - **The only `&` in the package is in generated code, and that is deliberate.**
   Psalm cannot follow a reference into an object property and says so by name;
   the way out is not a suppression but moving the reference to where Psalm never
@@ -145,10 +148,14 @@ make release-check
   until review caught it: nothing stopped `$a->b()->c()` from inventing a third
   collaborator. A registered factory still answers at any depth — that is the
   test saying it meant this one.
-- **`wire()` never evaluates a constructor parameter default.** A parameter
-  that has one is omitted from the call, and PHP applies it — reading it would
-  run `= new Foo()` during wiring. Same trap as the codegen defaults in
-  milestone 2a, different file.
+- **`wire()` evaluates a constructor parameter default in exactly one place.**
+  A parameter that has one is omitted from the call and PHP applies it —
+  reading it would run `= new Foo()` during wiring. The exception is an
+  override that fills a variadic tail: Reflection forbids positional arguments
+  after named ones, so every parameter before the tail has to be passed
+  positionally, and an omitted optional one is materialized through
+  `getDefaultValue()`. Anywhere else this is the same trap as the codegen
+  defaults in milestone 2a, different file.
 - **`wire()` is Reflection glue, so it gets a fixture matrix, not property
   tests.** Every branch is a shape a constructor can have, and each refusal
   happens before the constructor runs — a half-built subject would show the test
