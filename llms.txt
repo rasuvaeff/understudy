@@ -47,6 +47,11 @@ No runtime deps.
   visible. A fluent method that returned the real instance comes back as the
   double; a `static` method returning another instance of the real class raises
   `OriginalReturnTypeViolation`.
+- `Understudy::bypassFinals(FinalX::class)` lifts `final` off one class before
+  it loads; `Understudy::bypassFinals()` does it for every class the process
+  loads from then on. Opt-in, and order-dependent: it works only for classes not
+  yet read from disk. `final` on methods is never lifted, so a class carrying one
+  is still refused. Not available for a PHAR or a preloaded class.
 - `Understudy::defaults(Contract::class, fn () => $value)` says what a loose
   default should be. Nearest registration wins by distance in the type graph;
   an equal-distance tie raises `AmbiguousDefaultFactory`, a wrong-typed result
@@ -291,6 +296,7 @@ All implement `Rasuvaeff\Understudy\Exception\UnderstudyError`.
 | `AmbiguousDefaultFactory` | two registered factories are equally close to the requested type |
 | `InvalidDefaultValue` | a registered factory produced something the contract cannot hold |
 | `CannotWire` | the subject cannot be built, or a constructor parameter cannot be decided |
+| `BypassUnavailable` | `bypassFinals()` on a loaded class, a non-class, or over another source transformer |
 | `ForwardingTargetMismatch` | the instance offered to `forwarding()` misses a contract of the double |
 | `OriginalCallUnavailable` | forwarding or `callOriginal()` with no real instance to delegate to |
 | `OriginalReturnTypeViolation` | a forwarded `static` method returned another instance of the real class |

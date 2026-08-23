@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy;
 
+use Rasuvaeff\Understudy\Bypass\FileWrapper;
+use Rasuvaeff\Understudy\Bypass\FinalStripper;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Exception\BypassUnavailable;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
 use Rasuvaeff\Understudy\Exception\ForwardingTargetMismatch;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
@@ -431,6 +434,108 @@ final class Understudy
     public static function wire(string $sut, array $overrides = []): array
     {
         return Wire::build($sut, $overrides);
+    }
+
+    /**
+     * Lifts `final` off a class so it can be doubled, before the class is
+     * loaded.
+     *
+     * ```php
+     * Understudy::bypassFinals(FinalGate::class);  // one class
+     * Understudy::bypassFinals();                  // every class, from bootstrap
+     * ```
+     *
+     * Opt-in, and deliberately so. Doubling a final class means telling PHP
+     * something untrue about the code under test for the rest of the process,
+     * and the technique has limits worth meeting knowingly: it works only for
+     * classes not yet loaded, it needs a `file://` wrapper nothing else has
+     * claimed, and it cannot reach a class inside a PHAR or one that was
+     * preloaded.
+     *
+     * `final` on *methods* is never touched. Such a method stays unoverridable
+     * after the class opens up, and a double that let one through would run the
+     * target's real code — so a class carrying one is still refused.
+     *
+     * Preferred alternatives, in order: double an interface the class
+     * implements; for a value object, build a real one; introduce an interface.
+     * Bypass is for the case where none of those is available — somebody else's
+     * final class standing between a test and the code under test.
+     *
+     * @param class-string|null $class null lifts it for every class the process
+     *                                 loads from here on, which is what a
+     *                                 bootstrap wants
+     *
+     * @throws BypassUnavailable when the class is already loaded, is not a
+     *                           class, or `file://` belongs to somebody else
+     */
+    public static function bypassFinals(?string $class = null): void
+    {
+        if (!FileWrapper::isInstalled() && self::foreignSourceTransform()) {
+            throw BypassUnavailable::foreignWrapper('the source it read back was not the source on disk');
+        }
+
+        if ($class === null) {
+            FileWrapper::install(null);
+
+            return;
+        }
+
+        // Only a type already in memory can be classified: asking the
+        // autoloader would load the very class the caller wants opened, and a
+        // class is read from disk once. An unloaded enum or interface therefore
+        // passes here and is refused later, by `for()`, which is the moment it
+        // matters.
+        if (enum_exists($class, autoload: false)) {
+            throw BypassUnavailable::notAClass($class, 'an enum');
+        }
+
+        if (interface_exists($class, autoload: false)) {
+            throw BypassUnavailable::notAClass($class, 'an interface');
+        }
+
+        if (class_exists($class, autoload: false)) {
+            throw BypassUnavailable::alreadyLoaded($class);
+        }
+
+        $position = strrpos($class, '\\');
+
+        FileWrapper::install([[
+            'namespace' => $position === false ? '' : substr($class, 0, $position),
+            'class' => $position === false ? $class : substr($class, $position + 1),
+        ]]);
+    }
+
+    /**
+     * Whether something already transforms PHP source read through `file://`.
+     *
+     * PHP exposes no owner for a protocol — `stream_get_wrappers()` lists
+     * `file` whoever handles it, and every register/restore call answers `true`
+     * either way — so the question is asked of behaviour instead. The stripper's
+     * own file declares `final class FinalStripper`, and a wrapper that strips
+     * `final` from class declarations, which is precisely the incompatible one,
+     * will have removed it by the time the bytes arrive here.
+     *
+     * What it catches: another source transformer. What it does not: a wrapper
+     * that leaves PHP source alone, which by definition composes with this one
+     * anyway. Not a guarantee dressed up as one.
+     */
+    private static function foreignSourceTransform(): bool
+    {
+        $file = (new \ReflectionClass(FinalStripper::class))->getFileName();
+
+        if ($file === false) {
+            return false;
+        }
+
+        $source = @file_get_contents($file);
+
+        if ($source === false) {
+            // Nothing readable to compare against; refusing here would fail a
+            // bypass for a reason that has nothing to do with wrappers.
+            return false;
+        }
+
+        return !str_contains($source, 'final class FinalStripper');
     }
 
     /**

@@ -281,9 +281,12 @@ final class ClassDoubleTest
     public function aFinalClassIsRejected(): void
     {
         Expect::exception(UnsupportedTarget::class)->withMessage(
-            'Cannot create an understudy for `' . FinalLedger::class . '`: a final class cannot be extended. '
-            . 'Double the interface it implements, or introduce one; stripping final at load time is a '
-            . 'separate, opt-in mechanism.',
+            'Cannot create an understudy for `' . FinalLedger::class . "`: the class is final, and bypass is not enabled.\n"
+            . "- Preferred: if it implements an interface, double the interface.\n"
+            . "- If it is a value object, prefer a real instance.\n"
+            . "- If it is a concrete dependency you cannot change, enable bypass before the class is\n"
+            . "  first loaded: Understudy::bypassFinals(FinalLedger::class)\n"
+            . '- Introducing an interface remains the cleanest long-term fix.',
         );
 
         Understudy::for(FinalLedger::class);

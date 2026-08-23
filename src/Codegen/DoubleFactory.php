@@ -137,8 +137,12 @@ final class DoubleFactory
         if ($reflection->isFinal()) {
             throw UnsupportedTarget::notDoublable(
                 $contract,
-                'a final class cannot be extended. Double the interface it implements, or introduce one; '
-                . 'stripping final at load time is a separate, opt-in mechanism.',
+                "the class is final, and bypass is not enabled.\n"
+                . "- Preferred: if it implements an interface, double the interface.\n"
+                . "- If it is a value object, prefer a real instance.\n"
+                . "- If it is a concrete dependency you cannot change, enable bypass before the class is\n"
+                . "  first loaded: Understudy::bypassFinals(" . self::shortName($contract) . "::class)\n"
+                . '- Introducing an interface remains the cleanest long-term fix.',
             );
         }
 
@@ -158,6 +162,13 @@ final class DoubleFactory
         }
 
         self::rejectFinalMembers($reflection, $contract);
+    }
+
+    private static function shortName(string $class): string
+    {
+        $position = strrpos($class, '\\');
+
+        return $position === false ? $class : substr($class, $position + 1);
     }
 
     /**
