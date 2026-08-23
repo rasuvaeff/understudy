@@ -37,9 +37,9 @@ final class MockBench
             'prophecy' => [self::class, 'verifiedProphecy'],
             'phpunit mock' => [self::class, 'verifiedPhpUnit'],
         ],
-        warmup: 500,
-        calls: 2_000,
-        iterations: 25,
+        warmup: 200,
+        calls: 50,
+        iterations: 200,
     )]
     public static function verifiedUnderstudy(): void
     {
@@ -94,9 +94,9 @@ final class MockBench
             'mockery' => [self::class, 'matchedMockery'],
             'prophecy' => [self::class, 'matchedProphecy'],
         ],
-        warmup: 500,
-        calls: 2_000,
-        iterations: 25,
+        warmup: 200,
+        calls: 50,
+        iterations: 200,
     )]
     public static function matchedUnderstudy(): void
     {

@@ -36,9 +36,9 @@ final class StubBench
             'prophecy' => [self::class, 'onceProphecy'],
             'phpunit stub' => [self::class, 'oncePhpUnit'],
         ],
-        warmup: 500,
-        calls: 2_000,
-        iterations: 25,
+        warmup: 200,
+        calls: 50,
+        iterations: 200,
     )]
     public static function onceUnderstudy(): void
     {
@@ -69,8 +69,8 @@ final class StubBench
             'phpunit stub' => [self::class, 'manyPhpUnit'],
         ],
         warmup: 200,
-        calls: 1_000,
-        iterations: 25,
+        calls: 50,
+        iterations: 200,
     )]
     public static function manyUnderstudy(): void
     {

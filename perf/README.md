@@ -82,50 +82,99 @@ Watch the `RStDev` column. Testo calls a result stable below 2%; anything in
 double digits means the machine was busy and the ratio, not the microsecond
 figure, is the only thing worth quoting.
 
-## Indicative results
+## Results
 
-**These are not publication-grade numbers.** They were taken on a developer
-machine with other containers running, and several rows carry a `Very high
-variance` danger. They are recorded here to show the shape of the result and to
-make regressions visible; final figures need a quiet machine.
+Environment: PHP 8.5.6, Linux x86_64, `composer:2` image, no OPcache, no Xdebug,
+container pinned to six cores with a raised CPU share on an otherwise idle
+desktop. Understudy `dev-perf/comparative-benchmarks`, Mockery 1.6.15,
+Prophecy 1.26.1, PHPUnit 12.5.33. Taken 2026-08-23; every table below was run
+three times and the figures reproduce within a few percent.
 
-Environment: PHP 8.5.6, Linux x86_64, `composer:2` image, no OPcache, no Xdebug.
-Understudy `dev-perf/comparative-benchmarks`, Mockery 1.6.15, Prophecy 1.26.1,
-PHPUnit 12.5.33. Taken 2026-08-23.
+Medians after outlier filtering, understudy first in each row:
 
-Medians, understudy = baseline:
+### Building a double
 
-| Scenario | understudy | Mockery | Prophecy | PHPUnit |
+| Contract | understudy | Mockery | Prophecy | PHPUnit `createStub` | PHPUnit `createMock` |
+|---|---|---|---|---|---|
+| 1 method | **2.08µs** | +355% | +1013% | +304% | +387% |
+| 8 methods | **2.32µs** | +341% | +954% | +278% | +360% |
+
+The cost does not move with the width of the contract — 2.08µs against 2.32µs —
+because the generated class is compiled once and everything after that is
+instantiation.
+
+### A stub: build, stub, call, tear down
+
+| | understudy | Mockery | Prophecy | PHPUnit `createStub` |
 |---|---|---|---|---|
-| create + teardown, 1-method contract | 2.23µs | +533% | +4465% | +6002% |
-| create + teardown, 8-method contract | 2.26µs | +521% | +5519% | +8530% |
-| stub + 1 call | 20.30µs | +106% | +134% | +237% |
-| stub + 20 calls | 68.60µs | +141% | +82% | +286% |
-| marginal cost of one call¹ | 2.54µs | 6.50µs | 4.08µs | 10.35µs |
-| expect + call + verify | 24.00µs | +209% | +206% | +756% |
-| expect + matcher + call + verify | 10.09µs | +48% | +206% | — |
+| 1 call | **14.7µs** | +45% | +125% | +27% |
+| 20 calls | 48.0µs | +46% | +628%¹ | **−18%** |
+| marginal cost of one call² | 1.75µs | 2.58µs | —¹ | **1.08µs** |
 
-¹ derived as `(20 calls − 1 call) / 19` from the two rows above it.
+¹ Prophecy's twenty-call row carries ±85% relative deviation even after outlier
+filtering — its per-call path allocates enough to make garbage collection, not
+the call, the thing being measured. The number is not quotable and the marginal
+cost cannot be derived from it.
 
-Cold start, medians of 15 processes, minus a baseline process that only loads
-the autoloader (38.8ms):
+² `(20 calls − 1 call) / 19`.
+
+**PHPUnit dispatches a stubbed call faster than understudy** — 1.08µs against
+1.75µs. Understudy is ahead on the whole one-call test only because building the
+double costs it four times less; past roughly thirty calls to the same stub,
+PHPUnit's test is the cheaper one.
+
+### A mock: build, expect, call, verify, tear down
+
+| | understudy | Mockery | Prophecy | PHPUnit `createMock` |
+|---|---|---|---|---|
+| plain expectation | **18.0µs** | +30% | +175% | +16% |
+| with an argument matcher | **17.5µs** | +31% | +179% | —³ |
+
+³ see "What is deliberately absent" above.
+
+### Cold start
+
+Medians of 25 processes, minus a baseline process that only loads the
+autoloader (25.7ms):
 
 | library | added to process start |
 |---|---|
-| understudy | 3.2ms |
-| Mockery | 7.4ms |
-| Prophecy | 23.5ms |
-| PHPUnit | 24.1ms |
+| understudy | **3.9ms** |
+| Mockery | 7.3ms |
+| Prophecy | 16.5ms |
+| PHPUnit | 17.0ms |
 
-Memory, 500 live doubles per contract, after one warmup double per library so
-that the library's own autoloading is not billed to the first contract measured:
+### Memory
+
+500 live doubles per contract, after one warmup double per library so that the
+library's own autoloading is not billed to the first contract measured:
 
 | library | first double of a contract | each further double |
 |---|---|---|
-| understudy | 3.5 KB (`Clock`), 76.1 KB (`Ledger`) | 339–354 B |
+| understudy | 3.5 KB (`Clock`), 76.1 KB (`Ledger`) | **339–354 B** |
 | Mockery | 126.3 KB, 140.8 KB | 513 B |
 | Prophecy | 13.5 KB, 35.5 KB | ~8.5 KB |
 | PHPUnit | 9.5 KB, 70.6 KB | ~1.25 KB |
+
+## The loop count is part of the method
+
+The first version of these tables was wrong, and the way it was wrong is worth
+keeping written down.
+
+It timed two to three thousand doubles inside a single iteration, which put
+PHPUnit at +7797% on creation and Prophecy at +4954%. Dropping to fifty doubles
+per iteration moved them to +387% and +1013%. Nothing about the libraries
+changed: the loop was building cyclic garbage faster than PHP's collector ran,
+so most of what was being timed was collection, charged to whichever library
+allocated most.
+
+Fifty is the number a test plausibly builds, so fifty is what the benchmarks
+use. The tell that this is happening is a raw `RStDev` in the hundreds of
+percent next to a filtered one in single digits: a handful of iterations paid
+for a collection and the rest did not.
+
+Any change to `calls` invalidates every figure recorded here. Rerun, do not
+scale.
 
 ## Keeping it honest over time
 

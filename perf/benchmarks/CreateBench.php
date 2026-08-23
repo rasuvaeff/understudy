@@ -41,9 +41,9 @@ final class CreateBench
             'phpunit mock' => [self::class, 'narrowPhpUnitMock'],
             'phpunit stub' => [self::class, 'narrowPhpUnitStub'],
         ],
-        warmup: 500,
-        calls: 2_000,
-        iterations: 25,
+        warmup: 200,
+        calls: 50,
+        iterations: 200,
     )]
     public static function narrowUnderstudy(): void
     {
@@ -81,9 +81,9 @@ final class CreateBench
             'phpunit mock' => [self::class, 'widePhpUnitMock'],
             'phpunit stub' => [self::class, 'widePhpUnitStub'],
         ],
-        warmup: 500,
-        calls: 2_000,
-        iterations: 25,
+        warmup: 200,
+        calls: 50,
+        iterations: 200,
     )]
     public static function wideUnderstudy(): void
     {
