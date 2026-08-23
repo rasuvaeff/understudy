@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Codegen;
 
+use Rasuvaeff\Understudy\Bypass\FileWrapper;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Runtime\Runtime;
@@ -135,15 +136,7 @@ final class DoubleFactory
         }
 
         if ($reflection->isFinal()) {
-            throw UnsupportedTarget::notDoublable(
-                $contract,
-                "the class is final, and bypass is not enabled.\n"
-                . "- Preferred: if it implements an interface, double the interface.\n"
-                . "- If it is a value object, prefer a real instance.\n"
-                . "- If it is a concrete dependency you cannot change, enable bypass before the class is\n"
-                . "  first loaded: Understudy::bypassFinals(" . self::shortName($contract) . "::class)\n"
-                . '- Introducing an interface remains the cleanest long-term fix.',
-            );
+            throw UnsupportedTarget::notDoublable($contract, self::whyFinalStillStands($contract, $reflection));
         }
 
         if ($reflection->isInternal()) {
@@ -162,6 +155,52 @@ final class DoubleFactory
         }
 
         self::rejectFinalMembers($reflection, $contract);
+    }
+
+    /**
+     * Why a `final` is still standing, which is three different situations.
+     *
+     * Saying "bypass is not enabled" when it is enabled sends the reader to
+     * fix the thing that is already right. Bypass rewrites a class as
+     * `file://` hands it to PHP, so a source arriving another way is out of
+     * reach no matter how it was asked for — and that is worth saying in the
+     * message rather than leaving to be discovered.
+     *
+     * @param class-string          $contract
+     * @param \ReflectionClass<object> $reflection
+     */
+    private static function whyFinalStillStands(string $contract, \ReflectionClass $reflection): string
+    {
+        $recipe = "- Preferred: if it implements an interface, double the interface.\n"
+            . "- If it is a value object, prefer a real instance.\n"
+            . "- If it is a concrete dependency you cannot change, enable bypass before the class is\n"
+            . '  first loaded: Understudy::bypassFinals(' . self::shortName($contract) . "::class)\n"
+            . '- Introducing an interface remains the cleanest long-term fix.';
+
+        if (!FileWrapper::isInstalled()) {
+            return "the class is final, and bypass is not enabled.\n" . $recipe;
+        }
+
+        if (!FileWrapper::covers($contract)) {
+            return "the class is final, and bypass is enabled for other classes but not this one.\n"
+                . '- Name it too: Understudy::bypassFinals(' . self::shortName($contract) . "::class)\n"
+                . "- Or ask for every class with Understudy::bypassFinals(), before any of them loads.\n"
+                . $recipe;
+        }
+
+        $file = $reflection->getFileName();
+
+        $origin = match (true) {
+            $file === false => 'it has no source file of its own',
+            str_starts_with($file, 'phar://') => 'it was read out of a PHAR, and `phar://` is not `file://`',
+            default => 'it was already loaded, from `' . $file . '`, before the wrapper was installed',
+        };
+
+        return "the class is final, and bypass was asked for it but could not reach it: {$origin}.\n"
+            . "- Bypass rewrites a class as `file://` hands it to PHP. A source that arrives another way\n"
+            . "  — out of a PHAR, through an OPcache preload, from eval(), or past another wrapper that\n"
+            . "  owns `file://` — is out of reach whatever bypass was asked for.\n"
+            . $recipe;
     }
 
     private static function shortName(string $class): string

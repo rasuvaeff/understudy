@@ -51,7 +51,12 @@ No runtime deps.
   it loads; `Understudy::bypassFinals()` does it for every class the process
   loads from then on. Opt-in, and order-dependent: it works only for classes not
   yet read from disk. `final` on methods is never lifted, so a class carrying one
-  is still refused. Not available for a PHAR or a preloaded class.
+  is still refused. Not available for a PHAR or a preloaded class: that source
+  never passes through `file://`. A warm opcode cache does not reseal a
+  bypassed class; whether the file lands in the cache at all differs by
+  platform and is not something to rely on. When a class is still final
+  at `for()`, the refusal distinguishes bypass never enabled, enabled for other
+  classes but not this one, and enabled but out of reach.
 - `Understudy::defaults(Contract::class, fn () => $value)` says what a loose
   default should be. Nearest registration wins by distance in the type graph;
   an equal-distance tie raises `AmbiguousDefaultFactory`, a wrong-typed result

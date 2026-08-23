@@ -152,8 +152,14 @@ discovered:
 | Order matters | it works only for a class not yet read from disk; a class is read once per process |
 | The process is changed | the class really is not final any more, so reflection in your test sees something production does not |
 | `final` methods stay | a final method cannot be overridden either way, so a class carrying one is still refused |
-| PHAR and preloaded classes | their source never passes through the `file://` wrapper, and no promise is made that it does |
-| One wrapper at a time | if something else is already transforming PHP source, understudy refuses rather than replacing it silently |
+| PHAR and preloaded classes | their source arrives as `phar://`, or before any bootstrap ran, so it never passes through the `file://` wrapper |
+| The opcode cache is not a way back | however warm the cache is, and whether or not it holds the bypassed file — Linux keeps it out, Windows does not — the class stays open. Not being cached is a cost where it happens, not a guarantee to rely on |
+| Another source transformer | if something else is already rewriting PHP source, understudy refuses rather than replacing it silently; a wrapper that leaves source alone composes and is accepted |
+
+When a class is still final at `for()`, the refusal says which of these it was —
+bypass never asked for, asked for other classes but not this one, or asked for
+and out of reach — rather than sending you to check the thing that is already
+right.
 
 In order of preference: double an interface the class implements; for a value
 object, build a real one; introduce an interface. Bypass is the answer when none

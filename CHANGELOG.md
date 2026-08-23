@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- The refusal to double a `final` class says which of three situations it is:
+  bypass was never enabled, it was enabled for other classes but not this one,
+  or it was asked for and could not reach the source. The last one names the
+  reason — read out of a PHAR, already loaded before the wrapper went in, no
+  source file at all. Saying "bypass is not enabled" while it was enabled sent
+  the reader to fix the thing that was already right.
+- The bypass acceptance matrix now runs the environments it was always meant
+  to: a warm cross-process opcode cache, a coverage driver, a PHAR, an OPcache
+  preload, a competing final-stripper on `file://`, and a wrapper that leaves
+  source alone. Two of them are new facts rather than new tests — a warm
+  opcode cache does not reseal a bypassed class, whether or not the file lands
+  in the cache at all — which differs by platform; and a wrapper that does not rewrite PHP source composes and is accepted,
+  which is the boundary the narrow refusal was always drawing. The suite also
+  runs once more under an authoritative Composer classmap, which resolves a
+  class to a path out of a static map and includes it without stat'ing first —
+  a different route to the same read, and one the wrapper has to be on too.
 - `for()` on an abstract class no longer dies on an abstract static. A static
   the target leaves unimplemented — its own, or one an interface declares and
   the abstract class never fills in — has nothing for the generated subclass to
