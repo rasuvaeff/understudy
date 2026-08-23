@@ -295,11 +295,16 @@ $calls[1]->thrown();      // the throwable, if it threw
 | Strict (`Understudy::strict($double)`) | an immediate failure naming the method |
 | Forwarding (`Understudy::forwarding($double, $real)`) | whatever the real instance answers, recorded like any other call |
 
-A loose double never invents a value by running someone else's constructor and
-never hands back an object whose constructor was skipped. A return type that can
-itself be doubled becomes one — a double of its own, one level deep, which the
-same test can configure. Where no safe value exists it says so, and names the
-way out.
+A loose double never invents a value by running someone else's constructor, and
+never hands back an unconstructed instance of a real class. What it can hand
+back is another understudy: a return type that can itself be doubled becomes
+one, one level deep, which the same test can configure. That double is a
+generated stand-in, not the target with its constructor skipped.
+
+One level, and no further — a double created this way refuses to produce
+another, so `$a->b()->c()` says so rather than inventing a third collaborator
+the test never asked for. Registering a factory for `C` is how you say you meant
+it. Where no safe value exists it says so, and names the way out.
 
 ### Saying what a default should be
 
@@ -343,6 +348,7 @@ itself asks for.
 | a nullable object | a double — `null` is something the test can ask for explicitly |
 | an intersection | one double of both contracts |
 | a union of several object types | refused: picking one would be a guess |
+| an object that cannot be doubled, with a default | its own default, applied by PHP |
 | a scalar with a default | the declared default, and no double |
 | a scalar without one | refused, naming the override to pass |
 | a variadic tail | left empty; inventing entries would invent collaborators |

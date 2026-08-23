@@ -198,7 +198,7 @@ final class Runtime
             $double->{$property} = $value;
         }
 
-        $owner->register($double, new DoubleState($blueprint));
+        $owner->register($double, new DoubleState($blueprint, nested: true));
         self::owners()->offsetSet($double, $owner);
 
         return $double;
@@ -373,7 +373,7 @@ final class Runtime
             throw StrictModeViolation::unexpectedCall($state->label(), $method);
         }
 
-        return TypeDefaultResolver::forSignature($state->label(), $signature, $method, $context);
+        return TypeDefaultResolver::forSignature($state->label(), $signature, $method, $context, $state->nested);
     }
 
     /**

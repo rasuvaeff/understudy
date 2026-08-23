@@ -31,20 +31,26 @@ final class TypeDefaultResolver
         ?MethodSignature $signature,
         string $method,
         RuntimeContext $context,
+        bool $nested = false,
     ): mixed {
         if ($signature === null) {
             return null;
         }
 
-        return self::forType($label, $signature->returnType, $method, $context);
+        return self::forType($label, $signature->returnType, $method, $context, $nested);
     }
 
     /**
      * @param non-empty-string $label
      * @param non-empty-string $method
      */
-    private static function forType(string $label, string $type, string $method, RuntimeContext $context): mixed
-    {
+    private static function forType(
+        string $label,
+        string $type,
+        string $method,
+        RuntimeContext $context,
+        bool $nested,
+    ): mixed {
         if (str_starts_with($type, '?')) {
             return null;
         }
@@ -63,7 +69,7 @@ final class TypeDefaultResolver
 
             foreach ($branches as $branch) {
                 try {
-                    return self::forType($label, $branch, $method, $context);
+                    return self::forType($label, $branch, $method, $context, $nested);
                 } catch (NoDefaultValue) {
                     continue;
                 }
@@ -107,7 +113,7 @@ final class TypeDefaultResolver
             'Generator' => self::emptyGenerator(),
             'Traversable', 'Iterator' => new \EmptyIterator(),
             'ArrayIterator' => new \ArrayIterator(),
-            default => self::doubleOrFail($label, $name, $method, $context),
+            default => self::doubleOrFail($label, $name, $method, $context, $nested),
         };
     }
 
@@ -117,16 +123,29 @@ final class TypeDefaultResolver
      * not whichever context happens to be current, which for a call made from
      * another Fiber would be the wrong one.
      *
-     * Depth stops here. The nested double answers its own calls from the same
-     * table, so a chain of them would grow silently; one level is enough to
-     * keep a test moving, and more than one is a design the test should state
-     * out loud.
+     * Depth stops here, enforced rather than described: a double this method
+     * created is marked, and asked for another one it refuses. One level keeps
+     * a test moving; a chain of implicit collaborators is a design the test
+     * should state out loud.
      *
      * @param non-empty-string $label
      * @param non-empty-string $method
      */
-    private static function doubleOrFail(string $label, string $type, string $method, RuntimeContext $context): object
-    {
+    private static function doubleOrFail(
+        string $label,
+        string $type,
+        string $method,
+        RuntimeContext $context,
+        bool $nested,
+    ): object {
+        if ($nested) {
+            // Depth stops at one, and it has to stop by refusing rather than by
+            // documentation: a nested double answers from this same table, so
+            // `$a->b()->c()` would otherwise keep inventing collaborators the
+            // test never asked for and cannot see.
+            throw NoDefaultValue::forReturnType($label, $method, $type);
+        }
+
         if ((!class_exists($type) && !interface_exists($type)) || enum_exists($type)) {
             throw NoDefaultValue::forReturnType($label, $method, $type);
         }

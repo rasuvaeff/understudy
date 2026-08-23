@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Wiring;
 
 use Rasuvaeff\Understudy\Exception\CannotWire;
+use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Understudy;
 
 /**
@@ -84,6 +85,15 @@ final class Wire
             }
 
             $resolved = self::resolve($sut, $parameter);
+
+            if ($resolved === null) {
+                // Omitted on purpose: PHP applies the constructor's own default
+                // when the named argument is absent. Reading it here would
+                // evaluate it, and `= new Foo()` is a legal default whose
+                // constructor has no business running during wiring.
+                continue;
+            }
+
             $arguments[$name] = $resolved[0];
 
             if ($resolved[1] !== null) {
@@ -176,23 +186,21 @@ final class Wire
     /**
      * @param class-string $sut
      *
-     * @return array{Argument, object|null} the argument, and the double if one was built for it
+     * @return array{Argument, object|null}|null the argument and the double built
+     *                                            for it, or null when the parameter
+     *                                            should be left to its own default
      */
-    private static function resolve(string $sut, \ReflectionParameter $parameter): array
+    private static function resolve(string $sut, \ReflectionParameter $parameter): ?array
     {
         $type = $parameter->getType();
         $contracts = $type === null ? [] : self::doublableContracts($type);
 
         if (count($contracts) === 1) {
-            $double = Understudy::for($contracts[0]);
-
-            return [$double, $double];
+            return self::doubleOrDefault($parameter, $contracts);
         }
 
         if (count($contracts) > 1 && $type instanceof \ReflectionIntersectionType) {
-            $double = Understudy::for($contracts[0], ...array_slice($contracts, 1));
-
-            return [$double, $double];
+            return self::doubleOrDefault($parameter, $contracts);
         }
 
         if (count($contracts) > 1) {
@@ -205,10 +213,7 @@ final class Wire
         }
 
         if ($parameter->isDefaultValueAvailable()) {
-            /** @var mixed $default */
-            $default = $parameter->getDefaultValue();
-
-            return [self::asArgument($sut, $parameter->getName(), $default), null];
+            return null;
         }
 
         if ($type !== null && $type->allowsNull()) {
@@ -221,6 +226,36 @@ final class Wire
             $type === null ? 'no type' : (string) $type,
             'it is not an object type and has no default value.',
         );
+    }
+
+    /**
+     * A double of the contracts, or nothing when the parameter can keep its own
+     * default instead.
+     *
+     * An object parameter is a collaborator, so a double is what the test
+     * wants. Some of them cannot be doubled — a final class most often — and a
+     * parameter that already says what to use in that case is answered by its
+     * own default rather than by refusing the whole subject. Doublability is
+     * decided by trying, so that this file does not grow a second copy of the
+     * rules `DoubleFactory` already owns.
+     *
+     * @param non-empty-list<class-string> $contracts
+     *
+     * @return array{Argument, object|null}|null
+     */
+    private static function doubleOrDefault(\ReflectionParameter $parameter, array $contracts): ?array
+    {
+        try {
+            $double = Understudy::for($contracts[0], ...array_slice($contracts, 1));
+        } catch (UnsupportedTarget $undoublable) {
+            if ($parameter->isDefaultValueAvailable()) {
+                return null;
+            }
+
+            throw $undoublable;
+        }
+
+        return [$double, $double];
     }
 
     /**

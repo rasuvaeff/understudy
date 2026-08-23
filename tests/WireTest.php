@@ -7,11 +7,13 @@ namespace Rasuvaeff\Understudy\Tests;
 use Rasuvaeff\Understudy\Exception\CannotWire;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\AbstractSubject;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\CatalogService;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\CountingDefault;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\CountingRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\IntersectionDependency;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\NoConstructor;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\NullableDependency;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\NullableScalar;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\ObjectDefaultSubject;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\PrivateConstructor;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\ReferenceConstructor;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\Reporter;
@@ -108,6 +110,23 @@ final class WireTest
 
         Assert::same($subject->label(), 'plain');
         Assert::same($doubles, []);
+    }
+
+    /**
+     * A parameter with a default is omitted from the call, so PHP applies the
+     * constructor's own. Reading it would evaluate it, and `= new Foo()` is a
+     * legal default whose constructor has no business running during wiring.
+     */
+    public function anObjectDefaultIsNeverEvaluatedWhileWiring(): void
+    {
+        CountingDefault::$constructed = 0;
+
+        ['sut' => $subject, 'doubles' => $doubles] = Understudy::wire(ObjectDefaultSubject::class);
+
+        // Once, by PHP, when the constructor ran — not by wire() beforehand.
+        Assert::same(CountingDefault::$constructed, 1);
+        Assert::instanceOf($subject->stamp, CountingDefault::class);
+        Assert::same(array_keys($doubles), ['repository']);
     }
 
     // --- Overrides -----------------------------------------------------------

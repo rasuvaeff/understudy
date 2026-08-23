@@ -11,6 +11,7 @@ use Rasuvaeff\Understudy\Exception\InvalidDefaultValue;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Audited;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\AuditedLogger;
+use Rasuvaeff\Understudy\Tests\Fixture\Def\Chained;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Concrete;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Logger;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\NullLogger;
@@ -258,6 +259,40 @@ final class DefaultFactoriesTest
 
         Assert::null($workspace->eitherWay());
         Assert::same($workspace->eitherOrText(), '');
+    }
+
+    /**
+     * Depth stops at one, and it has to stop by refusing rather than by
+     * documentation. A nested double answers from this same table, so
+     * `$a->next()->next()` would otherwise keep inventing collaborators the
+     * test never asked for and cannot see.
+     */
+    public function aNestedDoubleWillNotProduceAnotherOne(): void
+    {
+        $workspace = Understudy::for(Workspace::class);
+        $first = $workspace->chained();
+
+        Assert::instanceOf($first, Chained::class);
+        // The nested double still answers everything else from the table.
+        Assert::same($first->name(), '');
+
+        Expect::exception(NoDefaultValue::class)->withMessageContaining(Chained::class);
+
+        $first->next();
+    }
+
+    /**
+     * A registration is a decision the test made out loud, so it still applies
+     * at the second level — only the *implicit* double is refused there.
+     */
+    public function aRegisteredFactoryStillAnswersForANestedDouble(): void
+    {
+        $answer = Understudy::for(Chained::class);
+        Understudy::defaults(Chained::class, static fn(): Chained => $answer);
+
+        $workspace = Understudy::for(Workspace::class);
+
+        Assert::same($workspace->chained()->next(), $answer);
     }
 
     // --- Context ownership ---------------------------------------------------

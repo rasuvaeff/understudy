@@ -16,6 +16,8 @@ interface Workspace
 
     public function concrete(): Concrete;
 
+    public function chained(): Chained;
+
     public function counted(): int;
 
     /** Neither branch can be doubled and neither has a builtin default. */

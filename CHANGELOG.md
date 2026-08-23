@@ -12,7 +12,9 @@
 - A return type that can itself be doubled now becomes one — a double of its
   own, one level deep, adopted into the context that owns the outer double
   rather than whichever Fiber happened to be running. It used to raise
-  `NoDefaultValue`.
+  `NoDefaultValue`. The depth limit is enforced: a double created this way
+  refuses to produce another, so a chain of implicit collaborators says so
+  instead of growing silently. A registered factory still answers at any depth.
 - The loose-default lookup asks the registry only when something was registered.
   Reaching for `class_exists()` first autoloads, and an autoloader round trip on
   every unmatched call cost about half the dispatch time — the comparative
@@ -23,7 +25,10 @@
   double of both contracts, a scalar with a default keeps it; a union of several
   object types, a scalar without a default, a by-reference parameter, an
   inaccessible constructor and a non-concrete subject are each refused by name,
-  before the constructor runs.
+  before the constructor runs. A parameter that has a default is omitted from
+  the call so PHP applies it — reading it would run `= new Foo()` during wiring
+  — and an object that cannot be doubled falls back to its own default rather
+  than refusing the whole subject.
 - Forwarding. `Understudy::forwarding($double, $real)` delegates every call the
   test did not configure to a real instance and records it like any other. The
   target must satisfy every contract the double stands in for. `for($real)`

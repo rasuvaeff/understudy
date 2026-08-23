@@ -27,9 +27,15 @@ final class DoubleState
 
     private ?object $forwardingTarget = null;
 
+    /**
+     * @param bool $nested true when a loose default created this double rather
+     *                     than the test asking for it, which is what stops the
+     *                     chain at one level
+     */
     public function __construct(
         public readonly Blueprint $blueprint,
         private Mode $mode = Mode::Loose,
+        public readonly bool $nested = false,
     ) {}
 
     public function mode(): Mode
