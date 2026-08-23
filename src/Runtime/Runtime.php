@@ -14,7 +14,6 @@ use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
-use Rasuvaeff\Understudy\Outcome;
 
 /**
  * The registry generated doubles call into, and the owner of every context.
@@ -345,7 +344,7 @@ final class Runtime
                 $invocation->recordFinalArguments(self::detached($args));
             }
 
-            $invocation->recordOutcome(Outcome::thrownError($thrown));
+            $invocation->recordThrown($thrown);
 
             throw $thrown;
         }
@@ -354,7 +353,7 @@ final class Runtime
             $invocation->recordFinalArguments(self::detached($args));
         }
 
-        $invocation->recordOutcome(Outcome::returnedValue($value));
+        $invocation->recordReturned($value);
 
         return $value;
     }
@@ -374,8 +373,8 @@ final class Runtime
         $signature = $state->blueprint->method($method);
         $matched = false;
 
-        foreach ($state->expectations() as $expectation) {
-            if (!$expectation->matches($method, $invocation->args)) {
+        foreach ($state->expectationsFor($method) as $expectation) {
+            if (!$expectation->matchesArguments($invocation->args)) {
                 continue;
             }
 
