@@ -22,6 +22,9 @@ final class Invocation
 
     private bool $accounted = false;
 
+    /** @var list<mixed>|null */
+    private ?array $argsAfter = null;
+
     /**
      * @param non-empty-string $method
      * @param list<mixed>      $args
@@ -35,6 +38,31 @@ final class Invocation
         public readonly ?int $line = null,
         private readonly ?object $double = null,
     ) {}
+
+    /**
+     * What the arguments were once the call had been answered.
+     *
+     * Only a method with a by-reference parameter has one: for every other
+     * method the answer cannot change what was passed, and taking the snapshot
+     * anyway would cost every call in the suite. Null means "same as
+     * {@see $args}".
+     *
+     * @return list<mixed>|null
+     */
+    public function argsAfter(): ?array
+    {
+        return $this->argsAfter;
+    }
+
+    /**
+     * @param list<mixed> $args
+     *
+     * @internal
+     */
+    public function recordFinalArguments(array $args): void
+    {
+        $this->argsAfter = $args;
+    }
 
     /**
      * @internal

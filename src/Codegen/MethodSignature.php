@@ -17,6 +17,8 @@ final readonly class MethodSignature
      * @param string           $parameters rendered parameter list; empty for a method without parameters
      * @param non-empty-string $arguments  expression collecting every parameter, defaults included
      * @param non-empty-string $returnType rendered return type of the override
+     * @param bool $hasReferenceParameters gates the argument snapshots the call log
+     *                                      takes, so the common path pays nothing
      * @param 'public'|'protected' $visibility a protected method is overridden and dispatched like any
      *                                         other, but native visibility keeps it out of setup closures
      */
@@ -28,6 +30,7 @@ final readonly class MethodSignature
         public bool $returnsNever,
         public bool $returnsVoid,
         public bool $returnsReference,
+        public bool $hasReferenceParameters = false,
         public bool $static = false,
         public string $visibility = 'public',
     ) {}

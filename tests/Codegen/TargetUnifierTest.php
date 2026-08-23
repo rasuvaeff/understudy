@@ -39,6 +39,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\IterableAll;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedTail;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedWriter;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\Narrower;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\NarrowPartsUnion;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\NarrowReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\NeverValue;
@@ -54,6 +55,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\SecondaryNamed;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\Showcase;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\Sibling;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByRef;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticReturn;
@@ -74,6 +76,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\VariadicByValueTail;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\VariadicShapes;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\VariadicShapesToo;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WidePartsUnion;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\Wider;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WideReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterInt;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterIntToo;
@@ -665,6 +668,40 @@ final class TargetUnifierTest
             $signature->returnType,
             '\\' . IntersectionAlpha::class . '&\IteratorAggregate',
         );
+    }
+
+    /**
+     * The narrower atom arrives second, so the loop has to drop the one already
+     * collected rather than only skip the newcomer — `Narrower&Wider` is the
+     * redundant intersection PHP rejects.
+     */
+    public function anIntersectionDropsAnAtomTheNewcomerAlreadyImplies(): void
+    {
+        $signature = $this->unify(Wider::class, Narrower::class)['shape'];
+
+        Assert::same($signature->returnType, '\\' . Narrower::class);
+    }
+
+    /**
+     * The same pair the other way round: the newcomer is the wider one, so it
+     * is the newcomer that is redundant.
+     */
+    public function anIntersectionDropsARedundantNewcomer(): void
+    {
+        $signature = $this->unify(Narrower::class, Wider::class)['shape'];
+
+        Assert::same($signature->returnType, '\\' . Narrower::class);
+    }
+
+    /**
+     * Neither implies the other, so both survive and the double must satisfy
+     * both at once.
+     */
+    public function twoUnrelatedAtomsBothSurvive(): void
+    {
+        $signature = $this->unify(Wider::class, Sibling::class)['shape'];
+
+        Assert::same($signature->returnType, '\\' . Wider::class . '&\\' . Sibling::class);
     }
 
     public function aMiddleUnionBranchIsKeptLikeAnyOther(): void

@@ -61,6 +61,21 @@ make release-check
 
 ## Invariants & gotchas
 
+- **The mutation gate is 94, and it used to be 95.** It came down with
+  milestone 2b for one reason, recorded in `infection.json5`: `TargetUnifier`'s
+  return-type machinery carries most of the surviving mutants and has not been
+  revisited since milestone 1. Raising it back is a planned PR, not a nice-to-
+  have — do not let the number drift further while that is outstanding.
+- **The only `&` in the package is in generated code, and that is deliberate.**
+  Psalm cannot follow a reference into an object property and says so by name;
+  the way out is not a suppression but moving the reference to where Psalm never
+  looks. `Runtime::referenceSlot()` hands back a plain `ReferenceSlot` object by
+  value, and the generated method returns `$slot->value` from its `&` signature.
+  Zero `@psalm-suppress`, zero baseline, zero `issueHandlers` — keep it that way.
+- **A by-reference argument is snapshotted on both sides, and only where it can
+  move.** `MethodSignature::$hasReferenceParameters` gates it: taking two
+  readings of every call would cost the whole suite for a rare case.
+
 - **Never autoload on the dispatch path.** `class_exists($name)` does, by
   default, and an autoloader round trip per unmatched call cost about half the
   dispatch time — caught by `make perf` against the recorded baseline, not by

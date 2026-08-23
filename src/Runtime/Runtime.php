@@ -278,9 +278,15 @@ final class Runtime
             throw ForgottenDouble::afterReset($method);
         }
 
+        // A by-reference argument is live: whatever answers the call can write
+        // through it, and the log would then show a value the caller never
+        // passed. Both sides are kept, and only for the methods that can move —
+        // snapshotting every call would cost the whole suite for a rare case.
+        $tracksReferences = $state->blueprint->method($method)?->hasReferenceParameters ?? false;
+
         $invocation = new Invocation(
             method: $method,
-            args: $args,
+            args: $tracksReferences ? self::detached($args) : $args,
             sequence: $context->nextSequence(),
             double: $double,
         );
@@ -288,11 +294,19 @@ final class Runtime
 
         try {
             /** @var mixed $value */
-            $value = self::answer($state, $double, $method, $invocation, $context);
+            $value = self::answer($state, $double, $method, $invocation, $context, $args);
         } catch (\Throwable $thrown) {
+            if ($tracksReferences) {
+                $invocation->recordFinalArguments(self::detached($args));
+            }
+
             $invocation->recordOutcome(Outcome::thrownError($thrown));
 
             throw $thrown;
+        }
+
+        if ($tracksReferences) {
+            $invocation->recordFinalArguments(self::detached($args));
         }
 
         $invocation->recordOutcome(Outcome::returnedValue($value));
@@ -302,6 +316,7 @@ final class Runtime
 
     /**
      * @param non-empty-string $method
+     * @param list<mixed>      $args live arguments, references included
      */
     private static function answer(
         DoubleState $state,
@@ -309,6 +324,7 @@ final class Runtime
         string $method,
         Invocation $invocation,
         RuntimeContext $context,
+        array $args,
     ): mixed {
         $signature = $state->blueprint->method($method);
         $matched = false;
@@ -355,7 +371,10 @@ final class Runtime
         // `expect(...)->times(1)` with no action — still needs one. Returning a
         // default there would make counting a call change what it answers.
         if ($state->mode() === Mode::Forwarding) {
-            return self::forward($state, $double, $method, $invocation->args);
+            // The live arguments, not the log's reading of them: a by-reference
+            // parameter is the caller's variable, and the whole point of
+            // forwarding is that the real method can write to it.
+            return self::forward($state, $double, $method, $args);
         }
 
         if ($signature !== null && $signature->returnsNever) {
@@ -374,6 +393,40 @@ final class Runtime
         }
 
         return TypeDefaultResolver::forSignature($state->label(), $signature, $method, $context, $state->nested);
+    }
+
+    /**
+     * Dispatches a call whose return type is by reference and hands back the
+     * slot the generated method will return a reference into.
+     *
+     * The slot is seeded by the first call and then kept: a loose default
+     * recomputes an empty value every time, and writing that back would undo
+     * what the caller wrote through the reference it was given. An answer that
+     * was actually configured still replaces it — a test that says what a
+     * method returns means it.
+     *
+     * No `&` anywhere in this file: the reference is taken in the generated
+     * method, on a plain property of the returned holder.
+     *
+     * @param non-empty-string $method
+     * @param list<mixed>      $args
+     */
+    public static function referenceSlot(object $double, string $method, array $args): ReferenceSlot
+    {
+        $state = (self::ownerOf($double) ?? self::current())->stateOf($double);
+        $configured = $state?->hasActionFor($method, $args) ?? false;
+
+        /** @var mixed $value */
+        $value = self::dispatch($double, $method, $args);
+
+        $context = self::ownerOf($double) ?? self::current();
+        $state = $context->stateOf($double);
+
+        if ($state === null) {
+            throw ForgottenDouble::afterReset($method);
+        }
+
+        return $state->referenceSlot($method, $value, replace: $configured);
     }
 
     /**
@@ -464,6 +517,24 @@ final class Runtime
         }
 
         return $value;
+    }
+
+    /**
+     * The same values, without the references.
+     *
+     * Copying an array whose elements are references keeps them references, so
+     * a snapshot has to be built element by element. Without this the log would
+     * hold one live view of the arguments rather than two readings of them.
+     *
+     * @param list<mixed> $args
+     *
+     * @return list<mixed>
+     */
+    private static function detached(array $args): array
+    {
+        // Through array_map rather than a loop: the callback receives each
+        // element by value, which is what breaks the reference.
+        return array_map(static fn(mixed $argument): mixed => $argument, $args);
     }
 
     /**

@@ -1,0 +1,40 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Rasuvaeff\Understudy\Tests\Fixture\Ref;
+
+class RealRegistry implements Registry
+{
+    /** @var array<string, mixed> */
+    private array $stored = ['seeded' => true];
+
+    /** @var list<string> */
+    private array $labels = [];
+
+    /** @return array<string, mixed> */
+    #[\Override]
+    public function &values(): array
+    {
+        return $this->stored;
+    }
+
+    /** @return list<string> */
+    #[\Override]
+    public function &names(): array
+    {
+        return $this->labels;
+    }
+
+    #[\Override]
+    public function fill(string &$slot, string $value): void
+    {
+        $slot = $value;
+    }
+
+    #[\Override]
+    public function count(): int
+    {
+        return count($this->stored);
+    }
+}
