@@ -11,6 +11,7 @@ use Rasuvaeff\Understudy\Codegen\PropertyDefaults;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
+use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\AbstractLedger;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Bookkeeper;
@@ -27,6 +28,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Cls\ReadonlyLedger;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\SealedLedger;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Stamp;
 use Rasuvaeff\Understudy\Tests\Fixture\Suit;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\AbstractStaticFromInterface;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingWiderParameter;
 use Rasuvaeff\Understudy\Understudy;
@@ -170,6 +172,26 @@ final class ClassDoubleTest
         $double = Understudy::for(\StaticTargetForReview::class, \StaticContractForReview::class);
 
         Assert::same($double::ping(), 7);
+    }
+
+    /**
+     * Before this was checked, `for()` on such a class reached `eval()` and
+     * PHP answered with a fatal error naming the unimplemented method — not an
+     * exception, so nothing downstream could report it.
+     */
+    public function anAbstractTargetWithAnUnimplementedInterfaceStaticIsBuilt(): void
+    {
+        $double = Understudy::for(AbstractStaticFromInterface::class);
+
+        Assert::instanceOf($double, AbstractStaticFromInterface::class);
+        Assert::instanceOf($double, StaticPingContract::class);
+
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            "Static method `ping()` cannot be called on an understudy because static calls have no instance state.\n"
+            . 'Inject an instance dependency and double that contract instead.',
+        );
+
+        $double::ping('abc');
     }
 
     /**

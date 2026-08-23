@@ -8,6 +8,8 @@ use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\AbstractOwnStatic;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\AbstractStaticFromInterface;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\AggregateUnion;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ArityOne;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ArityTwo;
@@ -580,6 +582,28 @@ final class TargetUnifierTest
         );
 
         $this->unify(StaticPingNarrowerParameter::class, StaticPingContract::class);
+    }
+
+    /**
+     * An abstract static has no implementation for the generated subclass to
+     * inherit, so it has to be declared there. PHP refuses a concrete subclass
+     * that leaves one unimplemented, and refuses it with a fatal error — the
+     * one failure a target check exists to reach first.
+     */
+    public function anUnimplementedInterfaceStaticIsRedeclaredByTheDouble(): void
+    {
+        $signature = $this->unify(AbstractStaticFromInterface::class)['ping'] ?? null;
+
+        Assert::instanceOf($signature, MethodSignature::class);
+        Assert::true($signature->static);
+    }
+
+    public function anAbstractStaticDeclaredOnTheClassIsRedeclaredByTheDouble(): void
+    {
+        $signature = $this->unify(AbstractOwnStatic::class)['tag'] ?? null;
+
+        Assert::instanceOf($signature, MethodSignature::class);
+        Assert::true($signature->static);
     }
 
     public function aStaticReturnConflictNamesBothDeclarations(): void

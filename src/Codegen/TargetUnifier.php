@@ -47,14 +47,12 @@ final class TargetUnifier
             foreach ($target->getMethods($filter) as $method) {
                 if (self::isOverridable($method, $target)) {
                     $byName[$method->getName()][] = $method;
-                } elseif (!$target->isInterface()
-                    && $method->isStatic()
-                    && !$method->getDeclaringClass()->isInterface()
-                ) {
-                    // A class static method is inherited by the generated
-                    // subclass. Keep it only for compatibility checks against
-                    // same-named interface declarations; it must not be
-                    // rendered as a dispatcher of its own.
+                } elseif ($method->isStatic()) {
+                    // What is left here is an implemented static on a class
+                    // target: the generated subclass inherits it. Keep it only
+                    // for compatibility checks against same-named interface
+                    // declarations; it must not be rendered as a dispatcher of
+                    // its own.
                     $classStatics[$method->getName()] = $method;
                 }
             }
@@ -130,7 +128,12 @@ final class TargetUnifier
             return false;
         }
 
-        return !$method->isStatic() || $target->isInterface();
+        // An abstract static has nothing to inherit — a class target can carry
+        // one either by declaring it itself or by leaving an interface's
+        // unimplemented — so the generated class has to declare it. PHP
+        // refuses a concrete subclass that does not, and refuses it with a
+        // fatal error rather than an exception a test could catch.
+        return !$method->isStatic() || $target->isInterface() || $method->isAbstract();
     }
 
     private static function staticContractSatisfies(
