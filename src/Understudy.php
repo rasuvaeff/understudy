@@ -6,7 +6,10 @@ namespace Rasuvaeff\Understudy;
 
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
+use Rasuvaeff\Understudy\Exception\ForwardingTargetMismatch;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
+use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
+use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
 use Rasuvaeff\Understudy\Expectation\Expectation;
@@ -34,16 +37,30 @@ final class Understudy
      * Creates an understudy for one contract, optionally combined with further
      * interfaces.
      *
+     * An instance may be passed instead of a class name. The double then stands
+     * in for that object's class and remembers the object as its forwarding
+     * target — but keeps answering with defaults until {@see forwarding()} says
+     * otherwise. Wrapping something is not the same as delegating to it, and a
+     * double that started running real code the moment it was built would be a
+     * surprise, not a shorthand.
+     *
      * @template T of object
      *
-     * @param class-string<T> $target
-     * @param class-string    ...$interfaces
+     * @param class-string<T>|T $target
+     * @param class-string      ...$interfaces
      *
      * @return T
      */
-    public static function for(string $target, string ...$interfaces): object
+    public static function for(object|string $target, string ...$interfaces): object
     {
-        $contracts = [$target, ...array_values($interfaces)];
+        $real = \is_object($target) ? $target : null;
+
+        if ($real !== null) {
+            self::rejectUnwrappableInstance($real);
+        }
+
+        /** @var non-empty-list<class-string> $contracts */
+        $contracts = [$real === null ? $target : $real::class, ...array_values($interfaces)];
         $blueprint = DoubleFactory::blueprintFor($contracts);
         // Reflection rather than `new $class()`: the generated class is not
         // statically known, and this is also the path a class double will need,
@@ -60,9 +77,36 @@ final class Understudy
             $double->{$property} = $value;
         }
 
-        Runtime::adopt($double, new DoubleState($blueprint));
+        $state = new DoubleState($blueprint);
+
+        if ($real !== null) {
+            // Remembered, not switched on: `forwarding()` is what decides that
+            // real code runs.
+            $state->setForwardingTarget($real);
+        }
+
+        Runtime::adopt($double, $state);
 
         return $double;
+    }
+
+    /**
+     * A final class is already loaded by the time an instance of it exists, so
+     * the double cannot be a subclass of it and cannot keep the concrete type
+     * the caller is holding.
+     */
+    private static function rejectUnwrappableInstance(object $real): void
+    {
+        if (!(new \ReflectionClass($real))->isFinal()) {
+            return;
+        }
+
+        throw UnsupportedTarget::notDoublable(
+            $real::class,
+            'a final class cannot be extended, and an instance of one is already the class it is. Pass an '
+            . 'interface it implements to Understudy::for() and give the instance to '
+            . 'Understudy::forwarding($double, $real).',
+        );
     }
 
     /**
@@ -319,6 +363,44 @@ final class Understudy
     public static function strict(object $double): void
     {
         self::stateOf($double)->setMode(Mode::Strict);
+    }
+
+    /**
+     * Delegates unmatched calls to a real instance, recording each one.
+     *
+     * With `$real`, the double starts standing in front of that object; without
+     * it, the mode is turned on for a double built from an instance by
+     * {@see for()}. Splitting the two is deliberate: `for($real)` gives you a
+     * double that remembers where it came from, and until you say so it still
+     * answers with defaults rather than running real code.
+     *
+     * Only the call at the boundary is recorded. A real method that calls
+     * another method on itself does so inside the real object; understudy
+     * proxies an object, it does not instrument one.
+     */
+    public static function forwarding(object $double, ?object $real = null): void
+    {
+        $state = self::stateOf($double);
+
+        if ($real !== null) {
+            // A double delegating to a double — itself included — sends every
+            // call back into the dispatcher it came from.
+            if (Runtime::ownerOf($real) !== null) {
+                throw ForwardingTargetMismatch::understudyTarget($state->label());
+            }
+
+            foreach ($state->blueprint->contracts as $contract) {
+                if (!$real instanceof $contract) {
+                    throw ForwardingTargetMismatch::missingContract($state->label(), $contract, $real::class);
+                }
+            }
+
+            $state->setForwardingTarget($real);
+        } elseif ($state->forwardingTarget() === null) {
+            throw OriginalCallUnavailable::forMode($state->label());
+        }
+
+        $state->setMode(Mode::Forwarding);
     }
 
     /**

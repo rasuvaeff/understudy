@@ -148,7 +148,7 @@ final class TargetUnifierTest
         yield 'defaulted parameter is still collected' => ['withDefault', '[$a]'];
         yield 'variadic is spread' => ['variadic', '[...$rest]'];
         yield 'fixed then variadic' => ['scalarThenVariadic', '[$first, ...$rest]'];
-        yield 'by-reference parameter' => ['byReference', '[$slot]'];
+        yield 'by-reference parameter' => ['byReference', '[&$slot]'];
     }
 
     #[DataProvider('returnProvider')]

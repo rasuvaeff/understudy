@@ -9,6 +9,8 @@ use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
+use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
+use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
@@ -258,7 +260,7 @@ final class Runtime
 
         try {
             /** @var mixed $value */
-            $value = self::answer($state, $method, $invocation);
+            $value = self::answer($state, $double, $method, $invocation);
         } catch (\Throwable $thrown) {
             $invocation->recordOutcome(Outcome::thrownError($thrown));
 
@@ -273,8 +275,12 @@ final class Runtime
     /**
      * @param non-empty-string $method
      */
-    private static function answer(DoubleState $state, string $method, Invocation $invocation): mixed
-    {
+    private static function answer(
+        DoubleState $state,
+        object $double,
+        string $method,
+        Invocation $invocation,
+    ): mixed {
         $signature = $state->blueprint->method($method);
         $matched = false;
 
@@ -309,6 +315,20 @@ final class Runtime
             return $answer;
         }
 
+        // Before the `never` fallback, because a forwarding double has a real
+        // implementation to reach and that implementation is where a `: never`
+        // method's throw lives. Complaining that nothing was configured would
+        // be answering for an object that can answer for itself.
+        //
+        // Not gated on `$matched`, unlike strictness. Strict mode is a
+        // complaint, and a matched expectation answers it; forwarding is the
+        // mode's own answer, and an expectation that only counted the call —
+        // `expect(...)->times(1)` with no action — still needs one. Returning a
+        // default there would make counting a call change what it answers.
+        if ($state->mode() === Mode::Forwarding) {
+            return self::forward($state, $double, $method, $invocation->args);
+        }
+
         if ($signature !== null && $signature->returnsNever) {
             // Which mistake it is depends on whether anything was configured:
             // "you never said what this throws" reads very differently from
@@ -325,6 +345,96 @@ final class Runtime
         }
 
         return TypeDefaultResolver::forSignature($state->label(), $signature, $method);
+    }
+
+    /**
+     * Delegates one recorded call to the real instance, from inside an answer.
+     *
+     * Explicit rather than mode-driven: `answers(fn (Invocation $i) =>
+     * $i->callOriginal())` says "this one call goes through", and works whether
+     * or not the double is forwarding by default.
+     *
+     * @param non-empty-string $method
+     * @param list<mixed>      $args
+     */
+    public static function callOriginal(object $double, string $method, array $args): mixed
+    {
+        $context = self::ownerOf($double) ?? self::current();
+        $state = $context->stateOf($double);
+
+        if ($state === null) {
+            throw ForgottenDouble::afterReset($method);
+        }
+
+        return self::forward($state, $double, $method, $args);
+    }
+
+    /**
+     * Delegates a call to the double's real instance and adopts the result.
+     *
+     * Only the call at the boundary is recorded. If the real method calls
+     * another method on itself, that happens inside the real object and never
+     * reaches this dispatcher: understudy proxies an object, it does not
+     * instrument one.
+     *
+     * @param non-empty-string $method
+     * @param list<mixed>      $args
+     */
+    private static function forward(
+        DoubleState $state,
+        object $double,
+        string $method,
+        array $args,
+    ): mixed {
+        $target = $state->forwardingTarget();
+
+        if ($target === null) {
+            throw OriginalCallUnavailable::withoutTarget($state->label(), $method);
+        }
+
+        // Through a callable rather than `$target->{$method}()`: the method
+        // name is only known at runtime, and a dynamic call on a bare `object`
+        // tells static analysis nothing about what comes back.
+        $call = [$target, $method];
+        \assert(\is_callable($call));
+
+        /** @var mixed $value */
+        $value = $call(...$args);
+
+        return self::adoptForwardedResult($state, $double, $target, $method, $value);
+    }
+
+    /**
+     * A fluent method that returned the real instance has to come back as the
+     * double: the caller holds the double, and handing it the real object would
+     * quietly end the doubling halfway through a chain. Identity is what proves
+     * it — `$value === $target`, not a class check.
+     *
+     * A `static` method that returned *another* instance of the real class
+     * cannot be adopted. That object is not a generated subclass, so returning
+     * it would violate the override's own `: static`, and wrapping it silently
+     * would invent a double the test never asked for.
+     *
+     * @param non-empty-string $method
+     */
+    private static function adoptForwardedResult(
+        DoubleState $state,
+        object $double,
+        object $target,
+        string $method,
+        mixed $value,
+    ): mixed {
+        if ($value === $target) {
+            return $double;
+        }
+
+        $signature = $state->blueprint->method($method);
+
+        if ($signature?->returnType === 'static' && $value instanceof $target) {
+            throw OriginalReturnTypeViolation::foreignInstance($state->label(), $method, $value::class);
+        }
+
+        return $value;
     }
 
     /**

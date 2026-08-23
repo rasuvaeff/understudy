@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy;
 
+use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
+use Rasuvaeff\Understudy\Runtime\Runtime;
+
 /**
  * One recorded call on an understudy.
  *
@@ -44,6 +47,28 @@ final class Invocation
     /**
      * @internal called once by the dispatcher when the call finishes
      */
+    /**
+     * Delegates this call to the double's real instance and returns what it
+     * answered — the `answers()` escape hatch for "behave normally, except
+     * here".
+     *
+     * Without a forwarding target it raises `OriginalCallUnavailable` rather
+     * than reaching for the parent implementation: the double's constructor
+     * never ran, so the parent body would work over state that does not exist.
+     *
+     * @throws \Rasuvaeff\Understudy\Exception\OriginalCallUnavailable
+     */
+    public function callOriginal(): mixed
+    {
+        if ($this->double === null) {
+            // Only invocations built by the dispatcher carry a double, and
+            // those are the only ones an answer ever sees.
+            throw OriginalCallUnavailable::withoutTarget('understudy', $this->method);
+        }
+
+        return Runtime::callOriginal($this->double, $this->method, $this->args);
+    }
+
     public function recordOutcome(Outcome $outcome): void
     {
         $this->outcome ??= $outcome;

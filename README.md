@@ -293,10 +293,55 @@ $calls[1]->thrown();      // the throwable, if it threw
 |---|---|
 | Loose (default) | a type-safe default: `null`, `0`, `''`, `[]`, an empty generator … |
 | Strict (`Understudy::strict($double)`) | an immediate failure naming the method |
+| Forwarding (`Understudy::forwarding($double, $real)`) | whatever the real instance answers, recorded like any other call |
 
 A loose double never invents a value by running someone else's constructor and
 never hands back an object whose constructor was skipped. Where no safe value
 exists it says so, and names the way out.
+
+### Forwarding to a real object
+
+```php
+$real = $container->get(CacheInterface::class);
+$spy = Understudy::for(CacheInterface::class);
+Understudy::forwarding($spy, $real);
+
+when(fn () => $spy->get('key'))->throws(new PoolOverload());
+```
+
+Everything the test did not configure runs for real and is recorded; `get('key')`
+throws. The target has to satisfy every contract the double stands in for, or it
+is refused.
+
+`Understudy::for($real)` is the shorthand for a non-final class: it builds a
+double of that object's class and remembers the object, but keeps answering with
+defaults until `Understudy::forwarding($double)` turns delegation on. Wrapping
+something is not the same as delegating to it. A final class is refused — its
+class is already loaded, so the double cannot keep the concrete type you are
+holding.
+
+Inside an answer, one call can go through on its own:
+
+```php
+when(fn () => $spy->get('key'))
+    ->answers(fn (Invocation $call) => strtoupper((string) $call->callOriginal()));
+```
+
+Two things are worth knowing before relying on it:
+
+- **Only the call at the boundary is recorded.** If the real method calls
+  another method on itself, that happens inside the real object. Understudy
+  proxies an object; it does not instrument one.
+- **A `: never` method reaches the real implementation.** Its throw lives
+  there, and a forwarding double has something that can answer for itself.
+- **An understudy is not a valid target.** Forwarding to one — itself included
+  — sends every call back into a dispatcher, and an unmatched one keeps coming
+  back until the stack runs out.
+- **A fluent method comes back as the double.** When the real instance returns
+  itself, the double is returned instead, so a chain stays doubled. A `static`
+  method that returns a *different* instance of the real class is refused —
+  that object is not a double, and returning it would break the override's own
+  `: static`.
 
 ### Failure messages
 
