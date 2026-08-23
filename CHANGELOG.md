@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Comparative benchmark harness in `perf/` — understudy against Mockery,
+  Prophecy and PHPUnit's `MockObject`, plus cold-start and retained-memory
+  measurements. A separate Composer project, `export-ignore`d from the
+  distribution, so none of those libraries reach this package's dependencies.
 - Multi-target unification: a variadic tail declared by reference in one target
   and by value in another now names both targets in the rejection instead of
   reporting the same one twice.

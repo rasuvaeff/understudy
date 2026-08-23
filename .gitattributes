@@ -12,5 +12,6 @@
 /testo.php export-ignore
 /tests export-ignore
 /benchmarks export-ignore
+/perf export-ignore
 /build export-ignore
 /Makefile export-ignore

@@ -3,13 +3,31 @@ DOCKER_HOST := docker run --rm --network host -v "$(PWD)":/app -w /app
 PCOV_BOOTSTRAP := apk add --no-cache $$PHPIZE_DEPS >/dev/null && pecl install pcov >/dev/null && docker-php-ext-enable pcov
 
 .PHONY: bench build cs cs-fix psalm test mutation rector rector-fix install normalize require-checker \
-       test-coverage test-coverage-ci update-deps release-check bc-check audit-package help
+       test-coverage test-coverage-ci update-deps release-check bc-check audit-package help \
+       perf perf-install perf-cold perf-memory
 
 install:
 	$(DOCKER) composer install --no-interaction --no-progress --prefer-dist
 
 bench:
 	$(DOCKER) composer bench
+
+# The comparative harness is a separate Composer project (see perf/README.md),
+# so it needs the repository root mounted, not just the package directory: its
+# path repository resolves `..`.
+PERF := docker run --rm -v "$(PWD)":/repo -w /repo/perf composer:2
+
+perf-install:
+	$(PERF) sh -c 'git config --global --add safe.directory "*"; composer update --no-interaction --no-progress'
+
+perf:
+	$(PERF) vendor/bin/testo --suite=Benchmarks -vv
+
+perf-cold:
+	$(PERF) php cold-start.php 25
+
+perf-memory:
+	$(PERF) php memory.php 500
 
 build:
 	$(DOCKER) composer build
@@ -83,6 +101,10 @@ help:
 	@echo "Targets:"
 	@echo "  install          composer install"
 	@echo "  bench            run benchmarks (Benchmarks suite)"
+	@echo "  perf-install     install the comparative benchmark harness"
+	@echo "  perf             benchmark against Mockery/Prophecy/PHPUnit"
+	@echo "  perf-cold        cold-start comparison (one process per double)"
+	@echo "  perf-memory      bytes retained per live double"
 	@echo "  build            full gate (validate + normalize + cs + psalm + test)"
 	@echo "  cs               check code style (dry-run)"
 	@echo "  cs-fix           fix code style"
