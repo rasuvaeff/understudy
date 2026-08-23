@@ -297,14 +297,24 @@ final class Runtime
         // opens the phase in whichever context it runs in, and a double
         // created elsewhere must still signal instead of being treated as a
         // real call.
-        if (self::current()->isRecording()) {
+        $current = self::current();
+
+        if ($current->isRecording()) {
             throw new InvocationSignal($double, $method, $args);
         }
 
         self::rejectLeakedMatchers($method, $args);
 
-        $context = self::ownerOf($double) ?? self::current();
-        $state = $context->stateOf($double);
+        // Most calls stay in the context that created the double. Avoid the
+        // WeakMap owner lookup on that hot path; retain it for cross-Fiber
+        // calls where the current context does not know the object.
+        $context = $current;
+        $state = $current->stateOf($double);
+
+        if ($state === null) {
+            $context = self::ownerOf($double) ?? $current;
+            $state = $context->stateOf($double);
+        }
 
         if ($state === null) {
             // Returning null here would violate the declared return type of

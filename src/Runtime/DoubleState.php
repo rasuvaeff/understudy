@@ -19,6 +19,9 @@ final class DoubleState
     /** @var list<Expectation> */
     private array $expectations = [];
 
+    /** @var list<Expectation> */
+    private array $matchingExpectations = [];
+
     /** @var list<Invocation> */
     private array $callLog = [];
 
@@ -139,6 +142,7 @@ final class DoubleState
     public function addExpectation(Expectation $expectation): void
     {
         $this->expectations[] = $expectation;
+        array_unshift($this->matchingExpectations, $expectation);
     }
 
     /**
@@ -149,7 +153,7 @@ final class DoubleState
      */
     public function expectations(): array
     {
-        return array_reverse($this->expectations);
+        return $this->matchingExpectations;
     }
 
     /**
@@ -170,10 +174,10 @@ final class DoubleState
      */
     public function settle(): void
     {
-        $this->expectations = array_values(array_filter(
-            $this->expectations,
-            static fn(Expectation $expectation): bool => $expectation->cardinality() === null,
-        ));
+        $remaining = static fn(Expectation $expectation): bool => $expectation->cardinality() === null;
+
+        $this->expectations = array_values(array_filter($this->expectations, $remaining));
+        $this->matchingExpectations = array_values(array_filter($this->matchingExpectations, $remaining));
 
         $this->callLog = array_values(array_filter(
             $this->callLog,
