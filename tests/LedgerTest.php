@@ -94,6 +94,17 @@ final class LedgerTest
         Understudy::nothingElse($repository);
     }
 
+    public function expectationsForOneMethodDoNotScanAnotherMethod(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->count())->returns(7);
+        when(fn() => $repository->titles())->returns(['Dune']);
+
+        Assert::same($repository->count(), 7);
+        Assert::same($repository->titles(), ['Dune']);
+    }
+
     public function nothingElseNamesTheUnaccountedCalls(): void
     {
         $repository = Understudy::for(BookRepository::class);

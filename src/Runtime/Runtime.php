@@ -14,7 +14,6 @@ use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
-use Rasuvaeff\Understudy\Outcome;
 
 /**
  * The registry generated doubles call into, and the owner of every context.
@@ -297,14 +296,24 @@ final class Runtime
         // opens the phase in whichever context it runs in, and a double
         // created elsewhere must still signal instead of being treated as a
         // real call.
-        if (self::current()->isRecording()) {
+        $current = self::current();
+
+        if ($current->isRecording()) {
             throw new InvocationSignal($double, $method, $args);
         }
 
         self::rejectLeakedMatchers($method, $args);
 
-        $context = self::ownerOf($double) ?? self::current();
-        $state = $context->stateOf($double);
+        // Most calls stay in the context that created the double. Avoid the
+        // WeakMap owner lookup on that hot path; retain it for cross-Fiber
+        // calls where the current context does not know the object.
+        $context = $current;
+        $state = $current->stateOf($double);
+
+        if ($state === null) {
+            $context = self::ownerOf($double) ?? $current;
+            $state = $context->stateOf($double);
+        }
 
         if ($state === null) {
             // Returning null here would violate the declared return type of
@@ -335,7 +344,7 @@ final class Runtime
                 $invocation->recordFinalArguments(self::detached($args));
             }
 
-            $invocation->recordOutcome(Outcome::thrownError($thrown));
+            $invocation->recordThrown($thrown);
 
             throw $thrown;
         }
@@ -344,7 +353,7 @@ final class Runtime
             $invocation->recordFinalArguments(self::detached($args));
         }
 
-        $invocation->recordOutcome(Outcome::returnedValue($value));
+        $invocation->recordReturned($value);
 
         return $value;
     }
@@ -364,8 +373,8 @@ final class Runtime
         $signature = $state->blueprint->method($method);
         $matched = false;
 
-        foreach ($state->expectations() as $expectation) {
-            if (!$expectation->matches($method, $invocation->args)) {
+        foreach ($state->expectationsFor($method) as $expectation) {
+            if (!$expectation->matchesArguments($invocation->args)) {
                 continue;
             }
 

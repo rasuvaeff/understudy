@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy;
 
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
+use Rasuvaeff\Understudy\Exception\OutcomeUnavailable;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 
 /**
@@ -19,6 +20,12 @@ use Rasuvaeff\Understudy\Runtime\Runtime;
 final class Invocation
 {
     private ?Outcome $outcome = null;
+
+    private ?bool $returnedState = null;
+
+    private mixed $returnedValue = null;
+
+    private ?\Throwable $thrownError = null;
 
     private bool $accounted = false;
 
@@ -110,6 +117,36 @@ final class Invocation
     }
 
     /**
+     * Records a returned value without allocating an Outcome wrapper. The
+     * wrapper remains supported by recordOutcome() for internal compatibility;
+     * dispatch uses this scalar path because every call reaches it.
+     *
+     * @internal
+     */
+    public function recordReturned(mixed $value): void
+    {
+        if ($this->returnedState !== null || $this->outcome !== null) {
+            return;
+        }
+
+        $this->returnedState = true;
+        $this->returnedValue = $value;
+    }
+
+    /**
+     * @internal
+     */
+    public function recordThrown(\Throwable $thrown): void
+    {
+        if ($this->returnedState !== null || $this->outcome !== null) {
+            return;
+        }
+
+        $this->returnedState = false;
+        $this->thrownError = $thrown;
+    }
+
+    /**
      * Marks this call as accounted for: an expectation matched it, or a
      * verification claimed it. `nothingElse()` is the question this answers.
      *
@@ -130,21 +167,35 @@ final class Invocation
 
     public function didReturn(): bool
     {
-        return $this->outcome?->didReturn() ?? false;
+        return $this->returnedState ?? $this->outcome?->didReturn() ?? false;
     }
 
     public function didThrow(): bool
     {
-        return $this->outcome?->didThrow() ?? false;
+        return $this->returnedState !== null
+            ? !$this->returnedState
+            : $this->outcome?->didThrow() ?? false;
     }
 
     public function returned(): mixed
     {
+        if ($this->returnedState === true) {
+            return $this->returnedValue;
+        }
+
+        if ($this->returnedState === false) {
+            \assert($this->thrownError instanceof \Throwable);
+
+            throw OutcomeUnavailable::threwInstead($this->method, $this->thrownError);
+        }
+
         return $this->outcome?->returned($this->method);
     }
 
     public function thrown(): ?\Throwable
     {
-        return $this->outcome?->thrown();
+        return $this->returnedState !== null
+            ? $this->thrownError
+            : $this->outcome?->thrown();
     }
 }

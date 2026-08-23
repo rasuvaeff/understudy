@@ -41,6 +41,10 @@ final class Expectation
     /** @var list<positive-int> */
     private array $matchedSequences = [];
 
+    private readonly int $argumentCount;
+
+    private readonly ?TailMatcher $tailMatcher;
+
     /**
      * @param non-empty-string $method
      * @param list<mixed>      $args literal values and/or ArgumentMatcher instances
@@ -49,6 +53,8 @@ final class Expectation
         public readonly string $method,
         public readonly array $args,
     ) {
+        $this->argumentCount = count($args);
+        $tailMatcher = null;
         $last = count($args) - 1;
 
         /** @var mixed $argument */
@@ -63,7 +69,13 @@ final class Expectation
                     $argument->describe(),
                 );
             }
+
+            if ($position === $last && $argument instanceof TailMatcher) {
+                $tailMatcher = $argument;
+            }
         }
+
+        $this->tailMatcher = $tailMatcher;
     }
 
     /**
@@ -180,31 +192,45 @@ final class Expectation
             return false;
         }
 
-        // Indexed rather than end(), which moves the array pointer and so
-        // counts as modifying a readonly property.
-        /** @var mixed $tail */
-        $tail = $this->args === [] ? null : $this->args[count($this->args) - 1];
+        return $this->matchesArguments($args);
+    }
 
-        // A tail matcher stands for every remaining argument, so it decides
-        // the arity instead of obeying it.
-        if ($tail instanceof TailMatcher) {
-            $fixed = count($this->args) - 1;
+    /**
+     * Matches arguments after the caller has already selected this method's
+     * expectation bucket.
+     *
+     * @param list<mixed> $args
+     */
+    public function matchesArguments(array $args): bool
+    {
+        if ($this->tailMatcher !== null) {
+            $fixed = $this->argumentCount - 1;
+            /** @var int<0, max> $fixed */
 
-            return count($args) >= $fixed
-                && $this->matchesPositions(array_slice($args, 0, $fixed))
-                && $tail->matchesTail(array_slice($args, $fixed));
+            if (count($args) < $fixed || !$this->matchesPositions($args, $fixed)) {
+                return false;
+            }
+
+            return $this->tailMatcher->matchesTail(array_slice($args, $fixed));
         }
 
-        return count($args) === count($this->args) && $this->matchesPositions($args);
+        if ($this->argumentCount === 0) {
+            return $args === [];
+        }
+
+        return count($args) === $this->argumentCount
+            && $this->matchesPositions($args, $this->argumentCount);
     }
 
     /**
      * @param list<mixed> $args
+     * @param int<0, max> $length
      */
-    private function matchesPositions(array $args): bool
+    private function matchesPositions(array $args, int $length): bool
     {
-        /** @var mixed $actual */
-        foreach ($args as $position => $actual) {
+        for ($position = 0; $position < $length; ++$position) {
+            /** @var mixed $actual */
+            $actual = $args[$position];
             /** @var mixed $expected */
             $expected = $this->args[$position];
 

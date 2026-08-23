@@ -19,6 +19,12 @@ final class DoubleState
     /** @var list<Expectation> */
     private array $expectations = [];
 
+    /** @var list<Expectation> */
+    private array $matchingExpectations = [];
+
+    /** @var array<non-empty-string, list<Expectation>> */
+    private array $matchingByMethod = [];
+
     /** @var list<Invocation> */
     private array $callLog = [];
 
@@ -127,8 +133,8 @@ final class DoubleState
         // matching expectation has an action" would disagree with it exactly
         // when a newer `expect(...)->times(1)` shadows an older stub — and the
         // slot would then be replaced by a value dispatch never returned.
-        foreach ($this->expectations() as $expectation) {
-            if ($expectation->matches($method, $args)) {
+        foreach ($this->expectationsFor($method) as $expectation) {
+            if ($expectation->matchesArguments($args)) {
                 return $expectation->hasAction();
             }
         }
@@ -139,6 +145,11 @@ final class DoubleState
     public function addExpectation(Expectation $expectation): void
     {
         $this->expectations[] = $expectation;
+        array_unshift($this->matchingExpectations, $expectation);
+
+        $method = $expectation->method;
+        $this->matchingByMethod[$method] ??= [];
+        array_unshift($this->matchingByMethod[$method], $expectation);
     }
 
     /**
@@ -149,7 +160,18 @@ final class DoubleState
      */
     public function expectations(): array
     {
-        return array_reverse($this->expectations);
+        return $this->matchingExpectations;
+    }
+
+    /**
+     * Most recently registered expectations for one method, in matching order.
+     *
+     * @param non-empty-string $method
+     * @return list<Expectation>
+     */
+    public function expectationsFor(string $method): array
+    {
+        return $this->matchingByMethod[$method] ?? [];
     }
 
     /**
@@ -170,10 +192,17 @@ final class DoubleState
      */
     public function settle(): void
     {
-        $this->expectations = array_values(array_filter(
-            $this->expectations,
-            static fn(Expectation $expectation): bool => $expectation->cardinality() === null,
-        ));
+        $remaining = static fn(Expectation $expectation): bool => $expectation->cardinality() === null;
+
+        $this->expectations = array_values(array_filter($this->expectations, $remaining));
+        $this->matchingExpectations = array_values(array_filter($this->matchingExpectations, $remaining));
+
+        $this->matchingByMethod = [];
+
+        foreach ($this->matchingExpectations as $expectation) {
+            $this->matchingByMethod[$expectation->method] ??= [];
+            $this->matchingByMethod[$expectation->method][] = $expectation;
+        }
 
         $this->callLog = array_values(array_filter(
             $this->callLog,
