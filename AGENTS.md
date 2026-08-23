@@ -88,6 +88,18 @@ make release-check
   `withoutWrapper()` restores and re-registers only when the wrapper is actually
   registered; without that guard, a unit test calling `stream_open()` on a bare
   instance would leave `file://` ours for the rest of the process.
+- **A bypassed file never enters the opcode cache, and that is load-bearing
+  twice.** OPcache does not cache what a userland wrapper read, so a warm
+  cross-process file cache cannot hand PHP the sealed original — measured, not
+  assumed: 766 files cached, the bypassed target not among them. The price is
+  that such a class is compiled again in every process.
+- **The foreign-wrapper refusal is narrow on purpose, and a fixture that
+  simulates one must be token-aware.** It asks whether the source read back is
+  the source on disk, so it catches another `final`-stripper and lets a wrapper
+  that leaves PHP source alone compose. A test fixture stripping with
+  `str_replace('final class ', ...)` also rewrites the string literal the check
+  looks for, and the check then reads its own marker back out of the rewrite —
+  it passes, and the passing looks exactly like a working bypass.
 - **`bypassFinals()` can only classify a type that is already loaded.** Asking
   the autoloader would load the very class the caller wants opened, and a class
   is read from disk once. An unloaded enum or interface therefore passes and is

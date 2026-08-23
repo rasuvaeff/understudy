@@ -76,6 +76,32 @@ final class FileWrapper
     }
 
     /**
+     * Whether the allow-list reaches a class — global mode reaches every one.
+     *
+     * Only a claim about the allow-list. Whether the class was ever read
+     * through `file://` is a different question, and the one a diagnostic has
+     * to ask second.
+     */
+    public static function covers(string $class): bool
+    {
+        if (self::$targets === null) {
+            return true;
+        }
+
+        $position = strrpos($class, '\\');
+        $namespace = $position === false ? '' : substr($class, 0, $position);
+        $short = $position === false ? $class : substr($class, $position + 1);
+
+        foreach (self::$targets as $target) {
+            if ($target['class'] === $short && $target['namespace'] === $namespace) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Restores the native wrapper. Nothing already compiled changes back — a
      * class is read once per process — so this is for a test suite tearing its
      * own process down, not for use between tests.

@@ -182,6 +182,48 @@ jobs:
       - name: Test
         run: composer test
 
+  bypass:
+    name: Bypass acceptance
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.run == 'true') }}
+    runs-on: ubuntu-latest
+
+    # Deliberately not a matrix. A matrix job skipped by its own `if:` reports
+    # one check under the raw name rather than the expanded ones, and a PR with
+    # those names in required checks then waits forever; the environments are
+    # cheap enough to walk inside one job instead.
+    #
+    # What it adds over `PHP 8.x`: those run without a coverage driver and with
+    # OPcache off for the CLI, which is exactly the configuration in which the
+    # wrapper has the least to trip over. Here it has both.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          coverage: pcov
+          extensions: json, mbstring, tokenizer
+          ini-values: opcache.enable_cli=1, phar.readonly=0
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Confirm the drivers this job exists for are actually loaded
+        run: |
+          php -r 'exit(extension_loaded("pcov") ? 0 : 1);' \
+            || { echo "pcov is missing: this job would pass without proving anything"; exit 1; }
+          php -r 'exit(extension_loaded("Zend OPcache") && ini_get("opcache.enable_cli") ? 0 : 1);' \
+            || { echo "OPcache is off for the CLI: same problem"; exit 1; }
+
+      - name: Bypass scenarios under a coverage driver and a warm opcode cache
+        run: composer test
+
   coverage:
     name: Coverage & Mutation
     needs: changes

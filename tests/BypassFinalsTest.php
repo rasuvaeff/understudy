@@ -22,14 +22,17 @@ use Testo\Test;
 #[CoversNothing]
 final class BypassFinalsTest
 {
+    /**
+     * @param list<string> $ini
+     */
     #[DataProvider('scenarioProvider')]
-    public function aScenarioAnswersAsExpected(string $scenario, string $expected): void
+    public function aScenarioAnswersAsExpected(string $scenario, string $expected, array $ini = []): void
     {
-        Assert::same($this->run($scenario), $expected);
+        Assert::same($this->run($scenario, $ini), $expected);
     }
 
     /**
-     * @return iterable<string, array{string, string}>
+     * @return iterable<string, array{string, string}|array{string, string, list<string>}>
      */
     public static function scenarioProvider(): iterable
     {
@@ -47,13 +50,102 @@ final class BypassFinalsTest
         yield 'a class already loaded is refused' => ['already-loaded', 'refused'];
         yield 'an enum is refused' => ['enum', 'refused'];
         yield 'an interface is refused' => ['interface', 'refused'];
+
+        // --- The environment the process runs in ---------------------------
+        yield 'stripping final does not move a line' => [
+            'line-numbers-preserved',
+            'opened, line 19',
+        ];
+        yield 'a second final-stripper on file:// is refused' => ['foreign-stripper', 'refused'];
+        // Deliberately the other way round: the refusal asks whether the
+        // source read back is the source on disk, not whether anyone else is
+        // there. A wrapper that leaves PHP source alone composes.
+        yield 'a wrapper that leaves source alone is accepted' => ['passive-wrapper', 'accepted'];
+        yield 'a class nobody named stays final, and the refusal says so' => [
+            'bypass-for-another-class',
+            'refused, naming the omission',
+        ];
+        yield 'a class read out of a PHAR is out of reach' => [
+            'phar',
+            'refused, naming the PHAR',
+            ['phar.readonly=0'],
+        ];
+        yield 'a preloaded class is already loaded' => [
+            'preloaded',
+            'refused',
+            ['opcache.enable_cli=1', 'opcache.preload=' . __DIR__ . '/Fixture/Bypass/preload.php'],
+        ];
+        yield 'a bypassed class is never in the opcode cache' => [
+            'opcache-warm',
+            'doubled, target uncached, engine cached',
+            ['opcache.enable_cli=1'],
+        ];
     }
 
-    private function run(string $scenario): string
+    /**
+     * The claim a single process cannot make: that a *warm* cache, filled by an
+     * earlier process, still cannot hand PHP the sealed original.
+     */
+    public function aWarmOpcodeCacheDoesNotResealTheClass(): void
     {
+        $cache = sys_get_temp_dir() . '/understudy-opcache-' . getmypid();
+
+        // OPcache refuses to start at all when the directory is not already
+        // there, and refusing to start would make both runs pass for the wrong
+        // reason.
+        if (!is_dir($cache) && !mkdir($cache, 0o777, recursive: true) && !is_dir($cache)) {
+            Assert::fail('could not create ' . $cache);
+        }
+
+        $ini = [
+            'opcache.enable_cli=1',
+            'opcache.file_cache=' . $cache,
+            'opcache.validate_timestamps=0',
+        ];
+
+        $expected = 'doubled, target uncached, engine cached';
+
+        try {
+            Assert::same($this->run('opcache-warm', $ini), $expected, 'cold cache');
+            Assert::same($this->run('opcache-warm', $ini), $expected, 'warm cache');
+        } finally {
+            self::removeDirectory($cache);
+        }
+    }
+
+    private static function removeDirectory(string $path): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $entries = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($entries as $entry) {
+            $entry->isDir() ? @rmdir($entry->getPathname()) : @unlink($entry->getPathname());
+        }
+
+        @rmdir($path);
+    }
+
+    /**
+     * @param list<string> $ini
+     */
+    private function run(string $scenario, array $ini = []): string
+    {
+        $flags = '';
+
+        foreach ($ini as $setting) {
+            $flags .= '-d ' . escapeshellarg($setting) . ' ';
+        }
+
         $command = sprintf(
-            '%s %s %s 2>&1',
+            '%s %s%s %s 2>&1',
             escapeshellarg(PHP_BINARY),
+            $flags,
             escapeshellarg(__DIR__ . '/Fixture/Bypass/scenario.php'),
             escapeshellarg($scenario),
         );
