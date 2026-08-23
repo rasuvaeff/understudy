@@ -128,6 +128,54 @@ final class LedgerTest
     }
 
     #[ExpectNoAssertions]
+    public function severalCleanDoublesPassTogether(): void
+    {
+        $first = Understudy::for(BookRepository::class);
+        $second = Understudy::for(Clock::class);
+
+        // One instance in both places: arguments match by identity.
+        $book = new Book('Dune');
+
+        expect(fn() => $first->save($book));
+        $first->save($book);
+
+        Understudy::nothingElse($first, $second);
+    }
+
+    public function anOffenderAmongSeveralIsNamed(): void
+    {
+        $clean = Understudy::for(Clock::class);
+        $offender = Understudy::for(BookRepository::class);
+
+        $offender->tag('alpha');
+
+        Expect::exception(VerificationFailed::class)
+            ->withMessageContaining('nothing accounted for');
+
+        Understudy::nothingElse($clean, $offender);
+    }
+
+    #[ExpectNoAssertions]
+    public function severalOffendersAreReportedInOneFailure(): void
+    {
+        $first = Understudy::for(BookRepository::class);
+        $second = Understudy::for(Clock::class);
+
+        $first->tag('alpha');
+        $first->tag('beta');
+        // Clock has no calls at all; the second offender comes from another
+        // double of the same contract, to prove the walk is per double.
+        $third = Understudy::for(BookRepository::class);
+        $third->count();
+
+        Expect::exception(VerificationFailed::class)
+            ->withMessageContaining('`BookRepository`')
+            ->withMessageContaining('2 call(s) nothing accounted for');
+
+        Understudy::nothingElse($first, $second, $third);
+    }
+
+    #[ExpectNoAssertions]
     public function repeatedVerificationIsIdempotent(): void
     {
         // Counting the whole log each time is what keeps the order of verify()

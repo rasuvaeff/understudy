@@ -590,28 +590,38 @@ final class Understudy
     }
 
     /**
-     * Asserts that every call this understudy received has been accounted for:
-     * matched by an `expect()`, or claimed by a successful `verify()`.
+     * Asserts that every call these understudies received has been accounted
+     * for: matched by an `expect()`, or claimed by a successful `verify()`.
+     *
+     * Accepts any number of doubles, so one line can close out a test that
+     * used several: every double named is checked, and a failure reports
+     * each offender rather than stopping at the first.
      */
-    public static function nothingElse(object $double): void
+    public static function nothingElse(object $double, object ...$more): void
     {
-        $state = self::stateOf($double);
+        $failures = [];
 
-        $unaccounted = array_values(array_filter(
-            $state->callLog(),
-            static fn(Invocation $invocation): bool => !$invocation->isAccounted(),
-        ));
+        foreach ([$double, ...array_values($more)] as $one) {
+            $state = self::stateOf($one);
 
-        if ($unaccounted === []) {
-            return;
+            $unaccounted = array_values(array_filter(
+                $state->callLog(),
+                static fn(Invocation $invocation): bool => !$invocation->isAccounted(),
+            ));
+
+            if ($unaccounted !== []) {
+                $failures[] = sprintf(
+                    "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
+                    $state->label(),
+                    count($unaccounted),
+                    FailureReport::renderCallLog($unaccounted),
+                );
+            }
         }
 
-        throw VerificationFailed::withReport(sprintf(
-            "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
-            $state->label(),
-            count($unaccounted),
-            FailureReport::renderCallLog($unaccounted),
-        ));
+        if ($failures !== []) {
+            throw VerificationFailed::withReport(implode("\n\n", $failures));
+        }
     }
 
     /**

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `Understudy::nothingElse()` accepts any number of doubles. A test that used
+  several can now close them out in one line — `nothingElse($repo, $clock,
+  $mailer)` — and a failure reports every double with unaccounted calls
+  instead of stopping at the first.
 - A model-based property over the ledger lifecycle — stub/expect → dispatch →
   verify → checkpoint — driven by `Gen::commands()` + `StateMachine`. Any
   random interleaving of configuration, dispatch and verification commands has

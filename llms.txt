@@ -222,6 +222,7 @@ Understudy::unused($repo);                            // no calls at all
 
 ```php
 Understudy::nothingElse($repo);      // every call was accounted for
+Understudy::nothingElse($repo, $clock, $mailer);  // across several doubles
 Understudy::allVerified($repo);      // expectations met AND nothing else
 Understudy::verifySequence(          // the exact protocol, across doubles
     fn () => $repo->begin(),
