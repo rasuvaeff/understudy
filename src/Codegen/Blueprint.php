@@ -16,11 +16,15 @@ final readonly class Blueprint
      * @param class-string                          $generatedClass
      * @param non-empty-list<class-string>          $contracts
      * @param array<non-empty-string, MethodSignature> $methods
+     * @param array<non-empty-string, mixed>           $propertyDefaults values to write into the target's
+     *                                                                  writable public properties, which a
+     *                                                                  skipped constructor leaves uninitialized
      */
     public function __construct(
         public string $generatedClass,
         public array $contracts,
         public array $methods,
+        public array $propertyDefaults = [],
     ) {}
 
     /**

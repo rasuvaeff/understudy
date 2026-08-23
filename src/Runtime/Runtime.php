@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Runtime;
 
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
@@ -138,6 +139,39 @@ final class Runtime
         $context->register($double, $state);
 
         self::owners()->offsetSet($double, $context);
+    }
+
+    /**
+     * Registers a freshly cloned double, called from the generated `__clone()`.
+     *
+     * The copy gets a state of its own built from the same blueprint: no
+     * expectations, no call log, no label, no mode. Copying any of it would let
+     * a double the code under test produced satisfy a verification written
+     * against the one the test set up.
+     *
+     * The copy belongs to the context that performed the `clone`, which is the
+     * same rule `Understudy::for()` follows: whoever creates a double owns it.
+     * That is a decision, not an oversight — `__clone()` runs on the copy and
+     * PHP hands it no reference to the original, so the owner of the original
+     * cannot be recovered here at all. A `clone` inside a Fiber therefore
+     * produces a copy that Fiber owns, and configuring or verifying it from
+     * outside raises `ContextOwnershipViolation` like any other cross-context
+     * access. Clone in the scope that will use it.
+     */
+    public static function adoptClone(object $clone): void
+    {
+        $blueprint = DoubleFactory::blueprintOfGenerated($clone::class);
+
+        if ($blueprint === null) {
+            // Only a generated class reaches this method, and every one of them
+            // is registered when it is compiled.
+            return;
+        }
+
+        $context = self::current();
+        $context->register($clone, new DoubleState($blueprint));
+
+        self::owners()->offsetSet($clone, $context);
     }
 
     public static function ownerOf(object $double): ?RuntimeContext
