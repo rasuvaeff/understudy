@@ -75,9 +75,9 @@ final class BypassFinalsTest
             'refused',
             ['opcache.enable_cli=1', 'opcache.preload=' . __DIR__ . '/Fixture/Bypass/preload.php'],
         ];
-        yield 'a bypassed class is never in the opcode cache' => [
+        yield 'a warm opcode cache does not reseal the class' => [
             'opcache-warm',
-            'doubled, target uncached, engine cached',
+            'doubled, still open, opcache on',
             ['opcache.enable_cli=1'],
         ];
     }
@@ -103,7 +103,7 @@ final class BypassFinalsTest
             'opcache.validate_timestamps=0',
         ];
 
-        $expected = 'doubled, target uncached, engine cached';
+        $expected = 'doubled, still open, opcache on';
 
         try {
             Assert::same($this->run('opcache-warm', $ini), $expected, 'cold cache');
@@ -139,7 +139,10 @@ final class BypassFinalsTest
         $flags = '';
 
         foreach ($ini as $setting) {
-            $flags .= '-d ' . escapeshellarg($setting) . ' ';
+            // `escapeshellarg()` quotes with `'` on every platform, and cmd.exe
+            // does not know that quote: the setting arrives mangled and PHP
+            // reports a syntax error from a line nobody wrote.
+            $flags .= '-d ' . (\DIRECTORY_SEPARATOR === '\\' ? '"' . $setting . '"' : escapeshellarg($setting)) . ' ';
         }
 
         $command = sprintf(
@@ -155,6 +158,13 @@ final class BypassFinalsTest
 
         Assert::same($status, 0, 'the scenario process exited with ' . $status . ': ' . implode("\n", $output));
 
-        return trim(implode("\n", $output));
+        // A scenario answers in one line, but the engine may have said
+        // something first — a coverage driver makes PHP warn that JIT is off,
+        // on stdout, before anything of ours runs. The answer is the last
+        // line; everything above it is already in the failure message when the
+        // process exits non-zero.
+        $lines = array_values(array_filter(array_map(trim(...), $output), static fn(string $line): bool => $line !== ''));
+
+        return $lines === [] ? '' : $lines[array_key_last($lines)];
     }
 }

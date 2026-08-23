@@ -88,11 +88,17 @@ make release-check
   `withoutWrapper()` restores and re-registers only when the wrapper is actually
   registered; without that guard, a unit test calling `stream_open()` on a bare
   instance would leave `file://` ours for the rest of the process.
-- **A bypassed file never enters the opcode cache, and that is load-bearing
-  twice.** OPcache does not cache what a userland wrapper read, so a warm
-  cross-process file cache cannot hand PHP the sealed original — measured, not
-  assumed: 766 files cached, the bypassed target not among them. The price is
-  that such a class is compiled again in every process.
+- **A warm opcode cache does not reseal a bypassed class, and that is the
+  claim — not "the file is never cached".** The narrower statement was measured
+  on Linux (766 files cached, the bypassed target not among them) and then
+  generalised from one platform; Windows CI reported the same file *cached*.
+  What holds everywhere is the behaviour, so that is what the scenario asserts.
+  Asserting on what an opcode cache chose to keep is asserting on its
+  implementation.
+- **A scenario answers in its last line, not its whole output.** With a
+  coverage driver loaded PHP warns on stdout that JIT is disabled before any
+  of our code runs, and a harness reading the whole stream compares that
+  warning against the expected answer.
 - **The foreign-wrapper refusal is narrow on purpose, and a fixture that
   simulates one must be token-aware.** It asks whether the source read back is
   the source on disk, so it catches another `final`-stripper and lets a wrapper

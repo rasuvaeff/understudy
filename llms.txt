@@ -52,8 +52,9 @@ No runtime deps.
   loads from then on. Opt-in, and order-dependent: it works only for classes not
   yet read from disk. `final` on methods is never lifted, so a class carrying one
   is still refused. Not available for a PHAR or a preloaded class: that source
-  never passes through `file://`. A bypassed file is not put in the opcode
-  cache, so it is compiled again in every process. When a class is still final
+  never passes through `file://`. A warm opcode cache does not reseal a
+  bypassed class; whether the file lands in the cache at all differs by
+  platform and is not something to rely on. When a class is still final
   at `for()`, the refusal distinguishes bypass never enabled, enabled for other
   classes but not this one, and enabled but out of reach.
 - `Understudy::defaults(Contract::class, fn () => $value)` says what a loose

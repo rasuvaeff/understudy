@@ -136,25 +136,18 @@ echo match ($scenario) {
         Understudy::bypassFinals(SealedGate::class);
         $double = Understudy::for(SealedGate::class);
 
-        if (!$double instanceof SealedGate) {
-            return 'not a SealedGate';
-        }
+        // The claim is about behaviour, not about what the cache holds. Whether
+        // a file read through a userland wrapper is cached at all turns out to
+        // differ between platforms — Linux keeps it out, Windows does not — so
+        // asserting on that would be asserting on the implementation of an
+        // opcode cache. What has to hold either way is this: the class is open
+        // and the double works, no matter how warm the cache was.
+        $status = \function_exists('opcache_get_status') ? @opcache_get_status(false) : false;
+        $enabled = \is_array($status) && ($status['opcache_enabled'] ?? false) === true;
 
-        $status = \function_exists('opcache_get_status') ? @opcache_get_status(true) : false;
-
-        if (!\is_array($status) || ($status['opcache_enabled'] ?? false) !== true) {
-            return 'doubled, opcache off';
-        }
-
-        // A file read through a userland wrapper is not cached — which is why
-        // a warm cache cannot hand PHP the sealed original, and is also the
-        // price: a bypassed class is recompiled in every process.
-        $scripts = \is_array($status['scripts'] ?? null) ? array_keys($status['scripts']) : [];
-        $target = (new \ReflectionClass(SealedGate::class))->getFileName();
-        $engine = (new \ReflectionClass(Understudy::class))->getFileName();
-
-        return 'doubled, target ' . (\in_array($target, $scripts, strict: true) ? 'cached' : 'uncached')
-            . ', engine ' . (\in_array($engine, $scripts, strict: true) ? 'cached' : 'uncached');
+        return ($double instanceof SealedGate ? 'doubled' : 'not a SealedGate')
+            . ', ' . ((new \ReflectionClass(SealedGate::class))->isFinal() ? 'resealed' : 'still open')
+            . ', opcache ' . ($enabled ? 'on' : 'off');
     })(),
 
     'preloaded' => (static function (): string {
