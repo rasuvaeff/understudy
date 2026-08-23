@@ -61,6 +61,26 @@ make release-check
 
 ## Invariants & gotchas
 
+- **The strip removes the `final` token and the one space after it, never a
+  newline.** Dropping whitespace that holds a newline would move every line
+  below it, and a stack trace or coverage report one line off is worse than a
+  double space.
+- **A wrapper method must not install the wrapper as a side effect.**
+  `withoutWrapper()` restores and re-registers only when the wrapper is actually
+  registered; without that guard, a unit test calling `stream_open()` on a bare
+  instance would leave `file://` ours for the rest of the process.
+- **`bypassFinals()` can only classify a type that is already loaded.** Asking
+  the autoloader would load the very class the caller wants opened, and a class
+  is read from disk once. An unloaded enum or interface therefore passes and is
+  refused later by `for()`, which is the moment it matters.
+- **Bypass claims are tested in a process each.** A class loads once, so two
+  scenarios in one process prove only whichever ran first — and coverage cannot
+  see into a subprocess, which is why the decisions are unit tested separately
+  from the end-to-end claims.
+- **Assert on declarations, not on phrases.** `str_contains($source, 'final
+  class')` matched the words "final classes" in a fixture's own docblock and
+  turned three passing tests red for the wrong reason.
+
 - **The mutation gate is 94, and it used to be 95.** It came down with
   milestone 2b for one reason, recorded in `infection.json5`: `TargetUnifier`'s
   return-type machinery carries most of the surviving mutants and has not been

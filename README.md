@@ -133,7 +133,31 @@ source names `self`, `static` or `parent` refuses the target, because those
 resolve against the generated class and would answer something the contract
 never promised.
 
-`bypassFinals()`, which lifts the first two, is being built next.
+### Doubling a final class
+
+Somebody else's `final` class, no interface, and no way to change it — that is
+what `bypassFinals()` is for:
+
+```php
+// In your test bootstrap, before the class is autoloaded.
+Understudy::bypassFinals(FinalGate::class);   // one class
+Understudy::bypassFinals();                    // every class this process loads
+```
+
+It is opt-in because the technique has limits that are better met knowingly than
+discovered:
+
+| | |
+|---|---|
+| Order matters | it works only for a class not yet read from disk; a class is read once per process |
+| The process is changed | the class really is not final any more, so reflection in your test sees something production does not |
+| `final` methods stay | a final method cannot be overridden either way, so a class carrying one is still refused |
+| PHAR and preloaded classes | their source never passes through the `file://` wrapper, and no promise is made that it does |
+| One wrapper at a time | if something else is already transforming PHP source, understudy refuses rather than replacing it silently |
+
+In order of preference: double an interface the class implements; for a value
+object, build a real one; introduce an interface. Bypass is the answer when none
+of those is available.
 
 ### Stubbing
 
