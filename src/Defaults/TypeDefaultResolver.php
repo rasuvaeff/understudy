@@ -6,6 +6,8 @@ namespace Rasuvaeff\Understudy\Defaults;
 
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
+use Rasuvaeff\Understudy\Runtime\Runtime;
+use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 
 /**
  * What a loose understudy answers when no expectation matched.
@@ -24,20 +26,24 @@ final class TypeDefaultResolver
      * @param non-empty-string $label
      * @param non-empty-string $method
      */
-    public static function forSignature(string $label, ?MethodSignature $signature, string $method): mixed
-    {
+    public static function forSignature(
+        string $label,
+        ?MethodSignature $signature,
+        string $method,
+        RuntimeContext $context,
+    ): mixed {
         if ($signature === null) {
             return null;
         }
 
-        return self::forType($label, $signature->returnType, $method);
+        return self::forType($label, $signature->returnType, $method, $context);
     }
 
     /**
      * @param non-empty-string $label
      * @param non-empty-string $method
      */
-    private static function forType(string $label, string $type, string $method): mixed
+    private static function forType(string $label, string $type, string $method, RuntimeContext $context): mixed
     {
         if (str_starts_with($type, '?')) {
             return null;
@@ -57,7 +63,7 @@ final class TypeDefaultResolver
 
             foreach ($branches as $branch) {
                 try {
-                    return self::forType($label, $branch, $method);
+                    return self::forType($label, $branch, $method, $context);
                 } catch (NoDefaultValue) {
                     continue;
                 }
@@ -66,7 +72,29 @@ final class TypeDefaultResolver
             throw NoDefaultValue::forReturnType($label, $method, $type);
         }
 
-        return match (ltrim($type, '\\')) {
+        $name = ltrim($type, '\\');
+
+        // A registered factory outranks everything below it, including the
+        // builtin table: a test that said what a `Traversable` should be means
+        // it for this type, not only for the classes the table has no answer
+        // for.
+        //
+        // Asked only when something was registered. The check used to be
+        // `class_exists($name)`, which autoloads — an autoloader round trip on
+        // every unmatched call, for a name the table below usually answers
+        // itself. It cost about half the dispatch time.
+        $factories = $context->defaultFactories();
+
+        if (!$factories->isEmpty()) {
+            /** @var class-string $name */
+            $registered = $factories->valueFor($name);
+
+            if ($registered !== null) {
+                return $registered[0];
+            }
+        }
+
+        return match ($name) {
             'void', 'null', 'mixed' => null,
             'bool', 'false' => false,
             'true' => true,
@@ -79,8 +107,40 @@ final class TypeDefaultResolver
             'Generator' => self::emptyGenerator(),
             'Traversable', 'Iterator' => new \EmptyIterator(),
             'ArrayIterator' => new \ArrayIterator(),
-            default => throw NoDefaultValue::forReturnType($label, $method, $type),
+            default => self::doubleOrFail($label, $name, $method, $context),
         };
+    }
+
+    /**
+     * The last resort before failing: a doublable contract becomes a double of
+     * its own, adopted into the context that owns the double being answered —
+     * not whichever context happens to be current, which for a call made from
+     * another Fiber would be the wrong one.
+     *
+     * Depth stops here. The nested double answers its own calls from the same
+     * table, so a chain of them would grow silently; one level is enough to
+     * keep a test moving, and more than one is a design the test should state
+     * out loud.
+     *
+     * @param non-empty-string $label
+     * @param non-empty-string $method
+     */
+    private static function doubleOrFail(string $label, string $type, string $method, RuntimeContext $context): object
+    {
+        if ((!class_exists($type) && !interface_exists($type)) || enum_exists($type)) {
+            throw NoDefaultValue::forReturnType($label, $method, $type);
+        }
+
+        /** @var class-string $type */
+        $reflection = new \ReflectionClass($type);
+
+        if ($reflection->isFinal() || $reflection->isInternal()) {
+            // Both are undoublable, and inventing an instance any other way
+            // would mean running a constructor this engine knows nothing about.
+            throw NoDefaultValue::forReturnType($label, $method, $type);
+        }
+
+        return Runtime::adoptInto($context, $type);
     }
 
     /**

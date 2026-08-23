@@ -296,8 +296,62 @@ $calls[1]->thrown();      // the throwable, if it threw
 | Forwarding (`Understudy::forwarding($double, $real)`) | whatever the real instance answers, recorded like any other call |
 
 A loose double never invents a value by running someone else's constructor and
-never hands back an object whose constructor was skipped. Where no safe value
-exists it says so, and names the way out.
+never hands back an object whose constructor was skipped. A return type that can
+itself be doubled becomes one — a double of its own, one level deep, which the
+same test can configure. Where no safe value exists it says so, and names the
+way out.
+
+### Saying what a default should be
+
+A nested double of `LoggerInterface` answers everything with a default and tells
+the test nothing. A `NullLogger` is usually what it wanted:
+
+```php
+Understudy::defaults(LoggerInterface::class, fn () => new NullLogger());
+Understudy::defaults(ClockInterface::class, fn () => FakeClock::frozen());
+```
+
+The nearest registration wins, measured as distance in the type graph: an exact
+match first, then the closest registered ancestor. Two ancestors the same
+distance away raise `AmbiguousDefaultFactory` rather than letting whichever was
+registered first decide — a tie has no order a reader could predict. A factory
+that produces the wrong type raises `InvalidDefaultValue`.
+
+Registrations belong to the current context: sibling Fibers do not see each
+other's, and `Understudy::reset()` drops them with the test. Register them in a
+per-test fixture rather than once for a whole suite.
+
+### Wiring a subject
+
+```php
+['sut' => $service, 'doubles' => $d] = Understudy::wire(CatalogService::class);
+
+/** @var Repository $repository */
+$repository = $d['repository'];
+when(fn () => $repository->find(1))->returns($book);
+
+Assert::same($service->lookup(1), $book);
+```
+
+`wire()` reads the constructor and nothing else: no container, no property
+injection, no setters. A unit test cares about the collaborators the class
+itself asks for.
+
+| Constructor parameter | What it gets |
+|---|---|
+| a class or interface | a double, returned in `doubles` under the parameter name |
+| a nullable object | a double — `null` is something the test can ask for explicitly |
+| an intersection | one double of both contracts |
+| a union of several object types | refused: picking one would be a guess |
+| a scalar with a default | the declared default, and no double |
+| a scalar without one | refused, naming the override to pass |
+| a variadic tail | left empty; inventing entries would invent collaborators |
+| a by-reference parameter | refused — overrides are values, and passing one would promise a reference semantics `wire()` does not have |
+
+`overrides: ['name' => $value]` replaces one dependency with a real instance or a
+double you built yourself; those are yours already, so they do not appear in
+`doubles`. Every refusal happens before the constructor runs, so a wrong type is
+reported by `wire()` rather than as a `TypeError` from inside the subject.
 
 ### Forwarding to a real object
 

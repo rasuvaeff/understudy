@@ -61,6 +61,27 @@ make release-check
 
 ## Invariants & gotchas
 
+- **Never call `class_exists()` on the dispatch path.** It autoloads by
+  default, and an autoloader round trip per unmatched call cost about half the
+  dispatch time — caught by `make perf` against the recorded baseline, not by
+  any test. The registry is asked only when something was registered, and its
+  own reflection guard passes `autoload: false`.
+- **The defaults registry lives in the context, and the depth-1 double is
+  adopted into the *owner* context.** A nested double handed to a call made from
+  another Fiber must belong to whoever owns the outer double, or the test that
+  configured it can neither configure nor verify what it got back.
+- **Depth stops at one.** The nested double answers from the same table, so a
+  chain of them would grow silently. One level keeps a test moving; more is a
+  design the test should state out loud.
+- **`wire()` is Reflection glue, so it gets a fixture matrix, not property
+  tests.** Every branch is a shape a constructor can have, and each refusal
+  happens before the constructor runs — a half-built subject would show the test
+  a `TypeError` from inside code it did not write.
+- **Fixtures are one class per file, or PSR-4 cannot find them.** Two of the
+  wire fixtures were written into one file and every test that did not touch the
+  other class failed with "there is no such class"; the same mistake reached
+  review once already with `Fixture\Cls\Stamp`.
+
 - **Forwarding is not gated on `$matched`, and strictness is.** Strict mode is a
   complaint that a matched expectation answers; forwarding is the mode's own
   answer, and an expectation that only counts the call —

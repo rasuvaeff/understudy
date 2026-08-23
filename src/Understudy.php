@@ -17,6 +17,7 @@ use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Mode;
 use Rasuvaeff\Understudy\Runtime\Runtime;
+use Rasuvaeff\Understudy\Wiring\Wire;
 
 /**
  * The whole public surface, as static methods so that an understudy itself can
@@ -401,6 +402,55 @@ final class Understudy
         }
 
         $state->setMode(Mode::Forwarding);
+    }
+
+    /**
+     * Builds a real subject with an understudy for every constructor
+     * dependency, and hands back both.
+     *
+     * ```php
+     * ['sut' => $service, 'doubles' => $d] = Understudy::wire(CatalogService::class);
+     * ```
+     *
+     * It reads the constructor and nothing else: no container, no property
+     * injection, no setters. A unit test cares about the collaborators the
+     * class itself asks for, and anything else would be guessing about a design
+     * the test cannot see.
+     *
+     * `overrides` replaces one dependency by parameter name, with a real
+     * instance or a double you built yourself; those are yours already, so they
+     * do not appear in `doubles`. Every refusal happens before the constructor
+     * runs — a half-built subject would show the test a TypeError from inside
+     * code it did not write.
+     *
+     * @param class-string         $sut
+     * @param array<string, mixed> $overrides
+     *
+     * @return array{sut: object, doubles: array<string, object>}
+     */
+    public static function wire(string $sut, array $overrides = []): array
+    {
+        return Wire::build($sut, $overrides);
+    }
+
+    /**
+     * Registers what a loose double should hand back for one contract.
+     *
+     * A nested double of `LoggerInterface` answers everything with a default
+     * and tells the test nothing; a `NullLogger` is what it wanted. Resolution
+     * is by distance in the type graph — exact match first, then the nearest
+     * registered ancestor — so the answer does not depend on the order the
+     * factories were registered in.
+     *
+     * The registry belongs to the current context: sibling Fibers do not see
+     * each other's, and `reset()` drops them with the test.
+     *
+     * @param class-string    $contract
+     * @param callable(): mixed $factory
+     */
+    public static function defaults(string $contract, callable $factory): void
+    {
+        Runtime::current()->defaultFactories()->register($contract, $factory(...));
     }
 
     /**

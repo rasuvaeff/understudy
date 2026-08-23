@@ -11,6 +11,7 @@ use Rasuvaeff\PropertyTesting\Property;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
+use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\Order;
 use Testo\Assert;
@@ -64,7 +65,7 @@ final class TypeDefaultPropertyTest
 
         try {
             /** @var mixed $value */
-            $value = TypeDefaultResolver::forSignature('Contract', self::signature($type), 'method');
+            $value = TypeDefaultResolver::forSignature('Contract', self::signature($type), 'method', new RuntimeContext());
         } catch (NoDefaultValue) {
             $refused = true;
         }

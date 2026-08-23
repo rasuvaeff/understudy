@@ -176,6 +176,34 @@ final class Runtime
         self::owners()->offsetSet($clone, $context);
     }
 
+    /**
+     * Builds a double and registers it in the given context rather than the
+     * current one.
+     *
+     * Used for the depth-1 double a loose default hands back: the owner of the
+     * double being answered is the owner of the nested one too. Going through
+     * `Understudy::for()` would adopt it into whichever Fiber happened to be
+     * running, and the test that owns the outer double could then neither
+     * configure nor verify what it got back.
+     *
+     * @param class-string $contract
+     */
+    public static function adoptInto(RuntimeContext $owner, string $contract): object
+    {
+        $blueprint = DoubleFactory::blueprintFor([$contract]);
+        $double = (new \ReflectionClass($blueprint->generatedClass))->newInstanceWithoutConstructor();
+
+        /** @var mixed $value */
+        foreach ($blueprint->propertyDefaults as $property => $value) {
+            $double->{$property} = $value;
+        }
+
+        $owner->register($double, new DoubleState($blueprint));
+        self::owners()->offsetSet($double, $owner);
+
+        return $double;
+    }
+
     public static function ownerOf(object $double): ?RuntimeContext
     {
         $owners = self::owners();
@@ -260,7 +288,7 @@ final class Runtime
 
         try {
             /** @var mixed $value */
-            $value = self::answer($state, $double, $method, $invocation);
+            $value = self::answer($state, $double, $method, $invocation, $context);
         } catch (\Throwable $thrown) {
             $invocation->recordOutcome(Outcome::thrownError($thrown));
 
@@ -280,6 +308,7 @@ final class Runtime
         object $double,
         string $method,
         Invocation $invocation,
+        RuntimeContext $context,
     ): mixed {
         $signature = $state->blueprint->method($method);
         $matched = false;
@@ -344,7 +373,7 @@ final class Runtime
             throw StrictModeViolation::unexpectedCall($state->label(), $method);
         }
 
-        return TypeDefaultResolver::forSignature($state->label(), $signature, $method);
+        return TypeDefaultResolver::forSignature($state->label(), $signature, $method, $context);
     }
 
     /**
