@@ -224,6 +224,23 @@ jobs:
       - name: Bypass scenarios under a coverage driver and a warm opcode cache
         run: composer test
 
+      # Composer resolves a class to a path out of a static map and includes it
+      # without stat'ing first, which is a different route to the same read.
+      # The wrapper has to be on it too, and the only way to say so is to run
+      # the suite with the autoloader actually in that mode.
+      - name: Re-run under an authoritative classmap
+        run: |
+          composer dump-autoload --classmap-authoritative --no-interaction
+          php -r 'require "vendor/autoload.php";
+            foreach (spl_autoload_functions() as $f) {
+              if (is_array($f) && $f[0] instanceof Composer\Autoload\ClassLoader && $f[0]->isClassMapAuthoritative()) {
+                exit(0);
+              }
+            }
+            fwrite(STDERR, "the autoloader is not authoritative: this step would prove nothing\n");
+            exit(1);'
+          composer test
+
   coverage:
     name: Coverage & Mutation
     needs: changes

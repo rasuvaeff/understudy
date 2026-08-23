@@ -14,7 +14,10 @@
   source alone. Two of them are new facts rather than new tests — a bypassed
   file is never put in the opcode cache, so it is recompiled in every process;
   and a wrapper that does not rewrite PHP source composes and is accepted,
-  which is the boundary the narrow refusal was always drawing.
+  which is the boundary the narrow refusal was always drawing. The suite also
+  runs once more under an authoritative Composer classmap, which resolves a
+  class to a path out of a static map and includes it without stat'ing first —
+  a different route to the same read, and one the wrapper has to be on too.
 - `for()` on an abstract class no longer dies on an abstract static. A static
   the target leaves unimplemented — its own, or one an interface declares and
   the abstract class never fills in — has nothing for the generated subclass to
