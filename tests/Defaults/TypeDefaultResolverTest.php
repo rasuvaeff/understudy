@@ -15,6 +15,8 @@ use Testo\Test;
 
 #[Test]
 #[Covers(TypeDefaultResolver::class)]
+#[Covers(MethodSignature::class)]
+#[Covers(NoDefaultValue::class)]
 final class TypeDefaultResolverTest
 {
     #[DataProvider('safeDefaultProvider')]
@@ -115,6 +117,55 @@ final class TypeDefaultResolverTest
             ->withMessageContaining('when(fn () => $double->method(...))->returns(...)');
 
         TypeDefaultResolver::forSignature('Contract', $this->signature('\\DateTimeImmutable'), 'method');
+    }
+
+
+    public function aQualifiedClassNameResolvesLikeItsShortName(): void
+    {
+        // Signatures render class types with a leading backslash, so the
+        // resolver has to strip it before matching.
+        Assert::instanceOf($this->resolve('\Generator'), \Generator::class);
+        Assert::instanceOf($this->resolve('\Traversable'), \EmptyIterator::class);
+        Assert::instanceOf($this->resolve('\Iterator'), \EmptyIterator::class);
+        Assert::instanceOf($this->resolve('\ArrayIterator'), \ArrayIterator::class);
+        Assert::instanceOf($this->resolve('\Closure'), \Closure::class);
+    }
+
+    public function anIteratorDefaultIsAnEmptyIterator(): void
+    {
+        Assert::instanceOf($this->resolve('Iterator'), \EmptyIterator::class);
+    }
+
+    public function anArrayIteratorDefaultIsItsOwnEmptyInstance(): void
+    {
+        // `\EmptyIterator` is not an `\ArrayIterator`, so the narrower type
+        // needs its own default.
+        $value = $this->resolve('ArrayIterator');
+
+        Assert::instanceOf($value, \ArrayIterator::class);
+        Assert::same(iterator_to_array($value), []);
+    }
+
+    public function aClosureDefaultIsAClosure(): void
+    {
+        Assert::instanceOf($this->resolve('Closure'), \Closure::class);
+    }
+
+    public function aDnfUnionSplitsOnTheTopLevelOnly(): void
+    {
+        // `(A&B)|null` is two branches: splitting inside the parentheses
+        // would leave `(A` and `B)` as types nobody can default.
+        Assert::null($this->resolve('(\ArrayObject&\Countable)|null'));
+    }
+
+    public function aDnfUnionWithoutNullFallsBackToTheBranchThatHasADefault(): void
+    {
+        Assert::same($this->resolve('(\ArrayObject&\Countable)|string'), '');
+    }
+
+    private function resolve(string $returnType): mixed
+    {
+        return TypeDefaultResolver::forSignature('Contract', $this->signature($returnType), 'method');
     }
 
     private function signature(string $returnType): MethodSignature
