@@ -104,6 +104,35 @@ final class WireTest
         Assert::same(array_keys($doubles), ['repository']);
     }
 
+    public function aVariadicOverrideIsExpandedIntoTheConstructorTail(): void
+    {
+        ['sut' => $subject] = Understudy::wire(
+            VariadicService::class,
+            ['tags' => ['one', 'two']],
+        );
+
+        Assert::same($subject->priority, 10);
+        Assert::same($subject->tags, ['one', 'two']);
+    }
+
+    public function aVariadicOverrideRejectsAnInvalidElementBeforeConstruction(): void
+    {
+        Expect::exception(CannotWire::class)
+            ->withMessageContaining('list<string>')
+            ->withMessageContaining('int');
+
+        Understudy::wire(VariadicService::class, ['tags' => ['one', 2]]);
+    }
+
+    public function aUnionOverrideIsCheckedBeforeConstruction(): void
+    {
+        Expect::exception(CannotWire::class)
+            ->withMessageContaining(Repository::class . '|' . Reporter::class)
+            ->withMessageContaining('stdClass');
+
+        Understudy::wire(TwoObjectUnion::class, ['either' => new \stdClass()]);
+    }
+
     public function aSubjectWithoutAConstructorIsJustBuilt(): void
     {
         ['sut' => $subject, 'doubles' => $doubles] = Understudy::wire(NoConstructor::class);

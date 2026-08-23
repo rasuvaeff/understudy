@@ -7,6 +7,7 @@ namespace Rasuvaeff\Understudy\Tests;
 use Rasuvaeff\Understudy\Defaults\DefaultFactories;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\AmbiguousDefaultFactory;
+use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
 use Rasuvaeff\Understudy\Exception\InvalidDefaultValue;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Audited;
@@ -315,6 +316,24 @@ final class DefaultFactoriesTest
 
         Assert::false($seen instanceof NullLogger);
         Assert::instanceOf($seen, Logger::class);
+    }
+
+    public function aFactoryCannotReturnADoubleOwnedByAnotherFiber(): void
+    {
+        $foreign = null;
+        $fiber = new \Fiber(static function () use (&$foreign): void {
+            $foreign = Understudy::for(Logger::class);
+            \Fiber::suspend();
+        });
+        $fiber->start();
+
+        Understudy::defaults(Logger::class, static fn(): object => $foreign);
+        $workspace = Understudy::for(Workspace::class);
+
+        Expect::exception(ContextOwnershipViolation::class);
+
+        $workspace->logger();
+        $fiber->resume();
     }
 
     public function resetDropsTheRegistry(): void

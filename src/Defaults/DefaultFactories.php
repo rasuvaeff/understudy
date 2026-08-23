@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Defaults;
 
 use Rasuvaeff\Understudy\Exception\AmbiguousDefaultFactory;
+use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
 use Rasuvaeff\Understudy\Exception\InvalidDefaultValue;
+use Rasuvaeff\Understudy\Runtime\Runtime;
+use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 
 /**
  * Per-context registry of loose-default factories.
@@ -57,8 +60,9 @@ final class DefaultFactories
      * @return array{mixed}|null a one-element list, so that a factory returning
      *                           null is not mistaken for "no factory"
      */
-    public function valueFor(string $requested): ?array
+    public function valueFor(string $requested, ?RuntimeContext $owner = null): ?array
     {
+        $owner ??= Runtime::current();
         $factory = $this->factoryFor($requested);
 
         if ($factory === null) {
@@ -67,6 +71,12 @@ final class DefaultFactories
 
         /** @var mixed $value */
         $value = $factory();
+
+        $valueOwner = is_object($value) ? Runtime::ownerOf($value) : null;
+
+        if ($valueOwner !== null && $valueOwner !== $owner) {
+            throw ContextOwnershipViolation::forDouble();
+        }
 
         if (!$value instanceof $requested) {
             throw InvalidDefaultValue::ofWrongType($requested, get_debug_type($value));
@@ -88,10 +98,10 @@ final class DefaultFactories
             return $this->factories[$requested];
         }
 
-        // Reflection needs a real type, and autoloading here would be an
-        // autoloader round trip for every name the builtin table could have
-        // answered on its own.
-        if (!class_exists($requested, autoload: false) && !interface_exists($requested, autoload: false)) {
+        // The resolver calls this only when the registry is non-empty. Loading
+        // the requested type here is therefore needed to walk its hierarchy;
+        // the common no-factory dispatch path never reaches this method.
+        if (!class_exists($requested) && !interface_exists($requested)) {
             return null;
         }
 

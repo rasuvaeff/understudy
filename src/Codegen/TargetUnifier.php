@@ -38,6 +38,8 @@ final class TargetUnifier
     {
         /** @var array<non-empty-string, list<\ReflectionMethod>> $byName */
         $byName = [];
+        /** @var array<non-empty-string, \ReflectionMethod> $classStatics */
+        $classStatics = [];
 
         foreach ($targets as $target) {
             $filter = \ReflectionMethod::IS_PUBLIC | \ReflectionMethod::IS_PROTECTED;
@@ -45,11 +47,48 @@ final class TargetUnifier
             foreach ($target->getMethods($filter) as $method) {
                 if (self::isOverridable($method, $target)) {
                     $byName[$method->getName()][] = $method;
+                } elseif (!$target->isInterface()
+                    && $method->isStatic()
+                    && !$method->getDeclaringClass()->isInterface()
+                ) {
+                    // A class static method is inherited by the generated
+                    // subclass. Keep it only for compatibility checks against
+                    // same-named interface declarations; it must not be
+                    // rendered as a dispatcher of its own.
+                    $classStatics[$method->getName()] = $method;
                 }
             }
         }
 
         $signatures = [];
+
+        foreach ($classStatics as $name => $classStatic) {
+            $interfaceDeclarations = $byName[$name] ?? [];
+
+            foreach ($interfaceDeclarations as $interfaceDeclaration) {
+                if (!$interfaceDeclaration->isStatic()) {
+                    throw UnsupportedTarget::signatureConflict(
+                        $name,
+                        self::describe($classStatic) . ' is static',
+                        self::describe($interfaceDeclaration) . ' is an instance method',
+                    );
+                }
+
+                if (!self::returnTypeSatisfies($classStatic, $interfaceDeclaration)) {
+                    throw UnsupportedTarget::signatureConflict(
+                        $name,
+                        self::describe($classStatic) . ' declares `: '
+                        . TypeRenderer::returnType($classStatic->getReturnType()) . '`',
+                        self::describe($interfaceDeclaration) . ' declares `: '
+                        . TypeRenderer::returnType($interfaceDeclaration->getReturnType()) . '`',
+                    );
+                }
+            }
+
+            // The inherited implementation is the correct behavior for a
+            // class static method. There is no instance state to dispatch.
+            unset($byName[$name]);
+        }
 
         foreach ($byName as $name => $declarations) {
             \assert($declarations !== []);

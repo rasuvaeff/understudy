@@ -62,7 +62,7 @@ final class Wire
         /** @var array<string, object> $doubles */
         $doubles = [];
 
-        foreach ($parameters as $parameter) {
+        foreach ($parameters as $position => $parameter) {
             $name = $parameter->getName();
 
             if ($parameter->isPassedByReference()) {
@@ -72,6 +72,20 @@ final class Wire
             if (array_key_exists($name, $overrides)) {
                 /** @var mixed $value */
                 $value = $overrides[$name];
+
+                if ($parameter->isVariadic()) {
+                    self::rejectVariadicOverride($sut, $parameter, $value);
+                    /** @var list<Argument> $value */
+                    $arguments = self::withVariadicTail(
+                        $sut,
+                        array_slice($parameters, 0, $position),
+                        $arguments,
+                        $value,
+                        $name,
+                    );
+                    break;
+                }
+
                 self::rejectIncompatibleOverride($sut, $parameter, $value);
                 $arguments[$name] = self::asArgument($sut, $name, $value);
 
@@ -102,6 +116,53 @@ final class Wire
         }
 
         return ['sut' => $reflection->newInstanceArgs($arguments), 'doubles' => $doubles];
+    }
+
+    /**
+     * Reflection forbids positional arguments after named ones. A variadic
+     * override therefore needs a positional prefix, including any omitted
+     * optional parameter before the tail.
+     *
+     * @param class-string                         $sut
+     * @param list<\ReflectionParameter>           $prefix
+     * @param array<string, Argument>              $resolved
+     * @param list<Argument>                       $tail
+     * @param non-empty-string                     $tailName
+     *
+     * @return list<Argument>
+     */
+    private static function withVariadicTail(
+        string $sut,
+        array $prefix,
+        array $resolved,
+        array $tail,
+        string $tailName,
+    ): array {
+        $arguments = [];
+
+        foreach ($prefix as $parameter) {
+            $name = $parameter->getName();
+
+            if (array_key_exists($name, $resolved)) {
+                $arguments[] = $resolved[$name];
+
+                continue;
+            }
+
+            // This is an omitted optional before the variadic tail. Passing a
+            // later positional value requires materializing its declared
+            // default, just as an ordinary caller would have to do.
+            $arguments[] = self::asArgument($sut, $name, $parameter->getDefaultValue());
+        }
+
+        /** @var list<Argument> $tailValues */
+        $tailValues = $tail;
+
+        foreach ($tailValues as $item) {
+            $arguments[] = self::asArgument($sut, $tailName, $item);
+        }
+
+        return $arguments;
     }
 
     /**
@@ -164,23 +225,91 @@ final class Wire
     {
         $type = $parameter->getType();
 
-        if (!$type instanceof \ReflectionNamedType || $type->isBuiltin()) {
-            // Builtin and compound types are left to PHP's own coercion rules,
-            // which are the ones the real caller would meet anyway.
+        if ($type === null || ($type instanceof \ReflectionNamedType && $type->isBuiltin())) {
+            // Builtin types are left to PHP's own coercion rules, which are
+            // the ones the real caller would meet anyway.
             return;
         }
 
-        $expected = $type->getName();
-
-        if ($value === null && $type->allowsNull()) {
+        if (self::matchesType($type, $value)) {
             return;
         }
 
-        if ($value instanceof $expected) {
-            return;
+        throw CannotWire::incompatibleOverride($sut, $parameter->getName(), (string) $type, get_debug_type($value));
+    }
+
+    /**
+     * @param class-string $sut
+     */
+    private static function rejectVariadicOverride(string $sut, \ReflectionParameter $parameter, mixed $value): void
+    {
+        if (!is_array($value) || !array_is_list($value)) {
+            throw CannotWire::incompatibleOverride($sut, $parameter->getName(), 'list<' . self::typeName($parameter->getType()) . '>', get_debug_type($value));
         }
 
-        throw CannotWire::incompatibleOverride($sut, $parameter->getName(), $expected, get_debug_type($value));
+        /** @var list<Argument> $value */
+
+        $type = $parameter->getType();
+
+        /** @var list<Argument> $items */
+        $items = $value;
+
+        foreach ($items as $item) {
+            if ($type !== null && !self::matchesType($type, $item)) {
+                throw CannotWire::incompatibleOverride($sut, $parameter->getName(), 'list<' . self::typeName($type) . '>', get_debug_type($item));
+            }
+        }
+    }
+
+    private static function matchesType(\ReflectionType $type, mixed $value): bool
+    {
+        if ($value === null) {
+            return $type->allowsNull();
+        }
+
+        if ($type instanceof \ReflectionUnionType) {
+            foreach ($type->getTypes() as $branch) {
+                if (self::matchesType($branch, $value)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if ($type instanceof \ReflectionIntersectionType) {
+            foreach ($type->getTypes() as $branch) {
+                if (!self::matchesType($branch, $value)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        \assert($type instanceof \ReflectionNamedType);
+
+        $name = $type->getName();
+
+        return match ($name) {
+            'bool' => is_bool($value),
+            'true' => $value === true,
+            'false' => $value === false,
+            'int' => is_int($value),
+            'float' => is_float($value),
+            'string' => is_string($value),
+            'array' => is_array($value),
+            'object' => is_object($value),
+            'callable' => is_callable($value),
+            'iterable' => is_iterable($value),
+            'mixed' => true,
+            default => $value instanceof $name,
+        };
+    }
+
+    private static function typeName(?\ReflectionType $type): string
+    {
+        return $type === null ? 'mixed' : (string) $type;
     }
 
     /**

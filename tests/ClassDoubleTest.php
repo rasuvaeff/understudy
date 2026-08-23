@@ -160,6 +160,27 @@ final class ClassDoubleTest
         Assert::same($ledger->balance(), 5);
     }
 
+    public function aClassImplementationKeepsAStaticInterfaceMethodOutOfTheDouble(): void
+    {
+        eval('interface StaticContractForReview { public static function ping(): int; }');
+        eval('class StaticTargetForReview { public static function ping(): int { return 7; } }');
+
+        $double = Understudy::for(\StaticTargetForReview::class, \StaticContractForReview::class);
+
+        Assert::same($double::ping(), 7);
+    }
+
+    public function aStaticMultiTargetReturnConflictIsReportedBeforeEval(): void
+    {
+        eval('interface StaticConflictContractForReview { public static function ping(): string; }');
+        eval('class StaticConflictTargetForReview { public static function ping(): int { return 7; } }');
+
+        Expect::exception(\Rasuvaeff\Understudy\Exception\UnsupportedTarget::class)
+            ->withMessageContaining('method `ping()`');
+
+        Understudy::for(\StaticConflictTargetForReview::class, \StaticConflictContractForReview::class);
+    }
+
     /**
      * PHP allows a readonly class to be extended only by another readonly one,
      * and a readonly class has no writable properties — so the initialization
