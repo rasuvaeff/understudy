@@ -236,10 +236,10 @@ final class FileWrapper
         return $this->withoutWrapper(static fn(): bool => rmdir($path));
     }
 
-    public function dir_opendir(string $path, int $options = 0): bool
+    public function dir_opendir(string $path): bool
     {
-        $loud = ($options & STREAM_REPORT_ERRORS) !== 0;
-        $handle = $this->withoutWrapper(static fn() => $loud ? opendir($path) : @opendir($path));
+        // Quiet for the same reason as `stream_open()`.
+        $handle = $this->withoutWrapper(static fn() => @opendir($path));
 
         if ($handle === false) {
             return false;
