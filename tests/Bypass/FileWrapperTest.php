@@ -572,9 +572,24 @@ final class FileWrapperTest
         Assert::same(filemtime($path), 1_000_000_000);
         Assert::same(fileatime($path), 1_000_000_001);
 
+        // Asserted against a control rather than against a literal: Windows
+        // has no Unix permission bits, so `chmod()` there toggles read-only
+        // and `fileperms()` answers 0666 whatever was asked for. The claim is
+        // not "the mode is 0600" — it is "the wrapper changed nothing", and
+        // the only portable way to say that is to do the same chmod without
+        // it and compare.
+        $control = $directory . '/control.txt';
+        file_put_contents($control, 'x');
+
         Assert::true(chmod($path, 0o600));
+
+        FileWrapper::uninstall();
+
+        Assert::true(chmod($control, 0o600));
         clearstatcache(clear_realpath_cache: true, filename: $path);
-        Assert::same(fileperms($path) & 0o777, 0o600);
+        clearstatcache(clear_realpath_cache: true, filename: $control);
+
+        Assert::same(fileperms($path) & 0o777, fileperms($control) & 0o777);
 
         self::removeDirectory($directory);
     }
