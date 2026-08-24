@@ -204,8 +204,13 @@ final class FileWrapper
         \assert($handle !== null);
 
         if ($operation === 0) {
-            // PHP's file_put_contents() protocol uses zero for its exclusive
-            // lock request when the stream is supplied by a user wrapper.
+            // Not a documented operation, and not a substitute for one either.
+            // Measured against a logging wrapper on `file://`:
+            // `file_put_contents($path, $data, LOCK_EX)` calls this method
+            // TWICE, first with `0` and then with `LOCK_EX`. Answering the
+            // probe by taking the lock it is about to ask for keeps the write
+            // working; answering `false` makes `file_put_contents()` return
+            // false and write nothing at all.
             $operation = LOCK_EX;
         }
 

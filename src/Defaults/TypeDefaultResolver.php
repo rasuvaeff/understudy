@@ -52,8 +52,6 @@ final class TypeDefaultResolver
         RuntimeContext $context,
         bool $nested,
     ): mixed {
-        $type = self::stripIntersectionParentheses($type);
-
         if (str_starts_with($type, '?')) {
             return null;
         }
@@ -70,14 +68,29 @@ final class TypeDefaultResolver
                 return null;
             }
 
+            // Two passes on purpose. A DNF intersection is object-shaped, and
+            // the union rule prefers something scalar-safe: `(A&B)|string`
+            // answers with `''`, as it did before intersections were
+            // answerable at all. Only when no plain branch yields anything
+            // does the first intersection get its turn — which is better than
+            // refusing a type the engine can perfectly well build.
+            $intersections = [];
+
             foreach ($branches as $branch) {
-                // A DNF intersection is an object-shaped branch, not a
-                // scalar-safe fallback. Keep the existing union rule: prefer
-                // a builtin branch such as `string` when one is available.
                 if (str_contains($branch, '&')) {
+                    $intersections[] = $branch;
+
                     continue;
                 }
 
+                try {
+                    return self::forType($label, $branch, $method, $context, $nested);
+                } catch (NoDefaultValue|UnsupportedTarget) {
+                    continue;
+                }
+            }
+
+            foreach ($intersections as $branch) {
                 try {
                     return self::forType($label, $branch, $method, $context, $nested);
                 } catch (NoDefaultValue|UnsupportedTarget) {
@@ -232,14 +245,17 @@ final class TypeDefaultResolver
         $branches[] = $buffer;
 
         return array_values(array_filter(
-            $branches,
+            array_map(self::stripIntersectionParentheses(...), $branches),
             static fn(string $branch): bool => $branch !== '',
         ));
     }
 
     /**
      * Reflection renders a DNF intersection as `(A&B)` when it is a union
-     * branch. Keep the branch parser simple by removing only that wrapper.
+     * branch. Unwrapping happens per branch, after the split: applied to a
+     * whole type it would cut `(A&B)|(C&D)` in half — that string also starts
+     * with `(` and ends with `)` — and the halves would then never split,
+     * because the `|` sits at a parenthesis depth the parser reads as -1.
      */
     private static function stripIntersectionParentheses(string $type): string
     {

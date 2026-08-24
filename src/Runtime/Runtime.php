@@ -50,6 +50,25 @@ final class Runtime
      */
     private static ?\WeakMap $forgotten = null;
 
+    /**
+     * Every context that holds understudies, current or not.
+     *
+     * Isolation and accounting are different questions, and conflating them
+     * cost a silent hole. A Fiber gets its own context so that a recording
+     * phase, a call log and a sequence counter are never shared with a
+     * sibling — that stays. But `verifyAll()`, `reset()`, `idle()` and
+     * `checkpoint()` are asked by a runner adapter from the main flow, about
+     * the test as a whole, and a context they cannot see is a context whose
+     * expectations are never checked: a test body run in a Fiber left an
+     * unmet `expect()` and the suite stayed green.
+     *
+     * Keyed by object id and holding a strong reference, so a Fiber's context
+     * outlives the Fiber long enough to be verified. `reset()` empties it.
+     *
+     * @var array<int, RuntimeContext>
+     */
+    private static array $live = [];
+
     public static function current(): RuntimeContext
     {
         $stack = self::stack();
@@ -153,8 +172,43 @@ final class Runtime
     {
         $context = self::current();
         $context->register($double, $state);
+        self::remember($context);
 
         self::owners()->offsetSet($double, $context);
+    }
+
+    /**
+     * Records a context as holding understudies, so accounting can reach it
+     * from wherever the adapter stands.
+     */
+    private static function remember(RuntimeContext $context): void
+    {
+        self::$live[spl_object_id($context)] = $context;
+    }
+
+    private static function unremember(RuntimeContext $context): void
+    {
+        unset(self::$live[spl_object_id($context)]);
+    }
+
+    /**
+     * The current context first, then every other one still holding
+     * understudies — the whole test, in the order a report should read.
+     *
+     * @return list<RuntimeContext>
+     */
+    public static function liveContexts(): array
+    {
+        $current = self::currentIfAny();
+        $contexts = $current === null ? [] : [$current];
+
+        foreach (self::$live as $context) {
+            if ($context !== $current) {
+                $contexts[] = $context;
+            }
+        }
+
+        return $contexts;
     }
 
     /**
@@ -186,6 +240,7 @@ final class Runtime
 
         $context = self::current();
         $context->register($clone, new DoubleState($blueprint));
+        self::remember($context);
 
         self::owners()->offsetSet($clone, $context);
     }
@@ -225,6 +280,7 @@ final class Runtime
         }
 
         $owner->register($double, new DoubleState($blueprint, nested: true));
+        self::remember($owner);
         self::owners()->offsetSet($double, $owner);
 
         return $double;
@@ -652,38 +708,59 @@ final class Runtime
         $fiber = \Fiber::getCurrent();
 
         if ($fiber === null) {
-            if (self::$main === []) {
-                return;
+            if (self::$main !== []) {
+                $position = count(self::$main) - 1;
+                self::forget(self::$main[$position]);
+                self::$main[$position] = new RuntimeContext();
             }
 
-            $position = count(self::$main) - 1;
-            self::forget(self::$main[$position]);
-            self::$main[$position] = new RuntimeContext();
+            self::forgetOrphans();
 
             return;
         }
 
         $fibers = self::fibers();
 
-        if (!$fibers->offsetExists($fiber)) {
-            return;
+        if ($fibers->offsetExists($fiber)) {
+            /** @var list<RuntimeContext> $stack */
+            $stack = $fibers->offsetGet($fiber);
+
+            if ($stack !== []) {
+                $position = count($stack) - 1;
+                self::forget($stack[$position]);
+                $stack[$position] = new RuntimeContext();
+                $fibers->offsetSet($fiber, $stack);
+            }
         }
 
-        /** @var list<RuntimeContext> $stack */
-        $stack = $fibers->offsetGet($fiber);
+        self::forgetOrphans();
+    }
 
-        if ($stack === []) {
-            return;
+    /**
+     * Drops every context still holding understudies that the caller is not
+     * standing in — a Fiber's context, most of all.
+     *
+     * Unconditional, including when `reset()` is itself called from inside a
+     * Fiber, because that is the shape the runners actually have. Under Testo
+     * a `#[RunInFiber]` test puts the whole pipeline in one Fiber, and the
+     * assert collector then opens a SECOND one around the body: the adapter's
+     * teardown runs in the outer Fiber while the test's understudies live in
+     * the inner one. A reset that only reached its own Fiber left them behind
+     * to answer the next test.
+     */
+    private static function forgetOrphans(): void
+    {
+        foreach (self::$live as $context) {
+            self::forget($context);
         }
 
-        $position = count($stack) - 1;
-        self::forget($stack[$position]);
-        $stack[$position] = new RuntimeContext();
-        $fibers->offsetSet($fiber, $stack);
+        self::$live = [];
     }
 
     private static function forget(RuntimeContext $context): void
     {
+        self::unremember($context);
+
         if (self::$owners === null) {
             return;
         }

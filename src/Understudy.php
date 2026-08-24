@@ -20,6 +20,7 @@ use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Mode;
 use Rasuvaeff\Understudy\Runtime\Runtime;
+use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Wiring\Wire;
 
 /**
@@ -165,21 +166,32 @@ final class Understudy
     {
         $failures = [];
 
-        foreach (Runtime::current()->allStates() as $state) {
-            foreach ($state->expectations() as $expectation) {
-                $failure = self::checkExpectation($state, $expectation, $strictStubs);
+        // Every context the test put understudies in, not only the one this
+        // call happens to stand in: a body run in a Fiber owns a context of
+        // its own, and skipping it let an unmet `expect()` pass unnoticed.
+        foreach (Runtime::liveContexts() as $context) {
+            $contextFailures = [];
 
-                if ($failure !== null) {
-                    $failures[] = $failure;
+            foreach ($context->allStates() as $state) {
+                foreach ($state->expectations() as $expectation) {
+                    $failure = self::checkExpectation($state, $expectation, $strictStubs);
+
+                    if ($failure !== null) {
+                        $contextFailures[] = $failure;
+                    }
                 }
             }
-        }
 
-        $failures = array_reverse($failures);
-        $outOfOrder = self::checkOrdering();
+            $failures = [...$failures, ...array_reverse($contextFailures)];
 
-        if ($outOfOrder !== null) {
-            $failures[] = $outOfOrder;
+            // Ordering is read from the sequence counter, which is per
+            // context. Comparing across contexts would compare two unrelated
+            // countings, so each context answers for its own order.
+            $outOfOrder = self::checkOrdering(context: $context);
+
+            if ($outOfOrder !== null) {
+                $failures[] = $outOfOrder;
+            }
         }
 
         if ($failures !== []) {
@@ -194,12 +206,12 @@ final class Understudy
      *
      * @return non-empty-string|null
      */
-    private static function checkOrdering(?DoubleState $only = null): ?string
+    private static function checkOrdering(?DoubleState $only = null, ?RuntimeContext $context = null): ?string
     {
         /** @var list<array{DoubleState, Expectation}> $ordered */
         $ordered = [];
 
-        foreach (Runtime::current()->allStates() as $state) {
+        foreach (($context ?? Runtime::current())->allStates() as $state) {
             if ($only !== null && $state !== $only) {
                 continue;
             }
@@ -824,8 +836,10 @@ final class Understudy
     {
         self::verifyAll($strictStubs);
 
-        foreach (Runtime::current()->allStates() as $state) {
-            $state->settle();
+        foreach (Runtime::liveContexts() as $context) {
+            foreach ($context->allStates() as $state) {
+                $state->settle();
+            }
         }
     }
 
@@ -847,9 +861,13 @@ final class Understudy
      */
     public static function idle(): bool
     {
-        $context = Runtime::currentIfAny();
+        foreach (Runtime::liveContexts() as $context) {
+            if ($context->allStates() !== []) {
+                return false;
+            }
+        }
 
-        return $context === null || $context->allStates() === [];
+        return true;
     }
 
     /**

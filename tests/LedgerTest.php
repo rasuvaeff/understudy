@@ -155,7 +155,6 @@ final class LedgerTest
         Understudy::nothingElse($clean, $offender);
     }
 
-    #[ExpectNoAssertions]
     public function severalOffendersAreReportedInOneFailure(): void
     {
         $first = Understudy::for(BookRepository::class);
@@ -168,11 +167,21 @@ final class LedgerTest
         $third = Understudy::for(BookRepository::class);
         $third->count();
 
-        Expect::exception(VerificationFailed::class)
-            ->withMessageContaining('`BookRepository`')
-            ->withMessageContaining('2 call(s) nothing accounted for');
+        // Asserted rather than declared: this test carried BOTH
+        // `#[ExpectNoAssertions]` and `Expect::exception()`, which Testo calls
+        // contradictory and reports as Risky. The suite had shipped one
+        // permanent Risky ever since, which is how a status stops meaning
+        // anything.
+        try {
+            Understudy::nothingElse($first, $second, $third);
 
-        Understudy::nothingElse($first, $second, $third);
+            Assert::fail('Expected both offenders to be reported');
+        } catch (VerificationFailed $failure) {
+            Assert::string($failure->getMessage())
+                ->contains('`BookRepository`')
+                ->contains('2 call(s) nothing accounted for')
+                ->contains('count()');
+        }
     }
 
     #[ExpectNoAssertions]

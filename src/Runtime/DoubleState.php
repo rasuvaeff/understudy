@@ -26,6 +26,8 @@ final class DoubleState
     /** @var array<non-empty-string, list<Expectation>> */
     private array $matchingByMethod = [];
 
+    private const string NO_ARGUMENTS = '__no_arguments__';
+
     /** @var array<non-empty-string, array<string, list<Expectation>>> */
     private array $matchingByMethodAndFirstLiteral = [];
 
@@ -154,21 +156,7 @@ final class DoubleState
         $this->expectations[] = $expectation;
         $this->matchingExpectations[] = $expectation;
 
-        $method = $expectation->method;
-        $this->matchingByMethod[$method] ??= [];
-        $this->matchingByMethod[$method][] = $expectation;
-
-        $key = $this->firstLiteralKey($expectation);
-
-        if ($key === null) {
-            $this->matchingByMethodWithoutFirstLiteral[$method] ??= [];
-            $this->matchingByMethodWithoutFirstLiteral[$method][] = $expectation;
-
-            return;
-        }
-
-        $this->matchingByMethodAndFirstLiteral[$method][$key] ??= [];
-        $this->matchingByMethodAndFirstLiteral[$method][$key][] = $expectation;
+        $this->addToMatchingIndexes($expectation);
     }
 
     /**
@@ -185,24 +173,30 @@ final class DoubleState
     /**
      * Most recently registered expectations for one method, in matching order.
      *
+     * The overwhelmingly common shape — a method with a single stub — is
+     * answered by a lookup and nothing else. Indexing only earns its keep once
+     * there is something to choose between, and computing a key for a method
+     * that has one expectation would tax every call in every suite to speed up
+     * the rare one.
+     *
      * @param non-empty-string $method
      * @param list<mixed>|null $args
-     * @return \Generator<int, Expectation, mixed, void>
+     * @return list<Expectation>
      */
-    public function expectationsFor(string $method, ?array $args = null): iterable
+    public function expectationsFor(string $method, ?array $args = null): array
     {
-        if ($args === null) {
-            /** @var list<Expectation> $expectations */
-            $expectations = $this->matchingByMethod[$method] ?? [];
+        /** @var list<Expectation> $all */
+        $all = $this->matchingByMethod[$method] ?? [];
 
-            for ($position = count($expectations) - 1; $position >= 0; --$position) {
-                yield $expectations[$position];
-            }
-
-            return;
+        if (count($all) <= 1) {
+            return $all;
         }
 
-        $key = $args === [] ? '__no_arguments__' : $this->literalKey($args[0]);
+        if ($args === null) {
+            return array_reverse($all);
+        }
+
+        $key = $args === [] ? self::NO_ARGUMENTS : $this->literalKey($args[0]);
         /** @var list<Expectation> $indexed */
         $indexed = $key === null
             ? []
@@ -212,21 +206,15 @@ final class DoubleState
         $fallback = $this->matchingByMethodWithoutFirstLiteral[$method] ?? [];
 
         if ($fallback === []) {
-            for ($position = count($indexed) - 1; $position >= 0; --$position) {
-                yield $indexed[$position];
-            }
-
-            return;
+            return array_reverse($indexed);
         }
 
         if ($indexed === []) {
-            for ($position = count($fallback) - 1; $position >= 0; --$position) {
-                yield $fallback[$position];
-            }
-
-            return;
+            return array_reverse($fallback);
         }
 
+        // Both kinds can answer this call, so the declared order decides
+        // between them — the same rule the unindexed walk followed.
         $candidates = [...$indexed, ...$fallback];
 
         usort(
@@ -235,9 +223,7 @@ final class DoubleState
                 => $right->declarationOrder() <=> $left->declarationOrder(),
         );
 
-        foreach ($candidates as $expectation) {
-            yield $expectation;
-        }
+        return $candidates;
     }
 
     /**
@@ -296,7 +282,7 @@ final class DoubleState
         $this->matchingByMethod[$method] ??= [];
         $this->matchingByMethod[$method][] = $expectation;
 
-        $key = self::firstLiteralKey($expectation);
+        $key = $this->firstLiteralKey($expectation);
 
         if ($key === null) {
             $this->matchingByMethodWithoutFirstLiteral[$method] ??= [];
@@ -312,10 +298,15 @@ final class DoubleState
     private function firstLiteralKey(Expectation $expectation): ?string
     {
         return $expectation->args === []
-            ? '__no_arguments__'
+            ? self::NO_ARGUMENTS
             : $this->literalKey($expectation->args[0]);
     }
 
+    /**
+     * A cheap, exact discriminator for a first argument that is compared by
+     * identity anyway. Anything that is not — a matcher, or a value whose
+     * identity is not its content — has no key and stays in the walked list.
+     */
     private function literalKey(mixed $value): ?string
     {
         if ($value instanceof ArgumentMatcher || is_array($value) || is_object($value) || is_resource($value)) {
