@@ -487,8 +487,11 @@ Understudy::idle();   // true when the current context holds no doubles
 The [understudy-testo](https://github.com/rasuvaeff/understudy-testo) and
 [understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit) adapters
 verify and reset for you after every test; without one, call `reset()` in your
-own teardown. Reset drops only the current execution context; it does not
-erase sibling Fiber contexts.
+own teardown. Isolation and accounting are different things: each Fiber gets
+its own recording phase, call log and sequence counter, but `verifyAll()`,
+`reset()`, `idle()` and `checkpoint()` cover every context the test put
+understudies in. A body that runs in a Fiber is still the test's, and an
+adapter asks about the test from wherever it stands.
 
 ### Using Pest
 

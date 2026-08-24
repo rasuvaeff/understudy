@@ -87,8 +87,13 @@ No runtime deps.
   concrete. Calling one raises `InvalidCallSpecification`; inject an instance
   dependency instead.
 - `Understudy::reset()` after each test. Nothing is process-global on purpose:
-  state lives per execution context, each Fiber gets its own, and reset drops
-  only the current context.
+  state lives per execution context and each Fiber gets its own — that is
+  isolation, and it covers the recording phase, the call log and the sequence
+  counter.
+- Accounting is wider than isolation: `verifyAll()`, `reset()`, `idle()` and
+  `checkpoint()` span EVERY context still holding doubles, not just the
+  caller's. A test body run in a Fiber owns a context the adapter never stands
+  in, and skipping it let an unmet `expect()` pass unnoticed.
 
 ## API
 

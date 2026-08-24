@@ -485,8 +485,11 @@ Understudy::idle();   // true, если в текущем контексте н�
 Адаптеры [understudy-testo](https://github.com/rasuvaeff/understudy-testo) и
 [understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit)
 проверяют и сбрасывают контекст после каждого теста сами; без адаптера —
-вызывайте `reset()` в своём teardown. Reset очищает только текущий execution
-context и не стирает контексты соседних Fiber.
+вызывайте `reset()` в своём teardown. Изоляция и учёт — разные вещи: у каждого
+Fiber своя фаза записи, свой лог вызовов и свой счётчик последовательности, но
+`verifyAll()`, `reset()`, `idle()` и `checkpoint()` охватывают все контексты,
+куда тест положил дубли. Тело, исполняемое в Fiber, — всё ещё этот тест, а
+адаптер спрашивает про тест оттуда, где стоит сам.
 
 ### Использование Pest
 

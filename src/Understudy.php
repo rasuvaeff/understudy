@@ -844,8 +844,13 @@ final class Understudy
     }
 
     /**
-     * Drops the current context. Adapters call this after each test,
-     * unconditionally; sibling Fiber contexts remain intact.
+     * Drops every context this test put understudies in — the caller's and
+     * any a Fiber owns. Adapters call it after each test, unconditionally.
+     *
+     * Wider than isolation on purpose. A Fiber keeps its own recording phase,
+     * call log and sequence counter so that concurrent bodies never collide;
+     * but teardown is about the test, and a context the adapter cannot see is
+     * a context whose doubles answer the next one.
      */
     public static function reset(): void
     {
@@ -853,7 +858,7 @@ final class Understudy
     }
 
     /**
-     * Whether the current context holds no understudies at all.
+     * Whether the test holds no understudies at all, in any context it used.
      *
      * Runner adapters use it as an integration guard: a context that is not
      * idle by the time the next test begins means some earlier test's cleanup
