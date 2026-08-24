@@ -128,9 +128,10 @@ when(fn () => $repo->find(Arg::any()))->answers(
 );
 ```
 
-Matching: most recently registered wins, earlier stubs remain as fallbacks —
-so register the broad stub FIRST and the specific one after it, or the
-catch-all shadows everything. Arguments match by `===`, or by matcher.
+Matching: most recently registered wins, earlier stubs remain as fallbacks on
+argument mismatch — a matching call-count expectation keeps answering after
+its count is exhausted. Register the broad stub FIRST and the specific one
+after it. Arguments match by `===`, or by matcher.
 
 ### Matchers — `Arg`
 
@@ -258,6 +259,10 @@ and verification require the owning context; normal calls from another Fiber
 are allowed and are routed to the owner's log.
 `checkpoint()` keeps the understudies, their modes and their labels, and
 clears the expectations and calls the current phase has settled.
+
+`transcript()` retains every invocation until `reset()` or `checkpoint()`;
+avoid unbounded hot loops through doubles when arguments or results hold large
+object graphs.
 
 Failure raises `VerificationFailed`, whose message names the double, the
 expectation, the actual count, and marks differing arguments with `*`.

@@ -187,8 +187,10 @@ when(fn () => $repository->find(Arg::any()))->answers(
 when(fn () => $repository->mode())->returns('fast', 'slow');
 ```
 
-A later stub for the same call wins; earlier ones stay reachable as fallbacks,
-so a broad `Arg::any()` stub can sit underneath a specific one.
+A later stub for the same call wins; earlier ones stay reachable as fallbacks
+when their arguments do not match. An exhausted call-count expectation keeps
+answering the matching call, so use a non-overlapping matcher when a broad
+fallback should handle later calls.
 
 | Matcher | Matches |
 |---|---|
@@ -300,6 +302,10 @@ $result = Understudy::scope(fn () => ...);      // nested context, verified on s
 echo Understudy::transcript($repository);       // every call and its outcome
 Understudy::idle();                             // true when the context holds no doubles
 ```
+
+`transcript()` retains every invocation until `reset()` or `checkpoint()`.
+Avoid unbounded hot loops through a double when the arguments or results hold
+large object graphs; use a real fake for load-sized workloads.
 
 `scope()` returns whatever its callback returns, and drops the nested context
 either way — a failure inside is never replaced by a teardown error. A double

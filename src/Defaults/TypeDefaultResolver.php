@@ -6,6 +6,7 @@ namespace Rasuvaeff\Understudy\Defaults;
 
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
+use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 
@@ -51,6 +52,8 @@ final class TypeDefaultResolver
         RuntimeContext $context,
         bool $nested,
     ): mixed {
+        $type = self::stripIntersectionParentheses($type);
+
         if (str_starts_with($type, '?')) {
             return null;
         }
@@ -68,14 +71,38 @@ final class TypeDefaultResolver
             }
 
             foreach ($branches as $branch) {
+                // A DNF intersection is an object-shaped branch, not a
+                // scalar-safe fallback. Keep the existing union rule: prefer
+                // a builtin branch such as `string` when one is available.
+                if (str_contains($branch, '&')) {
+                    continue;
+                }
+
                 try {
                     return self::forType($label, $branch, $method, $context, $nested);
-                } catch (NoDefaultValue) {
+                } catch (NoDefaultValue|UnsupportedTarget) {
                     continue;
                 }
             }
 
             throw NoDefaultValue::forReturnType($label, $method, $type);
+        }
+
+        if (str_contains($type, '&')) {
+            $contracts = array_values(array_filter(
+                array_map(
+                    static fn(string $contract): string => ltrim(trim($contract), '\\'),
+                    explode('&', $type),
+                ),
+                static fn(string $contract): bool => $contract !== '',
+            ));
+
+            if ($contracts === []) {
+                throw NoDefaultValue::forReturnType($label, $method, $type);
+            }
+
+            /** @var non-empty-list<class-string> $contracts */
+            return Runtime::adoptContractsInto($context, $contracts);
         }
 
         $name = ltrim($type, '\\');
@@ -208,5 +235,16 @@ final class TypeDefaultResolver
             $branches,
             static fn(string $branch): bool => $branch !== '',
         ));
+    }
+
+    /**
+     * Reflection renders a DNF intersection as `(A&B)` when it is a union
+     * branch. Keep the branch parser simple by removing only that wrapper.
+     */
+    private static function stripIntersectionParentheses(string $type): string
+    {
+        return str_starts_with($type, '(') && str_ends_with($type, ')')
+            ? substr($type, 1, -1)
+            : $type;
     }
 }

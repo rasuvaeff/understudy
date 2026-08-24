@@ -314,6 +314,47 @@ final class FileWrapperTest
         $wrapper->stream_close();
     }
 
+    public function lockingTruncatingAndCastingDelegateToNativeStream(): void
+    {
+        $path = sys_get_temp_dir() . '/understudy-stream-' . getmypid() . '.txt';
+        file_put_contents($path, 'abcdef');
+
+        try {
+            FileWrapper::install([]);
+            $handle = fopen($path, 'r+');
+            Assert::true(is_resource($handle));
+            Assert::true(flock($handle, LOCK_EX));
+            Assert::true(ftruncate($handle, 3));
+            Assert::same((string) file_get_contents($path), 'abc');
+
+            $read = [$handle];
+            $write = null;
+            $except = null;
+            Assert::same(stream_select($read, $write, $except, 0), 1);
+
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        } finally {
+            FileWrapper::uninstall();
+            @unlink($path);
+        }
+    }
+
+    public function lockedFilePutContentsStillWrites(): void
+    {
+        $path = sys_get_temp_dir() . '/understudy-locked-write-' . getmypid() . '.txt';
+
+        try {
+            FileWrapper::install([]);
+
+            Assert::same(file_put_contents($path, 'xx', LOCK_EX), 2);
+            Assert::same((string) file_get_contents($path), 'xx');
+        } finally {
+            FileWrapper::uninstall();
+            @unlink($path);
+        }
+    }
+
     public function statAnswersForTheRealPath(): void
     {
         $wrapper = new FileWrapper();

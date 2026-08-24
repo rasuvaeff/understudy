@@ -64,6 +64,13 @@ final class Runtime
         return $stack[count($stack) - 1];
     }
 
+    public static function currentIfAny(): ?RuntimeContext
+    {
+        $stack = self::stack();
+
+        return $stack === [] ? null : $stack[count($stack) - 1];
+    }
+
     /**
      * Opens a nested context, so that everything created inside it is dropped
      * when it closes and the enclosing context resumes untouched.
@@ -197,7 +204,19 @@ final class Runtime
      */
     public static function adoptInto(RuntimeContext $owner, string $contract): object
     {
-        $blueprint = DoubleFactory::blueprintFor([$contract]);
+        return self::adoptContractsInto($owner, [$contract]);
+    }
+
+    /**
+     * Builds a loose default for an intersection return type. The generated
+     * class must implement every atom of `A&B`, not a class literally named
+     * with the ampersand.
+     *
+     * @param non-empty-list<class-string> $contracts
+     */
+    public static function adoptContractsInto(RuntimeContext $owner, array $contracts): object
+    {
+        $blueprint = DoubleFactory::blueprintFor($contracts);
         $double = (new \ReflectionClass($blueprint->generatedClass))->newInstanceWithoutConstructor();
 
         /** @var mixed $value */
@@ -373,7 +392,7 @@ final class Runtime
         $signature = $state->blueprint->method($method);
         $matched = false;
 
-        foreach ($state->expectationsFor($method) as $expectation) {
+        foreach ($state->expectationsFor($method, $invocation->args) as $expectation) {
             if (!$expectation->matchesArguments($invocation->args)) {
                 continue;
             }
@@ -669,15 +688,7 @@ final class Runtime
             return;
         }
 
-        $forgotten = [];
-
-        foreach (self::$owners as $double => $owner) {
-            if ($owner === $context) {
-                $forgotten[] = $double;
-            }
-        }
-
-        foreach ($forgotten as $double) {
+        foreach ($context->allDoubles() as $double) {
             self::forgotten()[$double] = true;
             unset(self::$owners[$double]);
         }

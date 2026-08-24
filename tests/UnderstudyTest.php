@@ -32,6 +32,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Clock;
 use Rasuvaeff\Understudy\Tests\Fixture\HashedContract;
 use Rasuvaeff\Understudy\Tests\Fixture\HashedContractToo;
 use Rasuvaeff\Understudy\Tests\Fixture\Named;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectedPair;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionAlpha;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionBeta;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedWriter;
@@ -99,7 +100,7 @@ final class UnderstudyTest
 
     public function creatingADoubleEndsIdlenessUntilReset(): void
     {
-        $double = Understudy::for(BookRepository::class);
+        Understudy::for(BookRepository::class);
 
         Assert::false(Understudy::idle());
 
@@ -165,6 +166,15 @@ final class UnderstudyTest
 
         Assert::same($double->intersected(), $double);
         Assert::null($double->nullableIntersection());
+    }
+
+    public function aLooseIntersectionReturnBecomesOneDoubleOfBothContracts(): void
+    {
+        $double = Understudy::for(IntersectedPair::class);
+        $value = $double->pick();
+
+        Assert::instanceOf($value, IntersectionAlpha::class);
+        Assert::instanceOf($value, IntersectionBeta::class);
     }
 
     #[ExpectNoAssertions]

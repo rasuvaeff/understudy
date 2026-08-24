@@ -198,6 +198,43 @@ final class FileWrapper
         return fflush($this->handle);
     }
 
+    public function stream_lock(int $operation): bool
+    {
+        $handle = $this->handle;
+        \assert($handle !== null);
+
+        if ($operation === 0) {
+            // PHP's file_put_contents() protocol uses zero for its exclusive
+            // lock request when the stream is supplied by a user wrapper.
+            $operation = LOCK_EX;
+        }
+
+        return $this->withoutWrapper(fn(): bool => flock($handle, $operation));
+    }
+
+    public function stream_truncate(int $newSize): bool
+    {
+        $handle = $this->handle;
+        \assert($handle !== null);
+
+        return $this->withoutWrapper(fn(): bool => ftruncate($handle, $newSize));
+    }
+
+    /**
+     * @return resource|false
+     */
+    public function stream_cast()
+    {
+        $handle = $this->handle;
+        \assert($handle !== null);
+        /** @var resource $handle */
+
+        /** @var resource $cast */
+        $cast = $this->withoutWrapper(static fn(): mixed => $handle);
+
+        return $cast;
+    }
+
     /**
      * @return array<mixed>|false
      */

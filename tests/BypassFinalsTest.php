@@ -130,11 +130,11 @@ final class BypassFinalsTest
             Assert::same($this->run('opcache-warm', $ini), $expected, 'cold cache');
             Assert::same($this->run('opcache-warm', $ini), $expected, 'warm cache');
         } finally {
-            self::removeDirectory($cache);
+            $this->removeDirectory($cache);
         }
     }
 
-    private static function removeDirectory(string $path): void
+    private function removeDirectory(string $path): void
     {
         if (!is_dir($path)) {
             return;

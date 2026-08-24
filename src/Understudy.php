@@ -631,22 +631,39 @@ final class Understudy
     public static function allVerified(object $double): void
     {
         $state = self::stateOf($double);
+        $failures = [];
 
         foreach ($state->expectations() as $expectation) {
             $failure = self::checkExpectation($state, $expectation, strictStubs: false);
 
             if ($failure !== null) {
-                throw VerificationFailed::withReport($failure);
+                $failures[] = $failure;
             }
         }
 
         $outOfOrder = self::checkOrdering($state);
 
         if ($outOfOrder !== null) {
-            throw VerificationFailed::withReport($outOfOrder);
+            $failures[] = $outOfOrder;
         }
 
-        self::nothingElse($double);
+        $unaccounted = array_values(array_filter(
+            $state->callLog(),
+            static fn(Invocation $invocation): bool => !$invocation->isAccounted(),
+        ));
+
+        if ($unaccounted !== []) {
+            $failures[] = sprintf(
+                "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
+                $state->label(),
+                count($unaccounted),
+                FailureReport::renderCallLog($unaccounted),
+            );
+        }
+
+        if ($failures !== []) {
+            throw VerificationFailed::withReport(implode("\n\n", $failures));
+        }
     }
 
     /**
@@ -830,7 +847,9 @@ final class Understudy
      */
     public static function idle(): bool
     {
-        return Runtime::current()->allStates() === [];
+        $context = Runtime::currentIfAny();
+
+        return $context === null || $context->allStates() === [];
     }
 
     /**
