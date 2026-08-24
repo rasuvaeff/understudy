@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+- **A registered loose default now outranks `null` on a nullable return.**
+  `Understudy::defaults(Book::class, …)` had no effect on a method declared
+  `?Book`: the resolver answered `null` before the registry was reached, and
+  the same happened inside a union carrying a `null` branch. A registration is
+  the test saying what a type should be, and `?Book` is still a Book when
+  there is one. Without a registration a nullable return is `null` as before.
+- **Verification and teardown now span every context the test used, not only
+  the caller's.** A body run in a Fiber owns a context of its own, and an
+  adapter asks about the test from wherever it stands — never the same place
+  under Testo, where `#[RunInFiber]` puts the pipeline in one Fiber and the
+  assert collector opens a second around the body. An unmet `expect()` inside
+  such a test kept the suite green. Isolation is unchanged: a Fiber still has
+  its own recording phase, call log and sequence counter.
+- `Understudy::idle()` answers for the whole test, and `reset()` drops every
+  context the test used — including when it is itself called from inside a
+  Fiber, which is the shape the runners actually have.
+- Fixed: a DNF return type of two intersections, `(A&B)|(C&D)`, was cut in
+  half before it was split, and the corrupted type reached the user in the
+  error message. Parentheses now come off each branch, and a union of nothing
+  but intersections answers with the first one instead of refusing a type the
+  engine can build.
+- `bypassFinals()` no longer breaks `flock()`, `ftruncate()`, `stream_select()`
+  or `file_put_contents(..., LOCK_EX)` for files opened after it: the wrapper
+  implements `stream_lock`, `stream_truncate` and `stream_cast`.
+- Dispatch is flat in the number of expectations registered for a method
+  (800 stubs went from 64us per call to 1.3us), and a method with a single
+  expectation answers from a lookup and nothing else, so the common case is
+  unchanged.
 - `Understudy::idle()` — whether the current context holds no doubles. Runner
   adapters use it as an integration guard: a context that is not idle when the
   next test begins means some earlier cleanup never ran.

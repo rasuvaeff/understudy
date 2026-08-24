@@ -198,6 +198,48 @@ final class FileWrapper
         return fflush($this->handle);
     }
 
+    public function stream_lock(int $operation): bool
+    {
+        $handle = $this->handle;
+        \assert($handle !== null);
+
+        if ($operation === 0) {
+            // Not a documented operation, and not a substitute for one either.
+            // Measured against a logging wrapper on `file://`:
+            // `file_put_contents($path, $data, LOCK_EX)` calls this method
+            // TWICE, first with `0` and then with `LOCK_EX`. Answering the
+            // probe by taking the lock it is about to ask for keeps the write
+            // working; answering `false` makes `file_put_contents()` return
+            // false and write nothing at all.
+            $operation = LOCK_EX;
+        }
+
+        return $this->withoutWrapper(fn(): bool => flock($handle, $operation));
+    }
+
+    public function stream_truncate(int $newSize): bool
+    {
+        $handle = $this->handle;
+        \assert($handle !== null);
+
+        return $this->withoutWrapper(fn(): bool => ftruncate($handle, $newSize));
+    }
+
+    /**
+     * @return resource|false
+     */
+    public function stream_cast()
+    {
+        $handle = $this->handle;
+        \assert($handle !== null);
+        /** @var resource $handle */
+
+        /** @var resource $cast */
+        $cast = $this->withoutWrapper(static fn(): mixed => $handle);
+
+        return $cast;
+    }
+
     /**
      * @return array<mixed>|false
      */

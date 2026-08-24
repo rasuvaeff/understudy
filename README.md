@@ -187,8 +187,10 @@ when(fn () => $repository->find(Arg::any()))->answers(
 when(fn () => $repository->mode())->returns('fast', 'slow');
 ```
 
-A later stub for the same call wins; earlier ones stay reachable as fallbacks,
-so a broad `Arg::any()` stub can sit underneath a specific one.
+A later stub for the same call wins; earlier ones stay reachable as fallbacks
+when their arguments do not match. An exhausted call-count expectation keeps
+answering the matching call, so use a non-overlapping matcher when a broad
+fallback should handle later calls.
 
 | Matcher | Matches |
 |---|---|
@@ -301,6 +303,10 @@ echo Understudy::transcript($repository);       // every call and its outcome
 Understudy::idle();                             // true when the context holds no doubles
 ```
 
+`transcript()` retains every invocation until `reset()` or `checkpoint()`.
+Avoid unbounded hot loops through a double when the arguments or results hold
+large object graphs; use a real fake for load-sized workloads.
+
 `scope()` returns whatever its callback returns, and drops the nested context
 either way — a failure inside is never replaced by a teardown error. A double
 created in a scope is invalid after that scope closes. Configuration and
@@ -353,6 +359,11 @@ the test nothing. A `NullLogger` is usually what it wanted:
 Understudy::defaults(LoggerInterface::class, fn () => new NullLogger());
 Understudy::defaults(ClockInterface::class, fn () => FakeClock::frozen());
 ```
+
+A registration outranks `null` on a nullable return: a method declared
+`?ClockInterface` answers with the registered clock, because saying what the
+type should be means it there too. Without a registration such a method is
+still `null`.
 
 The nearest registration wins, measured as distance in the type graph: an exact
 match first, then the closest registered ancestor. Two ancestors the same
@@ -481,8 +492,11 @@ Understudy::idle();   // true when the current context holds no doubles
 The [understudy-testo](https://github.com/rasuvaeff/understudy-testo) and
 [understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit) adapters
 verify and reset for you after every test; without one, call `reset()` in your
-own teardown. Reset drops only the current execution context; it does not
-erase sibling Fiber contexts.
+own teardown. Isolation and accounting are different things: each Fiber gets
+its own recording phase, call log and sequence counter, but `verifyAll()`,
+`reset()`, `idle()` and `checkpoint()` cover every context the test put
+understudies in. A body that runs in a Fiber is still the test's, and an
+adapter asks about the test from wherever it stands.
 
 ### Using Pest
 

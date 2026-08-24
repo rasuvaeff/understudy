@@ -314,6 +314,50 @@ final class FileWrapperTest
         $wrapper->stream_close();
     }
 
+    public function lockingTruncatingAndCastingDelegateToNativeStream(): void
+    {
+        $path = sys_get_temp_dir() . '/understudy-stream-' . getmypid() . '.txt';
+        file_put_contents($path, 'abcdef');
+
+        try {
+            FileWrapper::install([]);
+            $handle = fopen($path, 'r+');
+            Assert::true(is_resource($handle));
+            Assert::true(flock($handle, LOCK_EX));
+            Assert::true(ftruncate($handle, 3));
+            rewind($handle);
+            Assert::same((string) stream_get_contents($handle), 'abc');
+
+            if (DIRECTORY_SEPARATOR !== '\\') {
+                $read = [$handle];
+                $write = null;
+                $except = null;
+                Assert::same(stream_select($read, $write, $except, 0), 1);
+            }
+
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        } finally {
+            FileWrapper::uninstall();
+            @unlink($path);
+        }
+    }
+
+    public function lockedFilePutContentsStillWrites(): void
+    {
+        $path = sys_get_temp_dir() . '/understudy-locked-write-' . getmypid() . '.txt';
+
+        try {
+            FileWrapper::install([]);
+
+            Assert::same(file_put_contents($path, 'xx', LOCK_EX), 2);
+            Assert::same((string) file_get_contents($path), 'xx');
+        } finally {
+            FileWrapper::uninstall();
+            @unlink($path);
+        }
+    }
+
     public function statAnswersForTheRealPath(): void
     {
         $wrapper = new FileWrapper();
@@ -446,4 +490,169 @@ final class FileWrapperTest
 
         return $read;
     }
+    // --- The allow-list itself -------------------------------------------------
+
+    public function theAllowListIsMatchedByNamespaceAndShortNameTogether(): void
+    {
+        FileWrapper::targetOnly([['namespace' => 'App\\Domain', 'class' => 'Order']]);
+
+        Assert::true(FileWrapper::covers('App\\Domain\\Order'));
+        // Same short name, another namespace: a bypass asked for one class
+        // must not quietly rewrite its namesake somewhere else.
+        Assert::false(FileWrapper::covers('App\\Billing\\Order'));
+        // Same namespace, another class.
+        Assert::false(FileWrapper::covers('App\\Domain\\Invoice'));
+    }
+
+    public function aGlobalNamespaceClassIsMatchedByAnEmptyNamespace(): void
+    {
+        FileWrapper::targetOnly([['namespace' => '', 'class' => 'Order']]);
+
+        Assert::true(FileWrapper::covers('Order'));
+        Assert::false(FileWrapper::covers('App\\Order'));
+    }
+
+    public function theGlobalModeCoversEveryClass(): void
+    {
+        FileWrapper::targetOnly(null);
+
+        Assert::true(FileWrapper::covers('Anything\\At\\All'));
+    }
+
+    public function anEmptyAllowListCoversNothing(): void
+    {
+        FileWrapper::targetOnly([]);
+
+        Assert::false(FileWrapper::covers('Anything\\At\\All'));
+    }
+
+    // --- Filesystem operations pass straight through ---------------------------
+
+    public function creatingRenamingAndRemovingFilesGoesThroughUntouched(): void
+    {
+        // Everything that is not a read of PHP source is the native wrapper's
+        // job. A wrapper that answered only what it cared about would break
+        // Composer, which is the first thing that runs through it.
+        $directory = $this->temporaryDirectory();
+        FileWrapper::install(null);
+
+        $nested = $directory . '/nested';
+        Assert::true(mkdir($nested));
+        Assert::true(is_dir($nested));
+
+        $first = $nested . '/first.txt';
+        file_put_contents($first, 'content');
+        Assert::same(file_get_contents($first), 'content');
+
+        $second = $nested . '/second.txt';
+        Assert::true(rename($first, $second));
+        Assert::false(file_exists($first));
+        Assert::same(file_get_contents($second), 'content');
+
+        Assert::true(unlink($second));
+        Assert::false(file_exists($second));
+
+        Assert::true(rmdir($nested));
+        Assert::false(is_dir($nested));
+
+        self::removeDirectory($directory);
+    }
+
+    public function touchingAndChmoddingAFileGoesThroughUntouched(): void
+    {
+        $directory = $this->temporaryDirectory();
+        $path = $directory . '/stamped.txt';
+        file_put_contents($path, 'x');
+
+        FileWrapper::install(null);
+
+        Assert::true(touch($path));
+        Assert::true(touch($path, 1_000_000_000, 1_000_000_001));
+        clearstatcache(clear_realpath_cache: true, filename: $path);
+        Assert::same(filemtime($path), 1_000_000_000);
+        Assert::same(fileatime($path), 1_000_000_001);
+
+        // Asserted against a control rather than against a literal: Windows
+        // has no Unix permission bits, so `chmod()` there toggles read-only
+        // and `fileperms()` answers 0666 whatever was asked for. The claim is
+        // not "the mode is 0600" — it is "the wrapper changed nothing", and
+        // the only portable way to say that is to do the same chmod without
+        // it and compare.
+        $control = $directory . '/control.txt';
+        file_put_contents($control, 'x');
+
+        Assert::true(chmod($path, 0o600));
+
+        FileWrapper::uninstall();
+
+        Assert::true(chmod($control, 0o600));
+        clearstatcache(clear_realpath_cache: true, filename: $path);
+        clearstatcache(clear_realpath_cache: true, filename: $control);
+
+        Assert::same(fileperms($path) & 0o777, fileperms($control) & 0o777);
+
+        self::removeDirectory($directory);
+    }
+
+    public function creatingAFileByOpeningItForWritingWorks(): void
+    {
+        $directory = $this->temporaryDirectory();
+        FileWrapper::install(null);
+
+        $path = $directory . '/made.txt';
+        $handle = fopen($path, 'w');
+        Assert::true($handle !== false);
+        fwrite($handle, 'plain content');
+        fclose($handle);
+
+        Assert::same(file_get_contents($path), 'plain content');
+
+        self::removeDirectory($directory);
+    }
+
+    public function inGlobalModeEvenAPlainReadOfPhpSourceComesBackTransformed(): void
+    {
+        // Not a side effect to be surprised by later: the wrapper transforms
+        // what is READ through `file://`, and PHP compiling a class is only
+        // the most important reader. Anything else reading PHP source in the
+        // same process — a template engine, a generator, an in-process linter
+        // — sees the transformed text too, for as long as bypass is on.
+        $directory = $this->temporaryDirectory();
+        $path = $directory . '/sealed.php';
+        file_put_contents($path, '<?php final class SealedOnDisk {}');
+
+        FileWrapper::install(null);
+
+        Assert::same(file_get_contents($path), '<?php class SealedOnDisk {}');
+
+        self::removeDirectory($directory);
+
+        // On disk the source never changed; only the reading did.
+        Assert::false(file_exists($path));
+    }
+
+    private function temporaryDirectory(): string
+    {
+        $directory = sys_get_temp_dir() . '/understudy-wrapper-' . bin2hex(random_bytes(6));
+        mkdir($directory);
+
+        return $directory;
+    }
+
+    private static function removeDirectory(string $path): void
+    {
+        FileWrapper::uninstall();
+
+        foreach ((array) scandir($path) as $entry) {
+            if ($entry === '.' || $entry === '..' || !is_string($entry)) {
+                continue;
+            }
+
+            $full = $path . '/' . $entry;
+            is_dir($full) ? self::removeDirectory($full) : unlink($full);
+        }
+
+        rmdir($path);
+    }
+
 }

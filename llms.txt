@@ -60,7 +60,9 @@ No runtime deps.
 - `Understudy::defaults(Contract::class, fn () => $value)` says what a loose
   default should be. Nearest registration wins by distance in the type graph;
   an equal-distance tie raises `AmbiguousDefaultFactory`, a wrong-typed result
-  raises `InvalidDefaultValue`. Per context, dropped by `reset()`.
+  raises `InvalidDefaultValue`. Per context, dropped by `reset()`. It outranks
+  `null` on a nullable return: `?Book` answers with the registered Book, and
+  is `null` only when nothing was registered for it.
 - Without a registration, a doublable return type becomes a double of its own,
   one level deep, adopted into the context that owns the outer double.
 - `Understudy::wire(Sut::class, $overrides)` returns
@@ -87,8 +89,13 @@ No runtime deps.
   concrete. Calling one raises `InvalidCallSpecification`; inject an instance
   dependency instead.
 - `Understudy::reset()` after each test. Nothing is process-global on purpose:
-  state lives per execution context, each Fiber gets its own, and reset drops
-  only the current context.
+  state lives per execution context and each Fiber gets its own — that is
+  isolation, and it covers the recording phase, the call log and the sequence
+  counter.
+- Accounting is wider than isolation: `verifyAll()`, `reset()`, `idle()` and
+  `checkpoint()` span EVERY context still holding doubles, not just the
+  caller's. A test body run in a Fiber owns a context the adapter never stands
+  in, and skipping it let an unmet `expect()` pass unnoticed.
 
 ## API
 
@@ -128,9 +135,10 @@ when(fn () => $repo->find(Arg::any()))->answers(
 );
 ```
 
-Matching: most recently registered wins, earlier stubs remain as fallbacks —
-so register the broad stub FIRST and the specific one after it, or the
-catch-all shadows everything. Arguments match by `===`, or by matcher.
+Matching: most recently registered wins, earlier stubs remain as fallbacks on
+argument mismatch — a matching call-count expectation keeps answering after
+its count is exhausted. Register the broad stub FIRST and the specific one
+after it. Arguments match by `===`, or by matcher.
 
 ### Matchers — `Arg`
 
@@ -258,6 +266,10 @@ and verification require the owning context; normal calls from another Fiber
 are allowed and are routed to the owner's log.
 `checkpoint()` keeps the understudies, their modes and their labels, and
 clears the expectations and calls the current phase has settled.
+
+`transcript()` retains every invocation until `reset()` or `checkpoint()`;
+avoid unbounded hot loops through doubles when arguments or results hold large
+object graphs.
 
 Failure raises `VerificationFailed`, whose message names the double, the
 expectation, the actual count, and marks differing arguments with `*`.

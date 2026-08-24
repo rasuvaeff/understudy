@@ -66,6 +66,11 @@
         },
         "sort-packages": true
     },
+    "extra": {
+        "skills": {
+            "source": "resources/skills"
+        }
+    },
     "scripts": {
         "bc-check": "roave-backward-compatibility-check",
         "bench": "testo --suite=Benchmarks -vv",

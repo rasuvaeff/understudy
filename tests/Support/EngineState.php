@@ -125,7 +125,7 @@ final readonly class EngineState
 
     public function hasUnaccountedCalls(): bool
     {
-        return in_array(false, $this->accounted, true);
+        return in_array(needle: false, haystack: $this->accounted, strict: true);
     }
 
     public function claimsViolated(): bool

@@ -100,6 +100,20 @@ final class RuntimeContext
     }
 
     /**
+     * @return list<object>
+     */
+    public function allDoubles(): array
+    {
+        $doubles = [];
+
+        foreach ($this->doubles as $double) {
+            $doubles[] = $double;
+        }
+
+        return $doubles;
+    }
+
+    /**
      * @return positive-int
      */
     public function nextSequence(): int

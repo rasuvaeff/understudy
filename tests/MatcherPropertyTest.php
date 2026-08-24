@@ -218,8 +218,12 @@ final class MatcherPropertyTest
     /**
      * A pattern matcher agrees with the pattern itself — the matcher adds the
      * type check, nothing else.
+     *
+     * Deadlined because the body runs a regex: a catastrophic input is the one
+     * failure mode a property over PCRE has that the others do not, and
+     * without a wall clock it hangs CI instead of reporting a counterexample.
      */
-    #[Property(runs: 300)]
+    #[Property(runs: 300, timeoutMs: 2_000)]
     public function aPatternMatcherAgreesWithPregMatch(string $subject): void
     {
         $pattern = '/^ord-[a-z0-9]+$/';
