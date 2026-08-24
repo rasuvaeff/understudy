@@ -31,11 +31,20 @@ final class TypeRenderer
      * @return string empty when the contract declares no type, since there is
      *                then nothing to union a matcher onto
      */
-    public static function parameterType(?\ReflectionType $type): string
+    public static function parameterType(?\ReflectionType $type, ?\ReflectionClass $declaringClass = null): string
     {
         if ($type === null) {
             return '';
         }
+
+        return self::resolveParent(self::renderParameter($type), $declaringClass);
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private static function renderParameter(\ReflectionType $type): string
+    {
 
         if ($type instanceof \ReflectionIntersectionType) {
             return '(' . self::render($type) . ')';
@@ -69,9 +78,54 @@ final class TypeRenderer
     /**
      * @return non-empty-string
      */
-    public static function returnType(?\ReflectionType $type): string
+    public static function returnType(?\ReflectionType $type, ?\ReflectionClass $declaringClass = null): string
     {
-        return $type === null ? 'mixed' : self::render($type);
+        return $type === null ? 'mixed' : self::resolveParent(self::render($type), $declaringClass);
+    }
+
+    /**
+     * Replaces the `parent` keyword with the class it names.
+     *
+     * It has to go: inside the generated class `parent` means the TARGET, not
+     * the target's parent, so writing it through declares something the
+     * contract never promised — narrower than promised for a return, and
+     * illegally narrow for a parameter, which PHP rejects outright.
+     *
+     * PHP 8.5 resolves this in Reflection and hands over a class name; 8.3
+     * and 8.4 hand over the literal keyword. It therefore only ever reaches
+     * here on the older two, which is exactly why it went unnoticed — the
+     * newest engine papers over it.
+     *
+     * Done on the rendered string because the keyword can sit inside a union
+     * or an intersection, and there is no honest way to build a
+     * `ReflectionType` of one's own to hand back instead.
+     *
+     * @param non-empty-string $rendered
+     *
+     * @return non-empty-string
+     */
+    private static function resolveParent(string $rendered, ?\ReflectionClass $declaringClass): string
+    {
+        if (!str_contains(strtolower($rendered), 'parent')) {
+            return $rendered;
+        }
+
+        $parent = $declaringClass?->getParentClass();
+
+        if ($parent === false || $parent === null) {
+            return $rendered;
+        }
+
+        // Word boundaries, and not already qualified: a class genuinely named
+        // `Parent`, or `\App\Parent`, is somebody's own name and not the
+        // keyword.
+        $resolved = preg_replace(
+            '/(?<![\\\\\\w])parent(?![\\\\\\w])/i',
+            '\\\\' . $parent->getName(),
+            $rendered,
+        );
+
+        return $resolved === null || $resolved === '' ? $rendered : $resolved;
     }
 
     /**

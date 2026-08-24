@@ -8,6 +8,7 @@ use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\NarrowThenWideReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\NullableObjectParam;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentParameterChild;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentReturnBase;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentReturnChild;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfConstantExpression;
@@ -69,6 +70,24 @@ final class TargetUnifierEdgeTest
         $double = Understudy::for(ParentReturnChild::class);
 
         Assert::instanceOf($double->make(), ParentReturnBase::class);
+    }
+
+    public function theParentKeywordIsResolvedInAParameterToo(): void
+    {
+        // The dangerous half. A return type written through literally is only
+        // narrower than promised; a parameter is illegally narrow, and PHP
+        // rejects the generated class rather than the value.
+        $double = Understudy::for(ParentParameterChild::class);
+
+        Assert::false($double->accept(new ParentReturnBase()));
+
+        // A union, because the matcher branch is appended to every parameter
+        // that can carry one. What matters is which class is in it: the
+        // resolved parent, never the keyword.
+        $rendered = (string) (new \ReflectionMethod($double, 'accept'))->getParameters()[0]->getType();
+
+        Assert::string($rendered)->contains(ParentReturnBase::class);
+        Assert::false(str_contains($rendered, 'parent'));
     }
 
     public function aNullableObjectParameterUnifiesWithAWiderUnion(): void

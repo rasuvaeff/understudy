@@ -368,7 +368,7 @@ final class TargetUnifier
             }
 
             if ($satisfiesAll) {
-                return TypeRenderer::returnType($candidate->getReturnType());
+                return TypeRenderer::returnType($candidate->getReturnType(), $candidate->getDeclaringClass());
             }
         }
 
@@ -795,7 +795,7 @@ final class TargetUnifier
 
         foreach ($declarations as $declaration) {
             foreach (array_slice($declaration->getParameters(), $from) as $parameter) {
-                $rendered = TypeRenderer::parameterType($parameter->getType());
+                $rendered = TypeRenderer::parameterType($parameter->getType(), $parameter->getDeclaringClass());
 
                 if ($rendered === '') {
                     $untyped = true;
@@ -874,7 +874,7 @@ final class TargetUnifier
                 continue;
             }
 
-            $rendered = TypeRenderer::parameterType($parameter->getType());
+            $rendered = TypeRenderer::parameterType($parameter->getType(), $parameter->getDeclaringClass());
 
             if ($rendered === '') {
                 $untyped = true;
