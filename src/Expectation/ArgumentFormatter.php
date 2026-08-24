@@ -49,9 +49,7 @@ final class ArgumentFormatter
      */
     private static function formatString(string $value): string
     {
-        $truncated = mb_strlen($value) > self::MAX_STRING
-            ? mb_substr($value, 0, self::MAX_STRING) . '…'
-            : $value;
+        $truncated = self::truncate($value);
 
         // A raw newline or quote would break the single line a failure message
         // renders each argument on, and hide what actually differed.
@@ -66,6 +64,25 @@ final class ArgumentFormatter
         ]);
 
         return "'" . $escaped . "'";
+    }
+
+    /**
+     * Cuts to MAX_STRING characters, not bytes — splitting a multibyte
+     * character would render mojibake in the middle of a failure message.
+     * PCRE does the counting, so the package needs no ext-mbstring.
+     */
+    private static function truncate(string $value): string
+    {
+        if (preg_match_all('/./us', $value, $characters) === false) {
+            // Not valid UTF-8: there are no characters to count, only bytes.
+            return strlen($value) > self::MAX_STRING
+                ? substr($value, 0, self::MAX_STRING) . '…'
+                : $value;
+        }
+
+        return count($characters[0]) > self::MAX_STRING
+            ? implode('', array_slice($characters[0], 0, self::MAX_STRING)) . '…'
+            : $value;
     }
 
     /**

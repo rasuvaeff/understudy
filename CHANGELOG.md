@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **`ext-mbstring` is no longer required.** The only runtime use was counting
+  characters while truncating an argument for a failure message; PCRE (`/./us`)
+  does the counting now — it is a core extension and cannot be disabled — with
+  a byte fallback for strings that are not valid UTF-8. The package installs
+  on a stock `php:8.3-cli` image, where mbstring is absent.
+
 - **A registered loose default now outranks `null` on a nullable return.**
   `Understudy::defaults(Book::class, …)` had no effect on a method declared
   `?Book`: the resolver answered `null` before the registry was reached, and

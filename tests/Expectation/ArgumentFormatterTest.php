@@ -43,7 +43,7 @@ final class ArgumentFormatterTest
         $rendered = ArgumentFormatter::format(str_repeat('a', 100));
 
         Assert::string($rendered)->contains('…');
-        Assert::true(mb_strlen($rendered) < 100);
+        Assert::true(strlen($rendered) < 100);
     }
 
     public function rendersAListInline(): void
@@ -126,6 +126,23 @@ final class ArgumentFormatterTest
         // 21 characters, 42 bytes: measuring bytes would truncate a string
         // that fits.
         $value = str_repeat('и', 21);
+
+        Assert::same(ArgumentFormatter::format($value), "'" . $value . "'");
+    }
+
+    public function aStringThatIsNotUtf8FallsBackToBytes(): void
+    {
+        // PCRE cannot count characters in bytes that are not UTF-8; the byte
+        // fallback keeps a binary blob from flooding the failure message.
+        Assert::same(
+            ArgumentFormatter::format(str_repeat("\xFF", 50)),
+            "'" . str_repeat("\xFF", 40) . "…'",
+        );
+    }
+
+    public function aShortStringThatIsNotUtf8SurvivesWhole(): void
+    {
+        $value = "\xFF\xFE";
 
         Assert::same(ArgumentFormatter::format($value), "'" . $value . "'");
     }

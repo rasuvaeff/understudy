@@ -9,8 +9,8 @@ the API is not stable until v0.1.0.
 composer require --dev rasuvaeff/understudy
 ```
 
-Namespace: `Rasuvaeff\Understudy`. Requires PHP 8.3 - 8.5 and `ext-mbstring`.
-No runtime deps.
+Namespace: `Rasuvaeff\Understudy`. Requires PHP 8.3 - 8.5 and `ext-tokenizer`.
+No runtime deps; `ext-mbstring` is not needed.
 
 ## Rules
 

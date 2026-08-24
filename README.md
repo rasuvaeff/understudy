@@ -67,9 +67,10 @@ perf` before quoting them anywhere.
 ## Requirements
 
 - PHP 8.3 – 8.5
-- `ext-mbstring`
+- `ext-tokenizer`
 
-No runtime dependencies beyond that.
+No runtime dependencies beyond that (`ext-mbstring` is not needed — failure
+messages count characters through PCRE, which cannot be disabled).
 
 ## Installation
 
