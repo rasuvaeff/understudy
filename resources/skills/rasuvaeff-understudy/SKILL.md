@@ -14,7 +14,7 @@ description: >-
 
 # understudy
 
-Namespace `Rasuvaeff\Understudy`. PHP 8.3–8.5, `ext-mbstring`, no runtime deps.
+Namespace `Rasuvaeff\Understudy`. PHP 8.3–8.5, `ext-tokenizer`, no runtime deps.
 
 ```php
 use Rasuvaeff\Understudy\Understudy;
