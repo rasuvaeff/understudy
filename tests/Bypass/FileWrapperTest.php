@@ -325,12 +325,15 @@ final class FileWrapperTest
             Assert::true(is_resource($handle));
             Assert::true(flock($handle, LOCK_EX));
             Assert::true(ftruncate($handle, 3));
-            Assert::same((string) file_get_contents($path), 'abc');
+            rewind($handle);
+            Assert::same((string) stream_get_contents($handle), 'abc');
 
-            $read = [$handle];
-            $write = null;
-            $except = null;
-            Assert::same(stream_select($read, $write, $except, 0), 1);
+            if (DIRECTORY_SEPARATOR !== '\\') {
+                $read = [$handle];
+                $write = null;
+                $except = null;
+                Assert::same(stream_select($read, $write, $except, 0), 1);
+            }
 
             flock($handle, LOCK_UN);
             fclose($handle);
