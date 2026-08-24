@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- **`Understudy::lastCall(callable $call): ?Invocation`** — the newest
+  recorded call matching the specification, or null when there was none. The
+  null-safe replacement for reading `count($calls) - 1` out of `calls()`:
+  an empty log has no last element, and Psalm reports the index arithmetic
+  as `int<-1, max>` before the test even runs. Found by dogfooding the
+  migrated `yii3-correlation-id` suite, where the hand-written fake's
+  null-safe `handledRequest` property had no direct counterpart.
+- **`Understudy::forget(object $double): void`** — retires a double on
+  purpose. For the double a test built and then replaced, still holding its
+  stubs: under `verifyAll(strictStubs: true)` that stub is a failure about a
+  double the test no longer uses. Verification, accounting and reset stop
+  seeing a forgotten double; any call on it — or any question about its
+  calls — fails with `ForgottenDouble`, whose message names `forget()`
+  rather than sending the reader looking for a `reset()` they never wrote.
+  One-way, like every other form of forgetting here. Also found by the same
+  dogfooding.
+- `calls()` already answers `list<Invocation>`; a dogfooding review
+  suspected otherwise, and the suspicion is recorded here so the next
+  reviewer does not re-check it: the Psalm findings that prompted it came
+  from `count($calls) - 1`, which `lastCall()` removes.
+
 - **`ext-mbstring` is no longer required.** The only runtime use was counting
   characters while truncating an argument for a failure message; PCRE (`/./us`)
   does the counting now — it is a core extension and cannot be disabled — with

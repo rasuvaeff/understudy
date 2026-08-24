@@ -86,6 +86,15 @@ final class RuntimeContext
     }
 
     /**
+     * Drops the double's state. Verification and reset stop seeing it; a call
+     * on the object afterwards meets the forgotten-double guard in Runtime.
+     */
+    public function forget(object $double): void
+    {
+        unset($this->doubles[$double]);
+    }
+
+    /**
      * @return list<DoubleState>
      */
     public function allStates(): array

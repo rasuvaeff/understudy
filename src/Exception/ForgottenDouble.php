@@ -29,6 +29,27 @@ final class ForgottenDouble extends \LogicException implements UnderstudyError
     }
 
     /**
+     * @param non-empty-string $method
+     */
+    public static function onPurpose(string $method): self
+    {
+        return new self(sprintf(
+            "This understudy was retired with Understudy::forget(), but `%s()` was called on it.\n"
+            . 'A forgotten double is gone for good; build a new one instead of calling this one.',
+            $method,
+        ));
+    }
+
+    public static function retired(): self
+    {
+        return new self(
+            'This understudy was retired with Understudy::forget() and can no longer be asked '
+            . 'anything — not calls, not verification. A replacement built afterwards is a '
+            . 'different object; ask that one.',
+        );
+    }
+
+    /**
      * @param class-string $contract
      */
     public static function fromDefaultFactory(string $contract): self

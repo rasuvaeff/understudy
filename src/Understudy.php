@@ -9,6 +9,7 @@ use Rasuvaeff\Understudy\Bypass\FinalStripper;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Exception\BypassUnavailable;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
+use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\ForwardingTargetMismatch;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
@@ -374,6 +375,32 @@ final class Understudy
     }
 
     /**
+     * The most recent recorded call matching the specification, or null when
+     * there was none.
+     *
+     * The null-safe replacement for reading `count($calls) - 1` out of
+     * {@see calls()}: an empty log has no last element, and Psalm cannot
+     * prove otherwise, so the index arithmetic reports `int<-1, max>` before
+     * the test even runs.
+     *
+     * @param callable(): mixed $call
+     */
+    public static function lastCall(callable $call): ?Invocation
+    {
+        $signal = self::record($call);
+        $probe = new Expectation($signal->method, $signal->args);
+        $last = null;
+
+        foreach (self::stateOf($signal->double)->callLog() as $invocation) {
+            if ($probe->matches($invocation->method, $invocation->args)) {
+                $last = $invocation;
+            }
+        }
+
+        return $last;
+    }
+
+    /**
      * Makes an understudy fail on any call no expectation matched.
      */
     public static function strict(object $double): void
@@ -599,6 +626,32 @@ final class Understudy
             count($log),
             FailureReport::renderCallLog($log),
         ));
+    }
+
+    /**
+     * Retires an understudy on purpose.
+     *
+     * For the double a test built and then replaced — `$this->generator =
+     * $this->fixedGenerator('other')` leaves the first one behind, still
+     * holding its stubs. Under `verifyAll(strictStubs: true)` that stub is a
+     * failure about a double the test no longer uses; `forget()` says it was
+     * retired, so verification and reset stop seeing it. Calling anything on
+     * the object afterwards fails with `ForgottenDouble`.
+     *
+     * One-way, like every other form of forgetting here: a double belongs to
+     * exactly one context for its whole life.
+     */
+    public static function forget(object $double): void
+    {
+        if (Runtime::ownerOf($double) === null) {
+            throw InvalidCallSpecification::notADouble();
+        }
+
+        if (!Runtime::isOwnedByCurrentContext($double)) {
+            throw ContextOwnershipViolation::forDouble();
+        }
+
+        Runtime::forget($double);
     }
 
     /**
@@ -902,6 +955,10 @@ final class Understudy
         $state = Runtime::stateOf($double);
 
         if ($state === null) {
+            if (Runtime::isRetiredOnPurpose($double)) {
+                throw ForgottenDouble::retired();
+            }
+
             throw InvalidCallSpecification::noCallRecorded();
         }
 

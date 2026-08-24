@@ -332,6 +332,31 @@ $calls[1]->thrown();      // the throwable, if it threw
 `null` is a valid return value, which is why the outcome is asked about
 (`didReturn()`) rather than inferred from the value.
 
+```php
+$last = Understudy::lastCall(fn () => $repository->find(Arg::any()));
+
+$last?->args;   // the newest matching call, null when there was none
+```
+
+`lastCall()` is the null-safe replacement for `count($calls) - 1`: an empty
+log has no last element, and static analysis cannot prove otherwise, so the
+index arithmetic reports `int<-1, max>` before the test even runs.
+
+### Retiring a replaced double
+
+```php
+Understudy::forget($replaced);
+```
+
+For the double a test built and then replaced — `$this->generator =
+$this->fixedGenerator('other')` leaves the first one behind, still holding its
+stubs. Under `verifyAll(strictStubs: true)` that stub is a failure about a
+double the test no longer uses; `forget()` retires it, so verification,
+accounting and reset stop seeing it. Calling anything on the object afterwards
+— or asking about its calls — fails with `ForgottenDouble`, which names
+`forget()` rather than sending you looking for a `reset()` you never wrote.
+One-way, like every other form of forgetting here.
+
 ### Modes
 
 | Mode | Unmatched call answers with |

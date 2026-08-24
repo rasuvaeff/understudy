@@ -274,10 +274,11 @@ object graphs.
 Failure raises `VerificationFailed`, whose message names the double, the
 expectation, the actual count, and marks differing arguments with `*`.
 
-### Call log — `calls()`
+### Call log — `calls()` and `lastCall()`
 
 ```php
 $calls = Understudy::calls(fn () => $repo->find(Arg::any())); // list<Invocation>
+$last  = Understudy::lastCall(fn () => $repo->find(Arg::any())); // ?Invocation
 ```
 
 `Invocation`: `->method`, `->args`, `->sequence`, `->didReturn()`,
@@ -286,6 +287,21 @@ $calls = Understudy::calls(fn () => $repo->find(Arg::any())); // list<Invocation
 
 `returned()` on a call that threw raises `OutcomeUnavailable` — `null` is a
 valid return value and cannot signal "nothing".
+
+`lastCall()` answers the newest matching call or null — the null-safe
+replacement for `count($calls) - 1`, which static analysis reads as
+`int<-1, max>`.
+
+### Retiring a double — `forget()`
+
+```php
+Understudy::forget($replaced);
+```
+
+For a double the test built and then replaced: verification (including
+`strictStubs`), accounting and reset stop seeing it. Any call on it — or any
+question about its calls — raises `ForgottenDouble` naming `forget()`.
+One-way; a replacement is a different object.
 
 ### Modes and naming
 
