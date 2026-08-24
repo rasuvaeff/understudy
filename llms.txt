@@ -248,6 +248,7 @@ to method and arguments.
 Understudy::checkpoint();            // verify, then forget what is settled
 $result = Understudy::scope(fn () => ...);   // nested context, verified on success
 Understudy::transcript($repo);       // every call and outcome, for reading
+Understudy::idle();                  // true when the current context holds no doubles
 ```
 
 `scope()` returns whatever the callback returns and drops its context either

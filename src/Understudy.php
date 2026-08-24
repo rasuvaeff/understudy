@@ -822,6 +822,18 @@ final class Understudy
     }
 
     /**
+     * Whether the current context holds no understudies at all.
+     *
+     * Runner adapters use it as an integration guard: a context that is not
+     * idle by the time the next test begins means some earlier test's cleanup
+     * never ran, and its doubles are about to leak into this one.
+     */
+    public static function idle(): bool
+    {
+        return Runtime::current()->allStates() === [];
+    }
+
+    /**
      * Runs the specification closure with recording on, and catches the signal
      * the called method throws instead of returning.
      */

@@ -92,6 +92,22 @@ final class UnderstudyTest
         Assert::instanceOf(Understudy::for(BookRepository::class), BookRepository::class);
     }
 
+    public function freshContextIsIdle(): void
+    {
+        Assert::true(Understudy::idle());
+    }
+
+    public function creatingADoubleEndsIdlenessUntilReset(): void
+    {
+        $double = Understudy::for(BookRepository::class);
+
+        Assert::false(Understudy::idle());
+
+        Understudy::reset();
+
+        Assert::true(Understudy::idle());
+    }
+
     public function doubleCombinesSeveralInterfaces(): void
     {
         $double = Understudy::for(BookRepository::class, Named::class);

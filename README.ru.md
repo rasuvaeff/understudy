@@ -296,6 +296,7 @@ Understudy::verifySequence(             // точный протокол, чер
 Understudy::checkpoint();                       // проверить и забыть завершённое
 $result = Understudy::scope(fn () => ...);      // вложенный контекст, проверяемый при успехе
 echo Understudy::transcript($repository);       // все вызовы и их исходы
+Understudy::idle();                             // true, если в контексте нет дублей
 ```
 
 `scope()` возвращает то, что вернул колбэк, и в любом случае сбрасывает
@@ -469,11 +470,34 @@ The following calls to `tag` were made during this test:
 
 ```php
 Understudy::reset();
+Understudy::idle();   // true, если в текущем контексте нет ни одного дубля
 ```
 
-Адаптеры для Testo и PHPUnit будут вызывать это сами; пока их нет — вызывайте
-в своём teardown. Reset очищает только текущий execution context и не стирает
-контексты соседних Fiber.
+Адаптеры [understudy-testo](https://github.com/rasuvaeff/understudy-testo) и
+[understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit)
+проверяют и сбрасывают контекст после каждого теста сами; без адаптера —
+вызывайте `reset()` в своём teardown. Reset очищает только текущий execution
+context и не стирает контексты соседних Fiber.
+
+### Использование Pest
+
+Pest уже занимает глобальную функцию `expect()`, поэтому импорт глагола
+настройки understudy с ней конфликтует. Импортируйте функцию под другим
+именем:
+
+```php
+use function Rasuvaeff\Understudy\expect as expectCall;
+
+expectCall(fn () => $books->find(7));
+```
+
+или используйте везде бесколлизионную статическую форму:
+
+```php
+Understudy::expect(fn () => $books->find(7));
+```
+
+`when()` и `verify()` глобально свободны и в алиасе не нуждаются.
 
 ## Безопасность
 
