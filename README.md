@@ -360,6 +360,11 @@ Understudy::defaults(LoggerInterface::class, fn () => new NullLogger());
 Understudy::defaults(ClockInterface::class, fn () => FakeClock::frozen());
 ```
 
+A registration outranks `null` on a nullable return: a method declared
+`?ClockInterface` answers with the registered clock, because saying what the
+type should be means it there too. Without a registration such a method is
+still `null`.
+
 The nearest registration wins, measured as distance in the type graph: an exact
 match first, then the closest registered ancestor. Two ancestors the same
 distance away raise `AmbiguousDefaultFactory` rather than letting whichever was

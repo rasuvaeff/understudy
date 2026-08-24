@@ -11,6 +11,7 @@ use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
+use Rasuvaeff\Understudy\Tests\Fixture\Defaults\NullableShapes;
 use Rasuvaeff\Understudy\Tests\Fixture\Librarian;
 use Rasuvaeff\Understudy\Understudy;
 use Rasuvaeff\Understudy\Wiring\Wire;
@@ -107,13 +108,41 @@ final class ErrorPathTest
         }
     }
 
-    public function aNullableReturnAnswersNullWithoutConsultingTheRegistry(): void
+    public function aNullableReturnStillAnswersWithWhatWasRegistered(): void
     {
-        // Worth pinning rather than leaving to be rediscovered: `?Book` is
-        // answered by `null` before the loose-default registry is asked, so a
-        // registration for `Book` has no effect on a method declared nullable.
-        Understudy::defaults(Book::class, static fn(): Book => new Book('registered'));
+        // A registration is the test saying what this type should be, and a
+        // `?Book` is still a Book when there is one. Answering `null` here
+        // ignored an instruction the user had given in so many words.
+        $book = new Book('registered');
+        Understudy::defaults(Book::class, static fn(): Book => $book);
 
+        Assert::same(Understudy::for(BookRepository::class)->find(1), $book);
+    }
+
+    public function everyNullableShapeAsksTheRegistryFirst(): void
+    {
+        // `?Book` and `Book|null` are the same declaration written two ways,
+        // and a union carrying a scalar is the same question again. All three
+        // used to answer `null` before the registry was reached.
+        $book = new Book('registered');
+        Understudy::defaults(Book::class, static fn(): Book => $book);
+
+        $double = Understudy::for(NullableShapes::class);
+
+        Assert::same($double->shorthand(), $book);
+        Assert::same($double->union(), $book);
+        Assert::same($double->unionWithScalar(), $book);
+
+        // Nothing registered for this one: `null` is still the answer, and a
+        // registration for another type does not spill onto it.
+        Assert::null($double->unregistered());
+    }
+
+    public function aNullableReturnIsNullWhenNothingWasRegistered(): void
+    {
+        // The other half, and the reason the first is not simply "objects
+        // now". Without an instruction, `null` is still the safest answer a
+        // nullable return can have.
         Assert::null(Understudy::for(BookRepository::class)->find(1));
     }
 

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **A registered loose default now outranks `null` on a nullable return.**
+  `Understudy::defaults(Book::class, …)` had no effect on a method declared
+  `?Book`: the resolver answered `null` before the registry was reached, and
+  the same happened inside a union carrying a `null` branch. A registration is
+  the test saying what a type should be, and `?Book` is still a Book when
+  there is one. Without a registration a nullable return is `null` as before.
 - **Verification and teardown now span every context the test used, not only
   the caller's.** A body run in a Fiber owns a context of its own, and an
   adapter asks about the test from wherever it stands — never the same place

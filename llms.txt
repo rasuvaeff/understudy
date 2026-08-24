@@ -60,7 +60,9 @@ No runtime deps.
 - `Understudy::defaults(Contract::class, fn () => $value)` says what a loose
   default should be. Nearest registration wins by distance in the type graph;
   an equal-distance tie raises `AmbiguousDefaultFactory`, a wrong-typed result
-  raises `InvalidDefaultValue`. Per context, dropped by `reset()`.
+  raises `InvalidDefaultValue`. Per context, dropped by `reset()`. It outranks
+  `null` on a nullable return: `?Book` answers with the registered Book, and
+  is `null` only when nothing was registered for it.
 - Without a registration, a doublable return type becomes a double of its own,
   one level deep, adopted into the context that owns the outer double.
 - `Understudy::wire(Sut::class, $overrides)` returns
