@@ -62,6 +62,71 @@ final class ArgTest
     /**
      * @return iterable<string, array{mixed, mixed, bool}>
      */
+    /**
+     * The rendered description is what a reader sees when an expectation
+     * fails, so it is asserted rather than assumed — and asserted from inside
+     * a test body on purpose: matchers built in a data provider are
+     * constructed outside the coverage window, so the constructors this file
+     * exercises most were never recorded as covered at all.
+     */
+    #[DataProvider('descriptionProvider')]
+    public function describesItselfForAFailureMessage(string $expected, string $factory, mixed ...$arguments): void
+    {
+        /** @var ArgumentMatcher $matcher */
+        $matcher = Arg::$factory(...$arguments);
+
+        Assert::same($matcher->describe(), $expected);
+    }
+
+    public static function descriptionProvider(): iterable
+    {
+        yield 'any' => ['any()', 'any'];
+        yield 'int unbounded' => ['int()', 'int'];
+        yield 'int bounded' => ['int(min: 1, max: 5)', 'int', 1, 5];
+        yield 'int lower bound only' => ['int(min: 1)', 'int', 1];
+        yield 'float unbounded' => ['float()', 'float'];
+        yield 'float lower bound only' => ['float(min: 0.5)', 'float', 0.5];
+        yield 'float upper bound only' => ['float(max: 0.5)', 'float', null, 0.5];
+        yield 'bool' => ['bool()', 'bool'];
+        yield 'string unbounded' => ['string()', 'string'];
+        yield 'string with pattern' => ['string(matches: /^a/)', 'string', '/^a/'];
+        yield 'same scalar' => ['same(7)', 'same', 7];
+        yield 'not a literal' => ['not(3)', 'not', 3];
+        yield 'count bounded' => ['count(min: 1, max: 3)', 'count', 1, 3];
+        yield 'which' => ['which(id, 7)', 'which', 'id', 7];
+        yield 'none' => ['none()', 'none'];
+        yield 'remaining' => ['remaining()', 'remaining'];
+    }
+
+    public function describesAMatcherItNegates(): void
+    {
+        // Negation renders what it wraps, so a nested matcher has to survive
+        // into the message rather than collapsing into `not(…)`.
+        Assert::same(Arg::not(Arg::int(min: 2))->describe(), 'not(int(min: 2))');
+    }
+
+    public function describesAnObjectByItsClassName(): void
+    {
+        // The whole name, not the short one: two `Book` classes in one suite
+        // would otherwise produce the same message for different objects.
+        Assert::same(Arg::same(new Book('x'))->describe(), 'same(' . Book::class . ')');
+        Assert::same(Arg::instanceOf(Book::class)->describe(), 'instanceOf(' . Book::class . ')');
+    }
+
+    public function aCustomPredicateDescriptionReplacesTheDefault(): void
+    {
+        Assert::same(Arg::satisfies(static fn(mixed $v): bool => true)->describe(), 'satisfies(…)');
+        Assert::same(
+            Arg::satisfies(static fn(mixed $v): bool => true, 'a positive amount')->describe(),
+            'a positive amount',
+        );
+    }
+
+    public function describesTheEntriesAnArrayMustContain(): void
+    {
+        Assert::same(Arg::containing(['a' => 1])->describe(), "containing(['a' => 1])");
+    }
+
     public static function matchProvider(): iterable
     {
         yield 'any accepts a value' => [Arg::any(), 5, true];
