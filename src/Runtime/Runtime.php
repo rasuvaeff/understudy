@@ -7,6 +7,7 @@ namespace Rasuvaeff\Understudy\Runtime;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
+use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
@@ -49,6 +50,16 @@ final class Runtime
      * @var \WeakMap<object, true>|null
      */
     private static ?\WeakMap $forgotten = null;
+
+    /**
+     * Doubles retired on purpose through `Understudy::forget()`. The
+     * distinction is for the failure message only: both a reset and a
+     * deliberate retirement make the double unusable, but telling a reader
+     * to look for a reset() they never wrote is worse than the plain truth.
+     *
+     * @var \WeakMap<object, true>|null
+     */
+    private static ?\WeakMap $retiredOnPurpose = null;
 
     /**
      * Every context that holds understudies, current or not.
@@ -110,7 +121,7 @@ final class Runtime
             $context = array_pop(self::$main);
 
             if ($context instanceof RuntimeContext) {
-                self::forget($context);
+                self::retire($context);
             }
 
             return;
@@ -122,7 +133,7 @@ final class Runtime
         $context = array_pop($stack);
 
         if ($context instanceof RuntimeContext) {
-            self::forget($context);
+            self::retire($context);
         }
 
         $fibers->offsetSet($fiber, $stack);
@@ -306,6 +317,42 @@ final class Runtime
     }
 
     /**
+     * Whether a double was retired on purpose through `Understudy::forget()`.
+     */
+    public static function isRetiredOnPurpose(object $double): bool
+    {
+        return self::$retiredOnPurpose?->offsetExists($double) ?? false;
+    }
+
+    /**
+     * Retires a double on purpose: its owner's state is dropped, so
+     * verification, `nothingElse()` and reset stop seeing it — a replacement
+     * double must not inherit its stubs into a `strictStubs` verdict. A call
+     * on the object afterwards fails with `ForgottenDouble`, the same guard a
+     * scope close leaves behind.
+     */
+    public static function forget(object $double): void
+    {
+        $owner = self::ownerOf($double);
+
+        if ($owner === null || $owner->stateOf($double) === null) {
+            throw InvalidCallSpecification::noCallRecorded();
+        }
+
+        $owner->forget($double);
+        self::owners()->offsetUnset($double);
+        self::forgotten()->offsetSet($double, true);
+
+        if (self::$retiredOnPurpose === null) {
+            /** @var \WeakMap<object, true> $retired */
+            $retired = new \WeakMap();
+            self::$retiredOnPurpose = $retired;
+        }
+
+        self::$retiredOnPurpose->offsetSet($double, true);
+    }
+
+    /**
      * @return \WeakMap<\Fiber, list<RuntimeContext>>
      */
     private static function fibers(): \WeakMap
@@ -392,7 +439,14 @@ final class Runtime
 
         if ($state === null) {
             // Returning null here would violate the declared return type of
-            // any non-nullable method, so say what actually happened.
+            // any non-nullable method, so say what actually happened. The
+            // message differs for a double retired through `Understudy::forget()`:
+            // sending the reader looking for a stray reset() they never wrote
+            // is worse than the plain truth.
+            if (self::isRetiredOnPurpose($double)) {
+                throw ForgottenDouble::onPurpose($method);
+            }
+
             throw ForgottenDouble::afterReset($method);
         }
 
@@ -710,7 +764,7 @@ final class Runtime
         if ($fiber === null) {
             if (self::$main !== []) {
                 $position = count(self::$main) - 1;
-                self::forget(self::$main[$position]);
+                self::retire(self::$main[$position]);
                 self::$main[$position] = new RuntimeContext();
             }
 
@@ -727,7 +781,7 @@ final class Runtime
 
             if ($stack !== []) {
                 $position = count($stack) - 1;
-                self::forget($stack[$position]);
+                self::retire($stack[$position]);
                 $stack[$position] = new RuntimeContext();
                 $fibers->offsetSet($fiber, $stack);
             }
@@ -751,13 +805,13 @@ final class Runtime
     private static function forgetOrphans(): void
     {
         foreach (self::$live as $context) {
-            self::forget($context);
+            self::retire($context);
         }
 
         self::$live = [];
     }
 
-    private static function forget(RuntimeContext $context): void
+    private static function retire(RuntimeContext $context): void
     {
         self::unremember($context);
 

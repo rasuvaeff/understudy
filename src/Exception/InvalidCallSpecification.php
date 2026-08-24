@@ -22,6 +22,14 @@ final class InvalidCallSpecification extends \LogicException implements Understu
         );
     }
 
+    public static function notADouble(): self
+    {
+        return new self(
+            'Understudy::forget() expects an understudy created by Understudy::for(). '
+            . 'This object is not one.',
+        );
+    }
+
     /**
      * @param non-empty-string $method
      * @param non-empty-string $matcher

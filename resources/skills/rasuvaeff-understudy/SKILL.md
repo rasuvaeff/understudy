@@ -188,16 +188,45 @@ Fiber is still the test's.
 
 ```php
 echo Understudy::transcript($repo);   // every call and its outcome
-Understudy::calls(fn () => $repo->find(Arg::any()));   // list<Invocation>
+Understudy::calls(fn () => $repo->find(Arg::any()));       // list<Invocation>
+Understudy::lastCall(fn () => $repo->find(Arg::any()));    // ?Invocation
 ```
+
+`lastCall()` is the null-safe read of the newest matching call — prefer it
+over `count($calls) - 1`, which reads as `int<-1, max>` to a static analyser
+and fatals on an empty log at runtime.
 
 `transcript()` retains every invocation until `reset()`. Do not drive a double
 through an unbounded hot loop when the arguments hold large object graphs.
+
+## Replaced doubles and `strictStubs`
+
+A fixture field reassigned mid-test (`$this->generator = $this->fixedGenerator(...)`)
+orphans the first double with its stubs. Under `verifyAll(strictStubs: true)`
+that stub fails — about a double the test no longer uses. Say it was replaced:
+
+```php
+Understudy::forget($this->generator);   // before the reassignment
+```
+
+Anything on a forgotten double afterwards — calls included — raises
+`ForgottenDouble`, naming `forget()`. One-way.
+
+## Doubles inside property tests
+
+A property body runs many times (runs, examples, shrinks) inside one test;
+the adapter's verify/reset covers the whole property, not one run. Exact
+`expect()` cardinality would count every run at once — use a `when()` stub
+built inside the body, and assert on the observable outcome. Keep an eye on
+the transcript growth: a property is a bounded hot loop, and a per-run object
+graph in the arguments multiplies by the run count.
 
 ## Checklist before you call a test done
 
 - [ ] Every requirement is an `expect()`, not a `verify()` you might forget.
 - [ ] Every replaced spy counter has a `nothingElse()` beside its `expect()`.
+- [ ] A double replaced mid-test has `forget()` before the reassignment (or no `strictStubs`).
+- [ ] Doubles in a property use `when()`, never `expect()` cardinality.
 - [ ] Broad stubs registered before specific ones.
 - [ ] `verify(..., never: true)`, not `verify(...)->times(0)`.
 - [ ] An adapter is installed, or `reset()` runs in teardown.
