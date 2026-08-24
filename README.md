@@ -298,6 +298,7 @@ method and arguments, even when several doubles implement the same contract.
 Understudy::checkpoint();                       // verify, then forget what is settled
 $result = Understudy::scope(fn () => ...);      // nested context, verified on success
 echo Understudy::transcript($repository);       // every call and its outcome
+Understudy::idle();                             // true when the context holds no doubles
 ```
 
 `scope()` returns whatever its callback returns, and drops the nested context
@@ -474,11 +475,33 @@ names a double when several of the same contract are in play.
 
 ```php
 Understudy::reset();
+Understudy::idle();   // true when the current context holds no doubles
 ```
 
-Adapters for Testo and PHPUnit will call this for you; until they exist, call
-it in your own teardown. Reset drops only the current execution context; it
-does not erase sibling Fiber contexts.
+The [understudy-testo](https://github.com/rasuvaeff/understudy-testo) and
+[understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit) adapters
+verify and reset for you after every test; without one, call `reset()` in your
+own teardown. Reset drops only the current execution context; it does not
+erase sibling Fiber contexts.
+
+### Using Pest
+
+Pest already owns the global `expect()` function, so importing understudy's
+setup verb collides with it. Import the function under another name:
+
+```php
+use function Rasuvaeff\Understudy\expect as expectCall;
+
+expectCall(fn () => $books->find(7));
+```
+
+or use the collision-free static form everywhere:
+
+```php
+Understudy::expect(fn () => $books->find(7));
+```
+
+`when()` and `verify()` are globally free and need no alias.
 
 ## Security
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `Understudy::idle()` — whether the current context holds no doubles. Runner
+  adapters use it as an integration guard: a context that is not idle when the
+  next test begins means some earlier cleanup never ran.
 - `Understudy::nothingElse()` accepts any number of doubles. A test that used
   several can now close them out in one line — `nothingElse($repo, $clock,
   $mailer)` — and a failure reports every double with unaccounted calls
