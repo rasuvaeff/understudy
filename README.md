@@ -1,5 +1,14 @@
 # rasuvaeff/understudy
 
+[![Latest Stable Version](https://poser.pugx.org/rasuvaeff/understudy/v)](https://packagist.org/packages/rasuvaeff/understudy)
+[![Total Downloads](https://poser.pugx.org/rasuvaeff/understudy/downloads)](https://packagist.org/packages/rasuvaeff/understudy)
+[![Build](https://github.com/rasuvaeff/understudy/actions/workflows/build.yml/badge.svg)](https://github.com/rasuvaeff/understudy/actions/workflows/build.yml)
+[![Static analysis](https://github.com/rasuvaeff/understudy/actions/workflows/static-analysis.yml/badge.svg)](https://github.com/rasuvaeff/understudy/actions/workflows/static-analysis.yml)
+[![Psalm level](https://img.shields.io/badge/psalm-level_1-blue.svg)](https://github.com/rasuvaeff/understudy/actions/workflows/static-analysis.yml)
+[![PHP](https://img.shields.io/packagist/dependency-v/rasuvaeff/understudy/php)](https://packagist.org/packages/rasuvaeff/understudy)
+[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE.md)
+[Русская версия](README.ru.md)
+
 Test double library for PHP where the call you configure is a **real call**:
 
 ```php
