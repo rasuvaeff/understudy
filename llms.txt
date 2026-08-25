@@ -1,7 +1,6 @@
 # rasuvaeff/understudy
 
-Test double library for PHP 8.3 - 8.5 with a call-closure API. Pre-release:
-the API is not stable until v0.1.0.
+Test double library for PHP 8.3 - 8.5 with a call-closure API.
 
 ## Install
 
