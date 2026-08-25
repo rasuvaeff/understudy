@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **A target declaring an abstract property hook is refused, not fatal.** An
+  interface property (`public string $name { get; }`, PHP 8.4+) or an
+  `abstract` one on a class is an abstract member the generated class would
+  have to implement, and it cannot — this engine intercepts calls, and reading
+  a property is not one. Left unimplemented, PHP refused the class from inside
+  `eval()` with a fatal error nothing could catch. It is now an
+  `UnsupportedTarget` naming the property and its hooks, alongside the other
+  refusals that happen before a line is generated.
+
 ## 0.1.0 — 2026-08-25
 
 - **Structured failures.** `VerificationFailed::failures()` answers a

@@ -153,8 +153,11 @@ costs nothing — the double declares no properties of its own.
 
 Some targets are refused before anything is generated, each with the reason and
 what to do instead: a `final` class, a class with a non-private `final` instance
-method, an enum, a trait, an internal class, an anonymous class, and any class
-that is not the first target. A double that cannot intercept every method would
+method, an enum, a trait, an internal class, an anonymous class, any class
+that is not the first target, and any contract declaring an abstract property
+hook — an interface property, or an `abstract` one on a class: this engine
+intercepts calls, and reading a property is not one. A double that cannot
+intercept every method would
 run the target's real code against an object whose constructor never ran, which
 is worse than not building it at all.
 

@@ -92,13 +92,61 @@ final class DoubleFactory
 
         $reflection = new \ReflectionClass($contract);
 
-        if ($reflection->isInterface()) {
-            return $reflection;
+        if (!$reflection->isInterface()) {
+            self::rejectUndoublableClass($reflection, $contract, $primary);
         }
 
-        self::rejectUndoublableClass($reflection, $contract, $primary);
+        self::rejectAbstractPropertyHooks($reflection, $contract);
 
         return $reflection;
+    }
+
+    /**
+     * A property hook declared without a body — the only kind an interface can
+     * declare, and an `abstract` one on a class — is an abstract member like
+     * any other, and the generated class has to implement it. It cannot: this
+     * engine intercepts calls, and reading a property is not one. Left
+     * unimplemented, the class is refused by PHP itself from inside `eval()`,
+     * as a fatal error no caller can catch — so the refusal has to happen here,
+     * naming the property, like every other target this generator declines.
+     *
+     * `isAbstract()` and `getHooks()` are PHP 8.4 members, called by name so
+     * that an analyser running on 8.3 does not resolve a method the platform
+     * does not have there yet. On 8.3 no property can be abstract, so there is
+     * nothing to refuse.
+     *
+     * @param \ReflectionClass<object> $reflection
+     * @param class-string             $contract
+     */
+    private static function rejectAbstractPropertyHooks(\ReflectionClass $reflection, string $contract): void
+    {
+        $isAbstract = 'isAbstract';
+        $getHooks = 'getHooks';
+
+        foreach ($reflection->getProperties() as $property) {
+            if (!method_exists($property, $isAbstract) || $property->{$isAbstract}() !== true) {
+                continue;
+            }
+
+            /** @var array<non-empty-string, mixed> $hooks */
+            $hooks = $property->{$getHooks}();
+
+            throw UnsupportedTarget::notDoublable(
+                $contract,
+                sprintf(
+                    '`%s::$%s` is an abstract property hook (`$%s { %s}`), and a double has no way to implement '
+                    . 'it: this engine intercepts calls, and reading a property is not one. Expose the value '
+                    . 'through a method on the contract, or pass a real object.',
+                    $property->getDeclaringClass()->getName(),
+                    $property->getName(),
+                    $property->getName(),
+                    implode('', array_map(
+                        static fn(string $hook): string => $hook . '; ',
+                        array_keys($hooks),
+                    )),
+                ),
+            );
+        }
     }
 
     /**

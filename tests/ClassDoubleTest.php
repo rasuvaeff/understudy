@@ -34,6 +34,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingWiderParameter;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Codecov\Covers;
+use Testo\Data\DataProvider;
 use Testo\Expect;
 use Testo\Lifecycle\AfterTest;
 use Testo\Test;
@@ -353,6 +354,73 @@ final class ClassDoubleTest
     }
 
     // --- Rejections ---------------------------------------------------------
+
+    /**
+     * A property hook with no body is an abstract member, and a generated class
+     * that leaves it unimplemented is refused by PHP from inside `eval()` — a
+     * fatal error no caller can catch. The refusal has to come first and name
+     * the property, like every other declined target.
+     *
+     * The fixtures are built by eval because their syntax is a parse error on
+     * 8.3 — a file carrying it would take the whole suite down there, not skip
+     * a test.
+     *
+     * @param non-empty-string $declaration a namespace/class sprintf template
+     * @param non-empty-string $hooks       as the message renders them
+     */
+    #[DataProvider('abstractPropertyHookProvider')]
+    public function anAbstractPropertyHookIsRefusedBeforeGeneration(
+        string $suffix,
+        string $declaration,
+        string $hooks,
+    ): void {
+        if (PHP_VERSION_ID < 80400) {
+            // Nothing to skip: no property can be abstract yet.
+            Assert::false(method_exists(\ReflectionProperty::class, 'isAbstract'));
+
+            return;
+        }
+
+        $class = 'Hooked' . $suffix . '_' . PHP_VERSION_ID;
+
+        eval(sprintf($declaration, __NAMESPACE__, $class));
+
+        /** @var class-string $fqcn */
+        $fqcn = __NAMESPACE__ . '\\' . $class;
+
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            'Cannot create an understudy for `' . $fqcn . '`: `' . $fqcn . '::$name` is an abstract property '
+            . 'hook (`$name { ' . $hooks . '}`), and a double has no way to implement it: this engine '
+            . 'intercepts calls, and reading a property is not one. Expose the value through a method on the '
+            . 'contract, or pass a real object.',
+        );
+
+        Understudy::for($fqcn);
+    }
+
+    /**
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function abstractPropertyHookProvider(): iterable
+    {
+        yield 'interface, get' => [
+            'InterfaceGet',
+            'namespace %s; interface %s { public string $name { get; } }',
+            'get; ',
+        ];
+
+        yield 'interface, get and set' => [
+            'InterfaceGetSet',
+            'namespace %s; interface %s { public string $name { get; set; } }',
+            'get; set; ',
+        ];
+
+        yield 'abstract class' => [
+            'AbstractClass',
+            'namespace %s; abstract class %s { abstract public string $name { get; } }',
+            'get; ',
+        ];
+    }
 
     public function aFinalClassIsRejected(): void
     {
