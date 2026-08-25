@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 — 2026-08-25
 
 - **The distributed archive no longer carries the feasibility spikes.**
   `.gitattributes` listed every other development directory as
