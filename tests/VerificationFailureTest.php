@@ -45,7 +45,7 @@ final class VerificationFailureTest
         $repository->find(1);
         $repository->find(1);
 
-        $failure = self::catch(fn() => verify(fn() => $repository->find(1), times: 1));
+        $failure = $this->catch(fn() => verify(fn() => $repository->find(1), times: 1));
 
         Assert::same(count($failure->failures()), 1);
 
@@ -69,7 +69,7 @@ final class VerificationFailureTest
 
         $repository->count();
 
-        $record = self::firstFailureOf(fn() => Understudy::verifyAll());
+        $record = $this->firstFailureOf(fn() => Understudy::verifyAll());
 
         Assert::same($record->kind, FailureKind::UnmetExpectation);
         Assert::same($record->expectation, 'count()');
@@ -83,7 +83,7 @@ final class VerificationFailureTest
         $repository = Understudy::for(BookRepository::class);
         when(fn() => $repository->find(7))->returns(new Book('title'));
 
-        $record = self::firstFailureOf(fn() => Understudy::verifyAll(strictStubs: true));
+        $record = $this->firstFailureOf(fn() => Understudy::verifyAll(strictStubs: true));
 
         Assert::same($record->kind, FailureKind::StrictStubUnused);
         Assert::same($record->expectation, 'find(7)');
@@ -100,7 +100,7 @@ final class VerificationFailureTest
         $repository->titles();
         $repository->count();
 
-        $record = self::firstFailureOf(fn() => Understudy::verifyAll());
+        $record = $this->firstFailureOf(fn() => Understudy::verifyAll());
 
         Assert::same($record->kind, FailureKind::OutOfOrder);
         Assert::same($record->double, 'BookRepository');
@@ -114,7 +114,7 @@ final class VerificationFailureTest
         when(fn() => $repository->save(Arg::any()))->returns(true);
         $repository->save($book);
 
-        $record = self::firstFailureOf(fn() => Understudy::nothingElse($repository));
+        $record = $this->firstFailureOf(fn() => Understudy::nothingElse($repository));
 
         Assert::same($record->kind, FailureKind::UnaccountedCalls);
         Assert::same($record->actualCount, 1);
@@ -126,7 +126,7 @@ final class VerificationFailureTest
         $repository = Understudy::for(BookRepository::class);
         $repository->count();
 
-        $record = self::firstFailureOf(fn() => Understudy::unused($repository));
+        $record = $this->firstFailureOf(fn() => Understudy::unused($repository));
 
         Assert::same($record->kind, FailureKind::UnusedDouble);
         Assert::same($record->expectedMinimum, 0);
@@ -142,12 +142,10 @@ final class VerificationFailureTest
         $repository->save($book);
         $repository->count();
 
-        $record = self::firstFailureOf(
-            fn() => Understudy::verifySequence(
-                fn() => $repository->count(),
-                fn() => $repository->save($book),
-            ),
-        );
+        $record = $this->firstFailureOf(fn() => Understudy::verifySequence(
+            fn() => $repository->count(),
+            fn() => $repository->save($book),
+        ));
 
         Assert::same($record->kind, FailureKind::OutOfSequence);
         Assert::same($record->expectedCalls, ['count()', 'save(' . Book::class . ')']);
@@ -164,7 +162,7 @@ final class VerificationFailureTest
         expect(fn() => $repository->count())->times(2);
         $repository->save($book);
 
-        $failure = self::catch(fn() => Understudy::allVerified($repository));
+        $failure = $this->catch(fn() => Understudy::allVerified($repository));
 
         Assert::same(count($failure->failures()), 2);
         Assert::same($failure->failures()[0]->kind, FailureKind::UnmetExpectation);
@@ -179,7 +177,7 @@ final class VerificationFailureTest
         expect(fn() => $repository->count())->times(2);
         $repository->save($book);
 
-        $failure = self::catch(fn() => Understudy::allVerified($repository));
+        $failure = $this->catch(fn() => Understudy::allVerified($repository));
 
         Assert::same(
             $failure->getMessage(),
@@ -190,7 +188,7 @@ final class VerificationFailureTest
         );
     }
 
-    private static function catch(callable $body): VerificationFailed
+    private function catch(callable $body): VerificationFailed
     {
         try {
             $body();
@@ -201,8 +199,8 @@ final class VerificationFailureTest
         throw new \LogicException('the verification was expected to fail');
     }
 
-    private static function firstFailureOf(callable $body): VerificationFailure
+    private function firstFailureOf(callable $body): VerificationFailure
     {
-        return self::catch($body)->failures()[0];
+        return $this->catch($body)->failures()[0];
     }
 }

@@ -1,8 +1,5 @@
 # rasuvaeff/understudy
 
-> **Pre-release.** The API is not stable until `v0.1.0`. See
-> [CHANGELOG.md](CHANGELOG.md) for what has landed so far.
-
 Test double library for PHP where the call you configure is a **real call**:
 
 ```php

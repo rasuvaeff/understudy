@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 — 2026-08-25
 
 - **Structured failures.** `VerificationFailed::failures()` answers a
   `list<VerificationFailure>` — one record per failed claim, each carrying
