@@ -45,6 +45,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WideReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterInt;
 use Rasuvaeff\Understudy\Tests\Fixture\VariadicSink;
+use Rasuvaeff\Understudy\Tests\Support\GoldenMessage;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
@@ -778,10 +779,7 @@ final class UnderstudyTest
         $repository->tag('beta');
 
         Expect::exception(VerificationFailed::class)->withMessage(
-            "Understudy `BookRepository` expected `tag('gamma', 1)` to be called at least 1 time, but it was never called.\n\n"
-            . "The following calls to `tag` were made during this test:\n"
-            . "    tag(*'alpha'*, 1)\n"
-            . "    tag(*'beta'*, 1)",
+            GoldenMessage::read('verify-lists-same-method-calls-with-marked-argument'),
         );
 
         verify(fn() => $repository->tag('gamma'));

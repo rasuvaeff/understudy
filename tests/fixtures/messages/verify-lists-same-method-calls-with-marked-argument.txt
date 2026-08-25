@@ -1,0 +1,5 @@
+Understudy `BookRepository` expected `tag('gamma', 1)` to be called at least 1 time, but it was never called.
+
+The following calls to `tag` were made during this test:
+    tag(*'alpha'*, 1)
+    tag(*'beta'*, 1)

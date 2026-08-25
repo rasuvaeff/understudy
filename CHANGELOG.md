@@ -2,6 +2,32 @@
 
 ## Unreleased
 
+- **Structured failures.** `VerificationFailed::failures()` answers a
+  `list<VerificationFailure>` — one record per failed claim, each carrying
+  its `FailureKind` (`UnmetExpectation`, `StrictStubUnused`, `OutOfOrder`,
+  `OutOfSequence`, `UnaccountedCalls`, `UnusedDouble`), the double's label,
+  the call specification, the claimed bounds, the actual count, the observed
+  calls as `Invocation` records, and its own rendered summary. The exception
+  message is exactly the summaries joined with a blank line — there is no
+  path where the two disagree. For tooling that acts on a failure rather than
+  printing it: runner adapters, IDE plugins, report aggregators. The readonly
+  fields of `VerificationFailure` and `FailureKind` are frozen public API
+  from v0.1.0; renaming, removing or retyping one is a major-version change.
+- **Golden files for rendered reports.** Multi-line failure messages moved to
+  `tests/fixtures/messages/*.txt`, read through
+  `Support\GoldenMessage::read()`: a wording review now reads a `.txt` diff
+  instead of PHP string concatenation. The convention is written into
+  AGENTS.md; single-line messages stay inline.
+- **A migration table for Mockery users** in both READMEs — no aliases and no
+  converter, by policy: migration help belongs in documentation. The two rows
+  that bite carry the dogfooding lessons: a spy counter counted every call,
+  an `expect()` counts only calls matching its arguments (so every migrated
+  counter needs `nothingElse()`), and incidental setup written as
+  `shouldReceive(...)->once()` becomes `when()`, not `expect()`.
+- AGENTS.md now states the module boundaries (a matcher depends on nothing
+  but leaf formatting; only `Runtime` and the facade see everything) and the
+  four-file walkthrough for adding an `Arg::*` matcher.
+
 - **`Understudy::lastCall(callable $call): ?Invocation`** — the newest
   recorded call matching the specification, or null when there was none. The
   null-safe replacement for reading `count($calls) - 1` out of `calls()`:

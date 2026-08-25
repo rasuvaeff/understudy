@@ -31,6 +31,28 @@ when(fn () => $repository->find(123))->returns($book);
 (C#), [mocktail](https://pub.dev/packages/mocktail) (Dart). В PHP её не было
 ни у кого.
 
+## Миграция с Mockery
+
+Ни алиасов, ни конвертера — таблица переводит знакомый глагол в здешнюю форму.
+Две строки — ловушки, помечены ⚠.
+
+| Mockery | Understudy | Примечание |
+|---|---|---|
+| `Mockery::mock(BookRepository::class)` | `Understudy::for(BookRepository::class)` | |
+| `$mock->shouldReceive('find')` | `when(fn () => $mock->find(...))` | настоящий вызов; без строки с именем метода |
+| `->once()` / `->twice()` / `->times(3)` | `expect(fn () => ...)->times(3)` | `expect()` проверяется `verifyAll()` или адаптером |
+| `->atLeast()->once()` | `expect(...)->times(minimum: 1)` | |
+| `->andReturn($book)` | `->returns($book)` | |
+| `->andReturnUsing(fn ...)` | `->answers(fn (Invocation $i) => ...)` | аргументы — из `$i->args` |
+| `->andThrow(new NotFound())` | `->throws(new NotFound())` | |
+| `->with(123, Mockery::any())` | в замыкании: `find(123, Arg::any())` | |
+| `Mockery::on(fn ($x) => ...)` | `Arg::satisfies(fn ($x) => ...)` | |
+| `$mock->shouldNotHaveReceived('save')` | `Understudy::unused($mock)` | |
+| `$mock->shouldHaveReceived('save')` | `verify(fn () => $mock->save(...))` | пост-фактум; добавьте `nothingElse()` — см. ниже |
+| `Mockery::close()` | reset() адаптера или свой teardown | |
+| ⚠ `->shouldReceive(...)->once()` как setup | `when(...)->returns(...)` | `when()` — разрешение, а не утверждение: если нужно было только значение, `expect()` превратит случайную настройку в падающий тест |
+| ⚠ шпион со счётчиком всех вызовов | `expect()` + `Understudy::nothingElse($mock)` | `expect()` считает только вызовы под **своими** аргументами; без `nothingElse()` второй вызов с другими аргументами проходит — рукописный счётчик это ловил, миграция не должна это терять |
+
 ## Производительность
 
 Против Mockery 1.6.15, Prophecy 1.26.1 и PHPUnit 12.5.33 на PHP 8.5.6.

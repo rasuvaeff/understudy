@@ -15,6 +15,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
+use Testo\Assert\ExpectNoAssertions;
 use Testo\Codecov\Covers;
 use Testo\Expect;
 use Testo\Lifecycle\AfterTest;
@@ -84,6 +85,7 @@ final class LastCallAndForgetTest
         Assert::null(Understudy::lastCall(fn() => $repository->find(8)));
     }
 
+    #[ExpectNoAssertions]
     public function aForgottenDoubleIsInvisibleToStrictStubs(): void
     {
         $replaced = Understudy::for(BookRepository::class);

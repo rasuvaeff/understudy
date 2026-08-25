@@ -27,6 +27,8 @@ final class FailureReport
      * @param list<Invocation>  $callLog
      * @param non-empty-string  $method
      * @param list<mixed>       $expectedArgs
+     *
+     * @return non-empty-string
      */
     public static function render(
         string $label,
