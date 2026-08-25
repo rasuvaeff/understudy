@@ -152,6 +152,8 @@ after it. Arguments match by `===`, or by matcher.
 | `bool()` | a boolean |
 | `same($v)` | strict identity; for objects the same instance |
 | `not($v)` | negates a literal or another matcher |
+| `allOf(...)` | everything every operand accepts; an operand is a matcher or a literal |
+| `anyOf(...)` | anything at least one operand accepts |
 | `instanceOf($class)` | an instance of the class or interface |
 | `satisfies($fn, $description)` | whatever the predicate accepts |
 | `containing($entries)` | an array holding these entries and possibly more |

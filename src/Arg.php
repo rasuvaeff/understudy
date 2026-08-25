@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy;
 
+use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
+use Rasuvaeff\Understudy\Matcher\AllOf;
 use Rasuvaeff\Understudy\Matcher\AnyArgument;
+use Rasuvaeff\Understudy\Matcher\AnyOf;
 use Rasuvaeff\Understudy\Matcher\AnyTail;
 use Rasuvaeff\Understudy\Matcher\ArrayContaining;
 use Rasuvaeff\Understudy\Matcher\BooleanValue;
@@ -18,6 +21,7 @@ use Rasuvaeff\Understudy\Matcher\Negated;
 use Rasuvaeff\Understudy\Matcher\QueryEquals;
 use Rasuvaeff\Understudy\Matcher\Satisfying;
 use Rasuvaeff\Understudy\Matcher\StringMatching;
+use Rasuvaeff\Understudy\Matcher\TailMatcher;
 
 /**
  * Argument matchers, usable only inside a specification closure:
@@ -101,6 +105,28 @@ final class Arg
     }
 
     /**
+     * Matches an argument every operand accepts. An operand is a matcher or a
+     * literal, the same pair `not()` takes.
+     *
+     * @param mixed ...$operands at least one; a tail matcher is not one of them
+     */
+    public static function allOf(mixed ...$operands): mixed
+    {
+        return new AllOf(self::operands('allOf', array_values($operands)));
+    }
+
+    /**
+     * Matches an argument at least one operand accepts. With literals it reads
+     * as a set: `anyOf('draft', 'review')`.
+     *
+     * @param mixed ...$operands at least one; a tail matcher is not one of them
+     */
+    public static function anyOf(mixed ...$operands): mixed
+    {
+        return new AnyOf(self::operands('anyOf', array_values($operands)));
+    }
+
+    /**
      * @param class-string $type
      */
     public static function instanceOf(string $type): mixed
@@ -149,6 +175,36 @@ final class Arg
     public static function which(string $method, mixed $value): mixed
     {
         return new QueryEquals($method, $value);
+    }
+
+    /**
+     * A combinator's operands, refused rather than silently weakened.
+     *
+     * An empty list makes `allOf()` match everything and `anyOf()` nothing —
+     * always a mistake, usually a spread of an empty array. A tail matcher
+     * answers `true` to every single argument, so holding one would turn the
+     * combinator into a no-op operand inside a conjunction and into a
+     * match-anything inside a disjunction.
+     *
+     * @param non-empty-string $matcher
+     * @param list<mixed>      $operands
+     *
+     * @return non-empty-list<mixed>
+     */
+    private static function operands(string $matcher, array $operands): array
+    {
+        if ($operands === []) {
+            throw InvalidCallSpecification::emptyCombinator($matcher);
+        }
+
+        /** @var mixed $operand */
+        foreach ($operands as $operand) {
+            if ($operand instanceof TailMatcher) {
+                throw InvalidCallSpecification::tailMatcherInCombinator($matcher, $operand->describe());
+            }
+        }
+
+        return $operands;
     }
 
     /**

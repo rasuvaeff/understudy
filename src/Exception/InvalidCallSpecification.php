@@ -46,6 +46,34 @@ final class InvalidCallSpecification extends \LogicException implements Understu
         ));
     }
 
+    /**
+     * @param non-empty-string $matcher
+     */
+    public static function emptyCombinator(string $matcher): self
+    {
+        return new self(sprintf(
+            "`Arg::%s()` was given no operands, so it would match %s.\n"
+            . 'Pass what the argument has to satisfy, or use Arg::any() to accept anything.',
+            $matcher,
+            $matcher === 'allOf' ? 'every argument' : 'no argument at all',
+        ));
+    }
+
+    /**
+     * @param non-empty-string $matcher
+     * @param non-empty-string $operand
+     */
+    public static function tailMatcherInCombinator(string $matcher, string $operand): self
+    {
+        return new self(sprintf(
+            "`%s` stands for the whole variadic tail, and `Arg::%s()` combines matchers for one "
+            . "argument, so it cannot hold one.\n"
+            . 'Put the tail matcher last on its own, and combine the arguments before it.',
+            $operand,
+            $matcher,
+        ));
+    }
+
     public static function closureFailed(\Throwable $previous): self
     {
         return new self(

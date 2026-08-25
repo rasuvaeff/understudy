@@ -16,6 +16,17 @@
   one — so `v0.1.1` published to Packagist but its GitHub Release had to be
   created by re-running the workflow. No effect on the package itself.
 
+- **`Arg::allOf()` and `Arg::anyOf()`.** The matcher algebra had negation and
+  nothing to negate against: `not()` composed, but two conditions on one
+  argument needed a hand-written `satisfies()` closure, which then had to carry
+  its own description or render as `satisfies(…)` in every failure message. An
+  operand is a matcher or a literal, the same pair `not()` takes, so
+  `anyOf('draft', 'review')` reads as a set and
+  `allOf(instanceOf(Book::class), which('getTitle', 'Dune'))` reads as a
+  conjunction — both describing themselves in full when an expectation fails.
+  A combinator with no operands, and one holding a tail matcher, are refused
+  with the reason rather than silently matching everything.
+
 ## 0.1.1 — 2026-08-25
 
 - **The distributed archive no longer carries the feasibility spikes.**
