@@ -45,7 +45,7 @@ final class VerificationFailureTest
         $repository->find(1);
         $repository->find(1);
 
-        $failure = self::catch(fn() => verify(fn() => $repository->find(1), times: 1));
+        $failure = $this->catch(fn() => verify(fn() => $repository->find(1), times: 1));
 
         Assert::same(count($failure->failures()), 1);
 
@@ -162,7 +162,7 @@ final class VerificationFailureTest
         expect(fn() => $repository->count())->times(2);
         $repository->save($book);
 
-        $failure = self::catch(fn() => Understudy::allVerified($repository));
+        $failure = $this->catch(fn() => Understudy::allVerified($repository));
 
         Assert::same(count($failure->failures()), 2);
         Assert::same($failure->failures()[0]->kind, FailureKind::UnmetExpectation);
@@ -177,7 +177,7 @@ final class VerificationFailureTest
         expect(fn() => $repository->count())->times(2);
         $repository->save($book);
 
-        $failure = self::catch(fn() => Understudy::allVerified($repository));
+        $failure = $this->catch(fn() => Understudy::allVerified($repository));
 
         Assert::same(
             $failure->getMessage(),
@@ -188,7 +188,7 @@ final class VerificationFailureTest
         );
     }
 
-    private static function catch(callable $body): VerificationFailed
+    private function catch(callable $body): VerificationFailed
     {
         try {
             $body();
@@ -201,6 +201,6 @@ final class VerificationFailureTest
 
     private function firstFailureOf(callable $body): VerificationFailure
     {
-        return self::catch($body)->failures()[0];
+        return $this->catch($body)->failures()[0];
     }
 }
