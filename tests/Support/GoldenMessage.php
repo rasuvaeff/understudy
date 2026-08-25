@@ -13,8 +13,9 @@ namespace Rasuvaeff\Understudy\Tests\Support;
  * not PHP concatenation. Single-line messages stay inline; a message grows a
  * golden file when it starts rendering calls.
  *
- * A single trailing newline is trimmed on read, so the file can carry the
- * final newline editors add.
+ * Line endings are normalized to LF and a single trailing newline is
+ * trimmed on read: git may check the file out with CRLF on Windows, and the
+ * comparison must hold on every platform.
  */
 final class GoldenMessage
 {
@@ -29,6 +30,6 @@ final class GoldenMessage
         /** @var string $content */
         $content = file_get_contents($path);
 
-        return rtrim($content, "\n");
+        return rtrim(str_replace("\r\n", "\n", $content), "\n");
     }
 }
