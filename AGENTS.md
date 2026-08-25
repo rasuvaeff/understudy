@@ -332,3 +332,12 @@ make release-check
   `examples/` if usage changed); update `CHANGELOG.md` when releasing.
 - Re-run `composer build`; if the change affects public API or release safety,
   also run `make release-check`. Paste the output.
+- **Before a release tag, re-measure `perf/` on the commit the current numbers
+  were taken from, then on the candidate.** `perf/README.md` states figures —
+  cost per call, cost per double, memory per double — and nothing in CI
+  defends them: a regression is found only by somebody deciding to measure.
+  Comparing against a number in the file is not enough either, because the
+  environment moves; that is why `PERF` in the `Makefile` pins it, and why the
+  old commit is measured again rather than trusted. This is how the 350 -> 435
+  bytes per double was attributed to PR #9-#14 and #16 rather than to the
+  machine.
