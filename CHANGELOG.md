@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **The release workflow waits for the matrix build instead of judging it
+  mid-flight.** A tag pushed right after the merge arrived while master's own
+  build was still running, and the guard read a `null` conclusion as a failed
+  one — so `v0.1.1` published to Packagist but its GitHub Release had to be
+  created by re-running the workflow. No effect on the package itself.
+
 ## 0.1.1 — 2026-08-25
 
 - **The distributed archive no longer carries the feasibility spikes.**
