@@ -26,7 +26,9 @@ No runtime deps; `ext-mbstring` is not needed.
   `clone` is a double of its own.
 - Refused before generation, each with the reason: a `final` class, a class with
   a non-private `final` instance method, an enum, a trait, an internal class, an
-  anonymous class, a class that is not the first target.
+  anonymous class, a class that is not the first target, a contract declaring an
+  abstract property hook (an interface property, or an `abstract` one on a
+  class) — reading a property is not a call, so a double cannot implement one.
 - Parameter defaults are reproduced, not approximated. An object default is
   rendered from its own source expression — `new Foo(1)` and `[new Foo(1)]`
   alike — which is never evaluated during generation. Refusal is narrow: a
