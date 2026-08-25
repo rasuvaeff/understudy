@@ -341,7 +341,7 @@ final class Runtime
 
         $owner->forget($double);
         self::owners()->offsetUnset($double);
-        self::forgotten()->offsetSet($double, true);
+        self::forgotten()->offsetSet($double, value: true);
 
         if (self::$retiredOnPurpose === null) {
             /** @var \WeakMap<object, true> $retired */
@@ -349,7 +349,7 @@ final class Runtime
             self::$retiredOnPurpose = $retired;
         }
 
-        self::$retiredOnPurpose->offsetSet($double, true);
+        self::$retiredOnPurpose->offsetSet($double, value: true);
     }
 
     /**
