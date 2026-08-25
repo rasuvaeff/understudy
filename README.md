@@ -233,6 +233,8 @@ fallback should handle later calls.
 | `Arg::bool()` | a boolean |
 | `Arg::same($v)` | strict identity; for objects, the same instance |
 | `Arg::not($v)` | negates a literal or another matcher |
+| `Arg::allOf(...)` | everything the operands accept; an operand is a matcher or a literal |
+| `Arg::anyOf(...)` | anything at least one operand accepts, so `anyOf('draft', 'review')` reads as a set |
 | `Arg::instanceOf($class)` | an instance of the class or interface |
 | `Arg::satisfies($fn)` | whatever the predicate accepts |
 | `Arg::containing($entries)` | an array holding these entries and possibly more |

@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
+use Rasuvaeff\Understudy\Matcher\AllOf;
 use Rasuvaeff\Understudy\Matcher\AnyArgument;
+use Rasuvaeff\Understudy\Matcher\AnyOf;
 use Rasuvaeff\Understudy\Matcher\AnyTail;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
 use Rasuvaeff\Understudy\Matcher\ArrayContaining;
@@ -18,6 +21,7 @@ use Rasuvaeff\Understudy\Matcher\IdenticalTo;
 use Rasuvaeff\Understudy\Matcher\InstanceOfType;
 use Rasuvaeff\Understudy\Matcher\IntInRange;
 use Rasuvaeff\Understudy\Matcher\Negated;
+use Rasuvaeff\Understudy\Matcher\Operand;
 use Rasuvaeff\Understudy\Matcher\QueryEquals;
 use Rasuvaeff\Understudy\Matcher\Satisfying;
 use Rasuvaeff\Understudy\Matcher\StringMatching;
@@ -27,6 +31,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Suit;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Data\DataProvider;
+use Testo\Expect;
 use Testo\Test;
 
 // Every matcher class is listed: Infection maps mutants to tests through
@@ -34,7 +39,10 @@ use Testo\Test;
 // quietly inflate the score.
 #[Test]
 #[Covers(Arg::class)]
+#[Covers(InvalidCallSpecification::class)]
+#[Covers(AllOf::class)]
 #[Covers(AnyArgument::class)]
+#[Covers(AnyOf::class)]
 #[Covers(AnyTail::class)]
 #[Covers(ArrayContaining::class)]
 #[Covers(BooleanValue::class)]
@@ -46,6 +54,7 @@ use Testo\Test;
 #[Covers(InstanceOfType::class)]
 #[Covers(IntInRange::class)]
 #[Covers(Negated::class)]
+#[Covers(Operand::class)]
 #[Covers(QueryEquals::class)]
 #[Covers(Satisfying::class)]
 #[Covers(StringMatching::class)]
@@ -141,6 +150,19 @@ final class ArgTest
         yield 'int honours max' => [Arg::int(max: 5), 6, false];
         yield 'int accepts its bounds' => [Arg::int(min: 5, max: 5), 5, true];
 
+        yield 'allOf needs every operand' => [Arg::allOf(Arg::string(), Arg::not('x')), 'x', false];
+        yield 'allOf accepts what all operands take' => [Arg::allOf(Arg::string(), Arg::not('x')), 'y', true];
+        yield 'allOf compares a literal operand by identity' => [Arg::allOf(Arg::int(), 5), 5, true];
+        yield 'allOf rejects a literal that only looks equal' => [Arg::allOf(Arg::any(), 5), '5', false];
+        yield 'allOf of one operand is that operand' => [Arg::allOf(Arg::int(min: 3)), 2, false];
+
+        yield 'anyOf accepts the first match' => [Arg::anyOf('draft', 'review'), 'draft', true];
+        yield 'anyOf accepts a later match' => [Arg::anyOf('draft', 'review'), 'review', true];
+        yield 'anyOf rejects what no operand takes' => [Arg::anyOf('draft', 'review'), 'done', false];
+        yield 'anyOf mixes literals and matchers' => [Arg::anyOf(1, Arg::string()), 'x', true];
+        yield 'anyOf nests a combinator' => [Arg::anyOf(Arg::allOf(Arg::int(min: 5), Arg::not(7)), 'x'), 6, true];
+        yield 'anyOf rejects through a nested combinator' => [Arg::anyOf(Arg::allOf(Arg::int(min: 5), Arg::not(7)), 'x'), 7, false];
+
         yield 'float accepts a float' => [Arg::float(), 1.5, true];
         yield 'float rejects an int' => [Arg::float(), 1, false];
         yield 'float honours bounds' => [Arg::float(min: 0.0, max: 1.0), 1.5, false];
@@ -207,6 +229,53 @@ final class ArgTest
     /**
      * @return iterable<string, array{mixed, string}>
      */
+    public function anEmptyCombinatorIsRefusedRatherThanMatchingEverything(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            "`Arg::allOf()` was given no operands, so it would match every argument.\n"
+            . 'Pass what the argument has to satisfy, or use Arg::any() to accept anything.',
+        );
+
+        Arg::allOf();
+    }
+
+    public function anEmptyDisjunctionSaysItWouldMatchNothing(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            "`Arg::anyOf()` was given no operands, so it would match no argument at all.\n"
+            . 'Pass what the argument has to satisfy, or use Arg::any() to accept anything.',
+        );
+
+        Arg::anyOf();
+    }
+
+    /**
+     * A tail matcher answers `true` to every single argument, so a combinator
+     * holding one would be a no-op operand in a conjunction and a
+     * match-anything in a disjunction — silently, which is the worst of it.
+     */
+    public function aTailMatcherCannotBeAnOperand(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            "`remaining()` stands for the whole variadic tail, and `Arg::allOf()` combines matchers "
+            . "for one argument, so it cannot hold one.\n"
+            . 'Put the tail matcher last on its own, and combine the arguments before it.',
+        );
+
+        Arg::allOf(Arg::string(), Arg::remaining());
+    }
+
+    public function anEmptyTailMatcherCannotBeAnOperandEither(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            "`none()` stands for the whole variadic tail, and `Arg::anyOf()` combines matchers "
+            . "for one argument, so it cannot hold one.\n"
+            . 'Put the tail matcher last on its own, and combine the arguments before it.',
+        );
+
+        Arg::anyOf(Arg::none());
+    }
+
     public static function describeProvider(): iterable
     {
         yield 'any' => [Arg::any(), 'any()'];
@@ -227,6 +296,9 @@ final class ArgTest
         yield 'containing' => [Arg::containing(['a' => 1]), "containing(['a' => 1])"];
         yield 'count' => [Arg::count(maximum: 10), 'count(max: 10)'];
         yield 'which' => [Arg::which('getId', 7), 'which(getId, 7)'];
+        yield 'allOf' => [Arg::allOf(Arg::string(), Arg::not('x')), "allOf(string(), not('x'))"];
+        yield 'anyOf of literals' => [Arg::anyOf('draft', 'review'), "anyOf('draft', 'review')"];
+        yield 'anyOf mixing a literal and a matcher' => [Arg::anyOf(1, Arg::int(min: 5)), 'anyOf(1, int(min: 5))'];
         yield 'none' => [Arg::none(), 'none()'];
         yield 'remaining' => [Arg::remaining(), 'remaining()'];
     }
