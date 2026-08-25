@@ -584,6 +584,15 @@ It is a development dependency. Do not install it in production.
 
 Runnable scripts live in [examples/](examples/).
 
+## The understudy family
+
+| Package | What it is |
+|---|---|
+| **rasuvaeff/understudy** *(this package)* | The engine: doubles, matchers, expectations, verification. |
+| [rasuvaeff/understudy-testo](https://github.com/rasuvaeff/understudy-testo) | Testo adapter — verification and reset around every test. |
+| [rasuvaeff/understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit) | PHPUnit and Pest adapter — the same, through a trait. |
+| [rasuvaeff/understudy-psalm](https://github.com/rasuvaeff/understudy-psalm) | Psalm plugin — matcher-aware specifications and misuse diagnostics. |
+
 ## Development
 
 ```bash
