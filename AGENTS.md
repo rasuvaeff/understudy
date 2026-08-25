@@ -61,6 +61,31 @@ make release-check
 
 ## Invariants & gotchas
 
+- **Module boundaries.** `Codegen`, `Runtime`, `Expectation`, `Matcher`,
+  `Defaults`, `Bypass` and `Wiring` are `@internal`, and the arrows between
+  them are part of the design: `Matcher` depends on nothing but leaf
+  formatting (`Expectation\ArgumentFormatter`) and the language — a matcher
+  runs while the code under test is executing; only `Runtime` and the
+  `Understudy` facade see everything else. A PR pointing a dependency the
+  other way — a matcher reaching into `Runtime`, or anything into `Matcher`
+  beyond its interface — is restructured, not merged.
+- **Adding an `Arg::*` matcher is four files and no engine edits.** A class in
+  `src/Matcher/` implementing `ArgumentMatcher` (`matches()`, `describe()`),
+  a static factory on `Arg` returning `mixed` (the widening union with every
+  parameter type is what lets it be passed where the contract declares
+  anything), a test in `tests/` covering both verdicts plus `describe()`, and
+  a README/llms.txt row. The dispatcher talks to matchers only through the
+  interface — `DoubleState` never names a concrete matcher. A matcher must
+  not throw on a hostile argument: matching runs inside the code under test,
+  and a matcher that breaks is a test broken by its own tooling
+  (`Arg::which()` catching a throwing getter is the precedent).
+- **Golden files for rendered reports.** A failure message that renders calls
+  — a call log, an argument marked with `*` — belongs in
+  `tests/fixtures/messages/<name>.txt`, read through
+  `Support\GoldenMessage::read()`. Single-line messages stay inline. There is
+  no update flag: a wording change edits the `.txt` by hand, and the diff of
+  the file IS the wording review.
+
 - **A class not named by any `#[Covers]` is invisible to mutation testing, even
   when every test drives it.** `TargetUnifier` compiles every double in the
   suite and was claimed by one test class, so Infection never used the rest to

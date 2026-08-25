@@ -199,6 +199,28 @@ and fatals on an empty log at runtime.
 `transcript()` retains every invocation until `reset()`. Do not drive a double
 through an unbounded hot loop when the arguments hold large object graphs.
 
+## Structured failures
+
+A caught `VerificationFailed` carries `->failures(): list<VerificationFailure>`
+— one record per failed claim, each with `kind` (`FailureKind::*`),
+`double`, `expectation`, `expectedMinimum`/`expectedMaximum`, `actualCount`,
+`observedCalls`, `expectedCalls`, and its own rendered `summary`. The
+exception's message is exactly the summaries joined with a blank line. Use
+the records when a tool needs to act on a failure; use the message when a
+human reads it. The fields are frozen public API from v0.1.0.
+
+## Migrating from Mockery or a hand-rolled spy
+
+The README carries a rosetta table; the two rows that actually bite:
+
+- A spy counter counted **every** call; `expect()` counts only calls matching
+  **its** arguments. Every migrated counter claim needs
+  `Understudy::nothingElse($double)` beside it, or the migration silently
+  weakens the test.
+- Incidental setup written as `shouldReceive(...)->once()` becomes `when()`,
+  not `expect()` — an `expect()` turns "the test needed this value" into a
+  claim about the code under test that fails when the implementation changes.
+
 ## Replaced doubles and `strictStubs`
 
 A fixture field reassigned mid-test (`$this->generator = $this->fixedGenerator(...)`)

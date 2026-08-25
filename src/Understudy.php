@@ -196,7 +196,7 @@ final class Understudy
         }
 
         if ($failures !== []) {
-            throw VerificationFailed::withReport(implode("\n\n", $failures));
+            throw VerificationFailed::of($failures);
         }
     }
 
@@ -204,10 +204,8 @@ final class Understudy
      * Ordered expectations must be satisfied in the order they were declared,
      * relative to each other. Calls in between are none of their business —
      * `verifySequence()` is the tool for an exact protocol.
-     *
-     * @return non-empty-string|null
      */
-    private static function checkOrdering(?DoubleState $only = null, ?RuntimeContext $context = null): ?string
+    private static function checkOrdering(?DoubleState $only = null, ?RuntimeContext $context = null): ?VerificationFailure
     {
         /** @var list<array{DoubleState, Expectation}> $ordered */
         $ordered = [];
@@ -250,11 +248,16 @@ final class Understudy
             $first = min($sequences);
 
             if ($previousLabel !== null && $first < $previousLast) {
-                return sprintf(
-                    "Understudy `%s` expected `%s` to be called after `%s`, but it happened first.",
-                    $state->label(),
-                    $expectation->describe(),
-                    $previousLabel,
+                return new VerificationFailure(
+                    kind: FailureKind::OutOfOrder,
+                    summary: sprintf(
+                        "Understudy `%s` expected `%s` to be called after `%s`, but it happened first.",
+                        $state->label(),
+                        $expectation->describe(),
+                        $previousLabel,
+                    ),
+                    double: $state->label(),
+                    expectation: $expectation->describe(),
                 );
             }
 
@@ -265,10 +268,7 @@ final class Understudy
         return null;
     }
 
-    /**
-     * @return non-empty-string|null
-     */
-    private static function checkExpectation(DoubleState $state, Expectation $expectation, bool $strictStubs): ?string
+    private static function checkExpectation(DoubleState $state, Expectation $expectation, bool $strictStubs): ?VerificationFailure
     {
         $cardinality = $expectation->cardinality();
         $count = $expectation->matchCount();
@@ -277,11 +277,17 @@ final class Understudy
             // A plain stub is permission, not a claim — unless strict stubs
             // turn "configured but never used" into a failure of its own.
             return $strictStubs && $count === 0
-                ? sprintf(
-                    "Understudy `%s` has a stub for `%s` that was never used.\n"
-                    . 'Remove it, or drop strictStubs if the call is genuinely optional.',
-                    $state->label(),
-                    $expectation->describe(),
+                ? new VerificationFailure(
+                    kind: FailureKind::StrictStubUnused,
+                    summary: sprintf(
+                        "Understudy `%s` has a stub for `%s` that was never used.\n"
+                        . 'Remove it, or drop strictStubs if the call is genuinely optional.',
+                        $state->label(),
+                        $expectation->describe(),
+                    ),
+                    double: $state->label(),
+                    expectation: $expectation->describe(),
+                    actualCount: 0,
                 )
                 : null;
         }
@@ -290,12 +296,20 @@ final class Understudy
             return null;
         }
 
-        return sprintf(
-            'Understudy `%s` expected `%s` to be called %s, but it was called %s.',
-            $state->label(),
-            $expectation->describe(),
-            $cardinality->describe(),
-            $count === 0 ? 'never' : ($count === 1 ? '1 time' : $count . ' times'),
+        return new VerificationFailure(
+            kind: FailureKind::UnmetExpectation,
+            summary: sprintf(
+                'Understudy `%s` expected `%s` to be called %s, but it was called %s.',
+                $state->label(),
+                $expectation->describe(),
+                $cardinality->describe(),
+                $count === 0 ? 'never' : ($count === 1 ? '1 time' : $count . ' times'),
+            ),
+            double: $state->label(),
+            expectation: $expectation->describe(),
+            expectedMinimum: $cardinality->minimum,
+            expectedMaximum: $cardinality->maximum,
+            actualCount: $count,
         );
     }
 
@@ -344,16 +358,32 @@ final class Understudy
             return;
         }
 
-        throw VerificationFailed::withReport(FailureReport::render(
-            label: $state->label(),
-            expectation: $probe->describe(),
-            expectedLow: $low,
-            expectedHigh: $high,
-            actual: $matches,
-            callLog: $state->callLog(),
-            method: $signal->method,
-            expectedArgs: $signal->args,
+        $sameMethod = array_values(array_filter(
+            $state->callLog(),
+            static fn(Invocation $invocation): bool => $invocation->method === $signal->method,
         ));
+
+        throw VerificationFailed::of([
+            new VerificationFailure(
+                kind: FailureKind::UnmetExpectation,
+                summary: FailureReport::render(
+                    label: $state->label(),
+                    expectation: $probe->describe(),
+                    expectedLow: $low,
+                    expectedHigh: $high,
+                    actual: $matches,
+                    callLog: $state->callLog(),
+                    method: $signal->method,
+                    expectedArgs: $signal->args,
+                ),
+                double: $state->label(),
+                expectation: $probe->describe(),
+                expectedMinimum: $low,
+                expectedMaximum: $high,
+                actualCount: $matches,
+                observedCalls: $sameMethod,
+            ),
+        ]);
     }
 
     /**
@@ -620,12 +650,22 @@ final class Understudy
             return;
         }
 
-        throw VerificationFailed::withReport(sprintf(
-            "Understudy `%s` was expected to be unused, but received %d call(s):\n%s",
-            $state->label(),
-            count($log),
-            FailureReport::renderCallLog($log),
-        ));
+        throw VerificationFailed::of([
+            new VerificationFailure(
+                kind: FailureKind::UnusedDouble,
+                summary: sprintf(
+                    "Understudy `%s` was expected to be unused, but received %d call(s):\n%s",
+                    $state->label(),
+                    count($log),
+                    FailureReport::renderCallLog($log),
+                ),
+                double: $state->label(),
+                expectedMinimum: 0,
+                expectedMaximum: 0,
+                actualCount: count($log),
+                observedCalls: $log,
+            ),
+        ]);
     }
 
     /**
@@ -675,17 +715,23 @@ final class Understudy
             ));
 
             if ($unaccounted !== []) {
-                $failures[] = sprintf(
-                    "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
-                    $state->label(),
-                    count($unaccounted),
-                    FailureReport::renderCallLog($unaccounted),
+                $failures[] = new VerificationFailure(
+                    kind: FailureKind::UnaccountedCalls,
+                    summary: sprintf(
+                        "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
+                        $state->label(),
+                        count($unaccounted),
+                        FailureReport::renderCallLog($unaccounted),
+                    ),
+                    double: $state->label(),
+                    actualCount: count($unaccounted),
+                    observedCalls: $unaccounted,
                 );
             }
         }
 
         if ($failures !== []) {
-            throw VerificationFailed::withReport(implode("\n\n", $failures));
+            throw VerificationFailed::of($failures);
         }
     }
 
@@ -718,16 +764,22 @@ final class Understudy
         ));
 
         if ($unaccounted !== []) {
-            $failures[] = sprintf(
-                "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
-                $state->label(),
-                count($unaccounted),
-                FailureReport::renderCallLog($unaccounted),
+            $failures[] = new VerificationFailure(
+                kind: FailureKind::UnaccountedCalls,
+                summary: sprintf(
+                    "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
+                    $state->label(),
+                    count($unaccounted),
+                    FailureReport::renderCallLog($unaccounted),
+                ),
+                double: $state->label(),
+                actualCount: count($unaccounted),
+                observedCalls: $unaccounted,
             );
         }
 
         if ($failures !== []) {
-            throw VerificationFailed::withReport(implode("\n\n", $failures));
+            throw VerificationFailed::of($failures);
         }
     }
 
@@ -751,7 +803,7 @@ final class Understudy
         $mismatch = self::firstSequenceMismatch($probes, $log);
 
         if ($mismatch !== null) {
-            throw VerificationFailed::withReport($mismatch);
+            throw VerificationFailed::of([$mismatch]);
         }
 
         foreach ($log as $invocation) {
@@ -789,17 +841,26 @@ final class Understudy
     /**
      * @param list<array{object, Expectation}> $probes
      * @param list<Invocation>                 $log
-     *
-     * @return non-empty-string|null
      */
-    private static function firstSequenceMismatch(array $probes, array $log): ?string
+    private static function firstSequenceMismatch(array $probes, array $log): ?VerificationFailure
     {
+        $expected = array_map(
+            static fn(array $probe): string => $probe[1]->describe(),
+            $probes,
+        );
+
         if (count($log) !== count($probes)) {
-            return sprintf(
-                "Expected exactly %d call(s) in this order, but %d happened:\n%s",
-                count($probes),
-                count($log),
-                FailureReport::renderCallLog($log),
+            return new VerificationFailure(
+                kind: FailureKind::OutOfSequence,
+                summary: sprintf(
+                    "Expected exactly %d call(s) in this order, but %d happened:\n%s",
+                    count($probes),
+                    count($log),
+                    FailureReport::renderCallLog($log),
+                ),
+                actualCount: count($log),
+                observedCalls: $log,
+                expectedCalls: $expected,
             );
         }
 
@@ -807,21 +868,35 @@ final class Understudy
             $invocation = $log[$position];
 
             if (!$invocation->belongsTo($double)) {
-                return sprintf(
-                    "Call #%d was expected to be `%s` on one understudy, but the same call was made on a different understudy.\n\nThe calls made were:\n%s",
-                    $position + 1,
-                    $probe->describe(),
-                    FailureReport::renderCallLog($log),
+                return new VerificationFailure(
+                    kind: FailureKind::OutOfSequence,
+                    summary: sprintf(
+                        "Call #%d was expected to be `%s` on one understudy, but the same call was made on a different understudy.\n\nThe calls made were:\n%s",
+                        $position + 1,
+                        $probe->describe(),
+                        FailureReport::renderCallLog($log),
+                    ),
+                    expectation: $probe->describe(),
+                    actualCount: count($log),
+                    observedCalls: $log,
+                    expectedCalls: $expected,
                 );
             }
 
             if (!$probe->matches($invocation->method, $invocation->args)) {
-                return sprintf(
-                    "Call #%d was expected to be `%s`, but it was `%s`.\n\nThe calls made were:\n%s",
-                    $position + 1,
-                    $probe->describe(),
-                    FailureReport::renderCall($invocation),
-                    FailureReport::renderCallLog($log),
+                return new VerificationFailure(
+                    kind: FailureKind::OutOfSequence,
+                    summary: sprintf(
+                        "Call #%d was expected to be `%s`, but it was `%s`.\n\nThe calls made were:\n%s",
+                        $position + 1,
+                        $probe->describe(),
+                        FailureReport::renderCall($invocation),
+                        FailureReport::renderCallLog($log),
+                    ),
+                    expectation: $probe->describe(),
+                    actualCount: count($log),
+                    observedCalls: $log,
+                    expectedCalls: $expected,
                 );
             }
         }

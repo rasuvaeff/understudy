@@ -31,6 +31,28 @@ The call-closure form comes from [MockK](https://mockk.io) (Kotlin),
 (C#), and [mocktail](https://pub.dev/packages/mocktail) (Dart). No PHP library
 had it.
 
+## Migrating from Mockery
+
+No aliases and no converter — the table maps the verb you know to the shape
+here. Two rows are traps, marked ⚠.
+
+| Mockery | Understudy | Notes |
+|---|---|---|
+| `Mockery::mock(BookRepository::class)` | `Understudy::for(BookRepository::class)` | |
+| `$mock->shouldReceive('find')` | `when(fn () => $mock->find(...))` | a real call; no method-name string |
+| `->once()` / `->twice()` / `->times(3)` | `expect(fn () => ...)->times(3)` | an `expect()` is checked by `verifyAll()` / the adapter |
+| `->atLeast()->once()` | `expect(...)->times(minimum: 1)` | |
+| `->andReturn($book)` | `->returns($book)` | |
+| `->andReturnUsing(fn ...)` | `->answers(fn (Invocation $i) => ...)` | arguments come from `$i->args` |
+| `->andThrow(new NotFound())` | `->throws(new NotFound())` | |
+| `->with(123, Mockery::any())` | inside the closure: `find(123, Arg::any())` | |
+| `Mockery::on(fn ($x) => ...)` | `Arg::satisfies(fn ($x) => ...)` | |
+| `$mock->shouldNotHaveReceived('save')` | `Understudy::unused($mock)` | |
+| `$mock->shouldHaveReceived('save')` | `verify(fn () => $mock->save(...))` | after the fact; add `nothingElse()` — see below |
+| `Mockery::close()` | adapter's `reset()`, or your own teardown | |
+| ⚠ `->shouldReceive(...)->once()` used as setup | `when(...)->returns(...)` | a `when()` is permission, not a claim — if you only needed a value, `expect()` would make incidental setup a failing test |
+| ⚠ a spy counting every call | `expect()` + `Understudy::nothingElse($mock)` | `expect()` counts only calls matching **its** arguments; without `nothingElse()` a second call with different arguments passes — a hand-rolled counter caught it, the migration must not lose it |
+
 ## Performance
 
 Against Mockery 1.6.15, Prophecy 1.26.1 and PHPUnit 12.5.33 on PHP 8.5.6.

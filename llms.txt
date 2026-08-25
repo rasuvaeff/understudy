@@ -340,6 +340,32 @@ All implement `Rasuvaeff\Understudy\Exception\UnderstudyError`.
 | `OriginalReturnTypeViolation` | a forwarded `static` method returned another instance of the real class |
 | `VerificationFailed` | a verification about the tested code failed |
 
+### Structured failures — `failures()`
+
+```php
+try {
+    Understudy::verifyAll();
+} catch (VerificationFailed $e) {
+    foreach ($e->failures() as $failure) {
+        $failure->kind;             // FailureKind::UnmetExpectation | StrictStubUnused
+                                    // | OutOfOrder | OutOfSequence | UnaccountedCalls
+                                    // | UnusedDouble
+        $failure->double;           // label of the double
+        $failure->expectation;      // call spec, e.g. 'find(1)'
+        $failure->expectedMinimum;  // claimed lower bound, or null
+        $failure->expectedMaximum;  // claimed upper bound (null = unbounded), or null
+        $failure->actualCount;
+        $failure->observedCalls;    // list<Invocation> the report shows
+        $failure->expectedCalls;    // OutOfSequence only: the specified protocol
+        $failure->summary;          // this failure's rendered text
+    }
+}
+```
+
+The readonly fields of `VerificationFailure`/`FailureKind` are frozen public
+API from v0.1.0 — renaming, removing or retyping one is a major-version
+change. New kinds and newly-populated fields are additive.
+
 ## Not supported
 
 Static method mocking, patching at the point of use, deep stubs, duck doubles,

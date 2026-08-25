@@ -18,6 +18,7 @@ use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
+use Rasuvaeff\Understudy\Tests\Support\GoldenMessage;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
@@ -647,8 +648,7 @@ final class LedgerTest
         // Reported in the order the claims were written, which is not the
         // order the ledger keeps them in.
         Expect::exception(VerificationFailed::class)->withMessage(
-            "Understudy `BookRepository` expected `count()` to be called exactly 1 time, but it was called never.\n\n"
-            . 'Understudy `BookRepository` expected `titles()` to be called exactly 1 time, but it was called never.',
+            GoldenMessage::read('verify-all-two-unmet-expectations-in-declaration-order'),
         );
 
         Understudy::verifyAll();

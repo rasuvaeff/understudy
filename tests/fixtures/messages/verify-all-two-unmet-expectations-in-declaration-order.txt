@@ -1,0 +1,3 @@
+Understudy `BookRepository` expected `count()` to be called exactly 1 time, but it was called never.
+
+Understudy `BookRepository` expected `titles()` to be called exactly 1 time, but it was called never.
