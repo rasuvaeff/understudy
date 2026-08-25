@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **The distributed archive no longer carries the feasibility spikes.**
+  `.gitattributes` listed every other development directory as
+  `export-ignore` but not `spikes/`, so 24 scratch scripts from milestone 0
+  travelled into every install. They stay in the repository, where CI runs
+  them; they are simply no longer part of what `composer require` downloads.
+
 - **A target declaring an abstract property hook is refused, not fatal.** An
   interface property (`public string $name { get; }`, PHP 8.4+) or an
   `abstract` one on a class is an abstract member the generated class would

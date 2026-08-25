@@ -13,6 +13,7 @@
 /tests export-ignore
 /benchmarks export-ignore
 /perf export-ignore
+/spikes export-ignore
 /build export-ignore
 /Makefile export-ignore
 tests/fixtures/messages/*.txt text eol=lf
