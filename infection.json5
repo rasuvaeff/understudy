@@ -11,6 +11,18 @@
     "minMsi": 90,
     "mutators": {
         "@default": true,
+        // Raw-I/O passthroughs. Each of these forwards one call to the native
+        // filesystem and returns what it answered; a mutant either changes
+        // nothing observable or needs a real side effect on disk to see. The
+        // wrapper's decisions — what counts as PHP source, how the allow-list
+        // widens, which stat a flag asks for — are not here and stay under
+        // mutation.
+        //
+        // Written when the list was introduced (PR #13), dropped with the
+        // gate's own rationale block in PR #23, restored here: a silent
+        // exclusion cannot be told apart from one made to get the gate green.
+        // A method that stops being a passthrough leaves this list with the
+        // change that makes it decide something.
         "UnwrapArrayValues": false,
         "global-ignore": [
             "Rasuvaeff\\Understudy\\Bypass\\FileWrapper::stream_write",

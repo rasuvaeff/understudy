@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Recorded why eleven `FileWrapper` methods are excluded from mutation, next to
+  the exclusion itself. The text is the one written when the list was
+  introduced and dropped later with the gate's rationale block; a silent
+  exclusion cannot be told apart from one made to get the gate green.
+- `AGENTS.md` now carries the perf ritual: re-measure `perf/` on the commit the
+  current figures came from before comparing a release candidate, because
+  nothing in CI defends those numbers.
+
 - **The release workflow waits for the matrix build instead of judging it
   mid-flight.** A tag pushed right after the merge arrived while master's own
   build was still running, and the guard read a `null` conclusion as a failed
