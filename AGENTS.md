@@ -316,6 +316,15 @@ make release-check
 - **Rector and Psalm pull in opposite directions here.** `RemoveUselessVarTag`
   and `FlipTypeControlToUseExclusiveType` are skipped in `rector.php` with the
   reasons written down; do not add skips beyond those without the same.
+- **Every gate here reads the working tree; a consumer downloads
+  `git archive`.** Between the two there is `export-ignore` and nothing else,
+  which is how 116K of feasibility spikes shipped in 0.1.0. `bin/consumer-smoke`
+  is the check: it installs a dist archive of HEAD into a throwaway project and
+  uses the package from there, proves the install came from that archive rather
+  than from Packagist, and refuses a dev directory or a tooling config inside
+  it. CI runs the core leg on every PR that touches the distributed tree. The
+  whole family from local checkouts at once — the run to make before a release —
+  is `bin/understudy-consumer-smoke` in the workspace repository.
 - Code: `declare(strict_types=1)`, `final readonly class` where nothing
   mutates, `#[\Override]`, explicit types, named arguments.
 - `examples/` is part of the public contract: keep scripts runnable and update

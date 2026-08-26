@@ -1,0 +1,802 @@
+#!/usr/bin/env bash
+#
+# Installs the understudy family the way a consumer would — throwaway projects
+# that `composer require` the packages — and uses it from there.
+#
+# What only this can see: whether a package is usable from outside its own
+# checkout. A package's own suite always runs with its dev dependencies
+# present, its autoloader rooted in its own directory and its plugin loaded by
+# hand; none of that survives a `composer require`. Five legs, because five
+# different things can break independently:
+#
+#   core    — the engine alone, --no-dev: no test framework may come with it,
+#             and the whole public API has to work without one.
+#   testo   — the runner adapter under a real `vendor/bin/testo` run: the
+#             plugin has to be constructible from a consumer's testo.php and
+#             verification has to reach the runner's verdict.
+#   psalm   — the analyser plugin loaded by `psalm.xml` in a consumer project:
+#             a matcher inside a specification must be silent, and the same
+#             matcher passed to a real call must still be an error.
+#   phpstan — the analyser extension found by `phpstan/extension-installer`
+#             from a bare `phpstan.neon`: nothing in the consumer's config
+#             names the package, so this is the only place where the
+#             `extra.phpstan.includes` metadata is exercised at all. Wrong
+#             metadata there is a silent no-op — an extension that installs,
+#             loads nothing and reports nothing.
+#   phpunit — the trait under a real `vendor/bin/phpunit` run: an expectation
+#             the code never fulfilled has to reach the runner as a failure,
+#             and a satisfied one must not disturb a passing test.
+#
+# A local package is installed from `git archive HEAD`, not from its working
+# tree. That is the tree a consumer downloads: `export-ignore` applies, and a
+# file that should not ship — a spike directory, a fixture corpus — is missing
+# here the same way it would be missing for them. Uncommitted changes are NOT
+# in the snapshot; the script says so when the tree is dirty.
+#
+# Everything not given as `--checkout` comes from Packagist, so this runs from
+# a single package's CI checkout with the rest of the family installed the way
+# a user would get it.
+#
+# Usage: bin/consumer-smoke [--only=core,testo,psalm,phpstan,phpunit]
+#                           [--checkout <leg>=<dir>]... [--keep]
+#
+#   bin/consumer-smoke                          # core from here, rest from Packagist
+#   bin/consumer-smoke --only=psalm \
+#       --checkout psalm=../understudy-psalm    # the plugin from a sibling checkout
+#
+# Exit codes: 0 every selected leg behaves, 1 one of them does not,
+#             2 environment error.
+
+set -Eeuo pipefail
+
+REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+
+ALL_LEGS='core testo psalm phpstan phpunit'
+legs="$ALL_LEGS"
+keep=0
+declare -A LOCAL=([core]="$REPO")
+declare -A VERSION=()
+
+name_of() { # leg
+    case "$1" in
+        core) printf 'rasuvaeff/understudy' ;;
+        *) printf 'rasuvaeff/understudy-%s' "$1" ;;
+    esac
+}
+
+die() { printf '%s\n' "$*" >&2; exit 2; }
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --only=*)
+            legs="${1#--only=}"
+            legs="${legs//,/ }"
+            for leg in $legs; do
+                case " $ALL_LEGS " in *" $leg "*) ;; *) die "Unknown leg: $leg" ;; esac
+            done
+            ;;
+        --checkout)
+            shift
+            [ $# -gt 0 ] || die 'Missing argument for --checkout'
+            leg="${1%%=*}"
+            dir="${1#*=}"
+            case " $ALL_LEGS " in *" $leg "*) ;; *) die "Unknown leg: $leg" ;; esac
+            [ -d "$dir" ] || die "No such directory: $dir"
+            LOCAL[$leg]="$(cd -- "$dir" && pwd)"
+            ;;
+        --no-checkout)
+            shift
+            [ $# -gt 0 ] || die 'Missing argument for --no-checkout'
+            case " $ALL_LEGS " in *" $1 "*) ;; *) die "Unknown leg: $1" ;; esac
+            unset "LOCAL[$1]"
+            ;;
+        --keep) keep=1 ;;
+        *) die "Unknown argument: $1" ;;
+    esac
+    shift
+done
+
+command -v docker >/dev/null || die 'docker is required'
+command -v python3 >/dev/null || die 'python3 is required'
+
+dir='.understudy-consumer-smoke'
+WORK="$REPO/$dir"
+
+# Through a container: a previous run's `vendor/` belongs to root.
+wipe() { docker run --rm -v "$REPO":/repo alpine:3 sh -c "rm -rf /repo/$dir" >/dev/null 2>&1 || true; }
+wipe
+mkdir -p "$WORK/dist" "$WORK/cache"
+
+cleanup() {
+    if [ "$keep" -eq 1 ]; then
+        printf 'Kept: %s\n' "$WORK"
+
+        return
+    fi
+    wipe
+    rm -rf "$WORK"
+}
+trap cleanup EXIT
+
+# ── package sources ─────────────────────────────────────────────────────────
+
+# The version a path repository claims. A release branch says it in the
+# CHANGELOG heading before the tag exists, which is exactly when the number
+# matters — a satellite requiring `^0.1` must not silently fall back to the
+# last published core when this checkout has moved past it.
+version_of() { # dir
+    local v=''
+    if [ -f "$1/CHANGELOG.md" ]; then
+        v="$(grep -m1 -oE '^## [0-9]+\.[0-9]+\.[0-9]+' "$1/CHANGELOG.md" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+    fi
+    if [ -z "$v" ]; then
+        v="$(git -C "$1" describe --tags --abbrev=0 2>/dev/null || true)"
+        v="${v#v}"
+    fi
+
+    printf '%s' "${v:-0.0.1}"
+}
+
+snapshot() { # leg
+    local src="${LOCAL[$1]}" dest="$WORK/dist/$1"
+
+    git -C "$src" rev-parse --git-dir >/dev/null 2>&1 \
+        || die "Not a git checkout, so no dist archive can be made: $src"
+
+    mkdir -p "$dest"
+    git -C "$src" archive HEAD | tar -x -C "$dest" \
+        || die "git archive failed for $src"
+
+    VERSION[$1]="$(version_of "$src")"
+
+    local dirty
+    dirty="$(git -C "$src" status --porcelain -- . | head -1)"
+    if [ -n "$dirty" ]; then
+        printf 'note: %s has uncommitted changes; the snapshot is HEAD, not the working tree\n' "$(name_of "$1")"
+    fi
+}
+
+repo_entry() { # leg
+    printf '{"type": "path", "url": "../dist/%s", "options": {"symlink": false, "versions": {"%s": "%s"}}}' \
+        "$1" "$(name_of "$1")" "${VERSION[$1]}"
+}
+
+repos_for() { # legs...
+    local entries=() leg
+    for leg in "$@"; do
+        [ -n "${LOCAL[$leg]:-}" ] && entries+=("$(repo_entry "$leg")")
+    done
+    local IFS=','
+    printf '%s' "${entries[*]}"
+}
+
+# A local package is asked for by `*` so the path repository wins over the
+# published one of the same number; `check_source` then proves that it did.
+req_for() { # leg
+    if [ -n "${LOCAL[$1]:-}" ]; then
+        printf '"%s": "*"' "$(name_of "$1")"
+    else
+        printf '"%s": "^0.1"' "$(name_of "$1")"
+    fi
+}
+
+# The half that keeps this honest. Two packages of the same version are in the
+# pool whenever a leg mixes a checkout with Packagist, and picking the wrong
+# one is invisible: the leg passes, having tested the published release.
+check_source() { # leg, package leg
+    local out code=0
+    out="$(python3 - "$WORK/$1/vendor/composer/installed.json" "$(name_of "$2")" <<'PY'
+import json, sys
+
+path, name = sys.argv[1], sys.argv[2]
+try:
+    data = json.load(open(path))
+except OSError as e:
+    print(e)
+    raise SystemExit(3)
+packages = data['packages'] if isinstance(data, dict) else data
+for package in packages:
+    if package['name'] == name:
+        print((package.get('dist') or {}).get('url', '?'))
+        raise SystemExit(0 if (package.get('dist') or {}).get('type') == 'path' else 1)
+raise SystemExit(2)
+PY
+    )" || code=$?
+
+    case "$code" in
+        0) return 0 ;;
+        1) printf '  FAIL  %s came from Packagist (%s), not from this checkout\n' "$(name_of "$2")" "$out" ;;
+        2) printf '  FAIL  %s is not installed at all\n' "$(name_of "$2")" ;;
+        *) printf '  FAIL  cannot read the install record: %s\n' "$out" ;;
+    esac
+
+    return 1
+}
+
+# What `export-ignore` left out, read from where a consumer would read it. A
+# development directory or a tooling config in the archive is weight they
+# download and never asked for, and no gate that reads the working tree can see
+# it — which is all of the others.
+check_dist() { # leg, package leg
+    local root="$WORK/$1/vendor/$(name_of "$2")" unwanted found=()
+
+    for unwanted in tests spikes benchmarks perf examples .github build \
+                    .editorconfig .gitattributes .gitignore .php-cs-fixer.php \
+                    AGENTS.md CLAUDE.md Makefile composer-require-checker.json \
+                    infection.json5 psalm.xml rector.php testo.php; do
+        [ -e "$root/$unwanted" ] && found+=("$unwanted")
+    done
+    [ "${#found[@]}" -eq 0 ] && return 0
+
+    printf '  FAIL  %s ships %s in its distributed archive\n' "$(name_of "$2")" "${found[*]}"
+
+    return 1
+}
+
+# A package that comes from Packagist has nothing to prove here: there is no
+# second candidate to confuse it with, and its archive was judged in its own
+# repository.
+check_local() { # leg, package leg
+    [ -n "${LOCAL[$2]:-}" ] || return 0
+
+    check_source "$1" "$2" || return 1
+    check_dist "$1" "$2" || return 1
+
+    printf '  ok    %s installed from this checkout, and its archive is dist-only\n' "$(name_of "$2")"
+}
+
+compose() { # leg, json
+    mkdir -p "$WORK/$1"
+    printf '%s\n' "$2" > "$WORK/$1/composer.json"
+}
+
+install() { # leg, extra composer flags
+    if ! docker run --rm -v "$WORK":/work -w "/work/$1" -e COMPOSER_CACHE_DIR=/work/cache composer:2 sh -c \
+        "git config --global --add safe.directory '*'; composer install $2 --no-interaction --no-progress" \
+        > "$WORK/$1/install.log" 2>&1; then
+        printf 'composer install failed in %s:\n' "$1" >&2
+        tail -20 "$WORK/$1/install.log" >&2
+        exit 2
+    fi
+}
+
+run() { # leg, command
+    docker run --rm -v "$WORK":/work -w "/work/$1" -e COMPOSER_CACHE_DIR=/work/cache composer:2 sh -c "$2"
+}
+
+selected() { # leg
+    case " $legs " in *" $1 "*) return 0 ;; *) return 1 ;; esac
+}
+
+# Only snapshot what a selected leg actually uses: a `--checkout` for a leg
+# that was not selected is not an error, it is just unused. Every leg uses the
+# core, so it is snapshotted whenever anything is.
+needed=''
+for leg in $legs; do needed="$needed core $leg"; done
+for leg in $ALL_LEGS; do
+    [ -n "${LOCAL[$leg]:-}" ] || continue
+    case " $needed " in *" $leg "*) snapshot "$leg" ;; esac
+done
+
+status=0
+
+# ── core ────────────────────────────────────────────────────────────────────
+leg_core() {
+    compose core '{
+    "name": "rasuvaeff/understudy-consumer-smoke",
+    "type": "project",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": ['"$(repos_for core)"'],
+    "require": {'"$(req_for core)"'},
+    "autoload": {"psr-4": {"Consumer\\": "src/"}}
+}'
+    mkdir -p "$WORK/core/src"
+    cat > "$WORK/core/src/Gate.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+interface Gate
+{
+    public function open(int $code): bool;
+}
+
+final class FinalGate implements Gate
+{
+    public function open(int $code): bool
+    {
+        return false;
+    }
+}
+
+final class Turnstile
+{
+    public function __construct(private readonly Gate $gate) {}
+
+    public function pass(int $code): bool
+    {
+        return $this->gate->open($code);
+    }
+}
+PHP
+    cat > "$WORK/core/smoke.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+require __DIR__ . '/vendor/autoload.php';
+
+use Consumer\FinalGate;
+use Consumer\Gate;
+use Consumer\Turnstile;
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Exception\VerificationFailed;
+use Rasuvaeff\Understudy\FailureKind;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\expect;
+use function Rasuvaeff\Understudy\verify;
+use function Rasuvaeff\Understudy\when;
+
+$failures = [];
+$check = static function (string $what, callable $assert) use (&$failures): void {
+    try {
+        $assert();
+        printf("  ok    %s\n", $what);
+    } catch (Throwable $e) {
+        $failures[] = $what;
+        printf("  FAIL  %s — %s: %s\n", $what, $e::class, $e->getMessage());
+    } finally {
+        Understudy::reset();
+    }
+};
+$expect = static function (bool $condition, string $message): void {
+    if (!$condition) {
+        throw new RuntimeException($message);
+    }
+};
+
+// `bypassFinals()` has to run before the final class is loaded, so it goes
+// first — the same order a consumer's bootstrap has to keep.
+Understudy::bypassFinals(FinalGate::class);
+
+$check('an interface double stubs and reads back', static function () use ($expect): void {
+    $gate = Understudy::for(Gate::class);
+    when(fn() => $gate->open(Arg::int(min: 1)))->returns(true);
+
+    $expect((new Turnstile($gate))->pass(7), 'the stub did not answer');
+    verify(fn() => $gate->open(7));
+    $expect(Understudy::lastCall(fn() => $gate->open(Arg::any()))?->args[0] === 7, 'lastCall lost the argument');
+});
+
+$check('an unmet expectation is a structured failure', static function () use ($expect): void {
+    $gate = Understudy::for(Gate::class);
+    expect(fn() => $gate->open(1));
+
+    try {
+        Understudy::verifyAll();
+    } catch (VerificationFailed $failure) {
+        $records = $failure->failures();
+        $expect(count($records) === 1, 'expected exactly one record');
+        $expect($records[0]->kind === FailureKind::UnmetExpectation, 'wrong kind');
+        $expect($records[0]->actualCount === 0, 'wrong count');
+
+        return;
+    }
+
+    throw new RuntimeException('verifyAll() did not fail');
+});
+
+$check('a final class is doubled after bypassFinals()', static function () use ($expect): void {
+    $gate = Understudy::for(FinalGate::class);
+    when(fn() => $gate->open(Arg::any()))->returns(true);
+
+    $expect($gate->open(3), 'the final double did not answer');
+});
+
+$check('wire() builds the subject with doubles', static function () use ($expect): void {
+    ['sut' => $subject, 'doubles' => $doubles] = Understudy::wire(Turnstile::class);
+
+    $expect($subject instanceof Turnstile, 'wire() did not build the subject');
+    $gate = $doubles['gate'] ?? null;
+    $expect($gate !== null, 'wire() did not hand back the gate double');
+
+    when(fn() => $gate->open(Arg::any()))->returns(true);
+    $expect($subject->pass(9), 'the wired double did not answer');
+});
+
+$check('no test framework came with the engine', static function () use ($expect): void {
+    $expect(!is_dir(__DIR__ . '/vendor/testo'), 'vendor/testo exists in a --no-dev install');
+    $expect(!is_dir(__DIR__ . '/vendor/phpunit'), 'vendor/phpunit exists in a --no-dev install');
+});
+
+printf("\ncore: %s\n", $failures === [] ? 'clean' : 'FAILED: ' . implode(', ', $failures));
+
+exit($failures === [] ? 0 : 1);
+PHP
+
+    printf '\ncore (--no-dev)…\n'
+    install core '--no-dev'
+    check_local core core || return 1
+    run core 'php smoke.php'
+}
+
+# ── testo adapter ───────────────────────────────────────────────────────────
+leg_testo() {
+    compose testo '{
+    "name": "rasuvaeff/understudy-consumer-smoke-testo",
+    "type": "project",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": ['"$(repos_for core testo)"'],
+    "require-dev": {'"$(req_for core)"', '"$(req_for testo)"'},
+    "autoload-dev": {"psr-4": {"Consumer\\Tests\\": "tests/"}}
+}'
+    mkdir -p "$WORK/testo/tests"
+    cat > "$WORK/testo/testo.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+use Rasuvaeff\Understudy\Testo\UnderstudyPlugin;
+use Testo\Application\Config\ApplicationConfig;
+use Testo\Application\Config\SuiteConfig;
+
+return new ApplicationConfig(
+    src: ['tests'],
+    suites: [
+        new SuiteConfig(name: 'Unit', location: ['tests'], plugins: [new UnderstudyPlugin()]),
+    ],
+);
+PHP
+    cat > "$WORK/testo/tests/GateTest.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer\Tests;
+
+use Rasuvaeff\Understudy\Understudy;
+use Testo\Test;
+
+use function Rasuvaeff\Understudy\expect;
+
+interface Gate
+{
+    public function open(int $code): bool;
+}
+
+#[Test]
+final class GateTest
+{
+    public function aSatisfiedExpectationPasses(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        expect(fn() => $gate->open(1));
+        $gate->open(1);
+    }
+
+    public function anUnmetExpectationFails(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        expect(fn() => $gate->open(2));
+    }
+}
+PHP
+
+    printf '\ntesto adapter…\n'
+    install testo ''
+    check_local testo core || return 1
+    check_local testo testo || return 1
+    local out
+    out="$(run testo './vendor/bin/testo --no-ansi 2>&1' || true)"
+    if printf '%s' "$out" | grep -q '1 passed' && printf '%s' "$out" | grep -q '1 failed' \
+       && printf '%s' "$out" | grep -q 'open(2)'; then
+        printf '  ok    verification reaches the runner verdict from a consumer install\n'
+
+        return 0
+    fi
+    printf '  FAIL  unexpected runner output:\n%s\n' "$out"
+
+    return 1
+}
+
+# ── psalm plugin ────────────────────────────────────────────────────────────
+leg_psalm() {
+    compose psalm '{
+    "name": "rasuvaeff/understudy-consumer-smoke-psalm",
+    "type": "project",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": ['"$(repos_for core psalm)"'],
+    "require-dev": {'"$(req_for core)"', '"$(req_for psalm)"', "vimeo/psalm": "^6.16"},
+    "autoload": {"psr-4": {"Consumer\\": "src/"}}
+}'
+    mkdir -p "$WORK/psalm/src"
+    cat > "$WORK/psalm/psalm.xml" <<'XML'
+<?xml version="1.0"?>
+<psalm errorLevel="1" resolveFromConfigFile="true" findUnusedCode="false"
+       xmlns="https://getpsalm.org/schema/config">
+    <projectFiles><directory name="src"/></projectFiles>
+    <plugins><pluginClass class="Rasuvaeff\Understudy\Psalm\Plugin"/></plugins>
+</psalm>
+XML
+    cat > "$WORK/psalm/src/Gate.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+interface Gate
+{
+    public function open(int $code): bool;
+}
+PHP
+    # A matcher inside a specification: the plugin must silence this file whole.
+    cat > "$WORK/psalm/src/Specified.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class Specified
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        when(fn(): bool => $gate->open(Arg::int(min: 1)));
+    }
+}
+PHP
+    # The same matcher in a real call: still an error, because it is one. The
+    # control group is the half that tells "the plugin works" from "the plugin
+    # silenced everything".
+    cat > "$WORK/psalm/src/Leaked.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+final class Leaked
+{
+    public function callIt(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        $gate->open(Arg::int());
+    }
+}
+PHP
+
+    printf '\npsalm plugin…\n'
+    install psalm ''
+    check_local psalm core || return 1
+    check_local psalm psalm || return 1
+    local out specified leaked
+    out="$(run psalm './vendor/bin/psalm --no-cache --no-progress --output-format=json 2>/dev/null' || true)"
+    # `pipefail` is on and grep exits 1 on no match, which is the expected
+    # result for the specification half — hence the `|| true` on both counts.
+    specified=$(printf '%s' "$out" | grep -c 'Specified\.php' || true)
+    leaked=$(printf '%s' "$out" | grep -c 'Leaked\.php' || true)
+    if [ "$specified" -eq 0 ] && [ "$leaked" -gt 0 ]; then
+        printf '  ok    the plugin loads from a consumer psalm.xml and judges both sides\n'
+
+        return 0
+    fi
+    printf '  FAIL  specification reported %s time(s), leak reported %s time(s)\n' "$specified" "$leaked"
+
+    return 1
+}
+
+# ── phpstan extension ───────────────────────────────────────────────────────
+leg_phpstan() {
+    compose phpstan '{
+    "name": "rasuvaeff/understudy-consumer-smoke-phpstan",
+    "type": "project",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": ['"$(repos_for core phpstan)"'],
+    "require-dev": {
+        '"$(req_for core)"',
+        '"$(req_for phpstan)"',
+        "phpstan/phpstan": "^2.2.2",
+        "phpstan/extension-installer": "^1.4"
+    },
+    "config": {"allow-plugins": {"phpstan/extension-installer": true}},
+    "autoload": {"psr-4": {"Consumer\\": "src/"}}
+}'
+    mkdir -p "$WORK/phpstan/src"
+    # Deliberately bare: no `includes`, no service registration. If the
+    # extension is found at all, it is `extension-installer` that found it.
+    cat > "$WORK/phpstan/phpstan.neon" <<'NEON'
+parameters:
+    level: 9
+    paths:
+        - src
+NEON
+    cat > "$WORK/phpstan/src/Gate.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+interface Gate
+{
+    public function open(int $code): bool;
+}
+PHP
+    # A matcher inside a specification: silent, because the extension types it
+    # as `never`. Level 9 is where that matters — below it PHPStan does not
+    # check a `mixed` argument against a declared parameter at all.
+    cat > "$WORK/phpstan/src/Specified.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class Specified
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        when(fn(): bool => $gate->open(Arg::int(min: 1)));
+    }
+}
+PHP
+    # The control group, and the rule that only exists because of the `never`
+    # typing: the same matcher in a real call is reported by us, since PHPStan
+    # no longer reports the argument itself.
+    cat > "$WORK/phpstan/src/Leaked.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+final class Leaked
+{
+    public function callIt(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        $gate->open(Arg::int());
+    }
+}
+PHP
+
+    printf '\nphpstan extension…\n'
+    install phpstan ''
+    check_local phpstan core || return 1
+    check_local phpstan phpstan || return 1
+    local out specified leaked
+    out="$(run phpstan './vendor/bin/phpstan analyse --no-progress --error-format=raw 2>&1' || true)"
+    specified=$(printf '%s' "$out" | grep -c 'Specified\.php' || true)
+    leaked=$(printf '%s' "$out" | grep -c 'understudy\.matcherLeak\|is a matcher, and this is a real call' || true)
+    if [ "$specified" -eq 0 ] && [ "$leaked" -gt 0 ]; then
+        printf '  ok    extension-installer finds it from a bare phpstan.neon and it judges both sides\n'
+
+        return 0
+    fi
+    printf '  FAIL  specification reported %s time(s), leak reported %s time(s):\n%s\n' \
+        "$specified" "$leaked" "$out"
+
+    return 1
+}
+
+# ── phpunit adapter ─────────────────────────────────────────────────────────
+leg_phpunit() {
+    compose phpunit '{
+    "name": "rasuvaeff/understudy-consumer-smoke-phpunit",
+    "type": "project",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": ['"$(repos_for core phpunit)"'],
+    "require-dev": {'"$(req_for core)"', '"$(req_for phpunit)"'},
+    "autoload-dev": {"psr-4": {"Consumer\\Tests\\": "tests/"}}
+}'
+    mkdir -p "$WORK/phpunit/tests"
+    cat > "$WORK/phpunit/phpunit.xml" <<'XML'
+<?xml version="1.0"?>
+<phpunit bootstrap="vendor/autoload.php" colors="false" cacheDirectory=".phpunit.cache">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>
+XML
+    cat > "$WORK/phpunit/tests/GateTest.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer\Tests;
+
+use PHPUnit\Framework\TestCase;
+use Rasuvaeff\Understudy\PhpUnit\UnderstudyPHPUnitIntegration;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\expect;
+
+interface Gate
+{
+    public function open(int $code): bool;
+}
+
+final class GateTest extends TestCase
+{
+    use UnderstudyPHPUnitIntegration;
+
+    // The expectation carries the answer. A `when()` stub for the same call
+    // would be shadowed by it — the newest matching expectation is the one
+    // dispatch uses — and the test would then read a default, not the stub.
+    public function testASatisfiedExpectationLeavesThePassingTestAlone(): void
+    {
+        $gate = Understudy::for(Gate::class);
+        expect(fn() => $gate->open(1))->returns(true);
+
+        self::assertTrue($gate->open(1));
+    }
+
+    public function testAnUnmetExpectationFailsTheTest(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        expect(fn() => $gate->open(2));
+    }
+}
+PHP
+
+    printf '\nphpunit adapter…\n'
+    install phpunit ''
+    check_local phpunit core || return 1
+    check_local phpunit phpunit || return 1
+    local out
+    out="$(run phpunit './vendor/bin/phpunit --no-progress 2>&1' || true)"
+    if printf '%s' "$out" | grep -q 'Tests: 2' && printf '%s' "$out" | grep -q 'Failures: 1' \
+       && printf '%s' "$out" | grep -q 'open(2)'; then
+        printf '  ok    the trait turns an unmet expectation into a runner failure\n'
+
+        return 0
+    fi
+    printf '  FAIL  unexpected runner output:\n%s\n' "$out"
+
+    return 1
+}
+
+for leg in $ALL_LEGS; do
+    selected "$leg" || continue
+    "leg_$leg" || status=1
+done
+
+printf '\n%s\n' "$([ "$status" -eq 0 ] && echo 'Clean: the family installs and works from outside.' || echo 'Failed.')"
+
+exit "$status"
