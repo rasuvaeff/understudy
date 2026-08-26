@@ -21,6 +21,7 @@ jobs:
     outputs:
       run: ${{ steps.filter.outputs.run }}
       mutation: ${{ steps.filter.outputs.mutation }}
+      smoke: ${{ steps.filter.outputs.smoke }}
 
     steps:
       - name: Checkout
@@ -44,6 +45,7 @@ jobs:
             # one reads as false downstream and silently skips its job.
             echo "run=true" >> "$GITHUB_OUTPUT"
             echo "mutation=true" >> "$GITHUB_OUTPUT"
+            echo "smoke=true" >> "$GITHUB_OUTPUT"
             exit 0
           else
             BASE="$BEFORE_SHA"
@@ -70,6 +72,19 @@ jobs:
             echo "mutation=false" >> "$GITHUB_OUTPUT"
           else
             echo "mutation=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          # The consumer smoke installs a dist archive of this commit into a
+          # throwaway project, so what it can see changing is the distributed
+          # tree itself: the code, the manifest, the stubs it ships and the
+          # export-ignore list that decides what leaves the repository. Tests
+          # and analysis configs never reach a consumer.
+          if git diff --quiet "$BASE" "$GITHUB_SHA" -- \
+            src resources composer.json .gitattributes bin/consumer-smoke \
+            .github/workflows/build.yml; then
+            echo "smoke=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "smoke=true" >> "$GITHUB_OUTPUT"
           fi
 
   # Not gated on 'changes' like the other jobs below: when a matrix job's own
@@ -240,6 +255,38 @@ jobs:
             fwrite(STDERR, "the autoloader is not authoritative: this step would prove nothing\n");
             exit(1);'
           composer test
+
+  consumer-smoke:
+    name: Consumer smoke
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.smoke == 'true') }}
+    runs-on: ubuntu-latest
+
+    # Everything else in this file runs the package inside its own checkout,
+    # with its dev dependencies present and its autoloader rooted here. None of
+    # that survives a `composer require`, and the one defect that reached users
+    # so far — a 116K spike directory in the 0.1.0 archive — was invisible to
+    # every job above by construction: they read the working tree, and a
+    # consumer downloads what `export-ignore` left.
+    #
+    # The core leg only. The adapter legs of the same script need the adapters,
+    # and each of them gates its own in its own repository; asking for them here
+    # would make an intentional core break unmergeable until the adapters are
+    # released, which cannot happen before the core is. The whole family from
+    # local checkouts at once is `bin/understudy-consumer-smoke` in the
+    # workspace repository, run before a release.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # The archive is made with `git archive HEAD`, and the version the
+          # path repository claims falls back to the latest tag when the
+          # CHANGELOG heading is still Unreleased.
+          fetch-depth: 0
+
+      - name: Install the engine from a dist archive and use it
+        run: bin/consumer-smoke --only=core
 
   coverage:
     name: Coverage & Mutation
