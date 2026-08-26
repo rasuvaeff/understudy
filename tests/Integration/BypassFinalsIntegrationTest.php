@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Rasuvaeff\Understudy\Tests;
+namespace Rasuvaeff\Understudy\Tests\Integration;
 
 use Testo\Assert;
 use Testo\Codecov\CoversNothing;
@@ -15,12 +15,12 @@ use Testo\Test;
  * A class is read from disk once per process and the transform happens as it is
  * read, so two scenarios in one process would prove only whichever ran first —
  * and coverage cannot see into a subprocess either, which is why
- * {@see Bypass\FinalStripperTest} exists beside this: the decisions are unit
+ * {@see \Rasuvaeff\Understudy\Tests\Bypass\FinalStripperTest} exists beside this: the decisions are unit
  * tested, the end-to-end claims are made here.
  */
 #[Test]
 #[CoversNothing]
-final class BypassFinalsTest
+final class BypassFinalsIntegrationTest
 {
     /**
      * @param list<string> $ini
@@ -90,7 +90,7 @@ final class BypassFinalsTest
     {
         $ini = [
             'opcache.enable_cli=1',
-            'opcache.preload=' . __DIR__ . '/Fixture/Bypass/preload.php',
+            'opcache.preload=' . dirname(__DIR__) . '/Fixture/Bypass/preload.php',
         ];
 
         if (\DIRECTORY_SEPARATOR === '\\') {
@@ -194,7 +194,7 @@ final class BypassFinalsTest
             '%s %s%s %s 2>&1',
             escapeshellarg(PHP_BINARY),
             $flags,
-            escapeshellarg(__DIR__ . '/Fixture/Bypass/scenario.php'),
+            escapeshellarg(dirname(__DIR__) . '/Fixture/Bypass/scenario.php'),
             escapeshellarg($scenario),
         );
 

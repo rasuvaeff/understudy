@@ -13,7 +13,7 @@ use Testo\Test;
 /**
  * The decisions the transform makes, on strings rather than through a process.
  *
- * The wrapper's end-to-end claims are made by `BypassFinalsTest`, which spawns a
+ * The wrapper's end-to-end claims are made by `BypassFinalsIntegrationTest`, which spawns a
  * process per scenario — necessary, because a class loads once, and invisible to
  * coverage for the same reason. What can be decided about a source file can be
  * decided here, where every branch is reachable and every mistake is visible.

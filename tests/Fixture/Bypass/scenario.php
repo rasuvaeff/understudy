@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * One scenario, one process. Started by `BypassFinalsTest`, never on its own.
+ * One scenario, one process. Started by `BypassFinalsIntegrationTest`, never on its own.
  *
  * A class is read from disk once per process, so every claim about lifting
  * `final` before that read has to be made in a process of its own. Running them
