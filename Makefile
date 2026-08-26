@@ -47,6 +47,9 @@ psalm:
 test:
 	$(DOCKER) composer test
 
+test-integration:
+	$(DOCKER) composer test:integration
+
 test-coverage:
 	$(DOCKER) sh -lc '$(PCOV_BOOTSTRAP) && composer test:coverage'
 
@@ -108,11 +111,12 @@ help:
 	@echo "  perf             benchmark against Mockery/Prophecy/PHPUnit"
 	@echo "  perf-cold        cold-start comparison (one process per double)"
 	@echo "  perf-memory      bytes retained per live double"
-	@echo "  build            full gate (validate + normalize + cs + psalm + test)"
+	@echo "  build            full gate (validate + normalize + cs + psalm + test + integration)"
 	@echo "  cs               check code style (dry-run)"
 	@echo "  cs-fix           fix code style"
 	@echo "  psalm            static analysis"
 	@echo "  test             run testo (Unit suite)"
+	@echo "  test-integration run testo (Integration suite)"
 	@echo "  test-coverage    run testo with coverage"
 	@echo "  test-coverage-ci run testo coverage for CI artifacts"
 	@echo "  mutation         mutation testing"

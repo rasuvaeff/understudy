@@ -51,6 +51,7 @@ make build
 make cs-fix
 make psalm
 make test
+make test-integration
 make test-coverage
 make mutation
 make release-check
@@ -79,6 +80,15 @@ make release-check
   not throw on a hostile argument: matching runs inside the code under test,
   and a matcher that breaks is a test broken by its own tooling
   (`Arg::which()` catching a throwing getter is the precedent).
+- **`tests/Integration` is a suite of its own, and `composer build` runs it.**
+  What lives there spawns a process per claim (`BypassFinalsIntegrationTest`)
+  or runs a body inside a Fiber (`FiberIntegrationTest`) — neither is a unit of
+  code, and both cost more than the other 740 tests together. The Unit suite
+  excludes the directory by path, so a file added there is integration by
+  placement and nothing has to be registered twice. A suite outside `build` is
+  a suite that rots: the Windows and bypass-acceptance jobs run
+  `composer test:integration` explicitly, because the platform and driver
+  claims they exist for now live in that suite.
 - **Golden files for rendered reports.** A failure message that renders calls
   — a call log, an argument marked with `*` — belongs in
   `tests/fixtures/messages/<name>.txt`, read through

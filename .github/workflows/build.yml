@@ -197,6 +197,13 @@ jobs:
       - name: Test
         run: composer test
 
+      # The reason this job exists at all now lives in the Integration suite:
+      # `Bypass\FileWrapper` stands in front of `file://`, and paths,
+      # separators and symlink privileges are where the two platforms disagree.
+      # Running only `composer test` here would leave that unclaimed on Windows.
+      - name: Integration tests
+        run: composer test:integration
+
   bypass:
     name: Bypass acceptance
     needs: changes
@@ -237,7 +244,7 @@ jobs:
             || { echo "OPcache is off for the CLI: same problem"; exit 1; }
 
       - name: Bypass scenarios under a coverage driver and a warm opcode cache
-        run: composer test
+        run: composer test:integration
 
       # Composer resolves a class to a path out of a static map and includes it
       # without stat'ing first, which is a different route to the same read.
@@ -254,7 +261,7 @@ jobs:
             }
             fwrite(STDERR, "the autoloader is not authoritative: this step would prove nothing\n");
             exit(1);'
-          composer test
+          composer test:integration
 
   consumer-smoke:
     name: Consumer smoke

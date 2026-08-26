@@ -13,7 +13,7 @@ use Testo\Test;
 /**
  * The wrapper's own operations, driven directly.
  *
- * Registering it and letting PHP compile through it is what `BypassFinalsTest`
+ * Registering it and letting PHP compile through it is what `BypassFinalsIntegrationTest`
  * does, in a process per scenario — the only way to prove a load-order claim,
  * and invisible to coverage. Everything that is just a method taking a path can
  * be exercised here instead, where a mistake shows up as a failing assertion

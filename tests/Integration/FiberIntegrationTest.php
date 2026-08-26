@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Rasuvaeff\Understudy\Tests;
+namespace Rasuvaeff\Understudy\Tests\Integration;
 
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
