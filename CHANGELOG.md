@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 — 2026-08-26
 
 - Recorded why eleven `FileWrapper` methods are excluded from mutation, next to
   the exclusion itself. The text is the one written when the list was
