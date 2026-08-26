@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- **An object argument renders as an alias and its public state**, so the `*`
+  that marks a differing argument points at something the reader can see:
+  `save(App\Book#1 {title: 'Dune'})` against `save(*App\Book#2 {title:
+  'Dune'}*)` says the call was made with a rebuilt copy rather than the
+  instance the expectation named. Aliases are numbered within one message in
+  order of first appearance — not object ids, which are reused after a
+  collection and would print differently on each run — and the same instance
+  keeps one number everywhere in that message. The braces list public
+  properties only, up to five, at the message's existing depth budget: nothing
+  is called to render them, so an object keeping its state behind getters
+  renders as its alias alone. Failure `summary` text changes; the structured
+  fields of `VerificationFailure` do not.
+
 ## 0.1.2 — 2026-08-26
 
 - Recorded why eleven `FileWrapper` methods are excluded from mutation, next to

@@ -1,0 +1,5 @@
+Understudy `BookRepository` expected `save(Rasuvaeff\Understudy\Tests\Fixture\Book#1 {title: 'Dune'})` to be called exactly 2 times, but it was called 1 time.
+
+The following calls to `save` were made during this test:
+    save(Rasuvaeff\Understudy\Tests\Fixture\Book#1 {title: 'Dune'})
+    save(*Rasuvaeff\Understudy\Tests\Fixture\Book#2 {title: 'Dune'}*)

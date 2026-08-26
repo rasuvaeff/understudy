@@ -165,35 +165,45 @@ final class Understudy
      */
     public static function verifyAll(bool $strictStubs = false): void
     {
-        $failures = [];
+        // One alias table for the whole report, not one per failure:
+        // `VerificationFailed` joins the summaries into a single message, and
+        // an object numbered in the first summary has to keep that number in
+        // the third — otherwise two `Book#1` on one screen mean two objects.
+        $failures = ArgumentFormatter::scope(static function () use ($strictStubs): array {
+            $failures = [];
 
-        // Every context the test put understudies in, not only the one this
-        // call happens to stand in: a body run in a Fiber owns a context of
-        // its own, and skipping it let an unmet `expect()` pass unnoticed.
-        foreach (Runtime::liveContexts() as $context) {
-            $contextFailures = [];
+            // Every context the test put understudies in, not only the one
+            // this call happens to stand in: a body run in a Fiber owns a
+            // context of its own, and skipping it let an unmet `expect()`
+            // pass unnoticed.
+            foreach (Runtime::liveContexts() as $context) {
+                $contextFailures = [];
 
-            foreach ($context->allStates() as $state) {
-                foreach ($state->expectations() as $expectation) {
-                    $failure = self::checkExpectation($state, $expectation, $strictStubs);
+                foreach ($context->allStates() as $state) {
+                    foreach ($state->expectations() as $expectation) {
+                        $failure = self::checkExpectation($state, $expectation, $strictStubs);
 
-                    if ($failure !== null) {
-                        $contextFailures[] = $failure;
+                        if ($failure !== null) {
+                            $contextFailures[] = $failure;
+                        }
                     }
+                }
+
+                $failures = [...$failures, ...array_reverse($contextFailures)];
+
+                // Ordering is read from the sequence counter, which is per
+                // context. Comparing across contexts would compare two
+                // unrelated countings, so each context answers for its own
+                // order.
+                $outOfOrder = self::checkOrdering(context: $context);
+
+                if ($outOfOrder !== null) {
+                    $failures[] = $outOfOrder;
                 }
             }
 
-            $failures = [...$failures, ...array_reverse($contextFailures)];
-
-            // Ordering is read from the sequence counter, which is per
-            // context. Comparing across contexts would compare two unrelated
-            // countings, so each context answers for its own order.
-            $outOfOrder = self::checkOrdering(context: $context);
-
-            if ($outOfOrder !== null) {
-                $failures[] = $outOfOrder;
-            }
-        }
+            return $failures;
+        });
 
         if ($failures !== []) {
             throw VerificationFailed::of($failures);
@@ -235,37 +245,43 @@ final class Understudy
                 => $left[1]->declarationOrder() <=> $right[1]->declarationOrder(),
         );
 
-        $previousLast = 0;
-        $previousLabel = null;
+        // The previous expectation is described a loop turn before the message
+        // that quotes it, so the whole walk shares one alias table: described
+        // in a scope of its own, an object in `$previousLabel` would start
+        // numbering again and two different instances would both read `#1`.
+        return ArgumentFormatter::scope(static function () use ($ordered): ?VerificationFailure {
+            $previousLast = 0;
+            $previousLabel = null;
 
-        foreach ($ordered as [$state, $expectation]) {
-            $sequences = $expectation->matchedSequences();
+            foreach ($ordered as [$state, $expectation]) {
+                $sequences = $expectation->matchedSequences();
 
-            if ($sequences === []) {
-                continue;
+                if ($sequences === []) {
+                    continue;
+                }
+
+                $first = min($sequences);
+
+                if ($previousLabel !== null && $first < $previousLast) {
+                    return new VerificationFailure(
+                        kind: FailureKind::OutOfOrder,
+                        summary: sprintf(
+                            "Understudy `%s` expected `%s` to be called after `%s`, but it happened first.",
+                            $state->label(),
+                            $expectation->describe(),
+                            $previousLabel,
+                        ),
+                        double: $state->label(),
+                        expectation: $expectation->describe(),
+                    );
+                }
+
+                $previousLast = max($sequences);
+                $previousLabel = $expectation->describe();
             }
 
-            $first = min($sequences);
-
-            if ($previousLabel !== null && $first < $previousLast) {
-                return new VerificationFailure(
-                    kind: FailureKind::OutOfOrder,
-                    summary: sprintf(
-                        "Understudy `%s` expected `%s` to be called after `%s`, but it happened first.",
-                        $state->label(),
-                        $expectation->describe(),
-                        $previousLabel,
-                    ),
-                    double: $state->label(),
-                    expectation: $expectation->describe(),
-                );
-            }
-
-            $previousLast = max($sequences);
-            $previousLabel = $expectation->describe();
-        }
-
-        return null;
+            return null;
+        });
     }
 
     private static function checkExpectation(DoubleState $state, Expectation $expectation, bool $strictStubs): ?VerificationFailure
@@ -277,7 +293,7 @@ final class Understudy
             // A plain stub is permission, not a claim — unless strict stubs
             // turn "configured but never used" into a failure of its own.
             return $strictStubs && $count === 0
-                ? new VerificationFailure(
+                ? ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
                     kind: FailureKind::StrictStubUnused,
                     summary: sprintf(
                         "Understudy `%s` has a stub for `%s` that was never used.\n"
@@ -288,7 +304,7 @@ final class Understudy
                     double: $state->label(),
                     expectation: $expectation->describe(),
                     actualCount: 0,
-                )
+                ))
                 : null;
         }
 
@@ -296,7 +312,7 @@ final class Understudy
             return null;
         }
 
-        return new VerificationFailure(
+        return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
             kind: FailureKind::UnmetExpectation,
             summary: sprintf(
                 'Understudy `%s` expected `%s` to be called %s, but it was called %s.',
@@ -310,7 +326,7 @@ final class Understudy
             expectedMinimum: $cardinality->minimum,
             expectedMaximum: $cardinality->maximum,
             actualCount: $count,
-        );
+        ));
     }
 
     /**
@@ -364,7 +380,7 @@ final class Understudy
         ));
 
         throw VerificationFailed::of([
-            new VerificationFailure(
+            ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
                 kind: FailureKind::UnmetExpectation,
                 summary: FailureReport::render(
                     label: $state->label(),
@@ -382,7 +398,7 @@ final class Understudy
                 expectedMaximum: $high,
                 actualCount: $matches,
                 observedCalls: $sameMethod,
-            ),
+            )),
         ]);
     }
 
@@ -651,7 +667,7 @@ final class Understudy
         }
 
         throw VerificationFailed::of([
-            new VerificationFailure(
+            ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
                 kind: FailureKind::UnusedDouble,
                 summary: sprintf(
                     "Understudy `%s` was expected to be unused, but received %d call(s):\n%s",
@@ -664,7 +680,7 @@ final class Understudy
                 expectedMaximum: 0,
                 actualCount: count($log),
                 observedCalls: $log,
-            ),
+            )),
         ]);
     }
 
@@ -704,10 +720,69 @@ final class Understudy
      */
     public static function nothingElse(object $double, object ...$more): void
     {
-        $failures = [];
+        // One table across every double named here: the report is one message,
+        // and the same object handed to two of them is one object.
+        $failures = ArgumentFormatter::scope(static function () use ($double, $more): array {
+            $failures = [];
 
-        foreach ([$double, ...array_values($more)] as $one) {
-            $state = self::stateOf($one);
+            foreach ([$double, ...array_values($more)] as $one) {
+                $state = self::stateOf($one);
+
+                $unaccounted = array_values(array_filter(
+                    $state->callLog(),
+                    static fn(Invocation $invocation): bool => !$invocation->isAccounted(),
+                ));
+
+                if ($unaccounted !== []) {
+                    $failures[] = new VerificationFailure(
+                        kind: FailureKind::UnaccountedCalls,
+                        summary: sprintf(
+                            "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
+                            $state->label(),
+                            count($unaccounted),
+                            FailureReport::renderCallLog($unaccounted),
+                        ),
+                        double: $state->label(),
+                        actualCount: count($unaccounted),
+                        observedCalls: $unaccounted,
+                    );
+                }
+            }
+
+            return $failures;
+        });
+
+        if ($failures !== []) {
+            throw VerificationFailed::of($failures);
+        }
+    }
+
+    /**
+     * Asserts this understudy's expectations are satisfied and that nothing
+     * else happened to it — the two halves of "I have described everything".
+     */
+    public static function allVerified(object $double): void
+    {
+        $state = self::stateOf($double);
+
+        // Both halves land in one message, so both are numbered against one
+        // alias table.
+        $failures = ArgumentFormatter::scope(static function () use ($state): array {
+            $failures = [];
+
+            foreach ($state->expectations() as $expectation) {
+                $failure = self::checkExpectation($state, $expectation, strictStubs: false);
+
+                if ($failure !== null) {
+                    $failures[] = $failure;
+                }
+            }
+
+            $outOfOrder = self::checkOrdering($state);
+
+            if ($outOfOrder !== null) {
+                $failures[] = $outOfOrder;
+            }
 
             $unaccounted = array_values(array_filter(
                 $state->callLog(),
@@ -728,55 +803,9 @@ final class Understudy
                     observedCalls: $unaccounted,
                 );
             }
-        }
 
-        if ($failures !== []) {
-            throw VerificationFailed::of($failures);
-        }
-    }
-
-    /**
-     * Asserts this understudy's expectations are satisfied and that nothing
-     * else happened to it — the two halves of "I have described everything".
-     */
-    public static function allVerified(object $double): void
-    {
-        $state = self::stateOf($double);
-        $failures = [];
-
-        foreach ($state->expectations() as $expectation) {
-            $failure = self::checkExpectation($state, $expectation, strictStubs: false);
-
-            if ($failure !== null) {
-                $failures[] = $failure;
-            }
-        }
-
-        $outOfOrder = self::checkOrdering($state);
-
-        if ($outOfOrder !== null) {
-            $failures[] = $outOfOrder;
-        }
-
-        $unaccounted = array_values(array_filter(
-            $state->callLog(),
-            static fn(Invocation $invocation): bool => !$invocation->isAccounted(),
-        ));
-
-        if ($unaccounted !== []) {
-            $failures[] = new VerificationFailure(
-                kind: FailureKind::UnaccountedCalls,
-                summary: sprintf(
-                    "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
-                    $state->label(),
-                    count($unaccounted),
-                    FailureReport::renderCallLog($unaccounted),
-                ),
-                double: $state->label(),
-                actualCount: count($unaccounted),
-                observedCalls: $unaccounted,
-            );
-        }
+            return $failures;
+        });
 
         if ($failures !== []) {
             throw VerificationFailed::of($failures);
@@ -824,18 +853,20 @@ final class Understudy
             return sprintf('Understudy `%s` received no calls.', $state->label());
         }
 
-        $lines = [sprintf('Understudy `%s` received %d call(s):', $state->label(), count($log))];
+        return ArgumentFormatter::scope(static function () use ($state, $log): string {
+            $lines = [sprintf('Understudy `%s` received %d call(s):', $state->label(), count($log))];
 
-        foreach ($log as $invocation) {
-            $lines[] = sprintf(
-                '  #%d %s -> %s',
-                $invocation->sequence,
-                FailureReport::renderCall($invocation),
-                self::describeOutcome($invocation),
-            );
-        }
+            foreach ($log as $invocation) {
+                $lines[] = sprintf(
+                    '  #%d %s -> %s',
+                    $invocation->sequence,
+                    FailureReport::renderCall($invocation),
+                    self::describeOutcome($invocation),
+                );
+            }
 
-        return implode("\n", $lines);
+            return implode("\n", $lines);
+        });
     }
 
     /**
@@ -844,64 +875,66 @@ final class Understudy
      */
     private static function firstSequenceMismatch(array $probes, array $log): ?VerificationFailure
     {
-        $expected = array_map(
-            static fn(array $probe): string => $probe[1]->describe(),
-            $probes,
-        );
-
-        if (count($log) !== count($probes)) {
-            return new VerificationFailure(
-                kind: FailureKind::OutOfSequence,
-                summary: sprintf(
-                    "Expected exactly %d call(s) in this order, but %d happened:\n%s",
-                    count($probes),
-                    count($log),
-                    FailureReport::renderCallLog($log),
-                ),
-                actualCount: count($log),
-                observedCalls: $log,
-                expectedCalls: $expected,
+        return ArgumentFormatter::scope(static function () use ($probes, $log): ?VerificationFailure {
+            $expected = array_map(
+                static fn(array $probe): string => $probe[1]->describe(),
+                $probes,
             );
-        }
 
-        foreach ($probes as $position => [$double, $probe]) {
-            $invocation = $log[$position];
-
-            if (!$invocation->belongsTo($double)) {
-                return new VerificationFailure(
+            if (count($log) !== count($probes)) {
+                return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
                     kind: FailureKind::OutOfSequence,
                     summary: sprintf(
-                        "Call #%d was expected to be `%s` on one understudy, but the same call was made on a different understudy.\n\nThe calls made were:\n%s",
-                        $position + 1,
-                        $probe->describe(),
+                        "Expected exactly %d call(s) in this order, but %d happened:\n%s",
+                        count($probes),
+                        count($log),
                         FailureReport::renderCallLog($log),
                     ),
-                    expectation: $probe->describe(),
                     actualCount: count($log),
                     observedCalls: $log,
                     expectedCalls: $expected,
-                );
+                ));
             }
 
-            if (!$probe->matches($invocation->method, $invocation->args)) {
-                return new VerificationFailure(
-                    kind: FailureKind::OutOfSequence,
-                    summary: sprintf(
-                        "Call #%d was expected to be `%s`, but it was `%s`.\n\nThe calls made were:\n%s",
-                        $position + 1,
-                        $probe->describe(),
-                        FailureReport::renderCall($invocation),
-                        FailureReport::renderCallLog($log),
-                    ),
-                    expectation: $probe->describe(),
-                    actualCount: count($log),
-                    observedCalls: $log,
-                    expectedCalls: $expected,
-                );
-            }
-        }
+            foreach ($probes as $position => [$double, $probe]) {
+                $invocation = $log[$position];
 
-        return null;
+                if (!$invocation->belongsTo($double)) {
+                    return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
+                        kind: FailureKind::OutOfSequence,
+                        summary: sprintf(
+                            "Call #%d was expected to be `%s` on one understudy, but the same call was made on a different understudy.\n\nThe calls made were:\n%s",
+                            $position + 1,
+                            $probe->describe(),
+                            FailureReport::renderCallLog($log),
+                        ),
+                        expectation: $probe->describe(),
+                        actualCount: count($log),
+                        observedCalls: $log,
+                        expectedCalls: $expected,
+                    ));
+                }
+
+                if (!$probe->matches($invocation->method, $invocation->args)) {
+                    return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
+                        kind: FailureKind::OutOfSequence,
+                        summary: sprintf(
+                            "Call #%d was expected to be `%s`, but it was `%s`.\n\nThe calls made were:\n%s",
+                            $position + 1,
+                            $probe->describe(),
+                            FailureReport::renderCall($invocation),
+                            FailureReport::renderCallLog($log),
+                        ),
+                        expectation: $probe->describe(),
+                        actualCount: count($log),
+                        observedCalls: $log,
+                        expectedCalls: $expected,
+                    ));
+                }
+            }
+
+            return null;
+        });
     }
 
     /**

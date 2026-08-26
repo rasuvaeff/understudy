@@ -412,6 +412,40 @@ final class LedgerTest
         Understudy::verifyAll();
     }
 
+    public function anOrderComplaintNamesTwoObjectsApart(): void
+    {
+        // The earlier expectation is described a loop turn before the message
+        // quotes it. Described on its own it would start numbering again, and
+        // the reader would be told that one `Book#1` happened before another
+        // `Book#1`.
+        $repository = Understudy::for(BookRepository::class);
+        $dune = new Book('Dune');
+        $herbert = new Book('Herbert');
+
+        expect(fn() => $repository->save($dune))->ordered();
+        expect(fn() => $repository->save($herbert))->ordered();
+
+        $repository->save($herbert);
+        $repository->save($dune);
+
+        $failure = null;
+
+        try {
+            Understudy::verifyAll();
+        } catch (VerificationFailed $thrown) {
+            $failure = $thrown;
+        }
+
+        Assert::instanceOf($failure, VerificationFailed::class);
+        Assert::string($failure->getMessage())->contains(
+            sprintf(
+                'expected `save(%s#2 {title: \'Herbert\'})` to be called after `save(%s#1 {title: \'Dune\'})`',
+                Book::class,
+                Book::class,
+            ),
+        );
+    }
+
     #[ExpectNoAssertions]
     public function unrelatedCallsMayHappenBetweenOrderedExpectations(): void
     {

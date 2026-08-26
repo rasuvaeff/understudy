@@ -97,6 +97,12 @@ No runtime deps; `ext-mbstring` is not needed.
   `checkpoint()` span EVERY context still holding doubles, not just the
   caller's. A test body run in a Fiber owns a context the adapter never stands
   in, and skipping it let an unmet `expect()` pass unnoticed.
+- A failure message renders an object argument as `App\Book#1 {title: 'Dune'}`.
+  The `#N` is an alias numbered within that one message in order of first
+  appearance — never an object id, which is reused after a collection — so the
+  same instance keeps one number and a rebuilt copy gets another. The braces
+  list public properties only, up to five: no getter is called to render a
+  message, and an object with nothing public renders as its alias alone.
 
 ## API
 

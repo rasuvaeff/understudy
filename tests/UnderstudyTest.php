@@ -785,6 +785,24 @@ final class UnderstudyTest
         verify(fn() => $repository->tag('gamma'));
     }
 
+    public function anObjectKeepsOneNameAcrossTheExpectationAndTheCallLog(): void
+    {
+        // The `*` marks a difference the report has to be able to show: both
+        // books read the same, and the alias is what says one of them is not
+        // the instance the expectation named.
+        $repository = Understudy::for(BookRepository::class);
+        $dune = new Book('Dune');
+
+        $repository->save($dune);
+        $repository->save(new Book('Dune'));
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            GoldenMessage::read('verify-marks-a-rebuilt-object-argument'),
+        );
+
+        verify(fn() => $repository->save($dune), times: 2);
+    }
+
     public function aPlainCountMismatchNeedsNoCallLog(): void
     {
         // Every call to the method matched: repeating them under "these are
