@@ -74,6 +74,29 @@ final class InvalidCallSpecification extends \LogicException implements Understu
         ));
     }
 
+    public static function emptySequence(): self
+    {
+        return new self(
+            'Understudy::expectSequence() needs at least one call: an empty protocol claims nothing '
+            . 'and would refuse every call on no double at all',
+        );
+    }
+
+    /**
+     * @param positive-int $position
+     * @param positive-int $length
+     */
+    public static function protocolAlreadyArmed(int $position, int $length): self
+    {
+        return new self(sprintf(
+            'A protocol is already armed and is waiting on step %d of %d. Two of them naming the same '
+            . 'understudy would each judge every call on it and could disagree about the same call — '
+            . 'finish this one, or describe both phases as a single protocol',
+            $position,
+            $length,
+        ));
+    }
+
     public static function closureFailed(\Throwable $previous): self
     {
         return new self(

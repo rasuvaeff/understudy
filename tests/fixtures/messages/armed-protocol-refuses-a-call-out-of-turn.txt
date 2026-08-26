@@ -1,0 +1,8 @@
+Understudy `BookRepository` received a protocol call out of turn: step 1 of 2 was expected to be `save(Rasuvaeff\Understudy\Tests\Fixture\Book#1 {title: 'Dune'})`.
+
+The call was:
+    count()
+
+The protocol is:
+    1. save(Rasuvaeff\Understudy\Tests\Fixture\Book#1 {title: 'Dune'})   <- due here
+    2. count()

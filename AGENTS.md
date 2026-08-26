@@ -92,6 +92,26 @@ seconds instead of the full run's minute — and the full run stays the gate.
   a suite that rots: the Windows and bypass-acceptance jobs run
   `composer test:integration` explicitly, because the platform and driver
   claims they exist for now live in that suite.
+- **An armed protocol is judged before anything answers the call.** The check
+  sits at the top of `Runtime::answer()`, ahead of the expectation loop, and it
+  has to: a call that is a step arriving out of turn usually *matches* an
+  expectation — the test stubbed `commit()` so it could return something — and
+  deciding after the loop would mean deciding after `recordMatch()` counted the
+  call and `performAction()` ran the test's own `returns()`/`answers()`. A
+  refused call must not have moved the double. The second refusal, for a call on
+  a protocol double that is neither a step nor configured, is the one place that
+  legitimately waits for `$matched`, and it sits next to the strict-mode check
+  for that reason.
+- **`expectSequence()` is the fail-fast sibling of `verifySequence()`, not of
+  `ordered()`.** That decides its semantics rather than leaving them to taste: a
+  cursor inherits "each step due exactly once, in order", while `ordered()` is
+  orthogonal to cardinality and tolerates repeats. Totality is scoped to the
+  doubles the protocol names, and on those a call is the step due or something
+  the test configured — which is why a query between two steps has to be
+  stubbed. The cheap alternative, watching only the calls the protocol names,
+  lets `save($wrongBook)` through unmatched and puts the failure back in
+  teardown, which is the thing the feature exists to escape. Arming is also a
+  claim, or a subject with a broad `catch` swallows the refusal and passes.
 - **A failure message is rendered inside one alias table.** An object argument
   renders as `Book#1 {title: 'Dune'}`, and the number is what distinguishes a
   rebuilt copy from the instance the expectation named — which only works while

@@ -264,6 +264,35 @@ between. `allVerified()` checks ordering as well. `verifySequence()` is the
 tool when the whole protocol matters; it compares double identity in addition
 to method and arguments.
 
+```php
+Understudy::expectSequence(          // armed BEFORE the subject runs
+    fn () => $repo->begin(),
+    fn () => $repo->save($book),
+    fn () => $repo->commit(),
+);
+
+$service->handle($command);          // fails HERE, on the call out of turn
+```
+
+`expectSequence()` is the fail-fast form: both tools above raise in teardown,
+where the stack trace points at `verifyAll()`. Rules, all of them load-bearing:
+
+- Totality is scoped to the doubles the protocol names. A double it never names
+  is invisible to it.
+- On a named double a call must be the step due, or match something the test
+  configured. Anything else is refused at the call — so a query the subject
+  makes between two steps has to be stubbed with `when()`.
+- Each step is due exactly once, in order. Re-calling a step the protocol has
+  moved past is out of turn. Use `ordered()` for a relative order that tolerates
+  repeats.
+- Arming is also a claim: `verifyAll()` reports the steps the subject never
+  reached, which is what still fails the test when the subject swallows the
+  refusal in a broad `catch`.
+- One protocol at a time; a finished one may be replaced. `checkpoint()`
+  verifies it and then drops it.
+- The failure is a `VerificationFailed` carrying `FailureKind::OutOfSequence`,
+  the same kind `verifySequence()` reports.
+
 ### Phases and scopes
 
 ```php
