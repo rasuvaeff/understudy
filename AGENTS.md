@@ -52,6 +52,7 @@ make cs-fix
 make psalm
 make test
 make test-integration
+make examples
 make test-coverage
 make mutation
 make release-check
@@ -337,8 +338,16 @@ make release-check
   is `bin/understudy-consumer-smoke` in the workspace repository.
 - Code: `declare(strict_types=1)`, `final readonly class` where nothing
   mutates, `#[\Override]`, explicit types, named arguments.
-- `examples/` is part of the public contract: keep scripts runnable and update
-  `examples/README.md` when example usage changes.
+- **`examples/` is a gate, not a showcase.** Every script checks itself through
+  `examples/_check.php` (which throws — `assert()` is compiled out under
+  `zend.assertions=-1`), and `composer build` runs all of them through
+  `@examples`. A script that only prints proves the file parses. Two more rules
+  the mechanism imposes: a new script must be added to `examples/README.md`
+  with a **bare** filename in the Script column — `bin/package-audit` strips
+  spaces and backticks but not brackets, so a markdown link makes the row match
+  no file and the script silently drops to lint-only — and it must be added to
+  the `examples` script in `composer.json`, or `build` will not run it. A
+  helper is prefixed with `_`, which is what marks it an include.
 - **CI workflows are SHA-pinned.** Every `uses:` in `.github/workflows/*.yml`
   references a 40-char commit SHA with a `# vN` trailing comment. Never revert
   to floating `@vN` tags. Updates go through Dependabot. Workflows carry

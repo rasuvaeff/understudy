@@ -587,7 +587,10 @@ It is a development dependency. Do not install it in production.
 
 ## Examples
 
-Runnable scripts live in [examples/](examples/).
+Runnable scripts live in [examples/](examples/) — one per concept: the three
+modes, `wire()`, ordering and protocol verification, the defaults registry, and
+reading a failure as data. Each checks itself and exits non-zero on a mismatch,
+so `bin/package-audit` runs them as a gate rather than linting them.
 
 ## The understudy family
 
