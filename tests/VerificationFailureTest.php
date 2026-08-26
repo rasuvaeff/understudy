@@ -148,7 +148,7 @@ final class VerificationFailureTest
         ));
 
         Assert::same($record->kind, FailureKind::OutOfSequence);
-        Assert::same($record->expectedCalls, ['count()', 'save(' . Book::class . ')']);
+        Assert::same($record->expectedCalls, ['count()', 'save(' . Book::class . "#1 {title: 'title'})"]);
         Assert::same($record->actualCount, 2);
         Assert::same(count($record->observedCalls ?? []), 2);
         Assert::null($record->double);
@@ -186,6 +186,26 @@ final class VerificationFailureTest
                 $failure->failures(),
             )),
         );
+    }
+
+    public function oneMessageNumbersObjectsAcrossAllItsSummaries(): void
+    {
+        // `getMessage()` joins the summaries, so the alias table is the
+        // report's, not each failure's: two `Book#1` on one screen would say
+        // one object where there are two.
+        $repository = Understudy::for(BookRepository::class);
+        $dune = new Book('Dune');
+        $herbert = new Book('Herbert');
+
+        expect(fn() => $repository->save($dune))->times(2);
+
+        $repository->save($dune);
+        $repository->save($herbert);
+
+        $message = $this->catch(fn() => Understudy::allVerified($repository))->getMessage();
+
+        Assert::string($message)->contains('save(' . Book::class . "#1 {title: 'Dune'})");
+        Assert::string($message)->contains('save(' . Book::class . "#2 {title: 'Herbert'})");
     }
 
     private function catch(callable $body): VerificationFailed

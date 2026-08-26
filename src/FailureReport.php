@@ -71,10 +71,12 @@ final class FailureReport
      */
     public static function renderCall(Invocation $invocation): string
     {
-        return $invocation->method . '(' . implode(', ', array_map(
-            static fn(mixed $argument): string => ArgumentFormatter::format($argument),
-            $invocation->args,
-        )) . ')';
+        return ArgumentFormatter::scope(
+            static fn(): string => $invocation->method . '(' . implode(', ', array_map(
+                static fn(mixed $argument): string => ArgumentFormatter::format($argument),
+                $invocation->args,
+            )) . ')',
+        );
     }
 
     /**
@@ -83,23 +85,25 @@ final class FailureReport
      */
     public static function renderCallLog(array $callLog, array $expectedArgs = []): string
     {
-        $lines = [];
+        return ArgumentFormatter::scope(static function () use ($callLog, $expectedArgs): string {
+            $lines = [];
 
-        foreach ($callLog as $invocation) {
-            $arguments = [];
+            foreach ($callLog as $invocation) {
+                $arguments = [];
 
-            /** @var mixed $argument */
-            foreach ($invocation->args as $position => $argument) {
-                $rendered = ArgumentFormatter::format($argument);
-                $arguments[] = self::differs($expectedArgs, $position, $argument)
-                    ? '*' . $rendered . '*'
-                    : $rendered;
+                /** @var mixed $argument */
+                foreach ($invocation->args as $position => $argument) {
+                    $rendered = ArgumentFormatter::format($argument);
+                    $arguments[] = self::differs($expectedArgs, $position, $argument)
+                        ? '*' . $rendered . '*'
+                        : $rendered;
+                }
+
+                $lines[] = sprintf('    %s(%s)', $invocation->method, implode(', ', $arguments));
             }
 
-            $lines[] = sprintf('    %s(%s)', $invocation->method, implode(', ', $arguments));
-        }
-
-        return implode("\n", $lines);
+            return implode("\n", $lines);
+        });
     }
 
     /**

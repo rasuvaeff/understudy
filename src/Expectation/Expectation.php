@@ -280,11 +280,13 @@ final class Expectation
      */
     public function describe(): string
     {
-        return $this->method . '(' . implode(', ', array_map(
-            static fn(mixed $arg): string => $arg instanceof ArgumentMatcher
-                ? $arg->describe()
-                : ArgumentFormatter::format($arg),
-            $this->args,
-        )) . ')';
+        return ArgumentFormatter::scope(
+            fn(): string => $this->method . '(' . implode(', ', array_map(
+                static fn(mixed $arg): string => $arg instanceof ArgumentMatcher
+                    ? $arg->describe()
+                    : ArgumentFormatter::format($arg),
+                $this->args,
+            )) . ')',
+        );
     }
 }

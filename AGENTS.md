@@ -90,6 +90,20 @@ make release-check
   a suite that rots: the Windows and bypass-acceptance jobs run
   `composer test:integration` explicitly, because the platform and driver
   claims they exist for now live in that suite.
+- **A failure message is rendered inside one alias table.** An object argument
+  renders as `Book#1 {title: 'Dune'}`, and the number is what distinguishes a
+  rebuilt copy from the instance the expectation named — which only works while
+  the expectation line and the call log share a table, and they are rendered by
+  different code paths. `ArgumentFormatter::scope()` opens one; every
+  `new VerificationFailure(...)` is built inside it, nesting is a no-op, and the
+  scope is one failure rather than the whole report, because a `summary` is read
+  on its own and numbering must not shift when an unrelated failure appears.
+  Objects are never rendered through `spl_object_id()` (ids are reused after a
+  collection, so the same failing test would print different numbers), never
+  through `json_encode()` (cycles and closures make it partial), and never by
+  reading a property that is not public — `get_object_vars()` from outside the
+  class runs no getter and no `__get()`, which is the point: rendering a message
+  must not execute the code under test.
 - **Golden files for rendered reports.** A failure message that renders calls
   — a call log, an argument marked with `*` — belongs in
   `tests/fixtures/messages/<name>.txt`, read through
@@ -158,9 +172,11 @@ make release-check
   class')` matched the words "final classes" in a fixture's own docblock and
   turned three passing tests red for the wrong reason.
 
-- **The mutation gate is 92, and every move it has made is written down next
-  to the number.** 95 -> 94 -> 92 -> 93 -> 92, and `infection.json5` says why
-  each time. `TargetUnifier` still carries most of the surviving mutants: it is
+- **The mutation gate is 90, and it does not move without a reason written
+  next to the number.** 85 -> 95 -> 94 -> 92 -> 93 -> 92 -> 90 is the whole
+  trajectory; the reasons for the older moves are in commit messages, which is
+  exactly why the rule exists — nobody reads a commit message while looking at
+  the number. `TargetUnifier` still carries most of the surviving mutants: it is
   reflection glue whose branches are combinations of what a signature can be,
   so honest `#[Covers]` attribution grows the denominator about as fast as new
   tests grow the numerator. Read the reasons before moving the number, and add

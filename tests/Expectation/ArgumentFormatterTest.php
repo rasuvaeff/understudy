@@ -6,6 +6,8 @@ namespace Rasuvaeff\Understudy\Tests\Expectation;
 
 use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
+use Rasuvaeff\Understudy\Tests\Fixture\Draft;
+use Rasuvaeff\Understudy\Tests\Fixture\Order;
 use Rasuvaeff\Understudy\Tests\Fixture\Suit;
 use Testo\Assert;
 use Testo\Codecov\Covers;
@@ -61,9 +63,143 @@ final class ArgumentFormatterTest
         Assert::string(ArgumentFormatter::format([1, 2, 3, 4, 5, 6, 7]))->contains('…');
     }
 
-    public function rendersAnObjectByClassName(): void
+    public function rendersAnObjectAsAnAliasAndItsPublicState(): void
     {
-        Assert::same(ArgumentFormatter::format(new Book('Dune')), Book::class);
+        // The alias answers "was it another instance", the properties answer
+        // "was it shaped differently" — the two reasons a `===` match fails.
+        Assert::same(ArgumentFormatter::format(new Book('Dune')), Book::class . "#1 {title: 'Dune'}");
+    }
+
+    public function twoInstancesOfOneClassGetDistinctAliases(): void
+    {
+        $first = new Book('Dune');
+        $second = new Book('Dune');
+
+        Assert::same(
+            ArgumentFormatter::format([$first, $second, $first]),
+            sprintf(
+                "[%s#1 {title: 'Dune'}, %s#2 {title: 'Dune'}, %s#1 {title: 'Dune'}]",
+                Book::class,
+                Book::class,
+                Book::class,
+            ),
+        );
+    }
+
+    public function aliasesAreNumberedPerMessageAndNotPerProcess(): void
+    {
+        // Object ids are reused after a collection; a message that printed one
+        // would read differently on the next run of the same failing test.
+        $rendered = ArgumentFormatter::format(new Book('Dune'));
+
+        Assert::same(ArgumentFormatter::format(new Book('Herbert')), Book::class . "#1 {title: 'Herbert'}");
+        Assert::same($rendered, Book::class . "#1 {title: 'Dune'}");
+    }
+
+    public function oneScopeSpansEverythingRenderedInsideIt(): void
+    {
+        $book = new Book('Dune');
+
+        Assert::same(
+            ArgumentFormatter::scope(static fn(): string => ArgumentFormatter::format(new Book('Herbert'))
+                . ' ' . ArgumentFormatter::format($book)
+                . ' ' . ArgumentFormatter::format($book)),
+            sprintf("%s#1 {title: 'Herbert'} %s#2 {title: 'Dune'} %s#2 {title: 'Dune'}", Book::class, Book::class, Book::class),
+        );
+    }
+
+    public function anObjectWithNothingPublicRendersAsItsAliasAlone(): void
+    {
+        // `Order` keeps its state private behind getters, and a getter is user
+        // code: rendering a message must not run any.
+        Assert::same(ArgumentFormatter::format(new Order()), Order::class . '#1');
+    }
+
+    public function anUninitializedTypedPropertyIsNotReadToRenderIt(): void
+    {
+        // Reading it would throw, or reach `__get()`; `get_object_vars()` from
+        // outside the class simply does not list it.
+        Assert::same(ArgumentFormatter::format(new Draft()), Draft::class . '#1');
+    }
+
+    public function anObjectPropertyIsRenderedWithinTheSameDepthBudget(): void
+    {
+        $book = new Book('Dune');
+
+        Assert::same(
+            ArgumentFormatter::format([[[$book]]]),
+            sprintf('[[[%s#1 {title: …}]]]', Book::class),
+        );
+        Assert::same(ArgumentFormatter::format([[$book]]), sprintf("[[%s#1 {title: 'Dune'}]]", Book::class));
+    }
+
+    public function aLongPropertyListIsCutLikeALongArray(): void
+    {
+        $wide = new \stdClass();
+
+        foreach (range(1, 7) as $index) {
+            $wide->{'p' . $index} = $index;
+        }
+
+        Assert::same(
+            ArgumentFormatter::format($wide),
+            'stdClass#1 {p1: 1, p2: 2, p3: 3, p4: 4, p5: 5, …}',
+        );
+    }
+
+    public function exactlyFivePropertiesAreRenderedWhole(): void
+    {
+        $wide = new \stdClass();
+
+        foreach (range(1, 5) as $index) {
+            $wide->{'p' . $index} = $index;
+        }
+
+        Assert::same(ArgumentFormatter::format($wide), 'stdClass#1 {p1: 1, p2: 2, p3: 3, p4: 4, p5: 5}');
+    }
+
+    #[DataProvider('propertyNameProvider')]
+    public function rendersAPropertyNameAsItReadsBack(string|int $name, string $expected): void
+    {
+        // `json_decode()` fills a stdClass from whatever the payload said, so a
+        // property name is not always an identifier.
+        $object = new \stdClass();
+        $object->{(string) $name} = 1;
+
+        Assert::same(ArgumentFormatter::format($object), 'stdClass#1 {' . $expected . ': 1}');
+    }
+
+    /**
+     * @return iterable<string, array{string|int, string}>
+     */
+    public static function propertyNameProvider(): iterable
+    {
+        yield 'identifier' => ['title', 'title'];
+        yield 'leading underscore' => ['_id', '_id'];
+        yield 'digits after the first character' => ['a1', 'a1'];
+        yield 'numeric' => ['0', '0'];
+        yield 'with a space' => ['a b', "'a b'"];
+        yield 'starting with a digit' => ['1a', "'1a'"];
+        yield 'empty' => ['', "''"];
+        yield 'newline' => ["a\nb", "'a\\nb'"];
+    }
+
+    public function aVeryLongPropertyNameIsTruncatedLikeAString(): void
+    {
+        $object = new \stdClass();
+        $object->{str_repeat('n', 41)} = 1;
+
+        Assert::same(ArgumentFormatter::format($object), 'stdClass#1 {' . str_repeat('n', 40) . '…: 1}');
+    }
+
+    public function aCycleIsStoppedByTheDepthBudget(): void
+    {
+        // `$a->self = $a` is legal, and a renderer that followed it would not
+        // return.
+        $node = new \stdClass();
+        $node->self = $node;
+
+        Assert::same(ArgumentFormatter::format($node), 'stdClass#1 {self: stdClass#1 {self: stdClass#1 {self: stdClass#1 {self: …}}}}');
     }
 
     #[DataProvider('escapeProvider')]

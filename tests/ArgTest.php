@@ -114,11 +114,14 @@ final class ArgTest
         Assert::same(Arg::not(Arg::int(min: 2))->describe(), 'not(int(min: 2))');
     }
 
-    public function describesAnObjectByItsClassName(): void
+    public function describesAnObjectByItsClassNameAliasAndState(): void
     {
         // The whole name, not the short one: two `Book` classes in one suite
-        // would otherwise produce the same message for different objects.
-        Assert::same(Arg::same(new Book('x'))->describe(), 'same(' . Book::class . ')');
+        // would otherwise produce the same message for different objects. The
+        // alias and the public state are what `same()` is actually about —
+        // an argument equal to this one still fails, and the message has to
+        // let the reader see that it was another instance.
+        Assert::same(Arg::same(new Book('x'))->describe(), 'same(' . Book::class . "#1 {title: 'x'})");
         Assert::same(Arg::instanceOf(Book::class)->describe(), 'instanceOf(' . Book::class . ')');
     }
 

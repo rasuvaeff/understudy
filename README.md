@@ -541,6 +541,30 @@ The asterisks mark the argument that differed — borrowed from
 [NSubstitute](https://nsubstitute.github.io). `Understudy::label($double, '…')`
 names a double when several of the same contract are in play.
 
+An object argument is matched by identity, so two instances never match however
+equally they read — and the message has to be able to show which of the two
+reasons it was:
+
+```text
+Understudy `BookRepository` expected `save(App\Book#1 {title: 'Dune'})` to be called
+exactly 2 times, but it was called 1 time.
+
+The following calls to `save` were made during this test:
+    save(App\Book#1 {title: 'Dune'})
+    save(*App\Book#2 {title: 'Dune'}*)
+```
+
+`#1` and `#2` are aliases numbered within one message, in order of first
+appearance: the same instance keeps one number wherever it appears, so the log
+line above says "this is the object you named" and the marked one says "this is
+a rebuilt copy". They are not object ids — an id is reused after a collection,
+and the same failing test would print different numbers on different runs.
+
+The braces list **public** properties, up to five, at the same depth budget the
+rest of the message uses. Nothing is called to render them: an object that keeps
+its state behind getters renders as its alias alone, because running a getter to
+print a message would run the code under test at the worst possible moment.
+
 ### Cleaning up
 
 ```php
