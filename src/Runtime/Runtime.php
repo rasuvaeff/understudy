@@ -514,19 +514,27 @@ final class Runtime
         // would mean deciding after `recordMatch()` counted it and
         // `performAction()` ran the test's own `returns()`/`answers()` — a
         // refused call would have already moved the double's state.
-        $sequence = $context->armedSequence();
-        $verdict = $sequence?->offer($double, $invocation) ?? SequenceVerdict::NotWatched;
+        //
+        // Cost is why this is one property read and a null check rather than
+        // an accessor and a verdict to compare: no protocol is armed in the
+        // overwhelming majority of calls, and everything on this path is paid
+        // by every call in every suite. `make perf` measures it.
+        $verdict = SequenceVerdict::NotWatched;
+        $sequence = $context->armed;
 
-        if ($verdict === SequenceVerdict::OutOfTurn) {
-            \assert($sequence !== null);
+        if ($sequence !== null) {
+            $verdict = $sequence->offer($double, $invocation);
 
-            throw VerificationFailed::of([self::outOfTurn($state, $sequence, $invocation)]);
-        }
+            if ($verdict === SequenceVerdict::OutOfTurn) {
+                throw VerificationFailed::of([self::outOfTurn($state, $sequence, $invocation)]);
+            }
 
-        if ($verdict === SequenceVerdict::Advanced) {
-            // A step is accounted for by the protocol that named it; without
-            // this, `nothingElse()` would report the protocol's own calls.
-            $invocation->markAccounted();
+            if ($verdict === SequenceVerdict::Advanced) {
+                // A step is accounted for by the protocol that named it;
+                // without this, `nothingElse()` would report the protocol's
+                // own calls.
+                $invocation->markAccounted();
+            }
         }
 
         foreach ($state->expectationsFor($method, $invocation->args) as $expectation) {

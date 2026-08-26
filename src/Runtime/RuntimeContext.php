@@ -38,7 +38,7 @@ final class RuntimeContext
      * naming the same double would each judge every call on it and could
      * disagree about the same call.
      */
-    private ?ArmedSequence $armed = null;
+    public ?ArmedSequence $armed = null;
 
     private readonly DefaultFactories $defaultFactories;
 
@@ -58,11 +58,6 @@ final class RuntimeContext
     public function defaultFactories(): DefaultFactories
     {
         return $this->defaultFactories;
-    }
-
-    public function armedSequence(): ?ArmedSequence
-    {
-        return $this->armed;
     }
 
     public function arm(ArmedSequence $sequence): void

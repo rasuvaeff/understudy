@@ -297,7 +297,7 @@ final class Understudy
 
     private static function checkArmedSequence(RuntimeContext $context): ?VerificationFailure
     {
-        $sequence = $context->armedSequence();
+        $sequence = $context->armed;
 
         if ($sequence === null || $sequence->isComplete()) {
             return null;
@@ -893,7 +893,7 @@ final class Understudy
         }
 
         $context = Runtime::current();
-        $armed = $context->armedSequence();
+        $armed = $context->armed;
 
         // Only a concurrent one is refused. A protocol that ran to completion
         // has nothing left to disagree about, and a two-phase test must be
