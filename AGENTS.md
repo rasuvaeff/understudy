@@ -58,8 +58,10 @@ make mutation
 make release-check
 ```
 
-`make test-coverage` and `make mutation` bootstrap `pcov` inside the
-`composer:2` container because the base image has no coverage driver.
+`make test-coverage` and `make mutation` run in `composer-pcov:local`, built
+once from `composer:2` by `make pcov-image` because the base image carries no
+coverage driver. `make mutation-diff` mutates only what the branch changed —
+seconds instead of the full run's minute — and the full run stays the gate.
 
 ## Invariants & gotchas
 
