@@ -306,7 +306,20 @@ final class Runtime
     {
         $owners = self::owners();
 
-        return $owners->offsetExists($double) ? $owners->offsetGet($double) : null;
+        if (!$owners->offsetExists($double)) {
+            return null;
+        }
+
+        // WeakMap::offsetGet() is typed as nullable regardless of the value
+        // type, and offsetExists() above has already ruled that out.
+        /** @var RuntimeContext $owner */
+        $owner = $owners->offsetGet($double);
+
+        // A retired context owns nothing any more. Answering null here is what
+        // unsetting every one of its doubles used to do, at one write instead
+        // of one per double — and it leaves a context still on a Fiber's stack
+        // answering for its own, which is the behaviour reset() has.
+        return $owner->isRetired() ? null : $owner;
     }
 
     /**
@@ -318,7 +331,16 @@ final class Runtime
      */
     public static function isForgotten(object $double): bool
     {
-        return self::$forgotten?->offsetExists($double) ?? false;
+        // The raw map, not `ownerOf()`: that one hides a retired context,
+        // which is exactly the case this question is about.
+        if (self::$owners === null || !self::$owners->offsetExists($double)) {
+            return false;
+        }
+
+        /** @var RuntimeContext $owner */
+        $owner = self::$owners->offsetGet($double);
+
+        return $owner->isRetired();
     }
 
     /**
@@ -930,17 +952,18 @@ final class Runtime
         self::$live = [];
     }
 
+    /**
+     * Marks a context dead, in two writes rather than one per double.
+     *
+     * The doubles keep pointing at it through `$owners`; `ownerOf()` reads the
+     * flag and answers null, which is what walking every double to unset its
+     * owner used to achieve. Teardown runs after every test, so a loop there
+     * is paid by the whole suite — to answer a question (`isForgotten()`) that
+     * one cold path asks.
+     */
     private static function retire(RuntimeContext $context): void
     {
         self::unremember($context);
-
-        if (self::$owners === null) {
-            return;
-        }
-
-        foreach ($context->allDoubles() as $double) {
-            self::forgotten()[$double] = true;
-            unset(self::$owners[$double]);
-        }
+        $context->retire();
     }
 }
