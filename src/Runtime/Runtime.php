@@ -90,7 +90,7 @@ final class Runtime
         $stack = self::stack();
 
         if ($stack === []) {
-            $context = new RuntimeContext();
+            $context = self::freshContext();
             self::push($context);
 
             return $context;
@@ -112,7 +112,7 @@ final class Runtime
      */
     public static function pushScope(): RuntimeContext
     {
-        $context = new RuntimeContext();
+        $context = self::freshContext();
         self::push($context);
 
         return $context;
@@ -188,14 +188,19 @@ final class Runtime
     {
         $context = self::current();
         $context->register($double, $state);
-        self::remember($context);
-
         self::owners()->offsetSet($double, $context);
     }
 
     /**
      * Records a context as holding understudies, so accounting can reach it
      * from wherever the adapter stands.
+     */
+    /**
+     * Called where a context comes into being, not once per double adopted
+     * into it: the context is the same for every double a test builds, so
+     * doing it in `adopt()` rewrote the same key on the hottest creation path
+     * there is. A context that ends up holding nothing is harmless here —
+     * accounting walks its states, and it has none.
      */
     private static function remember(RuntimeContext $context): void
     {
@@ -256,7 +261,6 @@ final class Runtime
 
         $context = self::current();
         $context->register($clone, new DoubleState($blueprint));
-        self::remember($context);
 
         self::owners()->offsetSet($clone, $context);
     }
@@ -296,7 +300,6 @@ final class Runtime
         }
 
         $owner->register($double, new DoubleState($blueprint, nested: true));
-        self::remember($owner);
         self::owners()->offsetSet($double, $owner);
 
         return $double;
@@ -903,32 +906,51 @@ final class Runtime
         $fiber = \Fiber::getCurrent();
 
         if ($fiber === null) {
-            if (self::$main !== []) {
-                $position = count(self::$main) - 1;
-                self::retire(self::$main[$position]);
-                self::$main[$position] = new RuntimeContext();
-            }
+            $stack = self::$main;
+        } else {
+            $fibers = self::fibers();
+            /** @var list<RuntimeContext> $stack */
+            $stack = $fibers->offsetExists($fiber) ? $fibers->offsetGet($fiber) : [];
+        }
 
-            self::forgetOrphans();
+        // The sweep retires every live context, this one included — a context
+        // is recorded live where it is created, so there is nothing to retire
+        // separately here. It runs before the replacement is opened, because
+        // it would otherwise retire that one too.
+        self::forgetOrphans();
+
+        $position = count($stack) - 1;
+
+        if ($position < 0) {
+            return;
+        }
+
+        $stack[$position] = self::freshContext();
+        // Replacing one slot of a list keeps it a list; psalm widens it to a
+        // plain array because the offset is a variable.
+        /** @var list<RuntimeContext> $stack */
+
+        if ($fiber === null) {
+            self::$main = $stack;
 
             return;
         }
 
-        $fibers = self::fibers();
+        self::fibers()->offsetSet($fiber, $stack);
+    }
 
-        if ($fibers->offsetExists($fiber)) {
-            /** @var list<RuntimeContext> $stack */
-            $stack = $fibers->offsetGet($fiber);
+    /**
+     * The one place a context comes into being, and therefore the one place it
+     * is recorded as live. Recording it per double adopted into it rewrote the
+     * same key on the hottest creation path there is; recording it here happens
+     * once, and no context can be created without it.
+     */
+    private static function freshContext(): RuntimeContext
+    {
+        $context = new RuntimeContext();
+        self::remember($context);
 
-            if ($stack !== []) {
-                $position = count($stack) - 1;
-                self::retire($stack[$position]);
-                $stack[$position] = new RuntimeContext();
-                $fibers->offsetSet($fiber, $stack);
-            }
-        }
-
-        self::forgetOrphans();
+        return $context;
     }
 
     /**

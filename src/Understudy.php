@@ -73,7 +73,7 @@ final class Understudy
         // statically known, and this is also the path a class double will need,
         // where the target's constructor must be skipped rather than run.
         /** @var T $double */
-        $double = (new \ReflectionClass($blueprint->generatedClass))->newInstanceWithoutConstructor();
+        $double = DoubleFactory::instantiate($blueprint);
 
         // The skipped constructor leaves every typed property uninitialized;
         // the ones that can hold an empty scalar or array get one, so that
