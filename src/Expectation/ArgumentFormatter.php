@@ -181,7 +181,9 @@ final class ArgumentFormatter
         $table = self::$aliases;
         \assert($table !== null);
 
-        if (!$table->contains($value)) {
+        // `contains()` is deprecated as of 8.5; `offsetExists()` is the same
+        // lookup under the name the language kept.
+        if (!$table->offsetExists($value)) {
             $table[$value] = ++self::$rendered;
         }
 

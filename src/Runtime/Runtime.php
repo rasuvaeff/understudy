@@ -13,6 +13,7 @@ use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
 use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
+use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
 
@@ -562,7 +563,18 @@ final class Runtime
         // A matched expectation means the call was expected, so strictness has
         // nothing left to complain about.
         if (!$matched && $state->mode() === Mode::Strict) {
-            throw StrictModeViolation::unexpectedCall($state->label(), $method);
+            // Every expectation for the method, not the indexed candidates the
+            // dispatcher was offered: the index narrows by the first literal
+            // argument, and a stub it skipped is exactly the near miss the
+            // reader is looking for. Rendered only here, on the way to the
+            // throw — a refusal that is not raised costs nothing.
+            $candidates = $state->expectationsFor($method);
+
+            throw StrictModeViolation::unexpectedCall(
+                $state->label(),
+                $method,
+                $candidates === [] ? '' : FailureReport::renderRefusal($invocation, $candidates),
+            );
         }
 
         return TypeDefaultResolver::forSignature($state->label(), $signature, $method, $context, $state->nested);

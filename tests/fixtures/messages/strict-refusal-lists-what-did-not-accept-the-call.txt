@@ -1,0 +1,9 @@
+Understudy `BookRepository` is strict and received an unexpected call to `save()`.
+
+The call was:
+    save(Rasuvaeff\Understudy\Tests\Fixture\Book#1 {title: 'Dune'})
+
+Nothing configured for `save` accepted it:
+    save(*Rasuvaeff\Understudy\Tests\Fixture\Book#2 {title: 'Herbert'}*)
+
+Configure it first: when(fn () => $double->save(...))->returns(...)

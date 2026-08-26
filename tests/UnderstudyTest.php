@@ -319,6 +319,87 @@ final class UnderstudyTest
         $repository->count();
     }
 
+    public function strictRefusalShowsTheCallAndWhatDidNotAcceptIt(): void
+    {
+        // Naming only the method sent the reader back to a test that did
+        // configure `save` — what differed was the argument, and the message
+        // did not carry it.
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->save(new Book('Herbert')))->returns(null);
+        Understudy::strict($repository);
+
+        Expect::exception(StrictModeViolation::class)->withMessage(
+            GoldenMessage::read('strict-refusal-lists-what-did-not-accept-the-call'),
+        );
+
+        $repository->save(new Book('Dune'));
+    }
+
+    public function strictRefusalMarksEachArgumentThatRejectedTheCall(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->tag(Arg::string(matches: '/^a/'), 2))->returns('x');
+        Understudy::strict($repository);
+
+        Expect::exception(StrictModeViolation::class)->withMessage(
+            GoldenMessage::read('strict-refusal-marks-both-rejecting-arguments'),
+        );
+
+        $repository->tag('beta');
+    }
+
+    public function strictRefusalMarksAPositionTheCallNeverCarried(): void
+    {
+        // The stub declares two arguments and the call carried one: nothing
+        // accepts an argument that was not there.
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->tag('beta', 2))->returns('x');
+        Understudy::strict($repository);
+
+        Expect::exception(StrictModeViolation::class)->withMessageContaining("tag('beta', *2*)");
+
+        $repository->tag('beta');
+    }
+
+    public function aMatcherThatBreaksWhileRenderingCountsAsOneThatDidNotAccept(): void
+    {
+        // Rendering happens during dispatch, inside the code under test. A
+        // predicate that throws here would replace the refusal with its own
+        // exception, and the reader would never learn what was refused —
+        // worse, the predicate never ran during matching at all, because the
+        // first argument had already failed and matching stops there.
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->tag(
+            'alpha',
+            Arg::satisfies(static fn(mixed $v): bool => throw new \LogicException('boom'), 'explodes'),
+        ))->returns('x');
+        Understudy::strict($repository);
+
+        Expect::exception(StrictModeViolation::class)->withMessageContaining("tag(*'alpha'*, *explodes*)");
+
+        $repository->tag('beta');
+    }
+
+    public function aLongListOfCandidatesIsCutWithACount(): void
+    {
+        // A wall of stubs tells the reader less than a count does.
+        $repository = Understudy::for(BookRepository::class);
+
+        foreach (range(1, 7) as $weight) {
+            when(fn() => $repository->tag('alpha', $weight))->returns('x');
+        }
+
+        Understudy::strict($repository);
+
+        Expect::exception(StrictModeViolation::class)->withMessageContaining('… and 2 more');
+
+        $repository->tag('beta');
+    }
+
     public function strictDoubleStillAnswersConfiguredCalls(): void
     {
         $repository = Understudy::for(BookRepository::class);

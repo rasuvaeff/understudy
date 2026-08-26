@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy;
 
 use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
+use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
 
 /**
@@ -16,6 +17,9 @@ use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
  */
 final class FailureReport
 {
+    /** A wall of stubs tells the reader less than a count does. */
+    private const int MAX_CANDIDATES = 5;
+
     private function __construct() {}
 
     /**
@@ -77,6 +81,47 @@ final class FailureReport
                 $invocation->args,
             )) . ')',
         );
+    }
+
+    /**
+     * The call a strict double refused, and what was configured for that
+     * method and did not accept it — with the arguments that rejected it
+     * marked, read from the expectation's side.
+     *
+     * One alias table for both halves: the whole value of the comparison is
+     * that the reader can tell the object in the call from the one in a stub.
+     *
+     * @param list<Expectation> $candidates in the order the dispatcher tried them
+     *
+     * @return non-empty-string
+     */
+    public static function renderRefusal(Invocation $invocation, array $candidates): string
+    {
+        return ArgumentFormatter::scope(static function () use ($invocation, $candidates): string {
+            // The call is rendered first so that it holds the first alias: it
+            // is the thing the reader is being told about, and a message whose
+            // subject is `Book#2` reads like the answer to another question.
+            $call = self::renderCall($invocation);
+
+            $lines = array_map(
+                static fn(Expectation $candidate): string
+                    => '    ' . $candidate->describeAgainst($invocation->args),
+                array_slice($candidates, 0, self::MAX_CANDIDATES),
+            );
+
+            $hidden = count($candidates) - count($lines);
+
+            if ($hidden > 0) {
+                $lines[] = sprintf('    … and %d more', $hidden);
+            }
+
+            return sprintf(
+                "The call was:\n    %s\n\nNothing configured for `%s` accepted it:\n%s",
+                $call,
+                $invocation->method,
+                implode("\n", $lines),
+            );
+        });
     }
 
     /**

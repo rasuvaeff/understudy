@@ -395,7 +395,7 @@ One-way, like every other form of forgetting here.
 | Mode | Unmatched call answers with |
 |---|---|
 | Loose (default) | a type-safe default: `null`, `0`, `''`, `[]`, an empty generator … |
-| Strict (`Understudy::strict($double)`) | an immediate failure naming the method |
+| Strict (`Understudy::strict($double)`) | an immediate failure naming the method, the call, and what did not accept it |
 | Forwarding (`Understudy::forwarding($double, $real)`) | whatever the real instance answers, recorded like any other call |
 
 A loose double never invents a value by running someone else's constructor, and
@@ -564,6 +564,29 @@ The braces list **public** properties, up to five, at the same depth budget the
 rest of the message uses. Nothing is called to render them: an object that keeps
 its state behind getters renders as its alias alone, because running a getter to
 print a message would run the code under test at the worst possible moment.
+
+A strict double refuses at the call rather than in teardown, and says what it
+compared the call against:
+
+```text
+Understudy `BookRepository` is strict and received an unexpected call to `tag()`.
+
+The call was:
+    tag('beta', 1)
+
+Nothing configured for `tag` accepted it:
+    tag(*string(matches: /^a/)*, *2*)
+
+Configure it first: when(fn () => $double->tag(...))->returns(...)
+```
+
+The marks are read from the expectation's side: each one is an argument that
+rejected this call, including a position the call never carried. Everything
+configured for that method is listed — the dispatcher's own order, up to five,
+then a count — because a stub that could never have matched is often exactly the
+one the test meant to write. When nothing at all is configured for the method,
+there is nothing to compare against and the message stays the single line naming
+it.
 
 ### Cleaning up
 
