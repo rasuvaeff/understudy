@@ -13,9 +13,13 @@ use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
 use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
+use Rasuvaeff\Understudy\Exception\VerificationFailed;
+use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
+use Rasuvaeff\Understudy\FailureKind;
 use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
+use Rasuvaeff\Understudy\VerificationFailure;
 
 /**
  * The registry generated doubles call into, and the owner of every context.
@@ -503,6 +507,28 @@ final class Runtime
         $signature = $state->blueprint->method($method);
         $matched = false;
 
+        // Before anything answers the call. A call that is a step of the armed
+        // protocol arriving out of turn is exactly what this exists to catch,
+        // and for such a call an expectation usually matches: the test stubbed
+        // `commit()` so it could return something. Deciding after the loop
+        // would mean deciding after `recordMatch()` counted it and
+        // `performAction()` ran the test's own `returns()`/`answers()` — a
+        // refused call would have already moved the double's state.
+        $sequence = $context->armedSequence();
+        $verdict = $sequence?->offer($double, $invocation) ?? SequenceVerdict::NotWatched;
+
+        if ($verdict === SequenceVerdict::OutOfTurn) {
+            \assert($sequence !== null);
+
+            throw VerificationFailed::of([self::outOfTurn($state, $sequence, $invocation)]);
+        }
+
+        if ($verdict === SequenceVerdict::Advanced) {
+            // A step is accounted for by the protocol that named it; without
+            // this, `nothingElse()` would report the protocol's own calls.
+            $invocation->markAccounted();
+        }
+
         foreach ($state->expectationsFor($method, $invocation->args) as $expectation) {
             if (!$expectation->matchesArguments($invocation->args)) {
                 continue;
@@ -560,6 +586,16 @@ final class Runtime
                 : NeverMethodCalled::withoutExpectation($state->label(), $method);
         }
 
+        // A double under protocol answers only for steps and for what the test
+        // configured. Anything else is indistinguishable from a step arriving
+        // out of turn — the protocol cannot tell "not part of this" from "you
+        // got the order wrong" unless the test says which it is.
+        if (!$matched && $verdict === SequenceVerdict::NotAStep) {
+            \assert($sequence !== null);
+
+            throw VerificationFailed::of([self::unconfiguredUnderProtocol($state, $sequence, $invocation)]);
+        }
+
         // A matched expectation means the call was expected, so strictness has
         // nothing left to complain about.
         if (!$matched && $state->mode() === Mode::Strict) {
@@ -578,6 +614,69 @@ final class Runtime
         }
 
         return TypeDefaultResolver::forSignature($state->label(), $signature, $method, $context, $state->nested);
+    }
+
+    /**
+     * One rendering for both refusals: the protocol as a numbered list with
+     * the step due marked, and the call that arrived. One alias table over all
+     * of it, so an object in the step is comparable with the one in the call.
+     *
+     * @return non-empty-string
+     */
+    private static function describeProtocol(ArmedSequence $sequence, Invocation $invocation): string
+    {
+        return ArgumentFormatter::scope(static function () use ($sequence, $invocation): string {
+            $call = FailureReport::renderCall($invocation);
+            $lines = [];
+
+            foreach ($sequence->describe() as $index => $step) {
+                $lines[] = sprintf(
+                    '    %d. %s%s',
+                    $index + 1,
+                    $step,
+                    $index + 1 === $sequence->position() ? '   <- due here' : '',
+                );
+            }
+
+            return sprintf("The call was:\n    %s\n\nThe protocol is:\n%s", $call, implode("\n", $lines));
+        });
+    }
+
+    private static function outOfTurn(DoubleState $state, ArmedSequence $sequence, Invocation $invocation): VerificationFailure
+    {
+        return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
+            kind: FailureKind::OutOfSequence,
+            summary: sprintf(
+                "Understudy `%s` received a protocol call out of turn: step %d of %d was expected to be `%s`.\n\n%s",
+                $state->label(),
+                $sequence->position(),
+                $sequence->length(),
+                $sequence->pending()?->describe() ?? 'nothing — the protocol has run out',
+                self::describeProtocol($sequence, $invocation),
+            ),
+            double: $state->label(),
+            expectation: $sequence->pending()?->describe(),
+            observedCalls: [$invocation],
+            expectedCalls: $sequence->describe(),
+        ));
+    }
+
+    private static function unconfiguredUnderProtocol(DoubleState $state, ArmedSequence $sequence, Invocation $invocation): VerificationFailure
+    {
+        return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
+            kind: FailureKind::OutOfSequence,
+            summary: sprintf(
+                "Understudy `%s` is under an armed protocol and received a call that is neither a step nor configured.\n\n%s\n\n"
+                . 'Say it may happen — when(fn () => $double->%s(...))->returns(...) — or make it a step.',
+                $state->label(),
+                self::describeProtocol($sequence, $invocation),
+                $invocation->method,
+            ),
+            double: $state->label(),
+            expectation: $sequence->pending()?->describe(),
+            observedCalls: [$invocation],
+            expectedCalls: $sequence->describe(),
+        ));
     }
 
     /**

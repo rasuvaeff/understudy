@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- **`Understudy::expectSequence()` / `expectSequence()`: a protocol armed before
+  the subject runs.** `ordered()` and `verifySequence()` both answer in
+  teardown, where the stack trace points at `verifyAll()` rather than at the
+  call that went out of turn. An armed protocol refuses inside the offending
+  call, with the subject's own frame on top of the stack. Totality is scoped to
+  the doubles the protocol names: on those, a call is the step due or something
+  the test configured, and anything else is refused — so a query the subject
+  makes between two steps has to be stubbed. Each step is due exactly once, in
+  order. Arming is also a claim: `verifyAll()` reports the steps the subject
+  never reached, which is what still fails a test whose subject swallowed the
+  refusal in a broad `catch`. One protocol at a time, a finished one may be
+  replaced, and `checkpoint()` verifies it and then drops it. The failure is a
+  `VerificationFailed` carrying `FailureKind::OutOfSequence` — no new kind, so
+  an exhaustive `match` on the enum keeps compiling.
+
 - **A strict double says what it refused and what it compared the call
   against.** Naming only the method sent the reader back to a test that *had*
   configured that method — the difference was in the arguments, and the message

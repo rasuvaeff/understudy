@@ -16,6 +16,7 @@ use Rasuvaeff\Understudy\FailureKind;
 use Rasuvaeff\Understudy\Understudy;
 
 use function Rasuvaeff\Understudy\expect;
+use function Rasuvaeff\Understudy\expectSequence;
 use function Rasuvaeff\Understudy\verify;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -132,6 +133,51 @@ try {
     $failure = $failed->failures()[0];
     check($failure->kind === FailureKind::UnaccountedCalls, 'an unclaimed call is UnaccountedCalls');
     check($failure->actualCount === 1, 'and the report counts it: ' . $failure->actualCount);
+}
+
+Understudy::reset();
+
+// Everything above answers in teardown. expectSequence() arms the protocol
+// before the subject runs, so the refusal happens inside the call that broke
+// the order — which is where the stack trace is worth reading.
+
+echo "\nexpectSequence()\n";
+
+$db = Understudy::for(Connection::class);
+Understudy::label($db, 'db');
+
+expectSequence(
+    fn() => $db->begin(),
+    fn() => $db->write('one'),
+);
+
+$db->begin();
+
+try {
+    // `begin()` again: a step the protocol has already moved past is still a
+    // protocol call, and it is arriving at the wrong moment.
+    $db->begin();
+    check(false, 'the repeated step was expected to be refused at the call');
+} catch (VerificationFailed $failed) {
+    $failure = $failed->failures()[0];
+    check($failure->kind === FailureKind::OutOfSequence, 'a call out of turn is OutOfSequence');
+    check(
+        str_contains($failure->summary, 'step 2 of 2'),
+        'and the report names the step that was due',
+    );
+}
+
+// Arming is a claim as well as a guard: a subject that never reaches the last
+// step fails in teardown, which is what still catches a subject whose broad
+// `catch` swallowed the refusal above.
+try {
+    Understudy::verifyAll();
+    check(false, 'the unfinished protocol was expected to be reported');
+} catch (VerificationFailed $failed) {
+    check(
+        str_contains($failed->getMessage(), 'stopped at step 2 of 2'),
+        'an unfinished protocol is reported by verifyAll()',
+    );
 }
 
 Understudy::reset();

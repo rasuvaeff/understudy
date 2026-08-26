@@ -1,0 +1,6 @@
+The armed protocol stopped at step 2 of 3: `count()` was never called.
+
+The protocol was:
+    1. save(Rasuvaeff\Understudy\Tests\Fixture\Book#1 {title: 'Dune'})
+    2. count()
+    3. titles()

@@ -33,6 +33,13 @@ final class RuntimeContext
     /** @var int<0, max> */
     private int $declarations = 0;
 
+    /**
+     * The protocol armed in this context, if any. One at a time: two of them
+     * naming the same double would each judge every call on it and could
+     * disagree about the same call.
+     */
+    private ?ArmedSequence $armed = null;
+
     private readonly DefaultFactories $defaultFactories;
 
     public function __construct()
@@ -51,6 +58,21 @@ final class RuntimeContext
     public function defaultFactories(): DefaultFactories
     {
         return $this->defaultFactories;
+    }
+
+    public function armedSequence(): ?ArmedSequence
+    {
+        return $this->armed;
+    }
+
+    public function arm(ArmedSequence $sequence): void
+    {
+        $this->armed = $sequence;
+    }
+
+    public function disarm(): void
+    {
+        $this->armed = null;
     }
 
     public function isRecording(): bool

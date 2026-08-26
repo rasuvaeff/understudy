@@ -1,0 +1,10 @@
+Understudy `BookRepository` is under an armed protocol and received a call that is neither a step nor configured.
+
+The call was:
+    titles()
+
+The protocol is:
+    1. save(Rasuvaeff\Understudy\Tests\Fixture\Book#1 {title: 'Dune'})   <- due here
+    2. count()
+
+Say it may happen — when(fn () => $double->titles(...))->returns(...) — or make it a step.

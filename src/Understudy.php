@@ -17,6 +17,7 @@ use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
 use Rasuvaeff\Understudy\Expectation\Expectation;
+use Rasuvaeff\Understudy\Runtime\ArmedSequence;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Mode;
@@ -200,6 +201,16 @@ final class Understudy
                 if ($outOfOrder !== null) {
                     $failures[] = $outOfOrder;
                 }
+
+                // An armed protocol guards the order *and* claims the calls.
+                // Without this half, arming one and never exercising it — the
+                // subject stopped after step two, or a `catch` inside it
+                // swallowed the refusal — would pass in silence.
+                $unfinished = self::checkArmedSequence($context);
+
+                if ($unfinished !== null) {
+                    $failures[] = $unfinished;
+                }
             }
 
             return $failures;
@@ -282,6 +293,35 @@ final class Understudy
 
             return null;
         });
+    }
+
+    private static function checkArmedSequence(RuntimeContext $context): ?VerificationFailure
+    {
+        $sequence = $context->armedSequence();
+
+        if ($sequence === null || $sequence->isComplete()) {
+            return null;
+        }
+
+        $pending = $sequence->pending();
+        \assert($pending !== null);
+
+        return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
+            kind: FailureKind::OutOfSequence,
+            summary: sprintf(
+                "The armed protocol stopped at step %d of %d: `%s` was never called.\n\nThe protocol was:\n%s",
+                $sequence->position(),
+                $sequence->length(),
+                $pending->describe(),
+                implode("\n", array_map(
+                    static fn(int $index, string $step): string => sprintf('    %d. %s', $index + 1, $step),
+                    array_keys($sequence->describe()),
+                    $sequence->describe(),
+                )),
+            ),
+            expectation: $pending->describe(),
+            expectedCalls: $sequence->describe(),
+        ));
     }
 
     private static function checkExpectation(DoubleState $state, Expectation $expectation, bool $strictStubs): ?VerificationFailure
@@ -813,6 +853,67 @@ final class Understudy
     }
 
     /**
+     * Arms a protocol before the code under test runs, so that a call breaking
+     * the order fails at that call — with the subject's own frame on top of the
+     * stack — instead of in teardown.
+     *
+     * ```php
+     * Understudy::expectSequence(
+     *     fn () => $repo->begin(),
+     *     fn () => $repo->save($book),
+     *     fn () => $repo->commit(),
+     * );
+     *
+     * $service->handle($command);   // fails here, on the call that broke it
+     * ```
+     *
+     * Totality is scoped to the doubles the protocol names: a call on one of
+     * them is either the step due or something the test configured, and a
+     * double the protocol never names is invisible to it. That is why a query
+     * a subject makes between two steps has to be stubbed — without a `when()`
+     * the protocol cannot tell "not part of this" from "you got the order
+     * wrong", and guessing would put the failure back in teardown, which is
+     * what arming exists to avoid.
+     *
+     * Each step is due exactly once, in order. `expect(...)->ordered()` is the
+     * tool for a relative order that tolerates repeats and calls in between;
+     * `verifySequence()` is the same total protocol checked afterwards.
+     *
+     * An armed protocol is also a claim: `verifyAll()` reports the steps the
+     * subject never reached, so arming one and never exercising it fails.
+     *
+     * @param callable(): mixed ...$calls
+     *
+     * @api
+     */
+    public static function expectSequence(callable ...$calls): void
+    {
+        if ($calls === []) {
+            throw InvalidCallSpecification::emptySequence();
+        }
+
+        $context = Runtime::current();
+        $armed = $context->armedSequence();
+
+        // Only a concurrent one is refused. A protocol that ran to completion
+        // has nothing left to disagree about, and a two-phase test must be
+        // able to describe its second phase.
+        if ($armed !== null && !$armed->isComplete()) {
+            throw InvalidCallSpecification::protocolAlreadyArmed($armed->position(), $armed->length());
+        }
+
+        $steps = [];
+
+        foreach ($calls as $call) {
+            $signal = self::record($call);
+            self::stateOf($signal->double);
+            $steps[] = [$signal->double, new Expectation($signal->method, $signal->args)];
+        }
+
+        $context->arm(new ArmedSequence($steps));
+    }
+
+    /**
      * Asserts that these calls are exactly what happened in this context, in
      * this order, across every understudy — no more, no fewer.
      *
@@ -1001,6 +1102,13 @@ final class Understudy
             foreach ($context->allStates() as $state) {
                 $state->settle();
             }
+
+            // The protocol belongs to the phase that declared it, and
+            // `verifyAll()` above has already answered for it: an unfinished
+            // one never reaches this line. Nothing special is decided here —
+            // a checkpoint verifies and then clears, as it does for everything
+            // else in the phase.
+            $context->disarm();
         }
     }
 

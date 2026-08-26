@@ -7,8 +7,10 @@ namespace Rasuvaeff\Understudy\Tests;
 use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
+use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Expectation\Expectation;
+use Rasuvaeff\Understudy\FailureKind;
 use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Outcome;
@@ -20,6 +22,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
 use Rasuvaeff\Understudy\Tests\Support\GoldenMessage;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\VerificationFailure;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
 use Testo\Codecov\Covers;
@@ -269,6 +272,408 @@ final class LedgerTest
         Expect::exception(VerificationFailed::class)->withMessageContaining('but it happened first');
 
         Understudy::allVerified($repository);
+    }
+
+    // --- expectSequence: an armed protocol -----------------------------------
+
+    #[ExpectNoAssertions]
+    public function anArmedProtocolPassesWhenTheStepsHappenInOrder(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        $repository->save($book);
+        $repository->count();
+
+        Understudy::verifyAll();
+    }
+
+    public function anArmedProtocolFailsOnTheCallThatBrokeTheOrder(): void
+    {
+        // The whole point: the subject's own frame is on top of the stack,
+        // rather than `verifyAll()`'s in teardown.
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        when(fn() => $repository->count())->returns(1);
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            GoldenMessage::read('armed-protocol-refuses-a-call-out-of-turn'),
+        );
+
+        $repository->count();
+    }
+
+    public function aRefusedCallIsNotCountedAndNotAnswered(): void
+    {
+        // The refusal happens before anything answers: a call rejected after
+        // `recordMatch()` and `performAction()` would leave the double moved
+        // by a call that was refused.
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+        $answered = 0;
+
+        when(fn() => $repository->count())->answers(static function () use (&$answered): int {
+            ++$answered;
+
+            return 1;
+        });
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        try {
+            $repository->count();
+        } catch (VerificationFailed) {
+            // The subject may swallow it; the claim below is what still holds.
+        }
+
+        // The action never ran, and the stub never counted the call.
+        Assert::same($answered, 0);
+        Assert::string(Understudy::transcript($repository))->contains('count() ->');
+
+        // Recorded, though: a refusal the transcript cannot show is a refusal
+        // the reader has to reconstruct.
+        Assert::same(count(Understudy::calls(fn() => $repository->count())), 1);
+    }
+
+    public function aStepRepeatedAfterTheProtocolMovedOnIsOutOfTurn(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        $repository->save($book);
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining('out of turn');
+
+        $repository->save($book);
+    }
+
+    #[ExpectNoAssertions]
+    public function aConfiguredCallBetweenStepsIsBackground(): void
+    {
+        // A query the subject makes on the way has to be stubbed: without a
+        // `when()` the protocol cannot tell "not part of this" from "you got
+        // the order wrong".
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        when(fn() => $repository->titles())->returns([]);
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        $repository->save($book);
+        $repository->titles();
+        $repository->count();
+
+        Understudy::verifyAll();
+    }
+
+    public function anUnconfiguredCallOnADoubleUnderProtocolIsRefused(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining(
+            'neither a step nor configured',
+        );
+
+        $repository->titles();
+    }
+
+    #[ExpectNoAssertions]
+    public function aDoubleTheProtocolDoesNotNameIsInvisibleToIt(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $other = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        $other->titles();
+        $repository->save($book);
+        $other->titles();
+        $repository->count();
+
+        Understudy::verifyAll();
+    }
+
+    public function anUnfinishedProtocolIsReportedByVerifyAll(): void
+    {
+        // Arming is a claim, not only a guard — otherwise a subject that
+        // stopped after step one, or swallowed the refusal, passes in silence.
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        $repository->save($book);
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining(
+            'The armed protocol stopped at step 2 of 2',
+        );
+
+        Understudy::verifyAll();
+    }
+
+    public function aSwallowedRefusalStillFailsTheTest(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        when(fn() => $repository->count())->returns(1);
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        try {
+            $repository->count();
+        } catch (VerificationFailed) {
+            // A subject with a broad `catch` is exactly why the claim exists.
+        }
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining('stopped at step 1 of 2');
+
+        Understudy::verifyAll();
+    }
+
+    #[ExpectNoAssertions]
+    public function aStepIsAccountedForByTheProtocolThatNamedIt(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        $repository->save($book);
+        $repository->count();
+
+        Understudy::nothingElse($repository);
+    }
+
+    public function armingASecondProtocolWhileOneIsRunningIsRefused(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(fn() => $repository->save($book), fn() => $repository->count());
+
+        Expect::exception(InvalidCallSpecification::class)->withMessageContaining(
+            'already armed and is waiting on step 1 of 2',
+        );
+
+        Understudy::expectSequence(fn() => $repository->titles());
+    }
+
+    #[ExpectNoAssertions]
+    public function aFinishedProtocolCanBeReplacedByTheNextPhase(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(fn() => $repository->save($book));
+        $repository->save($book);
+
+        Understudy::expectSequence(fn() => $repository->count());
+        $repository->count();
+
+        Understudy::verifyAll();
+    }
+
+    public function aStepAfterTheProtocolRanOutIsStillOutOfTurn(): void
+    {
+        // The protocol has no step due, so the report has to say that rather
+        // than name one.
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(fn() => $repository->save($book));
+        $repository->save($book);
+
+        $failure = null;
+
+        try {
+            $repository->save($book);
+        } catch (VerificationFailed $thrown) {
+            $failure = $thrown->failures()[0];
+        }
+
+        Assert::instanceOf($failure, VerificationFailure::class);
+        Assert::same($failure->kind, FailureKind::OutOfSequence);
+        Assert::null($failure->expectation);
+        Assert::string($failure->summary)->contains('nothing — the protocol has run out');
+    }
+
+    public function anUnconfiguredCallAfterTheProtocolRanOutIsStillRefused(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(fn() => $repository->save($book));
+        $repository->save($book);
+
+        $failure = null;
+
+        try {
+            $repository->titles();
+        } catch (VerificationFailed $thrown) {
+            $failure = $thrown->failures()[0];
+        }
+
+        Assert::instanceOf($failure, VerificationFailure::class);
+        Assert::null($failure->expectation);
+    }
+
+    public function aProtocolRefusalCarriesTheCallAndTheStepsAsStructuredFields(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        when(fn() => $repository->count())->returns(1);
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        $failure = null;
+
+        try {
+            $repository->count();
+        } catch (VerificationFailed $thrown) {
+            $failure = $thrown->failures()[0];
+        }
+
+        Assert::instanceOf($failure, VerificationFailure::class);
+        Assert::same($failure->double, 'BookRepository');
+        Assert::same($failure->expectation, 'save(' . Book::class . "#1 {title: 'Dune'})");
+        Assert::same($failure->expectedCalls, ['save(' . Book::class . "#1 {title: 'Dune'})", 'count()']);
+        Assert::same(count($failure->observedCalls ?? []), 1);
+        Assert::same(($failure->observedCalls ?? [])[0]->method, 'count');
+    }
+
+    public function aRefusalForAnUnconfiguredCallCarriesTheSameFields(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+        );
+
+        $failure = null;
+
+        try {
+            $repository->titles();
+        } catch (VerificationFailed $thrown) {
+            $failure = $thrown->failures()[0];
+        }
+
+        Assert::instanceOf($failure, VerificationFailure::class);
+        Assert::same($failure->summary, GoldenMessage::read('armed-protocol-refuses-an-unconfigured-call'));
+        Assert::same($failure->expectation, 'save(' . Book::class . "#1 {title: 'Dune'})");
+        Assert::same($failure->expectedCalls, ['save(' . Book::class . "#1 {title: 'Dune'})", 'count()']);
+        Assert::same(count($failure->observedCalls ?? []), 1);
+        Assert::same(($failure->observedCalls ?? [])[0]->method, 'titles');
+    }
+
+    public function anUnfinishedProtocolIsReportedWithEveryStepNumbered(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(
+            fn() => $repository->save($book),
+            fn() => $repository->count(),
+            fn() => $repository->titles(),
+        );
+
+        $repository->save($book);
+
+        $failure = null;
+
+        try {
+            Understudy::verifyAll();
+        } catch (VerificationFailed $thrown) {
+            $failure = $thrown->failures()[0];
+        }
+
+        Assert::instanceOf($failure, VerificationFailure::class);
+        Assert::same($failure->summary, GoldenMessage::read('armed-protocol-stopped-halfway'));
+        Assert::same($failure->expectation, 'count()');
+    }
+
+    public function aProtocolCannotBeArmedOnAnEnclosingDouble(): void
+    {
+        // Same rule as configuring one: a double belongs to the context that
+        // created it, and only ordinary calls cross the boundary.
+        $outer = Understudy::for(BookRepository::class);
+
+        Expect::exception(ContextOwnershipViolation::class);
+
+        Understudy::scope(static function () use ($outer): void {
+            Understudy::expectSequence(fn() => $outer->count());
+        });
+    }
+
+    public function anEmptyProtocolIsRefused(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)->withMessageContaining(
+            'needs at least one call',
+        );
+
+        Understudy::expectSequence();
+    }
+
+    #[ExpectNoAssertions]
+    public function aCheckpointVerifiesTheProtocolAndThenDropsIt(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $book = new Book('Dune');
+
+        Understudy::expectSequence(fn() => $repository->save($book));
+        $repository->save($book);
+
+        Understudy::checkpoint();
+
+        // Dropped: an unconfigured call on that double would have been refused
+        // a moment ago, because a protocol was watching it. The phase that
+        // claimed the protocol is closed, so it is just a call again.
+        $repository->titles();
+
+        Understudy::verifyAll();
     }
 
     // --- verifySequence ------------------------------------------------------

@@ -46,6 +46,27 @@ function expect(callable $call): ExpectBuilder
 }
 
 /**
+ * Arms a protocol before the code under test runs: a call that breaks the order
+ * fails at that call, not in teardown.
+ *
+ * ```php
+ * expectSequence(
+ *     fn () => $repo->begin(),
+ *     fn () => $repo->save($book),
+ *     fn () => $repo->commit(),
+ * );
+ * ```
+ *
+ * @param callable(): mixed ...$calls
+ *
+ * @api
+ */
+function expectSequence(callable ...$calls): void
+{
+    Understudy::expectSequence(...$calls);
+}
+
+/**
  * Asserts, after the fact, how many times a call was made.
  *
  * ```php
