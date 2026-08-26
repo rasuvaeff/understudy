@@ -80,10 +80,19 @@
             "@cs",
             "@psalm",
             "@test",
-            "@test:integration"
+            "@test:integration",
+            "@examples"
         ],
         "cs": "php-cs-fixer fix --dry-run --diff --config=.php-cs-fixer.php",
         "cs:fix": "php-cs-fixer fix --diff --config=.php-cs-fixer.php",
+        "examples": [
+            "@php examples/basic-usage.php",
+            "@php examples/modes.php",
+            "@php examples/wiring.php",
+            "@php examples/protocol.php",
+            "@php examples/defaults-registry.php",
+            "@php examples/structured-failures.php"
+        ],
         "mutation": "infection --threads=max",
         "psalm": "psalm --no-cache",
         "rector": "rector process --dry-run",
