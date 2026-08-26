@@ -1,0 +1,9 @@
+Understudy `BookRepository` is strict and received an unexpected call to `tag()`.
+
+The call was:
+    tag('beta', 1)
+
+Nothing configured for `tag` accepted it:
+    tag(*string(matches: /^a/)*, *2*)
+
+Configure it first: when(fn () => $double->tag(...))->returns(...)

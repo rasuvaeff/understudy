@@ -274,6 +274,70 @@ final class Expectation
     }
 
     /**
+     * How this expectation reads back next to a call it refused: like
+     * {@see describe()}, with every argument that rejected the call marked.
+     *
+     * A matcher is asked again here, because only it knows whether it accepts
+     * a value — and it is asked defensively. This runs during dispatch, inside
+     * the code under test: a matcher that throws while the message is being
+     * built would replace the refusal with its own exception, and the reader
+     * would never learn what was actually refused. A matcher that breaks
+     * counts as one that did not accept, and is marked as such.
+     *
+     * @param list<mixed> $args the call's arguments
+     *
+     * @return non-empty-string
+     */
+    public function describeAgainst(array $args): string
+    {
+        return ArgumentFormatter::scope(function () use ($args): string {
+            $parts = [];
+
+            /** @var mixed $argument */
+            foreach ($this->args as $position => $argument) {
+                $rendered = $argument instanceof ArgumentMatcher
+                    ? $argument->describe()
+                    : ArgumentFormatter::format($argument);
+
+                $parts[] = $this->accepts($position, $argument, $args)
+                    ? $rendered
+                    : '*' . $rendered . '*';
+            }
+
+            return $this->method . '(' . implode(', ', $parts) . ')';
+        });
+    }
+
+    /**
+     * Whether one declared argument accepts what arrived in its place.
+     *
+     * An argument the call never carried is not accepted by anything: that is
+     * how an expectation of a wider arity reads back with its extra positions
+     * marked.
+     *
+     * @param int<0, max> $position
+     * @param list<mixed> $args
+     */
+    private function accepts(int $position, mixed $expected, array $args): bool
+    {
+        try {
+            if ($expected instanceof TailMatcher) {
+                return $expected->matchesTail(array_slice($args, $position));
+            }
+
+            if (!array_key_exists($position, $args)) {
+                return false;
+            }
+
+            return $expected instanceof ArgumentMatcher
+                ? $expected->matches($args[$position])
+                : $expected === $args[$position];
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
      * How this expectation reads back in a failure message.
      *
      * @return non-empty-string

@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- **A strict double says what it refused and what it compared the call
+  against.** Naming only the method sent the reader back to a test that *had*
+  configured that method — the difference was in the arguments, and the message
+  did not carry them. The refusal now renders the call and every expectation
+  registered for that method that did not accept it, with each rejecting
+  argument marked from the expectation's side, a position the call never
+  carried included. Up to five, in the order the dispatcher tried them, then a
+  count. With nothing configured for the method there is nothing to compare
+  against and the message is unchanged. A matcher asked while the message is
+  built is asked defensively: it runs inside the code under test, and one that
+  throws counts as one that did not accept rather than replacing the refusal
+  with its own exception.
+- Fixed a deprecation introduced with object rendering: `SplObjectStorage::contains()`
+  is deprecated as of PHP 8.5, and every rendered object emitted a notice.
+
 - **An object argument renders as an alias and its public state**, so the `*`
   that marks a differing argument points at something the reader can see:
   `save(App\Book#1 {title: 'Dune'})` against `save(*App\Book#2 {title:

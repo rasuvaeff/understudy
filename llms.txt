@@ -103,6 +103,11 @@ No runtime deps; `ext-mbstring` is not needed.
   same instance keeps one number and a rebuilt copy gets another. The braces
   list public properties only, up to five: no getter is called to render a
   message, and an object with nothing public renders as its alias alone.
+- A strict double's refusal names the call and everything configured for that
+  method that did not accept it, with each rejecting argument marked from the
+  expectation's side — including a position the call never carried. Up to five,
+  then a count. With nothing configured for the method there is nothing to
+  compare against, and the message stays one line.
 
 ## API
 
