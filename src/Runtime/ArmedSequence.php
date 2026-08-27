@@ -99,7 +99,7 @@ final class ArmedSequence
         if (!$this->isComplete()) {
             [$owner, $step] = $this->steps[$this->cursor];
 
-            if ($owner === $double && self::accepts($step, $invocation)) {
+            if ($owner === $double && $this->accepts($step, $invocation)) {
                 ++$this->cursor;
 
                 return SequenceVerdict::Advanced;
@@ -119,7 +119,7 @@ final class ArmedSequence
     private function isAnyStep(object $double, Invocation $invocation): bool
     {
         foreach ($this->steps as [$owner, $step]) {
-            if ($owner === $double && self::accepts($step, $invocation)) {
+            if ($owner === $double && $this->accepts($step, $invocation)) {
                 return true;
             }
         }
@@ -133,7 +133,7 @@ final class ArmedSequence
      * counts as one that did not match, exactly as it does when a refusal is
      * being rendered.
      */
-    private static function accepts(Expectation $step, Invocation $invocation): bool
+    private function accepts(Expectation $step, Invocation $invocation): bool
     {
         try {
             return $step->matches($invocation->method, $invocation->args);

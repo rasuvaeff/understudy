@@ -1,14 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-08-27
 
-- **Reverted the lazy context retirement from the previous entry.** Marking a
-  context retired instead of walking its doubles made teardown cheaper in an
-  isolated loop and double creation 13-23% slower in the benchmark: the owner
-  entries then live until collection and the map they sit in grows across the
-  suite. The work was not removed, it was moved somewhere it costs more. No
-  behaviour changes either way; the other three costs taken off the hot paths
-  stay.
+New verbs and richer failure messages; nothing removed, nothing renamed. A
+minor rather than a patch because `expectSequence()` is new public API, and on
+0.x that is the boundary Composer's caret already treats as breaking.
 
 - **`Understudy::expectSequence()` / `expectSequence()`: a protocol armed before
   the subject runs.** `ordered()` and `verifySequence()` both answer in
@@ -39,6 +35,20 @@
   with its own exception.
 - Fixed a deprecation introduced with object rendering: `SplObjectStorage::contains()`
   is deprecated as of PHP 8.5, and every rendered object emitted a notice.
+
+- **Performance.** Four per-call and per-double costs came off the hot paths:
+  the armed-protocol check now sits behind one null check, a context is recorded
+  live once where it is created rather than once per double adopted into it, and
+  one `ReflectionClass` is built per generated class rather than per double. A
+  fifth change — retiring a context by marking it instead of walking its
+  doubles — was measured, found to move the cost onto creation (13-23% worse in
+  the benchmark) rather than remove it, and reverted; the finding is recorded in
+  `AGENTS.md`.
+- **`perf/README.md` re-measured on a quiet machine.** The previous figures were
+  taken at a commit before 0.1.0 and described no released version. They also
+  did not show a creation regression that landed before the first tag and
+  shipped in 0.1.0, 0.1.1 and 0.1.2; it is bisected, documented, and still
+  present.
 
 - **An object argument renders as an alias and its public state**, so the `*`
   that marks a differing argument points at something the reader can see:
