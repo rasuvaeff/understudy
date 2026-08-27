@@ -20,6 +20,7 @@ final class EngineHarness
     public int $verifiesPassed = 0;
     public int $verifiesFailed = 0;
     public int $settledCheckpoints = 0;
+    public int $refusedRegistrations = 0;
 
     public function __construct(public readonly BookRepository $double) {}
 }

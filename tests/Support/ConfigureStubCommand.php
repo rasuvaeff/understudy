@@ -6,6 +6,7 @@ namespace Rasuvaeff\Understudy\Tests\Support;
 
 use Rasuvaeff\PropertyTesting\StateMachine\Command;
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Exception\ConflictingExpectation;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Understudy;
 use Rasuvaeff\Understudy\WhenBuilder;
@@ -35,6 +36,11 @@ final readonly class ConfigureStubCommand implements Command
     {
         \assert($model instanceof EngineState);
 
+        if ($model->conflicts($this->anyArgument, $this->literalId, incomingIsClaim: false)) {
+            // The engine refuses the registration, so the model keeps none.
+            return $model;
+        }
+
         return $model->withSpec(new EngineSpec(
             anyArgument: $this->anyArgument,
             literalId: $this->literalId,
@@ -44,27 +50,42 @@ final readonly class ConfigureStubCommand implements Command
     }
 
     #[\Override]
-    public function run(mixed $model, mixed $system): int
+    public function run(mixed $model, mixed $system): array
     {
         \assert($model instanceof EngineState);
         \assert($system instanceof EngineHarness);
 
-        /** @var WhenBuilder<mixed> $builder */
-        $builder = when(fn() => $system->double->find($this->argument()));
-        $builder->returns(new Book('s' . count($model->specs)));
+        $refused = false;
+
+        try {
+            /** @var WhenBuilder<mixed> $builder */
+            $builder = when(fn() => $system->double->find($this->argument()));
+            $builder->returns(new Book('s' . count($model->specs)));
+        } catch (ConflictingExpectation) {
+            $refused = true;
+            ++$system->refusedRegistrations;
+        }
 
         // Recording must not itself dispatch: the log the model knows about
         // is still the whole log.
-        return count(Understudy::calls(fn() => $system->double->find(Arg::any())));
+        return [
+            count(Understudy::calls(fn() => $system->double->find(Arg::any()))),
+            $refused,
+        ];
     }
 
     #[\Override]
     public function postCondition(mixed $model, mixed $result): bool
     {
         \assert($model instanceof EngineState);
-        \assert(\is_int($result));
+        \assert(\is_array($result));
 
-        return $result === $model->callCount();
+        [$logSize, $refused] = $result;
+
+        // The engine must refuse exactly the registrations the model calls
+        // conflicting — no silent degradation, no spurious refusal.
+        return $logSize === $model->callCount()
+            && $refused === $model->conflicts($this->anyArgument, $this->literalId, incomingIsClaim: false);
     }
 
     #[\Override]

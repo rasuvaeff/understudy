@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- **A `when()` stub and an `expect()` for the exact same call are refused at
+  registration** with the new `ConflictingExpectation` (rasuvaeff/understudy#59).
+  The two never composed: whichever was declared later took the dispatch, and
+  the earlier one silently lost its purpose — the stub's answer replaced by
+  the mode default, or the count starved and reported as "called never" about
+  a call that did happen. Both orders now fail fast, naming the double, the
+  specification and the one-registration idioms (`expect(...)->returns(...)`,
+  `when(...)->times(...)`). Dispatch semantics are untouched: two plain stubs
+  still layer most-recent-first, and overlapping-but-different specifications
+  (a broad fallback under a narrow claim) still compose. Registering over a
+  *counted stub* (`when(...)->times(...)`) is refused the same way, for the
+  same reason.
+
 ## 0.2.0 — 2026-08-27
 
 New verbs and richer failure messages; nothing removed, nothing renamed. A

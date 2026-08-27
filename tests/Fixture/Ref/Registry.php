@@ -12,6 +12,9 @@ interface Registry
     /** @return list<string> */
     public function &names(): array;
 
+    /** @return array<string, mixed> */
+    public function &row(int $id): array;
+
     public function fill(string &$slot, string $value): void;
 
     /**

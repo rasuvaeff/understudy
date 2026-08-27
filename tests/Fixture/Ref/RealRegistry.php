@@ -12,6 +12,9 @@ class RealRegistry implements Registry
     /** @var list<string> */
     private array $labels = [];
 
+    /** @var array<int, array<string, mixed>> */
+    private array $rows = [];
+
     /** @return array<string, mixed> */
     #[\Override]
     public function &values(): array
@@ -24,6 +27,15 @@ class RealRegistry implements Registry
     public function &names(): array
     {
         return $this->labels;
+    }
+
+    /** @return array<string, mixed> */
+    #[\Override]
+    public function &row(int $id): array
+    {
+        $this->rows[$id] ??= [];
+
+        return $this->rows[$id];
     }
 
     #[\Override]

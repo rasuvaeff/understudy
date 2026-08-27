@@ -86,6 +86,7 @@ final class EngineLifecyclePropertyTest
         Classify::cover($harness->verifiesPassed > 0, 'an explicit verify passed', 5);
         Classify::cover($harness->verifiesFailed > 0, 'an explicit verify failed', 5);
         Classify::cover($harness->settledCheckpoints > 0, 'a checkpoint settled', 5);
+        Classify::cover($harness->refusedRegistrations > 0, 'a colliding registration was refused', 5);
 
         // The runner advanced its own copy of the model; folding the same
         // pure transitions here gives the end state the real log must have
@@ -123,19 +124,32 @@ final class EngineLifecyclePropertyTest
 
     /**
      * The layerings the ledger got wrong before, pinned before the random
-     * phase: shadowing, checkpoint survival, accounting through verify.
+     * phase: the refused stub/claim collision, checkpoint survival,
+     * accounting through verify.
      *
      * @return iterable<string, CommandSequence>
      */
     public static function theLedgerTracksTheModelExamples(): iterable
     {
-        yield 'a newer claim shadows an older stub and answers the default' => [new CommandSequence(
+        // The sequence that used to pin the silent shadowing: the claim is now
+        // refused at registration, the stub keeps answering, and the call it
+        // answers stays unaccounted — which nothingElse() then reports.
+        yield 'a claim colliding with a stub is refused and the stub keeps answering' => [new CommandSequence(
             new EngineState(),
             [
                 new ConfigureStubCommand(anyArgument: false, literalId: 2),
                 new ConfigureExpectCommand(anyArgument: false, literalId: 2, minimum: 1, maximum: 1),
                 new DispatchFindCommand(id: 2),
                 new RequireNothingElseCommand(),
+            ],
+        )];
+
+        yield 'a stub colliding with a wildcard claim is refused' => [new CommandSequence(
+            new EngineState(),
+            [
+                new ConfigureExpectCommand(anyArgument: true, literalId: 0, minimum: 0, maximum: null),
+                new ConfigureStubCommand(anyArgument: true, literalId: 0),
+                new DispatchFindCommand(id: 1),
             ],
         )];
 

@@ -275,6 +275,15 @@ An expectation needs no `returns()`: counting and answering are separate
 concerns, so the mode's type-safe default supplies the value, and a matched
 expectation satisfies a strict double because the call was expected.
 
+A stub and an expectation for the **exact same call** do not stack, and both
+orders are refused at registration with `ConflictingExpectation`: whichever
+was declared later would take the dispatch, silently discarding the stub's
+answer or starving the expectation's count. Say both things about one call in
+one registration — `expect(...)->returns(...)`, or `when(...)->times(...)` —
+and declare a repeated count once, with `times()`. Overlap is not equality:
+a broad fallback stub under a narrower expectation is still the documented
+layering.
+
 Pest has a global `expect()` of its own — import this one as `expect as
 expectCall`, or call `Understudy::expect()`.
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Runtime;
 
 use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Exception\ConflictingExpectation;
 use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
@@ -140,8 +141,11 @@ final class DoubleState
         // The same walk the dispatcher makes, in the same order, stopping at
         // the same place. Scanning declaration order and answering "some
         // matching expectation has an action" would disagree with it exactly
-        // when a newer `expect(...)->times(1)` shadows an older stub — and the
-        // slot would then be replaced by a value dispatch never returned.
+        // when a newer, narrower `expect(...)->times(1)` shadows an older
+        // broad stub for the same call — and the slot would then be replaced
+        // by a value dispatch never returned. (An identical specification
+        // cannot layer like that any more — assertComposes() refuses it — but
+        // an overlapping one still does.)
         foreach ($this->expectationsFor($method) as $expectation) {
             if ($expectation->matchesArguments($args)) {
                 return $expectation->hasAction();
@@ -153,6 +157,8 @@ final class DoubleState
 
     public function addExpectation(Expectation $expectation): void
     {
+        $this->assertComposes($expectation);
+
         $this->expectations[] = $expectation;
         $this->matchingExpectations[] = $expectation;
 
@@ -168,6 +174,50 @@ final class DoubleState
 
         if ($count > 2) {
             $this->addToMatchingIndex($expectation);
+        }
+    }
+
+    /**
+     * Refuses a registration that names a call another registration already
+     * specifies when the two have no working layering. Whichever is declared
+     * later takes the dispatch, so a stub followed by an action-less
+     * expectation answers the mode default instead of the stubbed value, and
+     * anything registered after a counted expectation starves its count —
+     * both silently, which is the one thing this library promises not to do.
+     *
+     * Two plain stubs stay allowed: "most recently registered wins, earlier
+     * ones remain as fallbacks" is documented layering, and overlapping but
+     * different specifications (a broad fallback and a narrow claim) are the
+     * reason that rule exists.
+     *
+     * A `times()` added to a stub later makes the *stub* counted, and later
+     * registrations then collide with it the same way.
+     */
+    private function assertComposes(Expectation $incoming): void
+    {
+        /** @var list<Expectation> $registered */
+        $registered = $this->matchingByMethod[$incoming->method] ?? [];
+
+        // At registration time an expect() is exactly a claim — it carries
+        // its cardinality already — and a when() carries neither; a times()
+        // put on a stub later makes the *registered* side counted, which the
+        // cardinality check below sees on the next registration.
+        $incomingCounts = $incoming->isClaim();
+
+        foreach ($registered as $existing) {
+            if (!$existing->specEquals($incoming)) {
+                continue;
+            }
+
+            if ($existing->cardinality() !== null) {
+                throw $incomingCounts
+                    ? ConflictingExpectation::duplicateCountedExpectation($this->label(), $existing->describe())
+                    : ConflictingExpectation::stubAfterCountedExpectation($this->label(), $existing->describe());
+            }
+
+            if ($incomingCounts) {
+                throw ConflictingExpectation::claimAfterStub($this->label(), $existing->describe());
+            }
         }
     }
 

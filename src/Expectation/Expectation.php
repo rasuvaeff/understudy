@@ -247,6 +247,52 @@ final class Expectation
     }
 
     /**
+     * Whether the other expectation names exactly this call: same method, and
+     * the same specification in every position — literals by identity, and
+     * matchers by class and by what parameterises them.
+     *
+     * Matchers are compared with `==` deliberately: two `Arg::int(min: 1,
+     * max: 5)` built on different lines are the same specification, and
+     * identity would miss every collision but a reused instance. The loose
+     * comparison can only conflate matchers of one class whose configuration
+     * compares equal — which is what "the same specification" means.
+     *
+     * Overlap is not equality: `find(Arg::any())` and `find(7)` accept the
+     * same call and are different specifications, which is exactly the
+     * broad-fallback layering the dispatcher documents.
+     */
+    public function specEquals(self $other): bool
+    {
+        if ($this->method !== $other->method || $this->argumentCount !== $other->argumentCount) {
+            return false;
+        }
+
+        /** @var mixed $argument */
+        foreach ($this->args as $position => $argument) {
+            /** @var mixed $counterpart */
+            $counterpart = $other->args[$position];
+
+            if ($argument instanceof ArgumentMatcher) {
+                if (
+                    !$counterpart instanceof ArgumentMatcher
+                    || $argument::class !== $counterpart::class
+                    || $argument != $counterpart
+                ) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if ($counterpart instanceof ArgumentMatcher || $argument !== $counterpart) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Counts this match. Separate from performing an action, because an
      * expectation without one still constrains how often the call may happen.
      */
