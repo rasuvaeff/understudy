@@ -39,6 +39,7 @@ final class StubBench
         warmup: 200,
         calls: 50,
         iterations: 200,
+        tolerance: \INF,
     )]
     public static function onceUnderstudy(): void
     {
@@ -71,6 +72,7 @@ final class StubBench
         warmup: 200,
         calls: 50,
         iterations: 200,
+        tolerance: \INF,
     )]
     public static function manyUnderstudy(): void
     {

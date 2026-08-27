@@ -44,6 +44,7 @@ final class CreateBench
         warmup: 200,
         calls: 50,
         iterations: 200,
+        tolerance: \INF,
     )]
     public static function narrowUnderstudy(): void
     {
@@ -84,6 +85,7 @@ final class CreateBench
         warmup: 200,
         calls: 50,
         iterations: 200,
+        tolerance: \INF,
     )]
     public static function wideUnderstudy(): void
     {
