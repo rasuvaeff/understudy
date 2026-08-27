@@ -40,8 +40,6 @@ final class RuntimeContext
      */
     public ?ArmedSequence $armed = null;
 
-    private bool $retired = false;
-
     private readonly DefaultFactories $defaultFactories;
 
     public function __construct()
@@ -87,30 +85,6 @@ final class RuntimeContext
         if ($this->recordingDepth > 0) {
             $this->recordingDepth--;
         }
-    }
-
-    /**
-     * Whether this context was torn down. A retired context keeps answering
-     * "I owned this double" so that a call on a stale one can say what
-     * happened to it, and answers nothing else.
-     */
-    public function isRetired(): bool
-    {
-        return $this->retired;
-    }
-
-    /**
-     * One write, rather than one per double it holds. Teardown runs after
-     * every test, and what it costs is paid by every test in the suite.
-     *
-     * What it does NOT do is drop the registry: a context still on a Fiber's
-     * stack keeps answering for its own doubles, and only cross-context
-     * lookups stop finding it. Clearing here killed a sibling Fiber's doubles
-     * when the main flow reset.
-     */
-    public function retire(): void
-    {
-        $this->retired = true;
     }
 
     public function register(object $double, DoubleState $state): void

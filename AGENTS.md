@@ -314,6 +314,23 @@ seconds instead of the full run's minute — and the full run stays the gate.
   `final` properties and asymmetric visibility are a parse error on 8.3 — a file
   carrying them takes the whole suite down there rather than skipping a test.
 
+- **The per-double loop in `Runtime::retire()` is load-bearing, and it looks
+  like the opposite.** Teardown runs after every test and walks every double the
+  context held, stamping it forgotten and dropping its owner — an obvious thing
+  to replace with a flag on the context that `ownerOf()` reads. That was built,
+  and it made teardown cheaper in an isolated loop and double creation **13-23%
+  slower** in the benchmark: the owner entries then live until collection, and
+  the map they sit in grows across the whole suite. The work was not removed,
+  it was moved somewhere it costs more. Reverted, measured back to parity.
+  Before touching it again, read the next bullet.
+- **An isolated micro-benchmark cannot see a cost you moved.** It times an
+  operation; the regression above was in the system around it, and only showed
+  up in a run that had already built ten thousand doubles. The full harness is
+  the one that sees it — and it reads 0.415 normalised where three filtered runs
+  read 0.307 if the machine is busy. What is trustworthy is neither on its own:
+  an A/B of the full harness on a quiet machine, three runs per side, with the
+  competitors' movement in the same runs used as the noise floor. If Mockery and
+  PHPUnit moved as much as we did, nothing was measured.
 - **A perf figure that cannot be reproduced from the repository is not a
   figure.** The recorded environment said "pinned to six cores"; the `make perf`
   target did no pinning, so the numbers depended on flags in someone's shell
