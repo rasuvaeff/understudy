@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-08-27
 
 - **A `when()` stub and an `expect()` for the exact same call are refused at
   registration** with the new `ConflictingExpectation` (rasuvaeff/understudy#59).
