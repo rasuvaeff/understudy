@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **Reverted the lazy context retirement from the previous entry.** Marking a
+  context retired instead of walking its doubles made teardown cheaper in an
+  isolated loop and double creation 13-23% slower in the benchmark: the owner
+  entries then live until collection and the map they sit in grows across the
+  suite. The work was not removed, it was moved somewhere it costs more. No
+  behaviour changes either way; the other three costs taken off the hot paths
+  stay.
+
 - **`Understudy::expectSequence()` / `expectSequence()`: a protocol armed before
   the subject runs.** `ordered()` and `verifySequence()` both answer in
   teardown, where the stack trace points at `verifyAll()` rather than at the
