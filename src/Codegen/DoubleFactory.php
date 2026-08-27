@@ -140,7 +140,7 @@ final class DoubleFactory
         $getHooks = 'getHooks';
 
         foreach ($reflection->getProperties() as $property) {
-            if (!method_exists($property, $isAbstract) || $property->{$isAbstract}() !== true) {
+            if (!method_exists($property, $isAbstract) || !$property->{$isAbstract}()) {
                 continue;
             }
 
