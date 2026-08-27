@@ -90,7 +90,7 @@ final class Runtime
         $stack = self::stack();
 
         if ($stack === []) {
-            $context = new RuntimeContext();
+            $context = self::freshContext();
             self::push($context);
 
             return $context;
@@ -112,7 +112,7 @@ final class Runtime
      */
     public static function pushScope(): RuntimeContext
     {
-        $context = new RuntimeContext();
+        $context = self::freshContext();
         self::push($context);
 
         return $context;
@@ -188,14 +188,19 @@ final class Runtime
     {
         $context = self::current();
         $context->register($double, $state);
-        self::remember($context);
-
         self::owners()->offsetSet($double, $context);
     }
 
     /**
      * Records a context as holding understudies, so accounting can reach it
      * from wherever the adapter stands.
+     */
+    /**
+     * Called where a context comes into being, not once per double adopted
+     * into it: the context is the same for every double a test builds, so
+     * doing it in `adopt()` rewrote the same key on the hottest creation path
+     * there is. A context that ends up holding nothing is harmless here —
+     * accounting walks its states, and it has none.
      */
     private static function remember(RuntimeContext $context): void
     {
@@ -256,7 +261,6 @@ final class Runtime
 
         $context = self::current();
         $context->register($clone, new DoubleState($blueprint));
-        self::remember($context);
 
         self::owners()->offsetSet($clone, $context);
     }
@@ -296,7 +300,6 @@ final class Runtime
         }
 
         $owner->register($double, new DoubleState($blueprint, nested: true));
-        self::remember($owner);
         self::owners()->offsetSet($double, $owner);
 
         return $double;
@@ -306,7 +309,20 @@ final class Runtime
     {
         $owners = self::owners();
 
-        return $owners->offsetExists($double) ? $owners->offsetGet($double) : null;
+        if (!$owners->offsetExists($double)) {
+            return null;
+        }
+
+        // WeakMap::offsetGet() is typed as nullable regardless of the value
+        // type, and offsetExists() above has already ruled that out.
+        /** @var RuntimeContext $owner */
+        $owner = $owners->offsetGet($double);
+
+        // A retired context owns nothing any more. Answering null here is what
+        // unsetting every one of its doubles used to do, at one write instead
+        // of one per double — and it leaves a context still on a Fiber's stack
+        // answering for its own, which is the behaviour reset() has.
+        return $owner->isRetired() ? null : $owner;
     }
 
     /**
@@ -318,7 +334,16 @@ final class Runtime
      */
     public static function isForgotten(object $double): bool
     {
-        return self::$forgotten?->offsetExists($double) ?? false;
+        // The raw map, not `ownerOf()`: that one hides a retired context,
+        // which is exactly the case this question is about.
+        if (self::$owners === null || !self::$owners->offsetExists($double)) {
+            return false;
+        }
+
+        /** @var RuntimeContext $owner */
+        $owner = self::$owners->offsetGet($double);
+
+        return $owner->isRetired();
     }
 
     /**
@@ -514,19 +539,27 @@ final class Runtime
         // would mean deciding after `recordMatch()` counted it and
         // `performAction()` ran the test's own `returns()`/`answers()` — a
         // refused call would have already moved the double's state.
-        $sequence = $context->armedSequence();
-        $verdict = $sequence?->offer($double, $invocation) ?? SequenceVerdict::NotWatched;
+        //
+        // Cost is why this is one property read and a null check rather than
+        // an accessor and a verdict to compare: no protocol is armed in the
+        // overwhelming majority of calls, and everything on this path is paid
+        // by every call in every suite. `make perf` measures it.
+        $verdict = SequenceVerdict::NotWatched;
+        $sequence = $context->armed;
 
-        if ($verdict === SequenceVerdict::OutOfTurn) {
-            \assert($sequence !== null);
+        if ($sequence !== null) {
+            $verdict = $sequence->offer($double, $invocation);
 
-            throw VerificationFailed::of([self::outOfTurn($state, $sequence, $invocation)]);
-        }
+            if ($verdict === SequenceVerdict::OutOfTurn) {
+                throw VerificationFailed::of([self::outOfTurn($state, $sequence, $invocation)]);
+            }
 
-        if ($verdict === SequenceVerdict::Advanced) {
-            // A step is accounted for by the protocol that named it; without
-            // this, `nothingElse()` would report the protocol's own calls.
-            $invocation->markAccounted();
+            if ($verdict === SequenceVerdict::Advanced) {
+                // A step is accounted for by the protocol that named it;
+                // without this, `nothingElse()` would report the protocol's
+                // own calls.
+                $invocation->markAccounted();
+            }
         }
 
         foreach ($state->expectationsFor($method, $invocation->args) as $expectation) {
@@ -873,32 +906,51 @@ final class Runtime
         $fiber = \Fiber::getCurrent();
 
         if ($fiber === null) {
-            if (self::$main !== []) {
-                $position = count(self::$main) - 1;
-                self::retire(self::$main[$position]);
-                self::$main[$position] = new RuntimeContext();
-            }
+            $stack = self::$main;
+        } else {
+            $fibers = self::fibers();
+            /** @var list<RuntimeContext> $stack */
+            $stack = $fibers->offsetExists($fiber) ? $fibers->offsetGet($fiber) : [];
+        }
 
-            self::forgetOrphans();
+        // The sweep retires every live context, this one included — a context
+        // is recorded live where it is created, so there is nothing to retire
+        // separately here. It runs before the replacement is opened, because
+        // it would otherwise retire that one too.
+        self::forgetOrphans();
+
+        $position = count($stack) - 1;
+
+        if ($position < 0) {
+            return;
+        }
+
+        $stack[$position] = self::freshContext();
+        // Replacing one slot of a list keeps it a list; psalm widens it to a
+        // plain array because the offset is a variable.
+        /** @var list<RuntimeContext> $stack */
+
+        if ($fiber === null) {
+            self::$main = $stack;
 
             return;
         }
 
-        $fibers = self::fibers();
+        self::fibers()->offsetSet($fiber, $stack);
+    }
 
-        if ($fibers->offsetExists($fiber)) {
-            /** @var list<RuntimeContext> $stack */
-            $stack = $fibers->offsetGet($fiber);
+    /**
+     * The one place a context comes into being, and therefore the one place it
+     * is recorded as live. Recording it per double adopted into it rewrote the
+     * same key on the hottest creation path there is; recording it here happens
+     * once, and no context can be created without it.
+     */
+    private static function freshContext(): RuntimeContext
+    {
+        $context = new RuntimeContext();
+        self::remember($context);
 
-            if ($stack !== []) {
-                $position = count($stack) - 1;
-                self::retire($stack[$position]);
-                $stack[$position] = new RuntimeContext();
-                $fibers->offsetSet($fiber, $stack);
-            }
-        }
-
-        self::forgetOrphans();
+        return $context;
     }
 
     /**
@@ -922,17 +974,18 @@ final class Runtime
         self::$live = [];
     }
 
+    /**
+     * Marks a context dead, in two writes rather than one per double.
+     *
+     * The doubles keep pointing at it through `$owners`; `ownerOf()` reads the
+     * flag and answers null, which is what walking every double to unset its
+     * owner used to achieve. Teardown runs after every test, so a loop there
+     * is paid by the whole suite — to answer a question (`isForgotten()`) that
+     * one cold path asks.
+     */
     private static function retire(RuntimeContext $context): void
     {
         self::unremember($context);
-
-        if (self::$owners === null) {
-            return;
-        }
-
-        foreach ($context->allDoubles() as $double) {
-            self::forgotten()[$double] = true;
-            unset(self::$owners[$double]);
-        }
+        $context->retire();
     }
 }

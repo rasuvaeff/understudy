@@ -22,7 +22,23 @@ final class DoubleFactory
     /** @var array<class-string, Blueprint> */
     private static array $byGeneratedClass = [];
 
+    /** @var array<class-string, \ReflectionClass<object>> */
+    private static array $reflections = [];
+
     private function __construct() {}
+
+    /**
+     * One reflection per generated class rather than one per double: building
+     * it costs more the more members the class has, and every double of a
+     * contract is built from the same class.
+     */
+    public static function instantiate(Blueprint $blueprint): object
+    {
+        /** @var \ReflectionClass<object> $reflection */
+        $reflection = self::$reflections[$blueprint->generatedClass] ??= new \ReflectionClass($blueprint->generatedClass);
+
+        return $reflection->newInstanceWithoutConstructor();
+    }
 
     /**
      * @param non-empty-list<class-string> $contracts

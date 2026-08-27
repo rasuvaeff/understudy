@@ -73,7 +73,7 @@ final class Understudy
         // statically known, and this is also the path a class double will need,
         // where the target's constructor must be skipped rather than run.
         /** @var T $double */
-        $double = (new \ReflectionClass($blueprint->generatedClass))->newInstanceWithoutConstructor();
+        $double = DoubleFactory::instantiate($blueprint);
 
         // The skipped constructor leaves every typed property uninitialized;
         // the ones that can hold an empty scalar or array get one, so that
@@ -297,7 +297,7 @@ final class Understudy
 
     private static function checkArmedSequence(RuntimeContext $context): ?VerificationFailure
     {
-        $sequence = $context->armedSequence();
+        $sequence = $context->armed;
 
         if ($sequence === null || $sequence->isComplete()) {
             return null;
@@ -893,7 +893,7 @@ final class Understudy
         }
 
         $context = Runtime::current();
-        $armed = $context->armedSequence();
+        $armed = $context->armed;
 
         // Only a concurrent one is refused. A protocol that ran to completion
         // has nothing left to disagree about, and a two-phase test must be
