@@ -28,11 +28,11 @@ final class DoubleState
 
     private const string NO_ARGUMENTS = '__no_arguments__';
 
-    /** @var array<non-empty-string, array<string, list<Expectation>>> */
-    private array $matchingByMethodAndFirstLiteral = [];
+    /** @var array<non-empty-string, array<string, list<Expectation>>>|null */
+    private ?array $matchingByMethodAndFirstLiteral = null;
 
-    /** @var array<non-empty-string, list<Expectation>> */
-    private array $matchingByMethodWithoutFirstLiteral = [];
+    /** @var array<non-empty-string, list<Expectation>>|null */
+    private ?array $matchingByMethodWithoutFirstLiteral = null;
 
     /** @var list<Invocation> */
     private array $callLog = [];
@@ -156,7 +156,19 @@ final class DoubleState
         $this->expectations[] = $expectation;
         $this->matchingExpectations[] = $expectation;
 
-        $this->addToMatchingIndexes($expectation);
+        $method = $expectation->method;
+        $this->matchingByMethod[$method] ??= [];
+        $this->matchingByMethod[$method][] = $expectation;
+
+        $count = count($this->matchingByMethod[$method]);
+
+        if ($count === 2) {
+            $this->buildMatchingIndexes($method);
+        }
+
+        if ($count > 2) {
+            $this->addToMatchingIndex($expectation);
+        }
     }
 
     /**
@@ -197,13 +209,12 @@ final class DoubleState
         }
 
         $key = $args === [] ? self::NO_ARGUMENTS : $this->literalKey($args[0]);
-        /** @var list<Expectation> $indexed */
-        $indexed = $key === null
-            ? []
-            : ($this->matchingByMethodAndFirstLiteral[$method][$key] ?? []);
+        $indexed = $this->indexedExpectations($method, $key);
 
         /** @var list<Expectation> $fallback */
-        $fallback = $this->matchingByMethodWithoutFirstLiteral[$method] ?? [];
+        $fallback = $this->matchingByMethodWithoutFirstLiteral === null
+            ? []
+            : ($this->matchingByMethodWithoutFirstLiteral[$method] ?? []);
 
         if ($fallback === []) {
             return array_reverse($indexed);
@@ -250,11 +261,19 @@ final class DoubleState
         $this->matchingExpectations = array_values(array_filter($this->matchingExpectations, $remaining));
 
         $this->matchingByMethod = [];
-        $this->matchingByMethodAndFirstLiteral = [];
-        $this->matchingByMethodWithoutFirstLiteral = [];
+        $this->matchingByMethodAndFirstLiteral = null;
+        $this->matchingByMethodWithoutFirstLiteral = null;
 
         foreach ($this->matchingExpectations as $expectation) {
-            $this->addToMatchingIndexes($expectation);
+            $method = $expectation->method;
+            $this->matchingByMethod[$method] ??= [];
+            $this->matchingByMethod[$method][] = $expectation;
+        }
+
+        foreach ($this->matchingByMethod as $method => $expectations) {
+            if (count($expectations) >= 2) {
+                $this->buildMatchingIndexes($method);
+            }
         }
 
         $this->callLog = array_values(array_filter(
@@ -276,23 +295,56 @@ final class DoubleState
         return $this->callLog;
     }
 
-    private function addToMatchingIndexes(Expectation $expectation): void
+    /**
+     * @param non-empty-string $method
+     */
+    private function buildMatchingIndexes(string $method): void
+    {
+        /** @var list<Expectation> $expectations */
+        $expectations = $this->matchingByMethod[$method] ?? [];
+
+        foreach ($expectations as $expectation) {
+            $this->addToMatchingIndex($expectation);
+        }
+    }
+
+    private function addToMatchingIndex(Expectation $expectation): void
     {
         $method = $expectation->method;
-        $this->matchingByMethod[$method] ??= [];
-        $this->matchingByMethod[$method][] = $expectation;
 
         $key = $this->firstLiteralKey($expectation);
 
         if ($key === null) {
+            $this->matchingByMethodWithoutFirstLiteral ??= [];
             $this->matchingByMethodWithoutFirstLiteral[$method] ??= [];
             $this->matchingByMethodWithoutFirstLiteral[$method][] = $expectation;
 
             return;
         }
 
+        $this->matchingByMethodAndFirstLiteral ??= [];
+        $this->matchingByMethodAndFirstLiteral[$method] ??= [];
         $this->matchingByMethodAndFirstLiteral[$method][$key] ??= [];
         $this->matchingByMethodAndFirstLiteral[$method][$key][] = $expectation;
+    }
+
+    /**
+     * @param non-empty-string $method
+     * @return list<Expectation>
+     */
+    private function indexedExpectations(string $method, ?string $key): array
+    {
+        $indexed = [];
+
+        if ($key !== null) {
+            $indexes = $this->matchingByMethodAndFirstLiteral;
+
+            if ($indexes !== null) {
+                $indexed = $indexes[$method][$key] ?? [];
+            }
+        }
+
+        return $indexed;
     }
 
     private function firstLiteralKey(Expectation $expectation): ?string
