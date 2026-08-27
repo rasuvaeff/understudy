@@ -66,6 +66,27 @@ final readonly class EngineState
         );
     }
 
+    /**
+     * Whether the engine refuses to register this specification: an exact
+     * predicate collision where at least one side is a claim. Two stubs for
+     * one call are the documented later-wins layering; in this closed world a
+     * claim is exactly a counted, action-less registration, so "same
+     * predicate and not both stubs" is the whole engine rule.
+     */
+    public function conflicts(bool $anyArgument, int $literalId, bool $incomingIsClaim): bool
+    {
+        foreach ($this->specs as $spec) {
+            $samePredicate = $spec->anyArgument === $anyArgument
+                && ($anyArgument || $spec->literalId === $literalId);
+
+            if ($samePredicate && ($spec->isClaim || $incomingIsClaim)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function withSpec(EngineSpec $spec): self
     {
         return new self(

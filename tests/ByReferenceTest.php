@@ -280,19 +280,24 @@ final class ByReferenceTest
      * The expectation that would answer the call decides whether the slot is
      * replaced, and "would answer" means the dispatcher's own precedence: the
      * newest match wins, and a match without an action is not an answer.
+     *
+     * The claim overlaps the stub without duplicating it — a literal under a
+     * wildcard — because an identical specification is refused outright; the
+     * precedence question only exists for specifications that genuinely
+     * differ.
      */
     public function aNewerCountingExpectationDoesNotCountAsAConfiguredAnswer(): void
     {
         $registry = Understudy::for(Registry::class);
 
-        when(static fn(): array => $registry->values())->returns(['stubbed' => true]);
+        when(static fn(): array => $registry->row(Arg::any()))->returns(['stubbed' => true]);
 
-        $values = &$registry->values();
+        $values = &$registry->row(5);
         $values['written'] = true;
 
-        \Rasuvaeff\Understudy\expect(static fn(): array => $registry->values())->times(1);
+        \Rasuvaeff\Understudy\expect(static fn(): array => $registry->row(5))->times(1);
 
-        Assert::same($registry->values(), ['stubbed' => true, 'written' => true]);
+        Assert::same($registry->row(5), ['stubbed' => true, 'written' => true]);
 
         Understudy::verifyAll();
     }
