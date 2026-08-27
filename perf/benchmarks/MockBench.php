@@ -40,6 +40,7 @@ final class MockBench
         warmup: 200,
         calls: 50,
         iterations: 200,
+        tolerance: \INF,
     )]
     public static function verifiedUnderstudy(): void
     {
@@ -97,6 +98,7 @@ final class MockBench
         warmup: 200,
         calls: 50,
         iterations: 200,
+        tolerance: \INF,
     )]
     public static function matchedUnderstudy(): void
     {
