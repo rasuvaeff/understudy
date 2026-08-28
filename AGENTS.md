@@ -15,10 +15,11 @@ functions `when()`/`verify()` in `src/functions.php`, `Arg`, `Invocation`,
 under `Codegen\`, `Runtime\`, `Expectation\`, `Defaults\` and `Matcher\` is
 `@internal`.
 
-The design and its milestones live in the monorepo at
-`_plans/UNDERSTUDY-PLAN.md`. `spikes/` holds the executable feasibility
-fixtures the design rests on — they are not tests of this package's API, and
-they must keep passing on PHP 8.3/8.4/8.5.
+The design plan that drove milestones 0-7 shipped in full and was retired
+from the monorepo on 2026-08-28; what it decided lives in this file, the
+READMEs and the tests. `spikes/` holds the executable feasibility fixtures
+the design rests on — they are not tests of this package's API, and they must
+keep passing on PHP 8.3/8.4/8.5.
 
 ## Golden rules
 
