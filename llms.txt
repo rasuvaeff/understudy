@@ -91,6 +91,13 @@ No runtime deps; `ext-mbstring` is not needed.
 - Static contract methods are implemented only so the generated class is
   concrete. Calling one raises `InvalidCallSpecification`; inject an instance
   dependency instead.
+- The call log retains returned values until `reset()`, which runner adapters
+  call *after* `#[AfterTest]`/`tearDown()` — a returned stream is still open
+  while your teardown runs. `Understudy::lean($double)` keeps invocations
+  (method, args, sequence — matching, `verify()`, `transcript()`,
+  `nothingElse()` unchanged) but not returned values; `returned()` then raises
+  `OutcomeUnavailable`. One-way. Alternatively build and use the double inside
+  `Understudy::scope()`, which drops the context before lifecycle teardown.
 - `Understudy::reset()` after each test. Nothing is process-global on purpose:
   state lives per execution context and each Fiber gets its own — that is
   isolation, and it covers the recording phase, the call log and the sequence
