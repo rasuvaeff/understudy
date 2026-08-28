@@ -172,12 +172,15 @@ repos_for() { # legs...
 
 # A local package is asked for by `*` so the path repository wins over the
 # published one of the same number; `check_source` then proves that it did.
+#
+# A dependency with no local checkout is asked for by `*` too, and NOT by a
+# caret: on 0.x a caret pins the minor, so a `^0.1` written in the 0.1 era
+# stopped resolving the day the family crossed 0.2 — found when the phpstan
+# satellite raised its own floor to core `^0.4` and its smoke leg could no
+# longer install anything. The satellite's composer.json is what constrains
+# the version; the smoke only has to not stand in its way.
 req_for() { # leg
-    if [ -n "${LOCAL[$1]:-}" ]; then
-        printf '"%s": "*"' "$(name_of "$1")"
-    else
-        printf '"%s": "^0.1"' "$(name_of "$1")"
-    fi
+    printf '"%s": "*"' "$(name_of "$1")"
 }
 
 # The half that keeps this honest. Two packages of the same version are in the
