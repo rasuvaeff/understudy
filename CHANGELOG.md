@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 — 2026-08-28
+
+Every open issue of the backlog in one release. All additive — nothing
+removed, nothing renamed; a minor because `Arg::rest()`, `Arg::captor()`,
+`Understudy::delegate()`, `Understudy::lean()` and rendered property hooks
+are new public API, and on 0.x that is the boundary Composer's caret already
+treats as breaking. The perf ritual ran before the tag: three full-harness
+runs a side against the commit the published figures were taken at — the
+per-call marginal cost is unchanged (0.90µs), double creation moved +1.4-2.4%
+while the competitors moved ±3-4% in the same runs, which is inside the noise
+floor.
 
 - **Interface-declared property hooks are rendered, so a modern contract can
   be doubled at all** (rasuvaeff/understudy#36). `public string $name { get; }`

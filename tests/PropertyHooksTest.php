@@ -52,7 +52,7 @@ final class PropertyHooksTest
      *
      * @return class-string
      */
-    private static function declare(string $suffix, string $declaration): string
+    private function declare(string $suffix, string $declaration): string
     {
         $name = 'Hook' . $suffix . '_' . PHP_VERSION_ID;
         /** @var class-string $fqcn */
@@ -65,7 +65,7 @@ final class PropertyHooksTest
         return $fqcn;
     }
 
-    private static function onOldPhp(): bool
+    private function onOldPhp(): bool
     {
         if (PHP_VERSION_ID >= 80400) {
             return false;
@@ -82,11 +82,11 @@ final class PropertyHooksTest
 
     public function anInterfacePropertyIsRenderedAndReadsTheModeDefault(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare('IfaceGet', 'namespace %s; interface %s { public string $name { get; } }');
+        $contract = $this->declare('IfaceGet', 'namespace %s; interface %s { public string $name { get; } }');
         $double = Understudy::for($contract);
 
         Assert::instanceOf($double, $contract);
@@ -95,11 +95,11 @@ final class PropertyHooksTest
 
     public function theRenderedPropertyIsVirtualAndSatisfiesTheContract(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare('IfaceVirtual', 'namespace %s; interface %s { public int $count { get; } }');
+        $contract = $this->declare('IfaceVirtual', 'namespace %s; interface %s { public int $count { get; } }');
         $double = Understudy::for($contract);
         $property = new \ReflectionProperty($double, 'count');
 
@@ -109,11 +109,11 @@ final class PropertyHooksTest
 
     public function aGetSetPropertyRoundTripsWhatTheCodeUnderTestWrote(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare('IfaceGetSet', 'namespace %s; interface %s { public string $name { get; set; } }');
+        $contract = $this->declare('IfaceGetSet', 'namespace %s; interface %s { public string $name { get; set; } }');
         $double = Understudy::for($contract);
 
         Assert::same($double->name, '');
@@ -130,15 +130,12 @@ final class PropertyHooksTest
      */
     public function aWrittenNullIsAValueNotAnAbsence(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
         $clock = Clock::class;
-        $contract = self::declare(
-            'IfaceNullable',
-            'namespace %s; interface %s { public ?\\' . $clock . ' $clock { get; set; } }',
-        );
+        $contract = $this->declare('IfaceNullable', 'namespace %s; interface %s { public ?\\' . $clock . ' $clock { get; set; } }');
 
         $double = Understudy::for($contract);
         Understudy::defaults(Clock::class, static fn(): object => Understudy::for(Clock::class));
@@ -152,14 +149,11 @@ final class PropertyHooksTest
 
     public function anObjectTypedPropertyAnswersADepthOneDouble(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare(
-            'IfaceObject',
-            'namespace %s; interface %s { public \\' . Clock::class . ' $clock { get; } }',
-        );
+        $contract = $this->declare('IfaceObject', 'namespace %s; interface %s { public \\' . Clock::class . ' $clock { get; } }');
 
         $double = Understudy::for($contract);
 
@@ -168,14 +162,11 @@ final class PropertyHooksTest
 
     public function aDefaultsRegistrationOutranksTheNestedDouble(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare(
-            'IfaceRegistered',
-            'namespace %s; interface %s { public \\' . Clock::class . ' $clock { get; } }',
-        );
+        $contract = $this->declare('IfaceRegistered', 'namespace %s; interface %s { public \\' . Clock::class . ' $clock { get; } }');
 
         $pinned = Understudy::for(Clock::class);
         Understudy::defaults(Clock::class, static fn(): object => $pinned);
@@ -185,14 +176,11 @@ final class PropertyHooksTest
 
     public function anAbstractClassHookIsRenderedTheSameWay(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare(
-            'AbstractGet',
-            'namespace %s; abstract class %s { abstract public string $tag { get; } }',
-        );
+        $contract = $this->declare('AbstractGet', 'namespace %s; abstract class %s { abstract public string $tag { get; } }');
 
         Assert::same(Understudy::for($contract)->tag, '');
     }
@@ -204,11 +192,11 @@ final class PropertyHooksTest
      */
     public function aWriteToAGetOnlyPropertyIsRefusedByPhpItself(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare('IfaceReadOnly', 'namespace %s; interface %s { public string $name { get; } }');
+        $contract = $this->declare('IfaceReadOnly', 'namespace %s; interface %s { public string $name { get; } }');
         $double = Understudy::for($contract);
 
         Expect::exception(\Error::class);
@@ -218,12 +206,12 @@ final class PropertyHooksTest
 
     public function twoInterfacesDeclaringOnePropertyUnionTheirHooks(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $reader = self::declare('UnionReader', 'namespace %s; interface %s { public string $tag { get; } }');
-        $writer = self::declare('UnionWriter', 'namespace %s; interface %s { public string $tag { get; set; } }');
+        $reader = $this->declare('UnionReader', 'namespace %s; interface %s { public string $tag { get; } }');
+        $writer = $this->declare('UnionWriter', 'namespace %s; interface %s { public string $tag { get; set; } }');
 
         $double = Understudy::for($reader, $writer);
         $double->tag = 'both';
@@ -235,15 +223,12 @@ final class PropertyHooksTest
 
     public function aForwardingDoubleDelegatesReadsAndWritesToTheRealInstance(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare('IfaceFwd', 'namespace %s; interface %s { public string $name { get; set; } }');
-        $realClass = self::declare(
-            'RealFwd',
-            'namespace %s; class %s implements \\' . $contract . ' { public string $name = \'real\'; }',
-        );
+        $contract = $this->declare('IfaceFwd', 'namespace %s; interface %s { public string $name { get; set; } }');
+        $realClass = $this->declare('RealFwd', 'namespace %s; class %s implements \\' . $contract . ' { public string $name = \'real\'; }');
 
         $real = new $realClass();
         $double = Understudy::delegate($contract, $real);
@@ -260,15 +245,12 @@ final class PropertyHooksTest
 
     public function aReadonlyClassTargetWithAnAbstractHookKeepsTheRefusal(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare('IfaceForRo', 'namespace %s; interface %s { public string $name { get; } }');
-        $target = self::declare(
-            'ReadonlyTarget',
-            'namespace %s; abstract readonly class %s implements \\' . $contract . ' {}',
-        );
+        $contract = $this->declare('IfaceForRo', 'namespace %s; interface %s { public string $name { get; } }');
+        $target = $this->declare('ReadonlyTarget', 'namespace %s; abstract readonly class %s implements \\' . $contract . ' {}');
 
         Expect::exception(UnsupportedTarget::class)->withMessage(
             'Cannot create an understudy for `' . $target . '`: the class is readonly and `' . $contract
@@ -282,11 +264,11 @@ final class PropertyHooksTest
 
     public function aByReferenceGetHookIsRefused(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare('IfaceRefGet', 'namespace %s; interface %s { public string $name { &get; } }');
+        $contract = $this->declare('IfaceRefGet', 'namespace %s; interface %s { public string $name { &get; } }');
 
         Expect::exception(UnsupportedTarget::class)->withMessage(
             'Cannot create an understudy for `' . $contract . '`: `' . $contract . '::$name` declares a '
@@ -300,12 +282,12 @@ final class PropertyHooksTest
 
     public function twoTargetsDisagreeingOnAPropertyTypeAreRefused(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $stringy = self::declare('TypeString', 'namespace %s; interface %s { public string $tag { get; } }');
-        $inty = self::declare('TypeInt', 'namespace %s; interface %s { public int $tag { get; } }');
+        $stringy = $this->declare('TypeString', 'namespace %s; interface %s { public string $tag { get; } }');
+        $inty = $this->declare('TypeInt', 'namespace %s; interface %s { public int $tag { get; } }');
 
         Expect::exception(UnsupportedTarget::class)
             ->withMessageContaining('property `$tag` is declared `int` here and `string` by another target');
@@ -317,11 +299,11 @@ final class PropertyHooksTest
 
     public function aPropertyReadIsNotACall(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare('IfaceNoCall', 'namespace %s; interface %s { public string $name { get; } }');
+        $contract = $this->declare('IfaceNoCall', 'namespace %s; interface %s { public string $name { get; } }');
         $double = Understudy::for($contract);
 
         Assert::same($double->name, '');
@@ -330,11 +312,11 @@ final class PropertyHooksTest
 
     public function aPropertyTouchAfterResetNamesTheProperty(): void
     {
-        if (self::onOldPhp()) {
+        if ($this->onOldPhp()) {
             return;
         }
 
-        $contract = self::declare('IfaceReset', 'namespace %s; interface %s { public string $name { get; } }');
+        $contract = $this->declare('IfaceReset', 'namespace %s; interface %s { public string $name { get; } }');
         $double = Understudy::for($contract);
 
         Understudy::reset();
