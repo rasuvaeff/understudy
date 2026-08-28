@@ -97,6 +97,53 @@ final class InvalidCallSpecification extends \LogicException implements Understu
         ));
     }
 
+    /**
+     * @param non-empty-string $method
+     * @param int<0, max>      $given
+     * @param int<0, max>      $declared
+     */
+    public static function incompleteSpecification(string $method, int $given, int $declared): self
+    {
+        return new self(sprintf(
+            "The specification for `%s()` passed %d of its %d arguments.\n"
+            . 'Spell every argument, or say the rest does not matter by ending with Arg::rest().',
+            $method,
+            $given,
+            $declared,
+        ));
+    }
+
+    /**
+     * @param non-empty-string $method
+     * @param int<0, max>      $omitted
+     * @param int<0, max>      $specified
+     */
+    public static function omittedBeforeSpecified(string $method, int $omitted, int $specified): self
+    {
+        return new self(sprintf(
+            "The specification for `%s()` omitted argument #%d but specified argument #%d after it.\n"
+            . 'A specification spells its arguments in order — use Arg::any() for one that does not matter.',
+            $method,
+            $omitted + 1,
+            $specified + 1,
+        ));
+    }
+
+    /**
+     * @param non-empty-string $method
+     * @param non-empty-string $matcher
+     */
+    public static function omittedTailNeedsRest(string $method, string $matcher): self
+    {
+        return new self(sprintf(
+            "`%s` describes a variadic tail, not parameters left unspelled, and the specification "
+            . "for `%s()` stopped before its required parameters ran out.\n"
+            . 'End with Arg::rest() to say the remaining parameters do not matter.',
+            $matcher,
+            $method,
+        ));
+    }
+
     public static function closureFailed(\Throwable $previous): self
     {
         return new self(

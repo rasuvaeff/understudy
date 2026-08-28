@@ -8,6 +8,7 @@ use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
+use Rasuvaeff\Understudy\Runtime\Absent;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\AbstractOwnStatic;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\AbstractStaticFromInterface;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\AggregateUnion;
@@ -119,6 +120,11 @@ final class TargetUnifierTest
 {
     private const string MATCHER = TypeRenderer::MATCHER;
 
+    private const string ABSENT = '\\' . Absent::class;
+
+    /** The default every required parameter of an override now carries. */
+    private const string OMITTED = ' = ' . self::ABSENT . '::Argument';
+
     // --- Rendered signatures -------------------------------------------------
 
     #[DataProvider('parameterProvider')]
@@ -133,28 +139,31 @@ final class TargetUnifierTest
     public static function parameterProvider(): iterable
     {
         $m = self::MATCHER;
+        $absent = self::ABSENT;
+        $omitted = self::OMITTED;
 
         yield 'no parameters render an empty list' => ['noParams', ''];
-        yield 'scalar gains the matcher branch' => ['scalar', "int|{$m} \$a"];
+        yield 'scalar gains the matcher and sentinel branches' => ['scalar', "int|{$m}|{$absent} \$a{$omitted}"];
         // The matcher goes after the contract's own branches, and `null` is
         // part of the type rather than an implicit nullable default.
-        yield 'nullable expands then widens' => ['nullable', "string|null|{$m} \$a"];
+        yield 'nullable expands then widens' => ['nullable', "string|null|{$m}|{$absent} \$a{$omitted}"];
         yield 'a declared default is preserved' => ['withDefault', "int|{$m} \$a = 7"];
         yield 'a null default renders lowercase' => ['withNullDefault', "int|null|{$m} \$a = null"];
         yield 'variadic carries no default' => ['variadic', "string|{$m} ...\$rest"];
         yield 'variadic follows a fixed parameter' => [
             'scalarThenVariadic',
-            "int|{$m} \$first, string|{$m} ...\$rest",
+            "int|{$m}|{$absent} \$first{$omitted}, string|{$m} ...\$rest",
         ];
-        yield 'by-reference keeps its ampersand' => ['byReference', "array|{$m} &\$slot"];
-        // Nothing to union onto: an untyped parameter already accepts a matcher.
-        yield 'untyped stays untyped' => ['untyped', '$a'];
+        yield 'by-reference keeps its ampersand' => ['byReference', "array|{$m}|{$absent} &\$slot{$omitted}"];
+        // Nothing to union onto: an untyped parameter already accepts a matcher
+        // — and the sentinel default, which every required parameter carries.
+        yield 'untyped stays untyped' => ['untyped', '$a' . $omitted];
         yield 'intersection is parenthesised for DNF' => [
             'intersection',
-            '(\\' . ReaderInt::class . '&\\' . ReaderStringy::class . ")|{$m} \$a",
+            '(\\' . ReaderInt::class . '&\\' . ReaderStringy::class . ")|{$m}|{$absent} \$a{$omitted}",
         ];
-        yield 'mixed is not widened' => ['anything', 'mixed $a'];
-        yield 'object is not widened' => ['anyObject', 'object $a'];
+        yield 'mixed is not widened' => ['anything', 'mixed $a' . $omitted];
+        yield 'object is not widened' => ['anyObject', 'object $a' . $omitted];
     }
 
     #[DataProvider('argumentProvider')]
@@ -236,28 +245,37 @@ final class TargetUnifierTest
         // reject a pair PHP accepts.
         $signature = $this->unify(WriterInt::class, WriterString::class)['write'];
 
-        Assert::same($signature->parameters, 'int|string|' . self::MATCHER . ' $chunk');
+        Assert::same(
+            $signature->parameters,
+            'int|string|' . self::MATCHER . '|' . self::ABSENT . ' $chunk' . self::OMITTED,
+        );
     }
 
     public function identicalDeclarationsUnifyToThemselves(): void
     {
         $signature = $this->unify(WriterInt::class, WriterIntToo::class)['write'];
 
-        Assert::same($signature->parameters, 'int|' . self::MATCHER . ' $chunk');
+        Assert::same(
+            $signature->parameters,
+            'int|' . self::MATCHER . '|' . self::ABSENT . ' $chunk' . self::OMITTED,
+        );
     }
 
     public function mixedAbsorbsNarrowerParameterTypes(): void
     {
         $signature = $this->unify(MixedWriter::class, WriterInt::class)['write'];
 
-        Assert::same($signature->parameters, 'mixed $chunk');
+        Assert::same($signature->parameters, 'mixed $chunk' . self::OMITTED);
     }
 
     public function thePrimaryTargetsParameterNameWins(): void
     {
         $signature = $this->unify(PrimaryNamed::class, SecondaryNamed::class)['send'];
 
-        Assert::same($signature->parameters, 'string|' . self::MATCHER . ' $primary');
+        Assert::same(
+            $signature->parameters,
+            'string|' . self::MATCHER . '|' . self::ABSENT . ' $primary' . self::OMITTED,
+        );
         Assert::same($signature->arguments, '[$primary]');
     }
 
@@ -270,7 +288,8 @@ final class TargetUnifierTest
 
         Assert::same(
             $signature->parameters,
-            'int|' . self::MATCHER . ' $a, int|' . self::MATCHER . '|null $b = null',
+            'int|' . self::MATCHER . '|' . self::ABSENT . ' $a' . self::OMITTED
+                . ', int|' . self::MATCHER . '|null $b = null',
         );
     }
 
@@ -709,7 +728,8 @@ final class TargetUnifierTest
 
         Assert::same(
             $signature->parameters,
-            '(\\' . ReaderInt::class . '&\\' . ReaderStringy::class . ')|null|' . self::MATCHER . ' $slot',
+            '(\\' . ReaderInt::class . '&\\' . ReaderStringy::class . ')|null|'
+                . self::MATCHER . '|' . self::ABSENT . ' $slot' . self::OMITTED,
         );
     }
 

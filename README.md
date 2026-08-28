@@ -244,6 +244,25 @@ fallback should handle later calls.
 | `Arg::which($method, $value)` | an object whose getter answers this value |
 | `Arg::none()` | an empty variadic tail — last argument only |
 | `Arg::remaining()` | the whole variadic tail, any length — last argument only |
+| `Arg::rest()` | declared parameters left unspelled — last argument only |
+
+`Arg::rest()` and `Arg::remaining()` differ in what they stand for:
+`remaining()` matches the variadic tail a method declares, while `rest()` says
+"the arguments before me matter, the rest of the arity does not" — it is the
+one matcher that lets a specification stop before the method's required
+parameters run out:
+
+```php
+when(fn () => $storage->recordOutcome('svc', Arg::rest()))
+    ->throws(new RuntimeException('storage unavailable'));
+```
+
+A specification that stops early *without* ending in `Arg::rest()` is refused
+with the reason, rather than becoming a stub that silently never matches. A
+later, narrower specification for the same call still wins over the broad
+prefix stub. One thing to know: a static analyser reads the shortened call
+against the contract's arity, so expect a "too few arguments" diagnostic on
+that line until your analyser knows the idiom.
 
 The type matchers are deliberately strict: `Arg::int()` rejects `'5'`, and
 `Arg::float()` rejects `1`. A matcher pins the declared type as much as the

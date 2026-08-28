@@ -862,6 +862,13 @@ final class Runtime
      * arrives during a real call, the specification closure leaked it — say so
      * instead of letting the code under test receive a matcher object.
      *
+     * The arity sentinel is the same kind of artifact: it exists so a
+     * *specification* may stop before the required parameters run out, and a
+     * real call it survives into is a call that omitted a required argument.
+     * That is answered with the `ArgumentCountError` PHP itself would have
+     * raised had the generated parameter kept its required arity — a double
+     * must not be more permissive about arity than the real implementation.
+     *
      * @param non-empty-string $method
      * @param list<mixed>      $args
      */
@@ -871,6 +878,14 @@ final class Runtime
         foreach ($args as $position => $argument) {
             if ($argument instanceof ArgumentMatcher) {
                 throw MatcherLeaked::intoRealCall($method, $position, $argument->describe());
+            }
+
+            if ($argument instanceof Absent) {
+                throw new \ArgumentCountError(sprintf(
+                    'Too few arguments to function %s(), argument #%d not passed',
+                    $method,
+                    $position + 1,
+                ));
             }
         }
     }
