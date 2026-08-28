@@ -370,9 +370,11 @@ final class WireTest
 
     public function aByReferenceConstructorParameterIsRefused(): void
     {
-        Expect::exception(CannotWire::class)
-            ->withMessageContaining('`$sink` is taken by reference')
-            ->withMessageContaining('Overrides are values');
+        Expect::exception(CannotWire::class)->withMessage(
+            'Cannot wire `' . ReferenceConstructor::class . "`: `\$sink` is taken by reference.\n"
+            . 'Overrides are values, and passing one would quietly promise a reference semantics wire() does '
+            . 'not have. Build the subject yourself.',
+        );
 
         Understudy::wire(ReferenceConstructor::class);
     }

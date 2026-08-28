@@ -28,6 +28,7 @@ use function Rasuvaeff\Understudy\when;
  */
 #[Test]
 #[Covers(VerificationFailed::class)]
+#[Covers(Understudy::class)]
 #[Covers(VerificationFailure::class)]
 #[Covers(FailureKind::class)]
 final class VerificationFailureTest
@@ -222,5 +223,114 @@ final class VerificationFailureTest
     private function firstFailureOf(callable $body): VerificationFailure
     {
         return $this->catch($body)->failures()[0];
+    }
+
+    // --- The structured fields say exactly what happened ----------------------
+
+    /**
+     * A strict-stub failure is a claim about ZERO use: the record carries
+     * `actualCount: 0`, and the message is asserted whole — every half of a
+     * concatenation in one is a mutant `contains()` cannot see.
+     */
+    public function aStrictStubFailureCarriesZeroAndSaysItWhole(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        Understudy::label($repository, 'catalogue');
+        when(fn() => $repository->count())->returns(1);
+
+        try {
+            Understudy::verifyAll(strictStubs: true);
+            Assert::true(false);
+        } catch (VerificationFailed $failed) {
+            $failure = $failed->failures()[0];
+
+            Assert::same($failure->actualCount, 0);
+            Assert::same(
+                $failure->summary,
+                "Understudy `catalogue` has a stub for `count()` that was never used.\n"
+                . 'Remove it, or drop strictStubs if the call is genuinely optional.',
+            );
+        }
+    }
+
+    /**
+     * `unused()` claims a closed interval of exactly zero: both bounds are 0,
+     * and the observed calls are the ones that broke the claim.
+     */
+    public function anUnusedFailureClaimsExactlyZero(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $repository->count();
+
+        try {
+            Understudy::unused($repository);
+            Assert::true(false);
+        } catch (VerificationFailed $failed) {
+            $failure = $failed->failures()[0];
+
+            Assert::same($failure->expectedMinimum, 0);
+            Assert::same($failure->expectedMaximum, 0);
+            Assert::same($failure->actualCount, 1);
+        }
+    }
+
+    /**
+     * A failed `verify()` reports the calls of THE method it asked about:
+     * calls to other methods are noise the reader should not wade through.
+     */
+    public function aVerifyFailureObservesOnlyTheAskedMethod(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $repository->count();
+        $repository->titles();
+
+        try {
+            verify(fn() => $repository->count(), times: 5);
+            Assert::true(false);
+        } catch (VerificationFailed $failed) {
+            $observed = $failed->failures()[0]->observedCalls;
+
+            Assert::same(count($observed), 1);
+            Assert::same($observed[0]->method, 'count');
+        }
+    }
+
+    /**
+     * `allVerified()` reports BOTH halves when both are broken — the unmet
+     * claim and the unaccounted call — not whichever it met first.
+     */
+    public function allVerifiedReportsEveryBrokenHalf(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        expect(fn() => $repository->count());
+
+        $repository->titles();
+
+        try {
+            Understudy::allVerified($repository);
+            Assert::true(false);
+        } catch (VerificationFailed $failed) {
+            Assert::same(count($failed->failures()), 2);
+        }
+    }
+
+    /**
+     * A sequence mismatch renders its protocol as DESCRIPTIONS — strings a
+     * reporter can print — not as the probe machinery that produced them.
+     */
+    public function aSequenceFailureDescribesTheExpectedCallsAsStrings(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $repository->count();
+
+        try {
+            Understudy::verifySequence(
+                fn() => $repository->count(),
+                fn() => $repository->titles(),
+            );
+            Assert::true(false);
+        } catch (VerificationFailed $failed) {
+            Assert::same($failed->failures()[0]->expectedCalls, ['count()', 'titles()']);
+        }
     }
 }

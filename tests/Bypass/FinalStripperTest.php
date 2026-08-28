@@ -84,6 +84,58 @@ final class FinalStripperTest
             '<?php namespace App; readonly class Money {}',
         ];
 
+        // The strip removes the `final` token and the ONE space after it —
+        // never a newline, whose loss would shift every line below, and never
+        // more than one space. A comment or a tab is whitespace enough for
+        // the lookahead but is not the single space the strip may eat.
+        yield 'a newline after final is kept' => [
+            "<?php namespace App; final\nclass Gate {}",
+            [['namespace' => 'App', 'class' => 'Gate']],
+            "<?php namespace App; \nclass Gate {}",
+        ];
+
+        yield 'a double space loses only what the token rule says' => [
+            '<?php namespace App; final  class Gate {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; class Gate {}',
+        ];
+
+        yield 'a comment between final and class survives' => [
+            '<?php namespace App; final /* sealed */ class Gate {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; /* sealed */ class Gate {}',
+        ];
+
+        yield 'a tab after final' => [
+            "<?php namespace App; final\tclass Gate {}",
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; class Gate {}',
+        ];
+
+        yield 'a comment glued to final is not the one space the strip may eat' => [
+            '<?php namespace App; final/* sealed */class Gate {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; /* sealed */class Gate {}',
+        ];
+
+        yield 'a bare final const is a member, not a class' => [
+            '<?php namespace App; class Gate { final const KEY = 1; }',
+            null,
+            '<?php namespace App; class Gate { final const KEY = 1; }',
+        ];
+
+        yield 'a string literal naming the class is untouched' => [
+            '<?php namespace App; $x = "final class Gate"; final class Gate {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; $x = "final class Gate"; class Gate {}',
+        ];
+
+        yield 'a name the target merely prefixes keeps its final' => [
+            '<?php namespace App; final class Gate {} final class GateKeeper {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; class Gate {} final class GateKeeper {}',
+        ];
+
         yield 'the keyword is case-insensitive, like PHP' => [
             '<?php namespace App; FINAL class Gate {}',
             [['namespace' => 'App', 'class' => 'Gate']],
