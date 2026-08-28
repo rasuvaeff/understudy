@@ -29,6 +29,8 @@ final class Invocation
 
     private bool $accounted = false;
 
+    private bool $returnDiscarded = false;
+
     /** @var list<mixed>|null */
     private ?array $argsAfter = null;
 
@@ -134,6 +136,32 @@ final class Invocation
     }
 
     /**
+     * Records that the call returned without keeping what it returned — the
+     * lean double's reading of an outcome. The distinction from "threw" and
+     * from "returned null" is kept: `didReturn()` stays true, and `returned()`
+     * refuses by name instead of inventing a value.
+     *
+     * @internal
+     */
+    public function recordDiscardedReturn(): void
+    {
+        if ($this->returnedState !== null || $this->outcome !== null) {
+            return;
+        }
+
+        $this->returnedState = true;
+        $this->returnDiscarded = true;
+    }
+
+    /**
+     * @internal
+     */
+    public function isReturnDiscarded(): bool
+    {
+        return $this->returnDiscarded;
+    }
+
+    /**
      * @internal
      */
     public function recordThrown(\Throwable $thrown): void
@@ -180,6 +208,10 @@ final class Invocation
     public function returned(): mixed
     {
         if ($this->returnedState === true) {
+            if ($this->returnDiscarded) {
+                throw OutcomeUnavailable::discardedByLean($this->method);
+            }
+
             return $this->returnedValue;
         }
 

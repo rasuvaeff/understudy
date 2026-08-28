@@ -24,4 +24,16 @@ final class OutcomeUnavailable extends \LogicException implements UnderstudyErro
             $thrown::class,
         ));
     }
+
+    /**
+     * @param non-empty-string $method
+     */
+    public static function discardedByLean(string $method): self
+    {
+        return new self(sprintf(
+            'Call to `%s()` returned, but the value was not kept: the understudy is lean '
+            . '(Understudy::lean()). Drop lean() to read outcomes, or observe the value inside answers().',
+            $method,
+        ));
+    }
 }

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- **`Understudy::lean()`: a call log that does not retain returned values**
+  (rasuvaeff/understudy#63). The transcript keeps every invocation with its
+  outcome until `reset()` — which the runner adapters call *after* the test's
+  own teardown, so a value a double returned is still referenced while
+  teardown runs. Real incident: a forwarding double returned file streams and
+  `FileHelper::removeDirectory()` failed with "Directory not empty" — on
+  Windows only, since POSIX unlinks open files. A lean double keeps the
+  invocation (method, arguments, sequence), so matching, `verify()`,
+  `transcript()` and `nothingElse()` work unchanged, but not the value:
+  `Invocation::returned()` raises `OutcomeUnavailable` the way it already does
+  for a call that threw. Also caps per-call memory growth in hot loops. The
+  retention interaction — and `Understudy::scope()` as the other remedy — is
+  now documented in both READMEs and llms.txt.
+
 - **The pre-0.1.0 double-creation regression is now a stated decision, not an
   open question** (rasuvaeff/understudy#56). `perf/README.md` records that the
   ~0.3µs per double bisected to #23 bought bounded registration/reset/verify

@@ -509,6 +509,29 @@ final class Understudy
     }
 
     /**
+     * Stops this understudy's call log from retaining returned values.
+     *
+     * The log holds every invocation together with its outcome until
+     * `reset()` — and with the runner adapters that is *after* the test's own
+     * teardown. For plain data that is only memory; for a value that owns an
+     * OS resource — a stream, a connection, a lock — the resource is still
+     * held while teardown runs. A lean understudy keeps the invocation
+     * (method, arguments, sequence), so matching, `verify()`, `transcript()`
+     * and `nothingElse()` work unchanged, but the returned value is not kept:
+     * `Invocation::returned()` raises `OutcomeUnavailable`, the way it already
+     * does for a call that threw. It also caps the per-call memory growth of a
+     * hot loop through the double.
+     *
+     * One-way for the double's lifetime. `Understudy::scope()` is the other
+     * remedy: it drops the whole context — outcomes included — before the
+     * lifecycle teardown runs.
+     */
+    public static function lean(object $double): void
+    {
+        self::stateOf($double)->makeLean();
+    }
+
+    /**
      * Delegates unmatched calls to a real instance, recording each one.
      *
      * With `$real`, the double starts standing in front of that object; without
@@ -1096,6 +1119,10 @@ final class Understudy
             \assert($thrown instanceof \Throwable);
 
             return 'threw ' . $thrown::class;
+        }
+
+        if ($invocation->isReturnDiscarded()) {
+            return 'returned (value not kept: lean)';
         }
 
         return 'returned ' . ArgumentFormatter::format($invocation->returned());

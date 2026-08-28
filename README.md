@@ -446,6 +446,30 @@ Understudy::idle();                             // true when the context holds n
 Avoid unbounded hot loops through a double when the arguments or results hold
 large object graphs; use a real fake for load-sized workloads.
 
+Retention covers **returned values**, and with the runner adapters `reset()`
+runs *after* your `#[AfterTest]`/`tearDown()` — so a value a double returned is
+still referenced while your teardown runs. For plain data that is only memory;
+for a value that owns an OS resource — a stream, a connection, a lock — the
+resource is still held. The concrete failure this produces: a forwarding
+double returned real file streams, and teardown's directory removal failed
+with "Directory not empty" on Windows only, because POSIX unlinks open files
+and every Linux run stayed green. Two remedies:
+
+```php
+Understudy::lean($double);                       // keep calls, not returned values
+$result = Understudy::scope(fn () => ...);       // or drop the whole context early
+```
+
+`lean()` keeps the invocation — method, arguments, sequence — so matching,
+`verify()`, `transcript()` and `nothingElse()` work unchanged, but the
+returned value is not retained: `Invocation::returned()` raises
+`OutcomeUnavailable`, the way it already does for a call that threw, and the
+transcript shows `returned (value not kept: lean)`. It is one-way for the
+double's lifetime, and it also caps the per-call memory growth of a hot loop.
+A double whose returned values own OS resources should be built lean, or built
+and used inside `Understudy::scope()`, which drops the context — outcomes
+included — before the lifecycle teardown runs.
+
 `scope()` returns whatever its callback returns, and drops the nested context
 either way — a failure inside is never replaced by a teardown error. A double
 created in a scope is invalid after that scope closes. Configuration and

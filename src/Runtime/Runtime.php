@@ -490,7 +490,16 @@ final class Runtime
             $invocation->recordFinalArguments(self::detached($args));
         }
 
-        $invocation->recordReturned($value);
+        // A lean double keeps the invocation but not the value it answered:
+        // the log would otherwise hold a reference until reset(), which with
+        // the runner adapters is *after* the test's own teardown — a returned
+        // stream is then still open while teardown removes the directory it
+        // sits in (found on Windows, where an open file cannot be unlinked).
+        if ($state->isLean()) {
+            $invocation->recordDiscardedReturn();
+        } else {
+            $invocation->recordReturned($value);
+        }
 
         return $value;
     }

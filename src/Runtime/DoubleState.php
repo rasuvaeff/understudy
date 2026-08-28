@@ -60,9 +60,27 @@ final class DoubleState
         public readonly bool $nested = false,
     ) {}
 
+    private bool $lean = false;
+
     public function mode(): Mode
     {
         return $this->mode;
+    }
+
+    /**
+     * A lean understudy records every invocation — method, arguments,
+     * sequence — but not the value it answered. One-way, like the modes: the
+     * point is a guarantee about what the log holds, and a guarantee that can
+     * be switched off mid-test is a note, not a guarantee.
+     */
+    public function makeLean(): void
+    {
+        $this->lean = true;
+    }
+
+    public function isLean(): bool
+    {
+        return $this->lean;
     }
 
     public function setMode(Mode $mode): void
