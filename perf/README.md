@@ -99,6 +99,18 @@ see the invariant in the package's `AGENTS.md`: the per-double loop in
 `Runtime::retire()` looks removable and is not, and replacing it moved the cost
 onto creation instead, 13-23% worse in this harness.
 
+**Decision (closes #56): the cost is accepted.** #23 is the core review round
+that made registration, reset, `idle()` and aggregate verification bounded and
+predictable, and closed the Fiber accounting hole — a test body run in a Fiber
+could leave an unmet `expect()` and the suite stayed green. That is a false
+*pass*, the one failure mode a verification library must not have, and it is
+worth ~0.3µs on every double built. The figures in this file describe the
+library as shipped, with that trade in it. Reopening the trade takes what the
+attempt above took: a change that removes the cost without reopening the hole,
+judged by an A/B of the full harness on a quiet machine, three runs a side,
+with the competitors' movement as the noise floor — never by an isolated
+micro-benchmark, which cannot see a cost that was moved.
+
 Every in-process table below was run three times; medians move by 0.2-3.5%
 between runs. Figures are **filtered means** — testo's `Mean*`, after outlier
 rejection — and the relative deviation of that filtered set is under 5%

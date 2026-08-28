@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **The pre-0.1.0 double-creation regression is now a stated decision, not an
+  open question** (rasuvaeff/understudy#56). `perf/README.md` records that the
+  ~0.3µs per double bisected to #23 bought bounded registration/reset/verify
+  accounting and closed the Fiber hole where an unmet `expect()` in a Fiber
+  passed silently — a false pass, the one failure mode a verification library
+  must not have. The trade is accepted; reopening it requires the full-harness
+  A/B the file describes. No code change.
+
 - **`Arg::captor()`: a typed argument captor** (rasuvaeff/understudy#62). The
   typed replacement for reading `args[N]` out of the call log:
   `$options = Arg::captor(DeliveryOptions::class)`, `$options->capture()` in
