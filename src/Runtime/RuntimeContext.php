@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Runtime;
 
+use Rasuvaeff\Understudy\Captor;
 use Rasuvaeff\Understudy\Defaults\DefaultFactories;
 use Rasuvaeff\Understudy\Invocation;
 
@@ -137,6 +138,46 @@ final class RuntimeContext
         }
 
         return $doubles;
+    }
+
+    /**
+     * The captors that recorded a value in this context — what ties captured
+     * values to the test's lifetime. Lazy: most contexts never capture, and
+     * teardown walks this after every test.
+     *
+     * @var \SplObjectStorage<Captor, null>|null
+     */
+    private ?\SplObjectStorage $captors = null;
+
+    public function rememberCaptor(Captor $captor): void
+    {
+        if ($this->captors === null) {
+            /** @var \SplObjectStorage<Captor, null> $captors */
+            $captors = new \SplObjectStorage();
+            $this->captors = $captors;
+        }
+
+        // Array access rather than attach(): the latter is deprecated as of
+        // PHP 8.5, like contains() before it.
+        $this->captors[$captor] = null;
+    }
+
+    /**
+     * @return list<Captor>
+     */
+    public function captors(): array
+    {
+        if ($this->captors === null) {
+            return [];
+        }
+
+        $captors = [];
+
+        foreach ($this->captors as $captor) {
+            $captors[] = $captor;
+        }
+
+        return $captors;
     }
 
     /**
