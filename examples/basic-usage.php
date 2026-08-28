@@ -21,6 +21,7 @@ use function Rasuvaeff\Understudy\verify;
 use function Rasuvaeff\Understudy\when;
 
 require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/_check.php';
 
 final readonly class Book
 {
@@ -34,6 +35,8 @@ interface BookRepository
     public function save(Book $book): void;
 
     public function count(): int;
+
+    public function tag(string $name, int $weight, bool $pinned): string;
 }
 
 $repository = Understudy::for(BookRepository::class);
@@ -87,6 +90,29 @@ foreach ($calls as $call) {
 
     echo '  find(', $call->args[0], ') ', $outcome, "\n";
 }
+
+// --- Arg::rest(): the arguments before it matter, the rest do not -----------
+
+$catalogue = Understudy::for(BookRepository::class);
+
+// One matcher instead of an Arg::any() per remaining parameter — the only
+// matcher that lets a specification pass fewer arguments than the contract
+// declares.
+when(fn() => $catalogue->tag('sale', Arg::rest()))->returns('tagged');
+
+check($catalogue->tag('sale', 3, true) === 'tagged', 'Arg::rest() matches whatever follows the prefix');
+check($catalogue->tag('fresh', 1, false) === '', 'a different prefix falls through to the loose default');
+
+// --- Arg::captor(): typed reading of what the subject passed ----------------
+
+$saved = Arg::captor(Book::class);
+when(fn() => $catalogue->save($saved->capture()));
+
+$catalogue->save(new Book('Dune'));
+$catalogue->save(new Book('Solaris'));
+
+check($saved->last()->title === 'Solaris', 'last() answers the most recent captured Book, typed');
+check(count($saved->all()) === 2, 'all() keeps every captured value in call order');
 
 // --- Strict mode ------------------------------------------------------------
 

@@ -213,7 +213,8 @@ $options->all();    // list<DeliveryOptions>, in call order
 `capture()` matches like `instanceOf($class)` (untyped: like `any()`); the
 value is recorded only once the whole specification matched. Works in
 `when()`, `expect()` and `verify()` (a `verify()` captures from the calls it
-claimed, on success only). Captured values are dropped with the context —
+claimed, on success only); in an `expectSequence()` step it matches but does
+not record. Captured values are dropped with the context —
 `reset()`, a closing `scope()` — and the captor is then empty again.
 
 ### Expecting — `expect()`

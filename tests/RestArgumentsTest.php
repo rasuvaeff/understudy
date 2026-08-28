@@ -32,6 +32,8 @@ use function Rasuvaeff\Understudy\when;
  */
 #[Test]
 #[Covers(Arg::class)]
+#[Covers(Understudy::class)]
+#[Covers(\Rasuvaeff\Understudy\Expectation\Expectation::class)]
 #[Covers(AnyRest::class)]
 #[Covers(Absent::class)]
 #[Covers(InvocationSignal::class)]
@@ -198,6 +200,21 @@ final class RestArgumentsTest
         );
 
         when(fn(): ?string => $this->storage->recordOutcome(key: 'svc', attemptId: 'attempt-1'));
+    }
+
+    /**
+     * The hole is detected wherever the later argument sits — including
+     * IMMEDIATELY after the first omitted one, the closest position a walk
+     * that starts one step too late would miss.
+     */
+    public function aHoleRightBeforeTheNextSpecifiedArgumentIsRefused(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            "The specification for `recordOutcome()` omitted argument #2 but specified argument #3 after it.\n"
+            . 'A specification spells its arguments in order — use Arg::any() for one that does not matter.',
+        );
+
+        when(fn(): ?string => $this->storage->recordOutcome(key: 'svc', config: []));
     }
 
     public function remainingDoesNotStandForOmittedParameters(): void

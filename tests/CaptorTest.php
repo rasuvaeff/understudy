@@ -32,6 +32,7 @@ use function Rasuvaeff\Understudy\when;
  */
 #[Test]
 #[Covers(Captor::class)]
+#[Covers(Understudy::class)]
 #[Covers(Capturing::class)]
 #[Covers(Arg::class)]
 #[Covers(Expectation::class)]
@@ -201,6 +202,28 @@ final class CaptorTest
             ->withMessageContaining('The captor has captured nothing');
 
         Arg::captor()->last();
+    }
+
+    /**
+     * Every captor of a specification is tied to the context, not only the
+     * first one the walk met: a reset must leave BOTH empty.
+     */
+    public function resetDropsEveryCaptorOfOneSpecification(): void
+    {
+        $paths = Arg::captor();
+        $options = Arg::captor(DeliveryOptions::class);
+        when(fn(): ?string => $this->store->temporaryUrl($paths->capture(), Arg::any(), $options->capture()))
+            ->returns('url');
+
+        $this->store->temporaryUrl('report.pdf', new \DateTimeImmutable(), new DeliveryOptions('r.pdf'));
+
+        Assert::same(count($paths->all()), 1);
+        Assert::same(count($options->all()), 1);
+
+        Understudy::reset();
+
+        Assert::same($paths->all(), []);
+        Assert::same($options->all(), []);
     }
 
     public function resetDropsCapturedValuesWithTheContext(): void

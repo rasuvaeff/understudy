@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Examples;
 
+use Rasuvaeff\Understudy\Exception\OutcomeUnavailable;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Understudy;
 
@@ -108,5 +109,30 @@ try {
 // Forwarded calls are recorded like any other, so the double is still a spy.
 verify(fn() => $spy->zone());
 check(true, 'a forwarded call is in the call log, so it can be verified');
+
+// --- delegate(): the forwarding pair in one expression -----------------------
+
+$oneLiner = Understudy::delegate(Clock::class, $real);
+
+check($oneLiner->zone() === 'UTC', 'delegate() builds the double and turns forwarding on in one call');
+
+// --- lean(): a call log that does not retain returned values ----------------
+
+// The log normally keeps every returned value until reset() — which the
+// runner adapters call AFTER your teardown. A lean double keeps the call,
+// not the value, so a returned stream or connection is collectable at once.
+$lean = Understudy::for(Clock::class);
+Understudy::lean($lean);
+when(fn() => $lean->zone())->returns('UTC');
+
+check($lean->zone() === 'UTC', 'the caller still receives the value');
+verify(fn() => $lean->zone());
+
+try {
+    Understudy::lastCall(fn() => $lean->zone())?->returned();
+    check(false, 'a lean log was expected to refuse returned()');
+} catch (OutcomeUnavailable) {
+    check(true, 'the log kept the call but let go of the value');
+}
 
 Understudy::reset();

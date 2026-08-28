@@ -186,6 +186,110 @@ final class PropertyHooksTest
     }
 
     /**
+     * Only the ABSTRACT hooks are collected: a concrete plain property on the
+     * same class stays a real property — filled by its own default, never
+     * dispatched — and the abstract hook after it still renders.
+     */
+    public function aConcretePropertyBesideAnAbstractHookStaysReal(): void
+    {
+        if ($this->onOldPhp()) {
+            return;
+        }
+
+        $contract = $this->declare(
+            'MixedProps',
+            'namespace %s; abstract class %s { public int $plain = 3; abstract public string $tag { get; } }',
+        );
+
+        $double = Understudy::for($contract);
+
+        Assert::same($double->tag, '');
+        Assert::same($double->plain, 3);
+        Assert::false((new \ReflectionProperty($double, 'plain'))->isVirtual());
+    }
+
+    /**
+     * Every abstract hooked property renders, not just the first one the walk
+     * met — and each dispatches independently.
+     */
+    public function twoHookedPropertiesBothRenderAndDispatch(): void
+    {
+        if ($this->onOldPhp()) {
+            return;
+        }
+
+        $contract = $this->declare(
+            'TwoProps',
+            'namespace %s; interface %s { public string $name { get; set; } public int $age { get; set; } }',
+        );
+
+        $double = Understudy::for($contract);
+
+        Assert::same($double->name, '');
+        Assert::same($double->age, 0);
+
+        $double->name = 'Ann';
+        $double->age = 7;
+
+        Assert::same($double->name, 'Ann');
+        Assert::same($double->age, 7);
+    }
+
+    /**
+     * A property touched from another Fiber is answered by the context that
+     * OWNS the double, the same routing a cross-Fiber call gets: the value a
+     * Fiber wrote is what the owning test reads back.
+     */
+    public function aPropertyTouchFromAnotherFiberReachesTheOwnersState(): void
+    {
+        if ($this->onOldPhp()) {
+            return;
+        }
+
+        $contract = $this->declare('FiberProp', 'namespace %s; interface %s { public string $name { get; set; } }');
+        $double = Understudy::for($contract);
+
+        $read = null;
+        $fiber = new \Fiber(static function () use ($double, &$read): void {
+            $double->name = 'from the fiber';
+            $read = $double->name;
+        });
+        $fiber->start();
+
+        Assert::same($read, 'from the fiber');
+        Assert::same($double->name, 'from the fiber');
+    }
+
+    /**
+     * A forwarding write goes THROUGH to the real instance and only there:
+     * the double's own store stays untouched, so leaving forwarding mode
+     * afterwards reads the mode default, not a shadow copy of the write.
+     */
+    public function aForwardingWriteLeavesTheDoublesOwnStoreEmpty(): void
+    {
+        if ($this->onOldPhp()) {
+            return;
+        }
+
+        $contract = $this->declare('FwdStore', 'namespace %s; interface %s { public string $name { get; set; } }');
+        $realClass = $this->declare(
+            'FwdStoreReal',
+            'namespace %s; class %s implements \\' . $contract . ' { public string $name = \'real\'; }',
+        );
+
+        $real = new $realClass();
+        $double = Understudy::delegate($contract, $real);
+
+        $double->name = 'written';
+
+        Assert::same($real->name, 'written');
+
+        Understudy::strict($double);
+
+        Assert::same($double->name, '');
+    }
+
+    /**
      * Exactly the declared hooks are rendered: a get-only contract gets no
      * `set`, and PHP itself refuses the write to the virtual property — a
      * write the contract never promised must not succeed silently.
