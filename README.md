@@ -155,13 +155,44 @@ costs nothing — the double declares no properties of its own.
 
 Some targets are refused before anything is generated, each with the reason and
 what to do instead: a `final` class, a class with a non-private `final` instance
-method, an enum, a trait, an internal class, an anonymous class, any class
-that is not the first target, and any contract declaring an abstract property
-hook — an interface property, or an `abstract` one on a class: this engine
-intercepts calls, and reading a property is not one. A double that cannot
-intercept every method would
+method, an enum, a trait, an internal class, an anonymous class, and any class
+that is not the first target. A double that cannot intercept every method would
 run the target's real code against an object whose constructor never ran, which
 is worse than not building it at all.
+
+### Property hooks (PHP 8.4+)
+
+A contract declaring a property is doublable:
+
+```php
+interface Customer
+{
+    public string $name { get; }
+    public Money $balance { get; set; }
+}
+
+$customer = Understudy::for(Customer::class);
+$customer->name;      // the mode's type-safe default: ''
+$customer->balance;   // a depth-1 double of Money, or your defaults() registration
+```
+
+No `__get`-based library can do this — `__get` fires only for an
+*inaccessible* property, precisely not the case once the contract declares it.
+Understudy generates the class source, so it declares the property and puts
+the dispatcher inside the hook. Exactly the declared hooks are rendered: a
+get-only property refuses a write with PHP's own error. A read answers, in
+order, the real instance's value on a forwarding double, whatever the code
+under test wrote earlier (a `{ get; set; }` property behaves like a plain
+one), and otherwise the same default table a method return goes through —
+`Understudy::defaults()` registrations and the depth-1 nested double included.
+
+A property read is **not a call**: it is not recorded, not specifiable with
+`when()`/`expect()`, and not judged by strict mode — the same standing a plain
+public property already has on a class double. Two shapes are still refused
+with the reason: a `readonly` class target whose contract carries an abstract
+hook (a readonly class may only be extended by a readonly class, and a hooked
+property cannot be readonly), and a by-reference `&get` hook. A concrete hook
+on a class target is inherited and keeps running the target's own code.
 
 Parameter defaults are reproduced rather than approximated: a class constant is
 rendered through its declaring class, an enum case as itself, and an object

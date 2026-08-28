@@ -75,12 +75,13 @@ final class DoubleFactory
         }
 
         $methods = TargetUnifier::unify($targets);
+        $properties = self::unifyAbstractHooks($targets);
         $generatedClass = 'Understudy_' . substr(hash('xxh128', $key), 0, 16);
 
         $fqcn = __NAMESPACE__ . '\\Generated\\' . $generatedClass;
 
         if (!class_exists($fqcn, autoload: false)) {
-            eval(self::render($generatedClass, $targets, $methods));
+            eval(self::render($generatedClass, $targets, $methods, $properties));
         }
 
         // Also the proof, for both the reader and static analysis, that eval
@@ -92,6 +93,7 @@ final class DoubleFactory
             $contracts,
             $methods,
             $targets[0]->isInterface() ? [] : PropertyDefaults::forTarget($targets[0]),
+            $properties,
         );
     }
 
@@ -112,57 +114,120 @@ final class DoubleFactory
             self::rejectUndoublableClass($reflection, $contract, $primary);
         }
 
-        self::rejectAbstractPropertyHooks($reflection, $contract);
-
         return $reflection;
     }
 
     /**
-     * A property hook declared without a body — the only kind an interface can
-     * declare, and an `abstract` one on a class — is an abstract member like
-     * any other, and the generated class has to implement it. It cannot: this
-     * engine intercepts calls, and reading a property is not one. Left
-     * unimplemented, the class is refused by PHP itself from inside `eval()`,
-     * as a fatal error no caller can catch — so the refusal has to happen here,
-     * naming the property, like every other target this generator declines.
+     * Collects the abstract hooked properties the generated class has to
+     * declare — an interface property, or an `abstract` hooked one on a class.
+     * Rendered rather than refused (until 0.4.0 they were refused outright):
+     * this engine generates the class source, so it can declare the property
+     * and put the dispatcher inside the hook, which no `__get`-based library
+     * can — `__get` fires only for an *inaccessible* property, precisely not
+     * the case once the contract declares it.
      *
-     * `isAbstract()` and `getHooks()` are PHP 8.4 members, called by name so
-     * that an analyser running on 8.3 does not resolve a method the platform
-     * does not have there yet. On 8.3 no property can be abstract, so there is
-     * nothing to refuse.
+     * A concrete hook on a class target is not collected: it is inherited and
+     * keeps running the target's own code. `isAbstract()` and `getHooks()` are
+     * PHP 8.4 members, called by name so that an analyser running on 8.3 does
+     * not resolve a method the platform does not have there; on 8.3 no
+     * property can be abstract, so the answer is empty.
      *
-     * @param \ReflectionClass<object> $reflection
-     * @param class-string             $contract
+     * Two shapes stay refused, each with its reason: a readonly class target —
+     * PHP requires a readonly class to be extended only by a readonly class,
+     * and a hooked property cannot be readonly — and a `&get` hook, whose
+     * by-reference contract a virtual dispatching property cannot keep.
+     *
+     * @param non-empty-list<\ReflectionClass<object>> $targets
+     *
+     * @return array<non-empty-string, PropertySignature>
      */
-    private static function rejectAbstractPropertyHooks(\ReflectionClass $reflection, string $contract): void
+    private static function unifyAbstractHooks(array $targets): array
     {
         $isAbstract = 'isAbstract';
         $getHooks = 'getHooks';
 
-        foreach ($reflection->getProperties() as $property) {
-            if (!method_exists($property, $isAbstract) || !$property->{$isAbstract}()) {
-                continue;
-            }
-
-            /** @var array<non-empty-string, mixed> $hooks */
-            $hooks = $property->{$getHooks}();
-
-            throw UnsupportedTarget::notDoublable(
-                $contract,
-                sprintf(
-                    '`%s::$%s` is an abstract property hook (`$%s { %s}`), and a double has no way to implement '
-                    . 'it: this engine intercepts calls, and reading a property is not one. Expose the value '
-                    . 'through a method on the contract, or pass a real object.',
-                    $property->getDeclaringClass()->getName(),
-                    $property->getName(),
-                    $property->getName(),
-                    implode('', array_map(
-                        static fn(string $hook): string => $hook . '; ',
-                        array_keys($hooks),
-                    )),
-                ),
-            );
+        if (!method_exists(\ReflectionProperty::class, $isAbstract)) {
+            return [];
         }
+
+        $primary = $targets[0];
+        /** @var array<non-empty-string, PropertySignature> $properties */
+        $properties = [];
+
+        foreach ($targets as $target) {
+            foreach ($target->getProperties() as $property) {
+                if (!$property->{$isAbstract}()) {
+                    continue;
+                }
+
+                $name = $property->getName();
+
+                if (!$primary->isInterface() && $primary->isReadOnly()) {
+                    throw UnsupportedTarget::notDoublable(
+                        $primary->getName(),
+                        sprintf(
+                            'the class is readonly and `%s::$%s` is an abstract property hook. A readonly class '
+                            . 'may only be extended by a readonly class, and a hooked property cannot be readonly '
+                            . '— so no double can implement it. Double an interface of the contract instead.',
+                            $property->getDeclaringClass()->getName(),
+                            $name,
+                        ),
+                    );
+                }
+
+                /** @var array<non-empty-string, \ReflectionMethod> $hooks */
+                $hooks = $property->{$getHooks}();
+                $get = $hooks['get'] ?? null;
+
+                if ($get !== null && $get->returnsReference()) {
+                    throw UnsupportedTarget::notDoublable(
+                        $target->getName(),
+                        sprintf(
+                            '`%s::$%s` declares a by-reference `&get` hook, and a double dispatches property '
+                            . 'reads by value — the reference it handed back would not be the one the contract '
+                            . 'promises. Expose the value through a method, or pass a real object.',
+                            $property->getDeclaringClass()->getName(),
+                            $name,
+                        ),
+                    );
+                }
+
+                $type = $property->getType();
+                $signature = new PropertySignature(
+                    name: $name,
+                    type: $type === null ? '' : TypeRenderer::returnType($type, $property->getDeclaringClass()),
+                    hasGet: $get !== null,
+                    hasSet: isset($hooks['set']),
+                );
+
+                $existing = $properties[$name] ?? null;
+
+                if ($existing === null) {
+                    $properties[$name] = $signature;
+
+                    continue;
+                }
+
+                // Property types are invariant, so two targets naming one
+                // property must agree exactly; the hooks union.
+                if ($existing->type !== $signature->type) {
+                    throw UnsupportedTarget::notDoublable(
+                        $target->getName(),
+                        sprintf(
+                            'property `$%s` is declared `%s` here and `%s` by another target. Property types '
+                            . 'are invariant, so no single declaration satisfies both.',
+                            $name,
+                            $signature->type === '' ? '(untyped)' : $signature->type,
+                            $existing->type === '' ? '(untyped)' : $existing->type,
+                        ),
+                    );
+                }
+
+                $properties[$name] = $existing->withHooksOf($signature);
+            }
+        }
+
+        return $properties;
     }
 
     /**
@@ -306,16 +371,21 @@ final class DoubleFactory
     }
 
     /**
-     * @param non-empty-list<\ReflectionClass<object>>  $targets
-     * @param array<non-empty-string, MethodSignature> $methods
+     * @param non-empty-list<\ReflectionClass<object>>    $targets
+     * @param array<non-empty-string, MethodSignature>    $methods
+     * @param array<non-empty-string, PropertySignature>  $properties
      */
-    private static function render(string $generatedClass, array $targets, array $methods): string
+    private static function render(string $generatedClass, array $targets, array $methods, array $properties): string
     {
         $primary = $targets[0];
         $extendsClass = !$primary->isInterface();
         $interfaces = array_slice($targets, $extendsClass ? 1 : 0);
 
         $body = '';
+
+        foreach ($properties as $property) {
+            $body .= self::renderProperty($property);
+        }
 
         foreach ($methods as $signature) {
             $body .= self::renderMethod($signature);
@@ -372,6 +442,42 @@ final class DoubleFactory
     private static function renderDestructor(): string
     {
         return "    public function __destruct()\n    {\n    }\n\n";
+    }
+
+    /**
+     * A hooked property with the dispatcher inside the hook. Exactly the hooks
+     * the contract declares are rendered: adding a `set` to a get-only
+     * property would hand the code under test a write the contract never
+     * promised, and PHP itself answers a write to the virtual property with
+     * its own error. Neither hook touches the backing store, so the property
+     * stays virtual and `PropertyDefaults` has nothing to collide with.
+     *
+     * The `set` hook uses the implicit `$value`, whose type PHP pins to the
+     * property's own — nothing to render, nothing to get wrong.
+     */
+    private static function renderProperty(PropertySignature $property): string
+    {
+        $name = var_export($property->name, return: true);
+        $hooks = [];
+
+        if ($property->hasGet) {
+            $hooks[] = sprintf('        get => \\%s::propertyRead($this, %s);', Runtime::class, $name);
+        }
+
+        if ($property->hasSet) {
+            $hooks[] = sprintf(
+                "        set {\n            \\%s::propertyWrite(\$this, %s, \$value);\n        }",
+                Runtime::class,
+                $name,
+            );
+        }
+
+        return sprintf(
+            "    public %s\$%s {\n%s\n    }\n\n",
+            $property->type === '' ? '' : $property->type . ' ',
+            $property->name,
+            implode("\n", $hooks),
+        );
     }
 
     private static function renderMethod(MethodSignature $signature): string

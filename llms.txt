@@ -26,9 +26,18 @@ No runtime deps; `ext-mbstring` is not needed.
   `clone` is a double of its own.
 - Refused before generation, each with the reason: a `final` class, a class with
   a non-private `final` instance method, an enum, a trait, an internal class, an
-  anonymous class, a class that is not the first target, a contract declaring an
-  abstract property hook (an interface property, or an `abstract` one on a
-  class) — reading a property is not a call, so a double cannot implement one.
+  anonymous class, a class that is not the first target.
+- An abstract hooked property (PHP 8.4+: an interface property, or an
+  `abstract` one on a class) is rendered: the generated class declares it with
+  the dispatcher inside the hook. Exactly the declared hooks; a get-only
+  property refuses a write with PHP's own error. A read answers the forwarding
+  target's value, else what the code under test wrote (`{ get; set; }` behaves
+  like a plain property), else the same default table as method returns
+  (`defaults()` registrations, depth-1 nested double). A property read is NOT
+  a call: not recorded, not specifiable, not judged by strict mode — the
+  "exactly one direct call" rule is about calls, and reads are invisible to
+  it. Still refused: a readonly class target carrying an abstract hook, and a
+  `&get` hook. A concrete hook on a class target stays inherited.
 - Parameter defaults are reproduced, not approximated. An object default is
   rendered from its own source expression — `new Foo(1)` and `[new Foo(1)]`
   alike — which is never evaluated during generation. Refusal is narrow: a

@@ -46,6 +46,15 @@ final class DoubleState
     /** @var array<non-empty-string, ReferenceSlot> */
     private array $referenceSlots = [];
 
+    /**
+     * What the code under test wrote into rendered hooked properties. Kept
+     * apart from a written-flags map on purpose: `null` is a value someone
+     * wrote, and `array_key_exists` is what tells it from "never written".
+     *
+     * @var array<non-empty-string, mixed>
+     */
+    private array $propertyValues = [];
+
     /** @var array<non-empty-string, bool> */
     private array $seededSlots = [];
 
@@ -121,6 +130,30 @@ final class DoubleState
     public function setLabel(string $label): void
     {
         $this->label = $label;
+    }
+
+    /**
+     * @param non-empty-string $property
+     */
+    public function writeProperty(string $property, mixed $value): void
+    {
+        $this->propertyValues[$property] = $value;
+    }
+
+    /**
+     * @param non-empty-string $property
+     */
+    public function hasPropertyValue(string $property): bool
+    {
+        return \array_key_exists($property, $this->propertyValues);
+    }
+
+    /**
+     * @param non-empty-string $property
+     */
+    public function propertyValue(string $property): mixed
+    {
+        return $this->propertyValues[$property] ?? null;
     }
 
     /**

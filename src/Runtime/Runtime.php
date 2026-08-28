@@ -711,6 +711,98 @@ final class Runtime
     }
 
     /**
+     * Answers a read of a rendered hooked property.
+     *
+     * A property read is not a call, on purpose: it is not recorded, not
+     * specifiable and not judged by strict mode or an armed protocol — the
+     * same standing a plain public property already has on a class double.
+     * What it answers, in order: the real instance's value when the double is
+     * forwarding, the value the code under test wrote earlier, and otherwise
+     * the mode's type-safe default — the same `TypeDefaultResolver` table a
+     * method return goes through, `Understudy::defaults()` registrations and
+     * the depth-1 nested double included.
+     *
+     * @param non-empty-string $property
+     */
+    public static function propertyRead(object $double, string $property): mixed
+    {
+        [$context, $state] = self::propertyState($double, $property);
+
+        if ($state->mode() === Mode::Forwarding) {
+            $target = $state->forwardingTarget();
+
+            if ($target === null) {
+                throw OriginalCallUnavailable::withoutTarget($state->label(), $property);
+            }
+
+            return $target->{$property};
+        }
+
+        if ($state->hasPropertyValue($property)) {
+            return $state->propertyValue($property);
+        }
+
+        return TypeDefaultResolver::forPropertyType(
+            $state->label(),
+            $state->blueprint->property($property)?->type,
+            $property,
+            $context,
+            $state->nested,
+        );
+    }
+
+    /**
+     * Records a write to a rendered hooked property, so a later read answers
+     * it — the behaviour of a plain property, which is the least surprising
+     * reading of "the contract says this is settable". A forwarding double
+     * writes through to the real instance instead, the way it delegates a
+     * call.
+     *
+     * @param non-empty-string $property
+     */
+    public static function propertyWrite(object $double, string $property, mixed $value): void
+    {
+        [, $state] = self::propertyState($double, $property);
+
+        if ($state->mode() === Mode::Forwarding) {
+            $target = $state->forwardingTarget();
+
+            if ($target === null) {
+                throw OriginalCallUnavailable::withoutTarget($state->label(), $property);
+            }
+
+            $target->{$property} = $value;
+
+            return;
+        }
+
+        $state->writeProperty($property, $value);
+    }
+
+    /**
+     * @param non-empty-string $property
+     *
+     * @return array{RuntimeContext, DoubleState}
+     */
+    private static function propertyState(object $double, string $property): array
+    {
+        $current = self::current();
+        $state = $current->stateOf($double);
+        $context = $current;
+
+        if ($state === null) {
+            $context = self::ownerOf($double) ?? $current;
+            $state = $context->stateOf($double);
+        }
+
+        if ($state === null) {
+            throw ForgottenDouble::propertyAfterReset($property);
+        }
+
+        return [$context, $state];
+    }
+
+    /**
      * Dispatches a call whose return type is by reference and hands back the
      * slot the generated method will return a reference into.
      *

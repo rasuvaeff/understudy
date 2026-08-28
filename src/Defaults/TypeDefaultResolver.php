@@ -42,6 +42,28 @@ final class TypeDefaultResolver
     }
 
     /**
+     * The same table, asked for a rendered hooked property's type. An untyped
+     * property answers `null`, which is also what PHP gives an untyped plain
+     * one.
+     *
+     * @param non-empty-string $label
+     * @param non-empty-string $member
+     */
+    public static function forPropertyType(
+        string $label,
+        ?string $type,
+        string $member,
+        RuntimeContext $context,
+        bool $nested = false,
+    ): mixed {
+        if ($type === null || $type === '') {
+            return null;
+        }
+
+        return self::forType($label, $type, $member, $context, $nested);
+    }
+
+    /**
      * @param non-empty-string $label
      * @param non-empty-string $method
      */

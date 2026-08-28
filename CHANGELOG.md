@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- **Interface-declared property hooks are rendered, so a modern contract can
+  be doubled at all** (rasuvaeff/understudy#36). `public string $name { get; }`
+  on an interface — or an `abstract` hooked property on a class — no longer
+  refuses the target: the generated class declares the property with the
+  dispatcher inside the hook, which no `__get`-based library can do (`__get`
+  fires only for an inaccessible property). Reads answer the forwarding
+  target's value, else what the code under test wrote (a `{ get; set; }`
+  property behaves like a plain one), else the mode's type-safe default —
+  `Understudy::defaults()` registrations and the depth-1 nested double
+  included. Exactly the declared hooks are rendered: a get-only property
+  refuses a write with PHP's own error. A property read is not a call — not
+  recorded, not specifiable, not judged by strict mode; stubbing and verifying
+  reads is future work by design. Still refused, each with its reason: a
+  readonly class target carrying an abstract hook (a hooked property cannot be
+  readonly, and a readonly class only extends readonly), and a by-reference
+  `&get` hook. Concrete hooks on class targets stay inherited, and on PHP 8.3
+  nothing changes — the language cannot express a hooked property there.
+
 - **`Understudy::lean()`: a call log that does not retain returned values**
   (rasuvaeff/understudy#63). The transcript keeps every invocation with its
   outcome until `reset()` — which the runner adapters call *after* the test's
