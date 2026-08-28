@@ -24,6 +24,7 @@ use Rasuvaeff\Understudy\Tests\Support\DispatchFindCommand;
 use Rasuvaeff\Understudy\Tests\Support\EngineHarness;
 use Rasuvaeff\Understudy\Tests\Support\EngineState;
 use Rasuvaeff\Understudy\Tests\Support\RequireNothingElseCommand;
+use Rasuvaeff\Understudy\Tests\Support\ScopeInterludeCommand;
 use Rasuvaeff\Understudy\Tests\Support\SettleCheckpointCommand;
 use Rasuvaeff\Understudy\Tests\Support\VerifyCallsCommand;
 use Rasuvaeff\Understudy\Tests\Support\VerifyEverythingCommand;
@@ -35,7 +36,7 @@ use Testo\Test;
 
 /**
  * Model-based test for the ledger lifecycle the plan calls the engine's
- * core loop: stub/expect → dispatch → verify → checkpoint. Any sequence of
+ * core loop: stub/expect → dispatch → verify → checkpoint → scope. Any sequence of
  * configuration, dispatch and verification commands must keep the real
  * double's answers, its call log and its accounting in lock-step with the
  * pure {@see EngineState} model — most-recent-first matching, claim
@@ -87,6 +88,12 @@ final class EngineLifecyclePropertyTest
         Classify::cover($harness->verifiesFailed > 0, 'an explicit verify failed', 5);
         Classify::cover($harness->settledCheckpoints > 0, 'a checkpoint settled', 5);
         Classify::cover($harness->refusedRegistrations > 0, 'a colliding registration was refused', 5);
+        // The scope interlude runs whenever its command is drawn; which way
+        // its close goes depends on the outer ledger at that instant, so the
+        // two outcomes are labelled without a floor and pinned by examples.
+        Classify::cover($harness->cleanScopeCloses + $harness->refusedScopeCloses > 0, 'a nested scope lived and died', 5);
+        Classify::when($harness->cleanScopeCloses > 0, 'scope: closed clean');
+        Classify::when($harness->refusedScopeCloses > 0, 'scope: close refused by an outer claim');
 
         // The runner advanced its own copy of the model; folding the same
         // pure transitions here gives the end state the real log must have
@@ -184,6 +191,33 @@ final class EngineLifecyclePropertyTest
                 new RequireNothingElseCommand(),
             ],
         )];
+
+        // The two ways a nested scope can close, pinned deterministically:
+        // over a clean outer ledger the close verifies and passes; over a
+        // violated outer claim it throws, because the close's verify sweeps
+        // every live context. Either way the inner double dies with its
+        // context and the outer ledger is untouched — a scope checks, it
+        // never settles, which the trailing dispatch and verify prove.
+        yield 'a scope closes clean over a clean outer ledger' => [new CommandSequence(
+            new EngineState(),
+            [
+                new ConfigureStubCommand(anyArgument: false, literalId: 2),
+                new ScopeInterludeCommand(),
+                new DispatchFindCommand(id: 2),
+                new VerifyCallsCommand(anyArgument: false, literalId: 2, minimum: 1, maximum: 1),
+            ],
+        )];
+
+        yield 'a scope close is refused by a violated outer claim' => [new CommandSequence(
+            new EngineState(),
+            [
+                new ConfigureExpectCommand(anyArgument: false, literalId: 1, minimum: 1, maximum: 1),
+                new ScopeInterludeCommand(),
+                new DispatchFindCommand(id: 1),
+                new ScopeInterludeCommand(),
+                new VerifyEverythingCommand(),
+            ],
+        )];
     }
 
     /**
@@ -246,6 +280,7 @@ final class EngineLifecyclePropertyTest
             Gen::constant(new VerifyEverythingCommand()),
             Gen::constant(new SettleCheckpointCommand()),
             Gen::constant(new RequireNothingElseCommand()),
+            Gen::constant(new ScopeInterludeCommand()),
         ];
     }
 
