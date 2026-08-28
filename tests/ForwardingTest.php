@@ -282,6 +282,59 @@ final class ForwardingTest
         Understudy::for(new SealedChain());
     }
 
+    // --- delegate() ---------------------------------------------------------
+
+    /**
+     * `for()` plus `forwarding()` in one expression, with the double handed
+     * back — the dominant "build a double that delegates to this instance"
+     * case no longer takes two statements.
+     */
+    public function delegateBuildsAForwardingDoubleInOneExpression(): void
+    {
+        $double = Understudy::delegate(Chainable::class, new RealChain());
+
+        Assert::instanceOf($double, Chainable::class);
+        Assert::same($double->label(), 'real');
+    }
+
+    public function aStubOnADelegatingDoubleStillWins(): void
+    {
+        $double = Understudy::delegate(Chainable::class, new RealChain());
+
+        when(static fn(): string => $double->label())->returns('stubbed');
+
+        Assert::same($double->label(), 'stubbed');
+        Assert::same($double->describe(), 'described by real');
+    }
+
+    public function callsOnADelegatingDoubleAreRecorded(): void
+    {
+        $double = Understudy::delegate(Chainable::class, new RealChain());
+
+        $double->label();
+
+        Understudy::verify(static fn(): string => $double->label(), times: 1);
+    }
+
+    public function delegateRefusesAnInstanceThatMissesTheContract(): void
+    {
+        Expect::exception(ForwardingTargetMismatch::class)
+            ->withMessageContaining('stands in for `' . Chainable::class . '`')
+            ->withMessageContaining('`' . RealFiller::class . '` is not one');
+
+        Understudy::delegate(Chainable::class, new RealFiller());
+    }
+
+    public function delegateRefusesAnUnderstudyAsTarget(): void
+    {
+        $other = Understudy::for(Chainable::class);
+
+        Expect::exception(ForwardingTargetMismatch::class)
+            ->withMessageContaining('cannot forward to an understudy');
+
+        Understudy::delegate(Chainable::class, $other);
+    }
+
     // --- Rejections ---------------------------------------------------------
 
     public function anInstanceThatMissesAContractIsRejected(): void

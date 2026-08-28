@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **`Understudy::delegate(Contract::class, $real)`: a forwarding double in one
+  expression** (rasuvaeff/understudy#61). Builds the double, turns forwarding
+  on and returns it — the `for()` + `forwarding()` pair that suites leaning on
+  forwarding repeated at every site. The target is validated the way
+  `forwarding()` validates it; both existing `forwarding()` forms stay.
+
 ## 0.3.0 — 2026-08-27
 
 - **A `when()` stub and an `expect()` for the exact same call are refused at

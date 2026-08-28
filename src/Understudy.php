@@ -533,6 +533,40 @@ final class Understudy
     }
 
     /**
+     * Builds a double of one contract that delegates every unmatched call to
+     * the given instance, and hands the double back — {@see for()} plus
+     * {@see forwarding()} in one expression:
+     *
+     * ```php
+     * $store = Understudy::delegate(StoreInterface::class, $this->store);
+     * when(fn () => $store->delete(Arg::any()))->throws(new StoreException('unreachable'));
+     * ```
+     *
+     * A separate verb rather than an overload of `forwarding()`: that method
+     * answers `void` for a double built earlier, and a return value that
+     * appears only for one shape of the first argument is the kind of magic a
+     * reader should not have to know about.
+     *
+     * The target is validated the way `forwarding()` validates it: it must
+     * satisfy the contract, and an understudy is refused — delegating to one
+     * sends every call back into the dispatcher it came from.
+     *
+     * @template T of object
+     *
+     * @param class-string<T> $contract
+     * @param T               $real
+     *
+     * @return T
+     */
+    public static function delegate(string $contract, object $real): object
+    {
+        $double = self::for($contract);
+        self::forwarding($double, $real);
+
+        return $double;
+    }
+
+    /**
      * Builds a real subject with an understudy for every constructor
      * dependency, and hands back both.
      *
