@@ -944,6 +944,24 @@ final class LedgerTest
         Assert::same(Understudy::scope(static fn(): string => 'value'), 'value');
     }
 
+    /**
+     * A closed scope is gone from accounting, not merely emptied: a later
+     * `verifyAll(strictStubs: true)` must not dig up the retired context and
+     * report its unused stub — the scope already answered for its own cast
+     * when it closed.
+     */
+    #[ExpectNoAssertions]
+    public function aClosedScopeIsInvisibleToLaterVerification(): void
+    {
+        Understudy::scope(static function (): void {
+            $repository = Understudy::for(BookRepository::class);
+
+            when(fn() => $repository->count())->returns(1);
+        });
+
+        Understudy::verifyAll(strictStubs: true);
+    }
+
     public function scopeVerifiesOnSuccess(): void
     {
         Expect::exception(VerificationFailed::class)->withMessageContaining('never');

@@ -88,6 +88,7 @@
         "examples": [
             "@php examples/basic-usage.php",
             "@php examples/modes.php",
+            "@php examples/property-hooks.php",
             "@php examples/wiring.php",
             "@php examples/protocol.php",
             "@php examples/defaults-registry.php",

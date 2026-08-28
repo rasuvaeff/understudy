@@ -265,6 +265,65 @@ final class MatcherPropertyTest
         yield 'numeric string against int' => ['5', 5];
     }
 
+    /**
+     * A matcher runs while the code under test is executing, so none of them
+     * may throw on a hostile argument, and every one must describe itself
+     * with a non-empty string. The catalog spans the whole `Arg::` family —
+     * the tail matchers and a captor's `capture()` included, so a matcher
+     * added later without joining this catalog is the review comment to make.
+     */
+    #[Property(runs: 300)]
+    public function everyMatcherAnswersAndDescribesWithoutThrowing(mixed $matcher, mixed $subject): void
+    {
+        $matcher = $this->matcher($matcher);
+
+        $verdict = $matcher->matches($subject);
+
+        Classify::cover($verdict, 'accepted', 5);
+        Classify::cover(!$verdict, 'rejected', 5);
+
+        Assert::true($matcher->describe() !== '');
+    }
+
+    /**
+     * @return array<string, ArbitraryInterface>
+     */
+    public static function everyMatcherAnswersAndDescribesWithoutThrowingGenerators(): array
+    {
+        return [
+            'matcher' => Gen::elements(self::matcherCatalog()),
+            'subject' => MatcherGenerators::anyValue(),
+        ];
+    }
+
+    /**
+     * @return non-empty-list<mixed>
+     */
+    private static function matcherCatalog(): array
+    {
+        return [
+            Arg::any(),
+            Arg::int(min: 1, max: 5),
+            Arg::float(),
+            Arg::string(),
+            Arg::bool(),
+            Arg::same(5),
+            Arg::not(5),
+            Arg::allOf(Arg::int(), Arg::not(0)),
+            Arg::anyOf('draft', 'review'),
+            Arg::instanceOf(\DateTimeImmutable::class),
+            Arg::satisfies(static fn(mixed $x): bool => \is_int($x)),
+            Arg::containing(['k' => 1]),
+            Arg::count(minimum: 1, maximum: 3),
+            Arg::which('getTimestamp', 0),
+            Arg::none(),
+            Arg::remaining(),
+            Arg::rest(),
+            Arg::captor()->capture(),
+            Arg::captor(\DateTimeImmutable::class)->capture(),
+        ];
+    }
+
     private function matcher(mixed $matcher): ArgumentMatcher
     {
         \assert($matcher instanceof ArgumentMatcher);

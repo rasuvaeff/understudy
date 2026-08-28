@@ -56,6 +56,9 @@ here. Two rows are traps, marked ⚠.
 | `$mock->shouldNotHaveReceived('save')` | `Understudy::unused($mock)` | |
 | `$mock->shouldHaveReceived('save')` | `verify(fn () => $mock->save(...))` | after the fact; add `nothingElse()` — see below |
 | `Mockery::close()` | adapter's `reset()`, or your own teardown | |
+| `->makePartial()` / `Mockery::spy($real)` | `Understudy::delegate(Contract::class, $real)` + stubs on top | a stub wins, everything else runs for real — and is recorded |
+| `->withAnyArgs()` | inside the closure: `method(Arg::rest())` | also the escape from spelling a wide signature: `method('svc', Arg::rest())` |
+| `Mockery::capture($x)` | `Arg::captor(X::class)` + `$captor->capture()` | `last()`/`all()` are typed through the class-string — no `instanceof` at the read site |
 | ⚠ `->shouldReceive(...)->once()` used as setup | `when(...)->returns(...)` | a `when()` is permission, not a claim — if you only needed a value, `expect()` would make incidental setup a failing test |
 | ⚠ a spy counting every call | `expect()` + `Understudy::nothingElse($mock)` | `expect()` counts only calls matching **its** arguments; without `nothingElse()` a second call with different arguments passes — a hand-rolled counter caught it, the migration must not lose it |
 
@@ -188,7 +191,9 @@ one), and otherwise the same default table a method return goes through —
 
 A property read is **not a call**: it is not recorded, not specifiable with
 `when()`/`expect()`, and not judged by strict mode — the same standing a plain
-public property already has on a class double. Two shapes are still refused
+public property already has on a class double. A `clone` of the double does
+not carry written property values over: a copy is a double of its own, there
+as everywhere. Two shapes are still refused
 with the reason: a `readonly` class target whose contract carries an abstract
 hook (a readonly class may only be extended by a readonly class, and a hooked
 property cannot be readonly), and a by-reference `&get` hook. A concrete hook
@@ -325,7 +330,9 @@ like `Arg::instanceOf()`, the bare `Arg::captor()` like `Arg::any()` — and the
 value is recorded only once the **whole** specification matched the call, so a
 call the other arguments rejected captures nothing. It works in `when()`,
 `expect()` and `verify()` alike; a `verify()` captures from the calls it just
-claimed, the Mockito reading. `last()` on a captor that captured nothing
+claimed, the Mockito reading. A `capture()` inside an `expectSequence()` step
+matches but does not record — capture at declaration or at verification, not
+in a protocol. `last()` on a captor that captured nothing
 raises `NothingCaptured`; `all()` answers an empty list. Captured values live
 exactly as long as the call log: `reset()` and a closing `Understudy::scope()`
 drop them, and the captor object is then simply empty again.
@@ -497,6 +504,9 @@ returned value is not retained: `Invocation::returned()` raises
 `OutcomeUnavailable`, the way it already does for a call that threw, and the
 transcript shows `returned (value not kept: lean)`. It is one-way for the
 double's lifetime, and it also caps the per-call memory growth of a hot loop.
+The one thing `lean()` cannot release is the stable slot behind a
+by-reference (`&`) return — callers hold a live reference into it, and the
+language requires the storage to outlive the call.
 A double whose returned values own OS resources should be built lean, or built
 and used inside `Understudy::scope()`, which drops the context — outcomes
 included — before the lifecycle teardown runs.

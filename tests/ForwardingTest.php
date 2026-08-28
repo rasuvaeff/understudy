@@ -20,6 +20,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Fwd\RealFiller;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\SealedChain;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
+use Testo\Assert\ExpectNoAssertions;
 use Testo\Codecov\Covers;
 use Testo\Expect;
 use Testo\Lifecycle\AfterTest;
@@ -307,6 +308,7 @@ final class ForwardingTest
         Assert::same($double->describe(), 'described by real');
     }
 
+    #[ExpectNoAssertions]
     public function callsOnADelegatingDoubleAreRecorded(): void
     {
         $double = Understudy::delegate(Chainable::class, new RealChain());

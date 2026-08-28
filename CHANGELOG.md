@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+- **Honest-coverage sweep after 0.4.0.** Twelve targeted tests kill the
+  escaped mutants the new code left behind (hooked-property collection and
+  rendering, cross-Fiber property routing, forwarding write-through, captor
+  registration, the specification-hole boundary, retired-scope invisibility),
+  and three test classes now attribute `#[Covers]` they exercised all along —
+  which is what let several of those mutants escape unmapped. A new matcher
+  property pins "no matcher throws on a hostile argument, every one describes
+  itself" across the whole `Arg::` catalog, `rest()` and a captor's
+  `capture()` included.
+- `examples/` caught up with 0.4.0: `Arg::rest()` and a typed captor in
+  `basic-usage.php`, `delegate()` and `lean()` in `modes.php`, and a new
+  `property-hooks.php` (self-skipping on PHP 8.3). The Mockery migration
+  table gains the `makePartial()`/`withAnyArgs()`/`Mockery::capture()` rows,
+  and three edge behaviours are now stated: a `capture()` in an
+  `expectSequence()` step matches without recording, `lean()` cannot release
+  the stable slot behind a `&` return, and a `clone` does not carry written
+  property values over.
+
 ## 0.4.0 — 2026-08-28
 
 Every open issue of the backlog in one release. All additive — nothing

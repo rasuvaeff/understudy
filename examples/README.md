@@ -9,8 +9,9 @@ demonstrate changes.
 
 | Script | Shows | Needs server? |
 |---|---|---|
-| `basic-usage.php` | stubbing with `when()`, argument matchers, verifying counts, reading the call log with outcomes, strict mode and labels | no |
-| `modes.php` | the three modes a double can be in: loose defaults, `strict()`, and `forwarding()` to a real object — including the partial double, where one call is configured and the rest run for real | no |
+| `basic-usage.php` | stubbing with `when()`, argument matchers — `Arg::rest()` and a typed `Arg::captor()` included — verifying counts, reading the call log with outcomes, strict mode and labels | no |
+| `property-hooks.php` | doubling a contract that declares properties (PHP 8.4+): default reads, `{ get; set; }` round-trip, the get-only write refusal — self-skipping on 8.3 | no |
+| `modes.php` | the three modes a double can be in: loose defaults, `strict()`, and `forwarding()` to a real object — including the partial double (`delegate()` + a stub on top) and `lean()`, the call log that does not retain returned values | no |
 | `wiring.php` | `Understudy::wire()`: doubles keyed by constructor parameter name, overriding one dependency, and the refusal that happens before the constructor runs | no |
 | `protocol.php` | `expect()->ordered()`, `Understudy::verifySequence()` across two doubles, and `Understudy::nothingElse()` | no |
 | `defaults-registry.php` | what an unconfigured call answers: nested doubles one level deep, `Understudy::defaults()`, the nullable-return rule, and the refusals | no |
