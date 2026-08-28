@@ -8,6 +8,21 @@
   forwarding repeated at every site. The target is validated the way
   `forwarding()` validates it; both existing `forwarding()` forms stay.
 
+- **`Arg::rest()`: "the arguments before me matter, the rest of the arity does
+  not"** (rasuvaeff/understudy#60). The one matcher that lets a specification
+  stop before the method's required parameters run out —
+  `when(fn () => $storage->recordOutcome('svc', Arg::rest()))` instead of an
+  `Arg::any()` per remaining parameter. To make the shortened call physically
+  possible, every required parameter of a generated method now defaults to an
+  internal sentinel; a real call that omits a required argument still fails
+  with `ArgumentCountError`, raised by the dispatcher instead of the engine,
+  so a double is no more permissive about arity than the contract. A
+  specification that stops early *without* ending in `Arg::rest()` is refused
+  with the reason — including `Arg::remaining()`/`Arg::none()` in that
+  position, which describe a variadic tail, not omitted parameters. Layering
+  is untouched: a later, narrower specification still wins over the broad
+  prefix stub.
+
 ## 0.3.0 — 2026-08-27
 
 - **A `when()` stub and an `expect()` for the exact same call are refused at

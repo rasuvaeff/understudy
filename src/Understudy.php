@@ -1190,7 +1190,12 @@ final class Understudy
         try {
             $call();
         } catch (InvocationSignal $signal) {
-            return $signal;
+            // A specification that ended with Arg::rest() physically passed
+            // fewer arguments than the method declares; the generated
+            // parameters answered with their sentinel defaults, and those are
+            // stripped — or the omission is refused — before anything reads
+            // the arguments as a specification.
+            return $signal->withoutAbsentArguments();
         } catch (\Throwable $failure) {
             throw InvalidCallSpecification::closureFailed($failure);
         } finally {

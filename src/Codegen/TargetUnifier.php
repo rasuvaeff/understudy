@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Codegen;
 
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
+use Rasuvaeff\Understudy\Runtime\Absent;
 
 /**
  * Turns one or more contracts into the signatures a single class can declare.
@@ -26,6 +27,9 @@ final class TargetUnifier
 
     /** Used when a target declares a variadic without a usable name. */
     private const string DEFAULT_TAIL_NAME = 'rest';
+
+    private const string ABSENT = '\\' . Absent::class;
+    private const string ABSENT_DEFAULT = self::ABSENT . '::Argument';
 
     private function __construct() {}
 
@@ -909,6 +913,8 @@ final class TargetUnifier
             }
         }
 
+        $optional = !$declaredEverywhere || !$requiredEverywhere;
+
         // An untyped parameter in any target means the union cannot be
         // expressed at all — every value is already allowed.
         //
@@ -922,12 +928,18 @@ final class TargetUnifier
         } else {
             if (!$acceptsMatcher) {
                 $types[TypeRenderer::MATCHER] = true;
+
+                // Exactly where the matcher branch goes, for the same reason
+                // and under the same exemptions: `mixed`, `object` and an
+                // untyped parameter admit the sentinel already, and appending
+                // it to `object` would be the redundant union PHP refuses.
+                if (!$optional) {
+                    $types[self::ABSENT] = true;
+                }
             }
 
             $type = implode('|', array_keys($types));
         }
-
-        $optional = !$declaredEverywhere || !$requiredEverywhere;
 
         // Keeping the contract's own default is what makes an omitted argument
         // observable: `tag('alpha')` must log the same arguments as
@@ -940,12 +952,17 @@ final class TargetUnifier
             $type .= '|null';
         }
 
+        // A required parameter gets the sentinel as its default, so a
+        // specification ending with `Arg::rest()` can stop early without PHP
+        // refusing the call on arity. Dispatch turns a sentinel that survives
+        // a real call back into the `ArgumentCountError` PHP would have
+        // raised, so the double is no more permissive than the contract.
         $rendered = trim(sprintf(
-            '%s %s$%s%s',
+            '%s %s$%s = %s',
             $type,
             $byReference === true ? '&' : '',
             $parameterName,
-            $optional ? ' = ' . $default : '',
+            $optional ? $default : self::ABSENT_DEFAULT,
         ));
         \assert($rendered !== '');
 

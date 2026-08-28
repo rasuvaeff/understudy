@@ -8,6 +8,7 @@ use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Matcher\AllOf;
 use Rasuvaeff\Understudy\Matcher\AnyArgument;
 use Rasuvaeff\Understudy\Matcher\AnyOf;
+use Rasuvaeff\Understudy\Matcher\AnyRest;
 use Rasuvaeff\Understudy\Matcher\AnyTail;
 use Rasuvaeff\Understudy\Matcher\ArrayContaining;
 use Rasuvaeff\Understudy\Matcher\BooleanValue;
@@ -222,5 +223,26 @@ final class Arg
     public static function remaining(): mixed
     {
         return new AnyTail();
+    }
+
+    /**
+     * "The arguments before this one matter, the rest of the arity does not."
+     * Only valid as the last argument, and the one matcher that lets a
+     * specification stop before the method's required parameters run out:
+     *
+     * ```php
+     * when(fn () => $storage->recordOutcome('svc', Arg::rest()))
+     *     ->throws(new RuntimeException('storage unavailable'));
+     * ```
+     *
+     * The distinction from {@see remaining()}: `remaining()` stands for the
+     * variadic tail a method declares; `rest()` stands for declared parameters
+     * the specification chose not to spell out. A later, narrower
+     * specification for the same call still wins over the broad prefix stub,
+     * the way overlapping matchers already compose.
+     */
+    public static function rest(): mixed
+    {
+        return new AnyRest();
     }
 }
