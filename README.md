@@ -554,6 +554,13 @@ Everything the test did not configure runs for real and is recorded; `get('key')
 throws. The target has to satisfy every contract the double stands in for, or it
 is refused.
 
+`Understudy::delegate()` is that pair in one expression: it builds the double,
+turns forwarding on and hands the double back —
+
+```php
+$spy = Understudy::delegate(CacheInterface::class, $real);
+```
+
 `Understudy::for($real)` is the shorthand for a non-final class: it builds a
 double of that object's class and remembers the object, but keeps answering with
 defaults until `Understudy::forwarding($double)` turns delegation on. Wrapping

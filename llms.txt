@@ -40,6 +40,8 @@ No runtime deps; `ext-mbstring` is not needed.
   `Understudy::forwarding($double)` only turns the mode on for a double built by
   `Understudy::for($real)`. Configured calls still win; an expectation that only
   counts still forwards.
+- `Understudy::delegate(Contract::class, $real)` is `for()` + `forwarding()` in
+  one expression and returns the double. The target is validated the same way.
 - `Invocation::callOriginal()` delegates one call from inside `answers()`,
   whatever the mode. Without a target it raises `OriginalCallUnavailable` — the
   parent implementation is never reached, because the double's constructor never
