@@ -127,8 +127,11 @@ final class LastCallAndForgetTest
         // Asking anything about a retired double — its calls, its accounting —
         // is a question about an object the test replaced; say so rather than
         // silently passing or reporting a closure problem that is not there.
-        Expect::exception(ForgottenDouble::class)
-            ->withMessageContaining('retired with Understudy::forget()');
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            'This understudy was retired with Understudy::forget() and can no longer be asked '
+            . 'anything — not calls, not verification. A replacement built afterwards is a '
+            . 'different object; ask that one.',
+        );
 
         Understudy::nothingElse($replaced);
     }
@@ -139,16 +142,20 @@ final class LastCallAndForgetTest
         when(fn() => $repository->find(Arg::any()))->returns(new Book('title'));
         Understudy::forget($repository);
 
-        Expect::exception(ForgottenDouble::class)
-            ->withMessageContaining('retired with Understudy::forget()');
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            "This understudy was retired with Understudy::forget(), but `find()` was called on it.\n"
+            . 'A forgotten double is gone for good; build a new one instead of calling this one.',
+        );
 
         $repository->find(1);
     }
 
     public function forgettingANonDoubleIsRefusedByName(): void
     {
-        Expect::exception(InvalidCallSpecification::class)
-            ->withMessageContaining('expects an understudy created by Understudy::for()');
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            'Understudy::forget() expects an understudy created by Understudy::for(). '
+            . 'This object is not one.',
+        );
 
         Understudy::forget(new \stdClass());
     }

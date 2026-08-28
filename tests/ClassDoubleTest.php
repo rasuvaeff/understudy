@@ -42,6 +42,7 @@ use function Rasuvaeff\Understudy\when;
 
 #[Test]
 #[Covers(DoubleFactory::class)]
+#[Covers(Understudy::class)]
 #[Covers(PropertyDefaults::class)]
 #[Covers(TargetUnifier::class)]
 #[Covers(Blueprint::class)]
@@ -353,6 +354,48 @@ final class ClassDoubleTest
     }
 
     // --- Rejections ---------------------------------------------------------
+
+    /**
+     * `final` on a STATIC method rejects nothing: statics are not intercepted,
+     * so there is nothing a final one could hide from the double.
+     */
+    public function aFinalStaticMethodDoesNotRejectTheTarget(): void
+    {
+        $class = 'FinalStaticHost_' . PHP_VERSION_ID;
+        eval(sprintf(
+            'namespace %s; class %s { final public static function seal(): int { return 1; } public function plain(): int { return 2; } }',
+            __NAMESPACE__,
+            $class,
+        ));
+
+        /** @var class-string $fqcn */
+        $fqcn = __NAMESPACE__ . '\\' . $class;
+        $double = Understudy::for($fqcn);
+
+        Assert::same($double->plain(), 0);
+    }
+
+    /**
+     * The final-member walk reads EVERY method: a final instance method after
+     * a perfectly ordinary one still rejects the target.
+     */
+    public function aFinalMethodAfterAPlainOneStillRejects(): void
+    {
+        $class = 'LateFinalHost_' . PHP_VERSION_ID;
+        eval(sprintf(
+            'namespace %s; class %s { public function plain(): int { return 1; } final public function sealed(): int { return 2; } }',
+            __NAMESPACE__,
+            $class,
+        ));
+
+        /** @var class-string $fqcn */
+        $fqcn = __NAMESPACE__ . '\\' . $class;
+
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining('::sealed()` is final and cannot be overridden');
+
+        Understudy::for($fqcn);
+    }
 
     public function aFinalClassIsRejected(): void
     {

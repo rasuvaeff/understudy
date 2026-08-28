@@ -8,7 +8,14 @@
         "summary": "build/infection-summary.log"
     },
     "testFramework": "testo",
-    "minMsi": 90,
+    // 90 -> 92 on 2026-08-28: the escaped-mutant hunt took the local full run
+    // from 240 escaped / 90.4% to 158 / 94.0% (three manual arbitrations
+    // confirmed the remainder is dominated by genuine equivalents: redundant
+    // second guards, set-map values read through array_keys, perf fastpaths,
+    // warning-only offsets). Two points of headroom stay because the CI
+    // mutant count differs from the local one by dozens and a pair of
+    // SELF-case mutants flip between runs.
+    "minMsi": 92,
     "mutators": {
         "@default": true,
         // Raw-I/O passthroughs. Each of these forwards one call to the native

@@ -20,6 +20,9 @@ use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
+use Rasuvaeff\Understudy\Tests\Fixture\Fwd\Chainable;
+use Rasuvaeff\Understudy\Tests\Fixture\Fwd\RealChain;
+use Rasuvaeff\Understudy\Tests\Fixture\Ref\Registry;
 use Rasuvaeff\Understudy\Tests\Support\GoldenMessage;
 use Rasuvaeff\Understudy\Understudy;
 use Rasuvaeff\Understudy\VerificationFailure;
@@ -935,6 +938,216 @@ final class LedgerTest
         $repository->count();
 
         Understudy::verifyAll();
+    }
+
+    // --- What settle() keeps and what it drops --------------------------------
+
+    /**
+     * A satisfied claim is DONE and settle drops it: a call after the
+     * checkpoint must not be counted against the old cardinality, or a phase
+     * boundary would turn a clean second phase into "called 2 times".
+     */
+    #[ExpectNoAssertions]
+    public function aSettledClaimDoesNotCountTheNextPhasesCalls(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        expect(fn() => $repository->count())->returns(1);
+
+        $repository->count();
+        Understudy::checkpoint();
+
+        $repository->count();
+        Understudy::verifyAll();
+    }
+
+    /**
+     * Settle rebuilds the per-method map by APPENDING: two surviving stubs of
+     * one method must both come through, or the older fallback silently
+     * vanishes at every phase boundary.
+     */
+    public function settleKeepsEveryStubOfAMethod(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        when(fn() => $repository->find(1))->returns(new Book('one'));
+        when(fn() => $repository->find(2))->returns(new Book('two'));
+
+        Understudy::checkpoint();
+
+        Assert::same($repository->find(1)?->title, 'one');
+        Assert::same($repository->find(2)?->title, 'two');
+    }
+
+    // --- The literal index keeps the walked fallbacks reachable ---------------
+
+    /**
+     * A matcher-first specification has no literal key and must stay in the
+     * walked list: once a second expectation puts the method under the index,
+     * the wildcard still answers the calls the literal one does not.
+     */
+    public function aWildcardStubStaysReachableUnderTheLiteralIndex(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        when(fn() => $repository->find(Arg::any()))->returns(new Book('fallback'));
+        when(fn() => $repository->find(2))->returns(new Book('exact'));
+
+        Assert::same($repository->find(2)?->title, 'exact');
+        Assert::same($repository->find(3)?->title, 'fallback');
+    }
+
+    // --- Fiber routing beyond plain dispatch ----------------------------------
+
+    /**
+     * A by-reference return from another Fiber still finds the OWNER's slot:
+     * both lookups on that path route by owner first, and a context that only
+     * exists inside the Fiber knows nothing about the double.
+     */
+    public function aByReferenceReturnFromAnotherFiberUsesTheOwnersSlot(): void
+    {
+        $registry = Understudy::for(Registry::class);
+
+        $fiber = new \Fiber(static function () use ($registry): void {
+            $slot = &$registry->values();
+            $slot[] = 'written in the fiber';
+        });
+        $fiber->start();
+
+        Assert::same($registry->values(), ['written in the fiber']);
+    }
+
+    /**
+     * `callOriginal()` inside an answer, reached from another Fiber, delegates
+     * through the owner's state — the running Fiber's empty context is not
+     * where the forwarding target lives.
+     */
+    public function callOriginalFromAnotherFiberFindsTheOwnersTarget(): void
+    {
+        $real = new RealChain();
+        $double = Understudy::for(Chainable::class);
+        Understudy::forwarding($double, $real);
+        when(fn(): string => $double->label())
+            ->answers(static fn(Invocation $call): string => strtoupper((string) $call->callOriginal()));
+
+        $answered = null;
+        $fiber = new \Fiber(static function () use ($double, &$answered): void {
+            $answered = $double->label();
+        });
+        $fiber->start();
+
+        Assert::same($answered, 'REAL');
+    }
+
+    /**
+     * A forgotten double's by-reference method fails with the same
+     * `ForgottenDouble` a plain call gets — not with a type error from the
+     * lookup that ran before dispatch could say it properly.
+     */
+    public function aByReferenceCallOnAForgottenDoubleSaysForgotten(): void
+    {
+        $registry = Understudy::for(Registry::class);
+        Understudy::reset();
+
+        Expect::exception(ForgottenDouble::class);
+
+        $registry->values();
+    }
+
+    /**
+     * Ordering claims of a Fiber-owned context are judged against THAT
+     * context's own counting: two ordered expectations satisfied in reverse
+     * inside a Fiber must fail `verifyAll()` called from the main flow.
+     */
+    public function orderingInsideAFiberIsJudgedByItsOwnContext(): void
+    {
+        $fiber = new \Fiber(static function (): void {
+            $repository = Understudy::for(BookRepository::class);
+            expect(fn() => $repository->count())->ordered()->returns(1);
+            expect(fn() => $repository->titles())->ordered()->returns([]);
+
+            $repository->titles();
+            $repository->count();
+            \Fiber::suspend();
+        });
+        $fiber->start();
+
+        Expect::exception(VerificationFailed::class)
+            ->withMessageContaining('to be called after');
+
+        try {
+            Understudy::verifyAll();
+        } finally {
+            $fiber->resume();
+        }
+    }
+
+    // --- Outcome recording is first-writer-wins ------------------------------
+
+    /**
+     * An invocation's outcome is written once, by whoever answers first, and
+     * every later writer is a no-op — including the lean discard, and
+     * including the legacy Outcome wrapper, in both directions.
+     */
+    public function anOutcomeIsRecordedExactlyOnce(): void
+    {
+        $returned = new Invocation('m', [], 1);
+        $returned->recordReturned('first');
+        $returned->recordThrown(new \DomainException('late'));
+        $returned->recordDiscardedReturn();
+
+        Assert::true($returned->didReturn());
+        Assert::false($returned->didThrow());
+        Assert::same($returned->returned(), 'first');
+
+        $threw = new Invocation('m', [], 2);
+        $threw->recordThrown(new \DomainException('kept'));
+        $threw->recordReturned('late');
+
+        Assert::true($threw->didThrow());
+        Assert::instanceOf($threw->thrown(), \DomainException::class);
+
+        $legacy = new Invocation('m', [], 3);
+        $legacy->recordOutcome(Outcome::returnedValue('wrapped'));
+        $legacy->recordReturned('late');
+
+        Assert::true($legacy->didReturn());
+        Assert::false($legacy->didThrow());
+        Assert::same($legacy->returned(), 'wrapped');
+
+        $legacyThrew = new Invocation('m', [], 4);
+        $legacyThrew->recordOutcome(Outcome::thrownError(new \DomainException('wrapped')));
+
+        Assert::false($legacyThrew->didReturn());
+        Assert::true($legacyThrew->didThrow());
+    }
+
+    // --- The context answers plainly for its own state ------------------------
+
+    public function aFreshContextIsNotRecordingAndHoldsNoCaptors(): void
+    {
+        $context = new RuntimeContext();
+
+        Assert::false($context->isRecording());
+        Assert::same($context->captors(), []);
+    }
+
+    /**
+     * Retirement walks EVERY double the context held: after a reset, both are
+     * forgotten, not just the first one the storage yielded.
+     */
+    public function aResetRetiresEveryDoubleOfTheContext(): void
+    {
+        $first = Understudy::for(BookRepository::class);
+        $second = Understudy::for(BookRepository::class);
+
+        Understudy::reset();
+
+        foreach ([$first, $second] as $double) {
+            try {
+                $double->count();
+                Assert::true(false);
+            } catch (ForgottenDouble) {
+                Assert::true(true);
+            }
+        }
     }
 
     // --- scope and checkpoint ------------------------------------------------

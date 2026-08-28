@@ -20,6 +20,10 @@ interface Workspace
 
     public function counted(): int;
 
+    public function maybe(): ?Logger;
+
+    public function optionalLogger(): ?Logger;
+
     /** Neither branch can be doubled and neither has a builtin default. */
     public function hopeless(): NullLogger|Sealed;
 

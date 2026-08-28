@@ -110,8 +110,11 @@ final class ConflictingExpectationTest
 
         // times() turned the stub into a claim about counts, so a later stub
         // for the same call would starve it exactly like an expect().
-        Expect::exception(ConflictingExpectation::class)->withMessageContaining(
-            'Give the expectation its behaviour instead',
+        Expect::exception(ConflictingExpectation::class)->withMessage(
+            'Understudy `BookRepository` already counts `count()`, and a later stub for the same call would '
+            . 'not compose with it: the stub would take the dispatch and starve the count, which verifyAll() '
+            . 'then reports as "called never" about a call that did happen. Give the expectation its '
+            . 'behaviour instead: expect(...)->returns(...).',
         );
 
         when(fn() => $repository->count());

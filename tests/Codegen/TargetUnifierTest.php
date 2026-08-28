@@ -22,6 +22,9 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\BothIterableCountable;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\CallableFactory;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ClassUnionFirst;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ClosureFactory;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ConstantDefaultBase;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ConstantDefaults;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ConstantsInterface;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\CountableValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\DnfParam;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\DnfParamToo;
@@ -39,6 +42,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionBeta;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntTailPlain;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IterableAll;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\KnownConstants;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedTail;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedWriter;
@@ -54,6 +58,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\PrimaryNamed;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderInt;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderString;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderStringy;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderUntyped;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SecondaryNamed;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfValue;
@@ -61,6 +66,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\Showcase;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\Sibling;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByRef;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SlotsByValue;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticIntPartsContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticMixedPartsContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticOptionalContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPartsContract;
@@ -71,12 +77,14 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingExtraRequired;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingFixedInsteadOfTail;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingFixedThenTail;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingIntThenTail;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingNarrowerParameter;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingOptional;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingOptionalInsteadOfTail;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingProtected;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingRequiredParameter;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingTooFewParameters;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingTypedReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingVariadicTail;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingWiderParameter;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticReferenceReturnContract;
@@ -84,6 +92,8 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticSlotContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticStringReturnContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticTailContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticUnionReturnContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticUntypedReturnContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StdClassAll;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StdClassFactory;
@@ -938,6 +948,104 @@ final class TargetUnifierTest
             $signature->returnType,
             '\Stringable&\\' . BothIterableCountable::class . '&\JsonSerializable',
         );
+    }
+
+    // --- Constant defaults render as their declared form ---------------------
+
+    /**
+     * The value alone cannot tell `= \\Cfg::LIMIT` from `= 5`, so the rendered
+     * SOURCE is asserted: a constant default keeps its name, resolved through
+     * the class that declares it — `SELF`/`PARENT` (case included) never
+     * follow the double into a class that never had the constant.
+     */
+    #[DataProvider('constantDefaultProvider')]
+    public function rendersAConstantDefaultByItsDeclaredName(string $method, string $expected): void
+    {
+        $signature = TargetUnifier::unify([new \ReflectionClass(ConstantDefaults::class)])[$method];
+
+        Assert::same($signature->parameters, $expected);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function constantDefaultProvider(): iterable
+    {
+        $m = self::MATCHER;
+
+        yield "another class's constant" => [
+            'viaClass',
+            "int|{$m} \$a = \\" . KnownConstants::class . '::LIMIT',
+        ];
+        yield 'SELF resolves to the declaring class, whatever the case' => [
+            'viaSelfUpper',
+            "int|{$m} \$a = \\" . ConstantDefaults::class . '::MINE',
+        ];
+        yield 'PARENT resolves to the parent class, not the declaring one' => [
+            'viaParentUpper',
+            "int|{$m} \$a = \\" . ConstantDefaultBase::class . '::FROM_PARENT',
+        ];
+        yield 'an interface constant' => [
+            'viaInterfaceConstant',
+            "string|{$m} \$a = \\" . ConstantsInterface::class . '::MODE',
+        ];
+    }
+
+    // --- Reference detection -------------------------------------------------
+
+    /**
+     * `hasReferenceParameters` gates the by-reference snapshots, so it must
+     * fold across every position — a `&` anywhere makes it true, none makes
+     * it false, whichever side of the parameter list it sits on.
+     */
+    public function referenceDetectionFoldsAcrossEveryPosition(): void
+    {
+        Assert::false($this->showcase('scalar')->hasReferenceParameters);
+        Assert::true($this->showcase('byReference')->hasReferenceParameters);
+        Assert::true($this->showcase('refFirst')->hasReferenceParameters);
+        Assert::true($this->showcase('refSecond')->hasReferenceParameters);
+    }
+
+    // --- Static satisfaction: the variadic tail and the return branches ------
+
+    /**
+     * The satisfied complement of the misalignment tests above: the tail is
+     * the LAST declared parameter, and it is that parameter — not the first —
+     * that stretches over the contract's remaining ones. `$first` is `int`
+     * and the tail is `string` precisely so that reading the wrong end is a
+     * type mismatch rather than a coincidence.
+     */
+    public function aStaticVariadicTailSatisfiesTypeDistinctRemainingParameters(): void
+    {
+        Assert::false(
+            array_key_exists('ping', $this->unify(StaticPingIntThenTail::class, StaticIntPartsContract::class)),
+        );
+    }
+
+    public function aTypedStaticImplementationSatisfiesAnUntypedContract(): void
+    {
+        Assert::false(
+            array_key_exists('ping', $this->unify(StaticPingTypedReturn::class, StaticUntypedReturnContract::class)),
+        );
+    }
+
+    public function aStaticBranchOfAUnionReturnSatisfiesTheContract(): void
+    {
+        Assert::false(
+            array_key_exists('ping', $this->unify(StaticPingTypedReturn::class, StaticUnionReturnContract::class)),
+        );
+    }
+
+    // --- Untyped returns unify with typed ones -------------------------------
+
+    /**
+     * A declaration with no return type allows anything, so the typed
+     * declaration is the one every target satisfies — the unified return is
+     * `int`, not a refusal and not `mixed`.
+     */
+    public function anUntypedReturnIsAbsorbedByTheTypedOne(): void
+    {
+        Assert::same($this->unify(ReaderUntyped::class, ReaderInt::class)['read']->returnType, 'int');
     }
 
     /**

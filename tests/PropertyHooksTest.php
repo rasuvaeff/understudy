@@ -323,6 +323,44 @@ final class PropertyHooksTest
         Assert::same($double->tag, 'both');
     }
 
+    /**
+     * The union folds each hook independently: a get-only and a set-only
+     * declaration of one property meet in a double that can do both.
+     */
+    public function aGetOnlyAndASetOnlyDeclarationUnionIntoBoth(): void
+    {
+        if ($this->onOldPhp()) {
+            return;
+        }
+
+        $reader = $this->declare('UnionGetHalf', 'namespace %s; interface %s { public string $tag { get; } }');
+        $writer = $this->declare('UnionSetHalf', 'namespace %s; interface %s { public string $tag { set; } }');
+
+        $double = Understudy::for($reader, $writer);
+        $double->tag = 'both halves';
+
+        Assert::same($double->tag, 'both halves');
+    }
+
+    /**
+     * And when both targets declare both hooks, both survive — a fold that
+     * needed agreement instead of presence would quietly drop one.
+     */
+    public function twoFullDeclarationsKeepBothHooks(): void
+    {
+        if ($this->onOldPhp()) {
+            return;
+        }
+
+        $one = $this->declare('UnionFullOne', 'namespace %s; interface %s { public string $tag { get; set; } }');
+        $two = $this->declare('UnionFullTwo', 'namespace %s; interface %s { public string $tag { get; set; } }');
+
+        $double = Understudy::for($one, $two);
+        $double->tag = 'kept';
+
+        Assert::same($double->tag, 'kept');
+    }
+
     // --- Forwarding ----------------------------------------------------------
 
     public function aForwardingDoubleDelegatesReadsAndWritesToTheRealInstance(): void
@@ -393,8 +431,11 @@ final class PropertyHooksTest
         $stringy = $this->declare('TypeString', 'namespace %s; interface %s { public string $tag { get; } }');
         $inty = $this->declare('TypeInt', 'namespace %s; interface %s { public int $tag { get; } }');
 
-        Expect::exception(UnsupportedTarget::class)
-            ->withMessageContaining('property `$tag` is declared `int` here and `string` by another target');
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            'Cannot create an understudy for `' . $inty . '`: property `$tag` is declared `int` here and '
+            . '`string` by another target. Property types are invariant, so no single declaration '
+            . 'satisfies both.',
+        );
 
         Understudy::for($stringy, $inty);
     }
@@ -425,8 +466,11 @@ final class PropertyHooksTest
 
         Understudy::reset();
 
-        Expect::exception(ForgottenDouble::class)
-            ->withMessageContaining('its property `$name` was touched');
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            "This understudy is no longer known to Understudy, but its property `\$name` was touched.\n"
+            . 'It was created before a reset(); create doubles inside the test that uses them '
+            . 'rather than sharing one across tests.',
+        );
 
         $double->name;
     }

@@ -240,6 +240,24 @@ final class CaptorTest
         Assert::same($options->all(), []);
     }
 
+    /**
+     * The verify-side capture registers with the context the same way the
+     * dispatch-side one does: a reset leaves the captor empty.
+     */
+    public function resetDropsWhatAVerifyCaptured(): void
+    {
+        $this->store->temporaryUrl('a.pdf', new \DateTimeImmutable(), new DeliveryOptions('claimed.pdf'));
+
+        $options = Arg::captor(DeliveryOptions::class);
+        verify(fn(): ?string => $this->store->temporaryUrl(Arg::any(), Arg::any(), $options->capture()), times: 1);
+
+        Assert::same(count($options->all()), 1);
+
+        Understudy::reset();
+
+        Assert::same($options->all(), []);
+    }
+
     public function aClosingScopeDropsWhatItCaptured(): void
     {
         $options = Arg::captor(DeliveryOptions::class);

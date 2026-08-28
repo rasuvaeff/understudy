@@ -29,6 +29,7 @@ use Testo\Test;
 
 #[Test]
 #[Covers(DefaultFactories::class)]
+#[Covers(\Rasuvaeff\Understudy\Runtime\Runtime::class)]
 #[Covers(ForgottenDouble::class)]
 #[Covers(TypeDefaultResolver::class)]
 final class DefaultFactoriesTest
@@ -365,10 +366,94 @@ final class DefaultFactoriesTest
         Understudy::defaults(Logger::class, static fn(): Logger => $forgotten);
         $workspace = Understudy::for(Workspace::class);
 
-        Expect::exception(ForgottenDouble::class)
-            ->withMessageContaining('register the factory inside the test that uses it');
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            'The default factory for `' . Logger::class . "` answered with an understudy that is no longer known to Understudy.\n"
+            . 'It was created before a reset(); register the factory inside the test that uses it '
+            . 'rather than sharing one double across tests.',
+        );
 
         $workspace->logger();
+    }
+
+    /**
+     * `AuditedLogger` is two steps from `Logger` (through `Audited`), so a
+     * registration for the grandparent alone is found by the second level of
+     * the walk — the one that has to flatten an interface's own parents.
+     */
+    public function aGrandparentRegistrationAloneIsStillFound(): void
+    {
+        $pinned = new AuditedLogger();
+        Understudy::defaults(Logger::class, static fn(): AuditedLogger => $pinned);
+
+        $workspace = Understudy::for(Workspace::class);
+
+        Assert::same($workspace->auditor(), $pinned);
+    }
+
+    /**
+     * The registry consulted is the OWNER's, not the one of whichever Fiber
+     * happens to be running: a call made from a Fiber still answers with what
+     * the owning test registered.
+     */
+    public function aCallFromAFiberAnswersWithTheOwnersRegistration(): void
+    {
+        $pinned = new AuditedLogger();
+        Understudy::defaults(Logger::class, static fn(): AuditedLogger => $pinned);
+        $workspace = Understudy::for(Workspace::class);
+
+        $answered = null;
+        $fiber = new \Fiber(static function () use ($workspace, &$answered): void {
+            $answered = $workspace->logger();
+        });
+        $fiber->start();
+
+        Assert::same($answered, $pinned);
+    }
+
+    /**
+     * A nested double is a full citizen of the owner's context: calling a
+     * method ON it answers the loose default, and a call made from a Fiber is
+     * routed back to the owner that adopted it.
+     */
+    public function aNestedDoubleAnswersItsOwnCallsFromAnyFiber(): void
+    {
+        $workspace = Understudy::for(Workspace::class);
+        $chained = $workspace->chained();
+
+        Assert::same($chained->name(), '');
+
+        $named = null;
+        $fiber = new \Fiber(static function () use ($chained, &$named): void {
+            $named = $chained->name();
+        });
+        $fiber->start();
+
+        Assert::same($named, '');
+    }
+
+    /**
+     * A registration outranks `null` on BOTH spellings of a nullable return:
+     * the `?Logger` shorthand and the written `Logger|null` union resolve the
+     * same registered instance, and `null` stays the answer only when nobody
+     * said anything better.
+     */
+    public function aRegistrationOutranksNullOnEitherNullableSpelling(): void
+    {
+        $pinned = new AuditedLogger();
+        Understudy::defaults(Logger::class, static fn(): AuditedLogger => $pinned);
+
+        $workspace = Understudy::for(Workspace::class);
+
+        Assert::same($workspace->maybe(), $pinned);
+        Assert::same($workspace->optionalLogger(), $pinned);
+    }
+
+    public function bothNullableSpellingsAnswerNullWithoutARegistration(): void
+    {
+        $workspace = Understudy::for(Workspace::class);
+
+        Assert::null($workspace->maybe());
+        Assert::null($workspace->optionalLogger());
     }
 
     public function resetDropsTheRegistry(): void

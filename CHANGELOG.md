@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+- **The escaped-mutant hunt: 240 → 158, MSI 90.4% → 94.0%, gate raised to 92**
+  (the full trajectory and the reason live next to the number in
+  `infection.json5`). About sixty targeted tests and fixtures, each written
+  from an escaped mutant's diff rather than from the line it sits on:
+  constant defaults now assert their rendered SOURCE (`\Cfg::LIMIT`, uppercase
+  `SELF::`/`PARENT::` resolved through the declaring hierarchy) where the old
+  tests compared values a mutant renders identically; static satisfaction
+  gets its satisfied complements (a type-distinct variadic tail, untyped and
+  union return contracts); by-reference detection is asserted at every
+  parameter position; `FinalStripper` pins the glued-comment and bare
+  `final const` boundaries; settle() is pinned to drop satisfied claims and
+  keep every stub; Fiber routing is pinned for by-reference returns,
+  `callOriginal()` and ordering claims; the structured failure fields
+  (`actualCount`, both bounds of `unused()`, `observedCalls` filtering,
+  `expectedCalls` as strings, both halves of `allVerified()`) are asserted
+  exactly, as are six refusal messages formerly checked by fragments. Three
+  more test classes attribute `#[Covers]` they exercised all along. Three
+  manual arbitrations confirmed the remainder is dominated by genuine
+  equivalents — redundant second guards, set-map values read through
+  `array_keys()`, perf fastpaths, warning-only offsets.
+
+## Unreleased
+
 - **Honest-coverage sweep after 0.4.0.** Twelve targeted tests kill the
   escaped mutants the new code left behind (hooked-property collection and
   rendering, cross-Fiber property routing, forwarding write-through, captor

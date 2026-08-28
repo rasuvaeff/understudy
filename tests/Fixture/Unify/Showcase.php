@@ -22,6 +22,10 @@ interface Showcase
 
     public function byReference(array &$slot): void;
 
+    public function refFirst(array &$slot, int $extra): void;
+
+    public function refSecond(int $extra, array &$slot): void;
+
     public function untyped($a): void;
 
     public function intersection(ReaderInt&ReaderStringy $a): void;
