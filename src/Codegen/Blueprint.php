@@ -19,12 +19,15 @@ final readonly class Blueprint
      * @param array<non-empty-string, mixed>           $propertyDefaults values to write into the target's
      *                                                                  writable public properties, which a
      *                                                                  skipped constructor leaves uninitialized
+     * @param array<non-empty-string, PropertySignature> $properties the abstract hooked properties the
+     *                                                               generated class declares and dispatches
      */
     public function __construct(
         public string $generatedClass,
         public array $contracts,
         public array $methods,
         public array $propertyDefaults = [],
+        public array $properties = [],
     ) {}
 
     /**
@@ -33,6 +36,14 @@ final readonly class Blueprint
     public function method(string $name): ?MethodSignature
     {
         return $this->methods[$name] ?? null;
+    }
+
+    /**
+     * @param non-empty-string $name
+     */
+    public function property(string $name): ?PropertySignature
+    {
+        return $this->properties[$name] ?? null;
     }
 
     /**

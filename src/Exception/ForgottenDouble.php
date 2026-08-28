@@ -40,6 +40,19 @@ final class ForgottenDouble extends \LogicException implements UnderstudyError
         ));
     }
 
+    /**
+     * @param non-empty-string $property
+     */
+    public static function propertyAfterReset(string $property): self
+    {
+        return new self(sprintf(
+            "This understudy is no longer known to Understudy, but its property `\$%s` was touched.\n"
+            . 'It was created before a reset(); create doubles inside the test that uses them '
+            . 'rather than sharing one across tests.',
+            $property,
+        ));
+    }
+
     public static function retired(): self
     {
         return new self(
