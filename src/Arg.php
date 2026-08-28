@@ -136,6 +136,38 @@ final class Arg
     }
 
     /**
+     * A typed argument captor. Its `capture()` goes where the argument to
+     * observe goes, matches like `instanceOf()` — or like `any()` for the
+     * untyped form — and records the value once the whole specification
+     * matched:
+     *
+     * ```php
+     * $options = Arg::captor(DeliveryOptions::class);
+     * when(fn () => $store->temporaryUrl(Arg::any(), Arg::any(), $options->capture()))
+     *     ->returns('https://…');
+     *
+     * $subject->run();
+     *
+     * $options->last();   // DeliveryOptions, typed
+     * $options->all();    // list<DeliveryOptions>, in call order
+     * ```
+     *
+     * The typed replacement for reading `args[N]` out of the call log:
+     * `last()` and `all()` carry the class through, so no `instanceof`
+     * narrowing ritual is needed at the read site.
+     *
+     * @template T of object
+     *
+     * @param class-string<T>|null $class
+     *
+     * @return ($class is null ? Captor<mixed> : Captor<T>)
+     */
+    public static function captor(?string $class = null): Captor
+    {
+        return new Captor($class);
+    }
+
+    /**
      * Matches whatever the predicate accepts.
      *
      * @param callable(mixed): bool $predicate

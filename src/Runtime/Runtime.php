@@ -554,6 +554,17 @@ final class Runtime
             $expectation->recordMatch($invocation);
             $matched = true;
 
+            // Only now, with the whole specification matched — a matcher is
+            // asked about calls the rest of the specification then rejects,
+            // and capturing there would record arguments of calls the captor
+            // never named. The captor's lifetime is tied to the context that
+            // owns the double, the same context the call log lives in.
+            if ($expectation->hasCaptors()) {
+                foreach ($expectation->captureFrom($invocation->args) as $captor) {
+                    $context->rememberCaptor($captor);
+                }
+            }
+
             if (!$expectation->hasAction()) {
                 break;
             }
@@ -980,6 +991,13 @@ final class Runtime
     private static function retire(RuntimeContext $context): void
     {
         self::unremember($context);
+
+        // Captured values live exactly as long as the call log of the context
+        // they were captured in. The captor object itself survives — it is a
+        // test-owned reader — but holds nothing from a test that ended.
+        foreach ($context->captors() as $captor) {
+            $captor->discard();
+        }
 
         if (self::$owners === null) {
             return;

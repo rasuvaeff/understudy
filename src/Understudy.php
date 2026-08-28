@@ -411,6 +411,20 @@ final class Understudy
                 $invocation->markAccounted();
             }
 
+            // The Mockito-style read: capture at verification time, from the
+            // calls this verification just claimed. Only on success — a
+            // failed verify() throws, and values captured on the way to a
+            // failure would be read by nobody.
+            if ($probe->hasCaptors()) {
+                $context = Runtime::current();
+
+                foreach ($matched as $invocation) {
+                    foreach ($probe->captureFrom($invocation->args) as $captor) {
+                        $context->rememberCaptor($captor);
+                    }
+                }
+            }
+
             return;
         }
 

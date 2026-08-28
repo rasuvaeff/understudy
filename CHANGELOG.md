@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **`Arg::captor()`: a typed argument captor** (rasuvaeff/understudy#62). The
+  typed replacement for reading `args[N]` out of the call log:
+  `$options = Arg::captor(DeliveryOptions::class)`, `$options->capture()` in
+  the specification where the argument goes, then `$options->last()` /
+  `$options->all()` — typed through the class-string generic, so no
+  `instanceof` narrowing ritual at the read site. The typed form matches like
+  `Arg::instanceOf()`, the untyped like `Arg::any()`; the value is recorded
+  only once the whole specification matched, so a call the other arguments
+  rejected captures nothing. Works in `when()`, `expect()` and `verify()`.
+  `last()` on an empty captor raises the new `NothingCaptured`; captured
+  values are dropped with the context, like the call log.
+
 - **`Understudy::delegate(Contract::class, $real)`: a forwarding double in one
   expression** (rasuvaeff/understudy#61). Builds the double, turns forwarding
   on and returns it — the `for()` + `forwarding()` pair that suites leaning on

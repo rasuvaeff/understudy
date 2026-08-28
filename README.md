@@ -273,6 +273,32 @@ A getter that throws counts as a mismatch, never as an error — matching runs
 while the code under test is executing, and a matcher must not be the thing
 that breaks it.
 
+### Capturing an argument
+
+`Arg::captor()` is the typed replacement for reading `args[N]` out of the call
+log — no positional index, no `mixed`, no `instanceof` narrowing ritual:
+
+```php
+$options = Arg::captor(DeliveryOptions::class);      // Captor<DeliveryOptions>
+when(fn () => $store->temporaryUrl(Arg::any(), Arg::any(), $options->capture()))
+    ->returns('https://…');
+
+$subject->run();
+
+$options->last()->downloadName;   // typed: DeliveryOptions
+$options->all();                  // list<DeliveryOptions>, in call order
+```
+
+`capture()` goes where the argument to observe goes. The typed form matches
+like `Arg::instanceOf()`, the bare `Arg::captor()` like `Arg::any()` — and the
+value is recorded only once the **whole** specification matched the call, so a
+call the other arguments rejected captures nothing. It works in `when()`,
+`expect()` and `verify()` alike; a `verify()` captures from the calls it just
+claimed, the Mockito reading. `last()` on a captor that captured nothing
+raises `NothingCaptured`; `all()` answers an empty list. Captured values live
+exactly as long as the call log: `reset()` and a closing `Understudy::scope()`
+drop them, and the captor object is then simply empty again.
+
 
 ### Expecting a call
 

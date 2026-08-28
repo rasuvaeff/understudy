@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Expectation;
 
+use Rasuvaeff\Understudy\Captor;
 use Rasuvaeff\Understudy\Cardinality;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
+use Rasuvaeff\Understudy\Matcher\Capturing;
 use Rasuvaeff\Understudy\Matcher\TailMatcher;
 
 /**
@@ -46,6 +48,12 @@ final class Expectation
     private readonly ?TailMatcher $tailMatcher;
 
     /**
+     * Precomputed so dispatch pays one boolean read per matched call, not an
+     * argument walk.
+     */
+    private readonly bool $capturing;
+
+    /**
      * @param non-empty-string $method
      * @param list<mixed>      $args literal values and/or ArgumentMatcher instances
      */
@@ -55,6 +63,7 @@ final class Expectation
     ) {
         $this->argumentCount = count($args);
         $tailMatcher = null;
+        $capturing = false;
         $last = count($args) - 1;
 
         /** @var mixed $argument */
@@ -73,9 +82,47 @@ final class Expectation
             if ($position === $last && $argument instanceof TailMatcher) {
                 $tailMatcher = $argument;
             }
+
+            if ($argument instanceof Capturing) {
+                $capturing = true;
+            }
         }
 
         $this->tailMatcher = $tailMatcher;
+        $this->capturing = $capturing;
+    }
+
+    public function hasCaptors(): bool
+    {
+        return $this->capturing;
+    }
+
+    /**
+     * Records each capturing argument's value from a call this expectation
+     * matched, and answers the captors that recorded so the caller can tie
+     * their lifetime to its context.
+     *
+     * Called after the whole specification matched, never from `matches()`:
+     * a matcher is asked about calls the rest of the specification may yet
+     * reject, and about no call at all while a failure message is rendered.
+     *
+     * @param list<mixed> $args
+     *
+     * @return list<Captor>
+     */
+    public function captureFrom(array $args): array
+    {
+        $captors = [];
+
+        /** @var mixed $argument */
+        foreach ($this->args as $position => $argument) {
+            if ($argument instanceof Capturing && \array_key_exists($position, $args)) {
+                $argument->captor->record($args[$position]);
+                $captors[] = $argument->captor;
+            }
+        }
+
+        return $captors;
     }
 
     /**
