@@ -9,7 +9,7 @@ description: "The closure handed to when()/verify()/calls() did not describe one
 
 `Rasuvaeff\Understudy\Exception\InvalidCallSpecification`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L14) — **Version:** v0.4.0-13-gb7b865f
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L14) — **Version:** v0.4.0-22-gc66ecdf
 
 **Extends:** `LogicException`
 

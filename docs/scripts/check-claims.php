@@ -443,15 +443,16 @@ claim('doubles/creating', 'a userland interface has its return type unified corr
     return $type === 'int' ?: "count() came back as {$type}";
 });
 
-// The warning box on that page says a BUILT-IN interface still declares
-// `mixed`. Asserted so the box disappears when the engine stops doing it,
-// rather than outliving the defect it describes.
-claim('doubles/creating', 'a built-in interface still declares mixed (documented defect)', function (): bool|string {
-    $d = @Understudy::for(Repo::class, Countable::class);
-    $type = (string) (new ReflectionMethod($d, 'count'))->getReturnType();
+// A built-in interface carries a TENTATIVE return type, which reflection
+// reports separately. The page says the override declares it rather than
+// widening to `mixed`; declaring `mixed` is what PHP answers with a
+// deprecation notice, so this claim is also what keeps the example on that
+// page from emitting one.
+claim('doubles/creating', 'a built-in interface keeps its tentative return type', function (): bool|string {
+    $double = Understudy::for(Repo::class, Countable::class);
+    $type = (string) (new ReflectionMethod($double, 'count'))->getReturnType();
 
-    return $type === 'mixed'
-        ?: "count() now declares {$type} — the engine was fixed; drop the warning box on guide/doubles/creating";
+    return $type === 'int' ?: "count() declares {$type}, not int";
 });
 
 claim('doubles/creating', 'an enum target is refused', function (): bool|string {
@@ -561,7 +562,11 @@ claim('failure-messages', 'label() names the double in a failure', function (): 
     return 'verifyAll() passed with an unmet expectation';
 });
 
-claim('failure-messages', 'verify() renders the call log; verifyAll() does not', function (): bool|string {
+// Both reporting paths render the same report. They did not always: verifyAll()
+// had a sprintf of its own and showed the summary line alone, so the alias
+// table and the argument marks this page is about were missing from every
+// failure a runner adapter reported.
+claim('failure-messages', 'verify() and verifyAll() both render the call log', function (): bool|string {
     $r = Understudy::for(Repo::class);
     $r->tag('beta', 2);
     $viaVerify = '';
@@ -574,8 +579,17 @@ claim('failure-messages', 'verify() renders the call log; verifyAll() does not',
     $viaAll = '';
     try { Understudy::verifyAll(); } catch (Throwable $e) { $viaAll = $e->getMessage(); }
 
-    return (str_contains($viaVerify, 'The following calls') && !str_contains($viaAll, 'The following calls'))
-        ?: 'the two paths no longer differ — recheck guide/failure-messages';
+    return (str_contains($viaVerify, 'The following calls') && str_contains($viaAll, 'The following calls'))
+        ?: 'one of the two paths stopped rendering the log';
+});
+
+claim('failure-messages', 'both paths word an uncalled expectation the same way', function (): bool|string {
+    $r = Understudy::for(Repo::class);
+    expect(fn () => $r->ping());
+    $message = '';
+    try { Understudy::verifyAll(); } catch (Throwable $e) { $message = $e->getMessage(); }
+
+    return str_contains($message, 'but it was never called') ?: "verifyAll() said: {$message}";
 });
 
 // ------------------------------------------------------------- adapters

@@ -21,7 +21,7 @@ for why.
 Several interfaces can be doubled at once:
 
 ```php
-$double = Understudy::for(BookRepository::class, Paginated::class);
+$double = Understudy::for(BookRepository::class, Countable::class);
 ```
 
 Understudy unifies compatible signatures across them:
@@ -36,28 +36,13 @@ Static contract methods exist on the generated class, because the interface has
 to be implemented — but calling one raises `InvalidCallSpecification`. A static
 call has no double instance to own its state.
 
-::: warning A built-in interface still declares `mixed`
-The additional contracts in these examples are your own interfaces on purpose.
-Doubling one of PHP's own — `Countable`, `ArrayAccess`, `IteratorAggregate` —
-generates the method with a `mixed` return rather than the interface's declared
-one, and PHP answers with a deprecation notice:
-
-```text
-Deprecated: Return type of …::count(): mixed should either be compatible with
-Countable::count(): int, or the #[\ReturnTypeWillChange] attribute should be
-used to temporarily suppress the notice
-```
-
-The double works; the notice is noise today and a hard error on a future PHP.
-A userland interface with the same method is unified correctly.
-:::
 
 ## Doubling a class
 
 A class can be the first target, with interfaces after it:
 
 ```php
-$repository = Understudy::for(DoctrineBookRepository::class, Paginated::class);
+$repository = Understudy::for(DoctrineBookRepository::class, Countable::class);
 ```
 
 What a class double does and does not do:
