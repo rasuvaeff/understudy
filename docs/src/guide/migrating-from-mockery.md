@@ -113,7 +113,7 @@ that runs after it.
 
 The replacement is an interface plus [`wire()`](/guide/wiring): give the
 collaborator a contract, take it through the constructor, and double it.
-Where the class is somebody else's and final,
+Where the class is final and not yours to change,
 [`bypassFinals()`](/guide/doubles/final-classes) is the narrow escape, and it
 covers a class — not a static call.
 

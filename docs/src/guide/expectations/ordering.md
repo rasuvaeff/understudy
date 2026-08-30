@@ -23,7 +23,7 @@ expect(fn () => $repository->commit())->ordered();
 Unrelated calls may happen in between. `ordered()` is also the tool when a step
 repeats — a sequence expects each step exactly once.
 
-## The exact protocol, checked afterwards
+## The exact protocol, checked afterward
 
 ```php
 Understudy::verifySequence(

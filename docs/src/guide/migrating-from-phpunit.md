@@ -132,7 +132,7 @@ PHPUnit 10 dropped Prophecy from the box, so this is a common second hop.
 | `->shouldHaveBeenCalled()` | [`verify(…)`](/guide/expectations/verify) |
 | `$prophet->checkPredictions()` | `Understudy::verifyAll()`, or the adapter |
 
-The structural difference: Prophecy separates the prophecy object from the
+The structural difference: Prophecy keeps a separate object from the
 revealed double. Understudy has one object, and the specification is a call
 made on it — so there is no reveal step and no pair of variables to keep
 straight.

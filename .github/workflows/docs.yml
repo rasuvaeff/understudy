@@ -1,0 +1,206 @@
+name: docs
+
+# The family documentation site (_plans/UNDERSTUDY-DOCS-SITE-PLAN.md).
+# One site for five packages: this repository holds it, and the API reference
+# is reflected out of all five `src/` trees at build time.
+#
+# Pull requests build and check but never deploy. `master` deploys. The
+# reference documents the satellites from their PUBLISHED tags: a satellite
+# release changes what belongs on this site without changing a single file
+# here. Deliberately no `repository_dispatch` wired to a satellite release —
+# a cross-repository PAT for a rare event that the weekly cron already bounds
+# is not worth the secret-management overhead; `workflow_dispatch` covers the
+# "I want it now" case by hand.
+on:
+  pull_request:
+    paths: &paths
+      - 'docs/**'
+      - 'examples/case-studies/**'
+      - 'src/**'
+      - 'perf/README.md'
+      - 'llms.txt'
+      - 'README.md'
+      - 'README.ru.md'
+      - 'MIGRATION.md'
+      - '.vale.ini'
+      - '.github/workflows/docs.yml'
+  push:
+    branches:
+      - master
+    paths: *paths
+  # The reference is never more than a week behind an adapter release.
+  schedule:
+    - cron: '41 5 * * 1' # Mondays, 05:41 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history and tags: the API pages are stamped with `git
+          # describe`, which sees neither at the default depth of 1.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: tokenizer
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      # Needed by the case studies, which run against this checkout's engine.
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # docs/.api-workspace is NOT part of composer.json: the engine must
+      # never require its own satellites (`composer why testo/testo` stays
+      # empty for an engine-only install). It installs all four from their
+      # published tags next to a path repository on this checkout, so one
+      # autoloader covers all five src/ trees.
+      - name: Install the API reflection workspace
+        working-directory: docs/.api-workspace
+        run: composer install --no-interaction --no-progress
+
+      # What every engine reference page is stamped with. On a tagged commit
+      # `git describe` prints the tag; between releases it prints the nearest
+      # tag plus the commit, so a page built from master still says which
+      # commit it describes. Without this the pages say "working tree", which
+      # is true locally and meaningless once published.
+      - name: Resolve the engine version for the API pages
+        id: engine-version
+        run: echo "version=$(git describe --tags --always)" >> "$GITHUB_OUTPUT"
+
+      - name: Refresh the API reflection snapshot
+        env:
+          DOCS_UNDERSTUDY_VERSION: ${{ steps.engine-version.outputs.version }}
+        run: php docs/scripts/reflect-api.php > docs/scripts/api-snapshot.json
+
+      # The analyser packages have no @api class — their contract is the set
+      # of identifiers they report — so /api/rules comes from its own
+      # reflector over extension.neon and the installed sources.
+      - name: Refresh the analyser rules snapshot
+        run: php docs/scripts/reflect-rules.php > docs/scripts/rules-snapshot.json
+
+      # A deliberate non-check: the refreshed snapshots are NOT compared
+      # against the committed ones. Satellite versions come from Packagist, so
+      # a satellite release legitimately changes them with no commit in this
+      # repository — a drift check would turn every satellite release into a
+      # red master here.
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install docs dependencies
+        working-directory: docs
+        run: npm ci
+
+      - name: Build docs (drafts + API pages + MIGRATION.md + integrity + VitePress + anchors)
+        working-directory: docs
+        run: npm run docs:build
+
+      # Separate step, and after the build: it needs PHP, and its failure
+      # ("the page quotes output the script no longer produces") is a content
+      # problem, not a build problem — the distinction is worth one glance at
+      # the job summary.
+      - name: Verify cookbook case studies reproduce their quoted output
+        run: node docs/scripts/check-cookbook.mjs
+
+      # Skipped on pull requests: `deploy` is skipped there too, so nothing
+      # consumes the artifact — and both steps call the Pages API, which does
+      # not exist until Pages is switched on for the repository. A PR must
+      # not depend on that.
+      - name: Setup Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: docs/src/.vitepress/dist
+
+  prose:
+    name: Prose
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Vale ships as a single binary. Downloaded with a pinned version and a
+      # pinned checksum rather than through a third-party action: the action
+      # route wants a token and `pull-requests: write` for its annotations,
+      # and the two lines of `::error` below produce the same annotations with
+      # no write permission anywhere in this workflow.
+      - name: Install Vale
+        env:
+          VALE_VERSION: 3.9.1
+          VALE_SHA256: fbc2eb47d0b8c50220ed1a2c5c611fbe0904ed567d638143d482016a18fd2db0
+        run: |
+          curl -fsSL -o vale.tar.gz \
+            "https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
+          echo "${VALE_SHA256}  vale.tar.gz" | sha256sum --check --strict
+          tar -xzf vale.tar.gz vale
+          sudo install -m 0755 vale /usr/local/bin/vale
+          rm vale vale.tar.gz
+
+      - name: Sync Vale styles
+        run: vale sync
+
+      # Hand-written sections only: docs/src/api/** is generated from
+      # docblocks and a prose linter on it reports nothing fixable on the
+      # site (plan §7).
+      - name: Lint prose
+        run: |
+          vale --output=JSON docs/src/index.md docs/src/guide docs/src/cookbook docs/src/adapters > vale.json || true
+          jq -r 'to_entries[] | .key as $file | .value[]
+                 | "::error file=\($file),line=\(.Line),col=\(.Span[0])::\(.Check): \(.Message)"' vale.json
+          found=$(jq 'to_entries | map(.value | length) | add // 0' vale.json)
+          echo "Vale findings: $found"
+          test "$found" -eq 0
+
+  deploy:
+    name: Deploy
+    needs: [build, prose]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write # publish the built site to GitHub Pages
+      id-token: write # required by actions/deploy-pages for OIDC Pages deployment
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

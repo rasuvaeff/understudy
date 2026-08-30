@@ -20,7 +20,7 @@ nobody used.
 
 ## What loose will and will not invent
 
-A loose double never invents a value by running someone else's constructor, and
+A loose double never invents a value by running another class's constructor, and
 never hands back an unconstructed instance of a real class.
 
 What it *can* hand back is another understudy: a return type that can itself be

@@ -122,7 +122,7 @@ that runs after it.
 
 The replacement is an interface plus [`wire()`](https://rasuvaeff.github.io/understudy/guide/wiring): give the
 collaborator a contract, take it through the constructor, and double it.
-Where the class is somebody else's and final,
+Where the class is final and not yours to change,
 [`bypassFinals()`](https://rasuvaeff.github.io/understudy/guide/doubles/final-classes) is the narrow escape, and it
 covers a class — not a static call.
 
@@ -282,7 +282,7 @@ PHPUnit 10 dropped Prophecy from the box, so this is a common second hop.
 | `->shouldHaveBeenCalled()` | [`verify(…)`](https://rasuvaeff.github.io/understudy/guide/expectations/verify) |
 | `$prophet->checkPredictions()` | `Understudy::verifyAll()`, or the adapter |
 
-The structural difference: Prophecy separates the prophecy object from the
+The structural difference: Prophecy keeps a separate object from the
 revealed double. Understudy has one object, and the specification is a call
 made on it — so there is no reveal step and no pair of variables to keep
 straight.

@@ -17,7 +17,7 @@ Under [`verifyAll(strictStubs: true)`](/guide/expectations/strict-stubs) that
 stub is a failure about a double the test no longer uses. `forget()` retires
 it, so verification, accounting and reset stop seeing it.
 
-## Afterwards
+## Afterward
 
 Calling anything on the object — or asking about its calls — fails with
 `ForgottenDouble`, which names `forget()` rather than sending you looking for a

@@ -51,7 +51,7 @@ They look similar and stand for different things:
 | | Stands for |
 |---|---|
 | `Arg::remaining()` | the variadic tail the method **declares** — any length |
-| `Arg::rest()` | "the arguments before me matter, the rest of the arity does not" |
+| `Arg::rest()` | "the arguments written here matter, the rest of the arity does not" |
 
 `rest()` is the one matcher that lets a specification stop before the method's
 required parameters run out:

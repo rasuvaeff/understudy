@@ -5,7 +5,7 @@ description: "What bypassFinals() does, the six limits that come with it, and th
 
 # Doubling a final class
 
-Somebody else's `final` class, no interface, and no way to change it — that is
+A `final` class you do not own, no interface, and no way to change it — that is
 what `bypassFinals()` is for:
 
 ```php
