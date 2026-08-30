@@ -1,7 +1,38 @@
 # Changelog
 
-## Unreleased
+## 0.4.1 — 2026-08-30
 
+- **`verifyAll()` renders the call log when an expectation goes unmet.** Two
+  code paths reported the same failure and only one showed the calls:
+  `verify()` rendered through `FailureReport`, while the verification sweep
+  had a `sprintf` of its own. Since `verifyAll()` is the path every runner
+  adapter takes, the alias table and the `*` argument marks — the part that
+  says WHICH call differed — were missing from almost every failure anyone
+  saw. Both paths now render the same report, the failure carries
+  `observedCalls`, and the sentence the two used to word differently ("but it
+  was called never") is settled. A test asserting the exact text of an unmet
+  expectation may need updating. (#77, #79)
+- **Doubling a built-in interface no longer emits a deprecation notice.**
+  PHP's own interfaces carry tentative return types, which
+  `ReflectionMethod::getReturnType()` reports as null, so
+  `Understudy::for(Repo::class, Countable::class)` generated `count(): mixed`
+  and PHP answered with `should either be compatible with
+  Countable::count(): int`. The unifier reads the tentative type, which
+  satisfies the contract exactly and needs no `#[\ReturnTypeWillChange]`. The
+  defect was invisible for `ArrayAccess` and `JsonSerializable`, whose
+  tentative type is `mixed` anyway. (#78, #80)
+- **A documentation site for the whole family**, at
+  <https://rasuvaeff.github.io/understudy/>: the guide, migration guides from
+  Mockery and PHPUnit, a cookbook of real incidents whose output the build
+  diffs against the scripts that produce it, and an API reference reflected
+  out of all five packages' `src/` — free functions and analyser rule
+  identifiers included, neither of which a class-only reference would show.
+  `MIGRATION.md` at the root is generated from the same pages. (#82)
+- **The README's Mockery table mapped `->atLeast()->once()` to
+  `times(minimum: 1)`, which is not what that does.** `times()` branches on
+  the number of arguments it was given, so one argument is an exact count
+  however it is spelled; the open range is `times(1, null)`. Both READMEs now
+  show all four forms and say why. (#81)
 - **The escaped-mutant hunt: 240 → 158, MSI 90.4% → 94.0%, gate raised to 92**
   (the full trajectory and the reason live next to the number in
   `infection.json5`). About sixty targeted tests and fixtures, each written
@@ -22,9 +53,6 @@
   manual arbitrations confirmed the remainder is dominated by genuine
   equivalents — redundant second guards, set-map values read through
   `array_keys()`, perf fastpaths, warning-only offsets.
-
-## Unreleased
-
 - **Honest-coverage sweep after 0.4.0.** Twelve targeted tests kill the
   escaped mutants the new code left behind (hooked-property collection and
   rendering, cross-Fiber property routing, forwarding write-through, captor

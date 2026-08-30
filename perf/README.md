@@ -118,6 +118,17 @@ judged by an A/B of the full harness on a quiet machine, three runs a side,
 with the competitors' movement as the noise floor — never by an isolated
 micro-benchmark, which cannot see a cost that was moved.
 
+**Re-validated before 0.4.1 (2026-08-30) without re-taking the figures.** The
+harness was run three times at `442da10` — the commit these numbers come from —
+and three times at the release candidate, on the same machine in one session,
+with Mockery 1.6.15, Prophecy 1.26.1 and PHPUnit 12.5.34. Understudy moved
++3.5% on creation, +3.2% on the mock scenario and +2.9% on the stub scenario;
+the competitors moved between -1.4% and +3.8% in the same runs, so the movement
+is inside the noise floor those establish and nothing is attributable to the
+change. The absolutes on that machine read about 2.3x the figures below, which
+is exactly the reason the ratio is what gets quoted and why the numbers here
+were not replaced with the ones it produced.
+
 Every in-process table below was run three times; medians move by 0.2-3.5%
 between runs. Figures are **filtered means** — testo's `Mean*`, after outlier
 rejection — and the relative deviation of that filtered set is under 5%
