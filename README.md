@@ -7,7 +7,12 @@
 [![Psalm level](https://img.shields.io/badge/psalm-level_1-blue.svg)](https://github.com/rasuvaeff/understudy/actions/workflows/static-analysis.yml)
 [![PHP](https://img.shields.io/packagist/dependency-v/rasuvaeff/understudy/php)](https://packagist.org/packages/rasuvaeff/understudy)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE.md)
+[![Documentation](https://img.shields.io/badge/docs-rasuvaeff.github.io-1E1B2E.svg)](https://rasuvaeff.github.io/understudy/)
 [Русская версия](README.ru.md)
+
+**Documentation:** <https://rasuvaeff.github.io/understudy/> — the guide, the
+migration guides from Mockery and PHPUnit, a cookbook of real incidents, and a
+generated API reference for all five packages.
 
 Test double library for PHP where the call you configure is a **real call**:
 

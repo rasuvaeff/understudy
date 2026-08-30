@@ -410,8 +410,38 @@ seconds instead of the full run's minute — and the full run stays the gate.
   `permissions: { contents: read }` and `persist-credentials: false` on every
   checkout. Verify with `zizmor --persona=auditor .github/`.
 
+## The documentation site
+
+`docs/` holds the family site — one VitePress site for all five packages,
+deployed to <https://rasuvaeff.github.io/understudy/> from `master`. The plan
+it was built from is `_plans/UNDERSTUDY-DOCS-SITE-PLAN.md` in the monorepo.
+
+| Rule | Why |
+|---|---|
+| **The sidebar in `docs/src/.vitepress/config.ts` is the page set.** A page not reachable from it is an error, not a page nobody linked yet | integrity check 6 |
+| **`docs/src/api/**` is generated.** Fix a docblock and run `make docs-api`; never edit a page there | it is overwritten on the next run |
+| **The completeness budget only goes down.** Document the new member instead of raising it | integrity check 8 |
+| **A new `@api` free function needs `make docs-api` too**, and a row in `llms.txt` | checks 2b and 7 — the class-only pipeline used to drop functions silently |
+| **A new PHPStan rule needs its row on `/api/rules` in the same PR** | check 9; the analyser packages have no other public contract |
+| **`MIGRATION.md` is generated** from `docs/src/guide/migrating-*.md`. Edit the pages, run `make docs-migration` | check via `docs:check:migration` |
+| **`make perf` means re-reading three files**: `perf/README.md`, `README.md`'s Performance table and `README.ru.md`'s. Keep the `<!-- #region site -->` markers and the `Taken YYYY-MM-DD` line | checks 10 and 11 |
+| **An `@include` that cannot resolve fails silently in VitePress** — the page renders as its heading and nothing else | check 12 |
+| **`{{` in prose needs `<code v-pre>`** | Vue interpolates it otherwise |
+| **A stub page cannot be built.** Remove its `<!-- DRAFT` comment when you write it | `check-drafts.mjs`, first in `docs:build` |
+| **Prose is linted.** `make docs-vale` must report zero findings; reword rather than add an exclusion | `.vale.ini` |
+| **A load-bearing claim in the guide gets an assertion.** `docs/scripts/check-claims.php` names the page beside each one | `make docs-claims`; the guide is the only part of the site nothing else holds — the reference is reflected and the cookbook is diffed |
+
+Commands: `make docs-install`, `make docs-api`, `make docs-dev`,
+`make docs-build`, `make docs-claims`, `make docs-cookbook`, `make docs-migration`,
+`make docs-links`, `make docs-vale`. Only `docs-api`, `docs-claims` and `docs-cookbook`
+need PHP; the rest are Node, so the site stays buildable without a PHP
+toolchain.
+
 ## When you finish
 
+- If the change touches the public API, run `make docs-api` and commit the
+  regenerated `docs/src/api/**`; if it touches the site's prose, run
+  `make docs-build` and `make docs-vale`.
 - Update `README.md` **and `README.ru.md`** (both languages, same commit; and
   `examples/` if usage changed); update `CHANGELOG.md` when releasing.
 - Re-run `composer build`; if the change affects public API or release safety,

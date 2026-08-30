@@ -15,6 +15,7 @@
 /perf export-ignore
 /spikes export-ignore
 /build export-ignore
+/docs export-ignore
 /Makefile export-ignore
 /bin export-ignore
 tests/fixtures/messages/*.txt text eol=lf

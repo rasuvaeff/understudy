@@ -7,7 +7,12 @@
 [![Psalm level](https://img.shields.io/badge/psalm-level_1-blue.svg)](https://github.com/rasuvaeff/understudy/actions/workflows/static-analysis.yml)
 [![PHP](https://img.shields.io/packagist/dependency-v/rasuvaeff/understudy/php)](https://packagist.org/packages/rasuvaeff/understudy)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE.md)
+[![Documentation](https://img.shields.io/badge/docs-rasuvaeff.github.io-1E1B2E.svg)](https://rasuvaeff.github.io/understudy/)
 [English version](README.md)
+
+**Документация:** <https://rasuvaeff.github.io/understudy/> — руководство,
+гайды миграции с Mockery и PHPUnit, cookbook реальных инцидентов и
+сгенерированный API-справочник по всем пяти пакетам. Сайт на английском.
 
 Библиотека тестовых дублей для PHP, где настраиваемый вызов — **настоящий
 вызов**:

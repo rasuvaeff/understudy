@@ -19,9 +19,15 @@ DOCKER_PCOV := docker run --rm -v "$(PWD)":/app -w /app --entrypoint sh $(PCOV_I
 # will merge into; override for a stacked branch.
 MUTATION_BASE ?= origin/master
 
+# What `docs-vale` lints: the hand-written pages only. docs/src/api/** is
+# generated from docblocks, and a prose linter there produces findings whose
+# only fix is rewriting PHP to satisfy a style rule.
+VALE_PATHS ?= docs/src/index.md docs/src/guide docs/src/cookbook docs/src/adapters
+
 .PHONY: bench build cs cs-fix psalm test mutation mutation-diff rector rector-fix install normalize \
        require-checker test-coverage test-coverage-ci update-deps release-check bc-check audit-package \
-       help perf perf-install perf-cold perf-memory pcov-image pcov-image-refresh
+       help perf perf-install perf-cold perf-memory pcov-image pcov-image-refresh \
+       docs-install docs-api docs-dev docs-build docs-claims docs-cookbook docs-migration docs-links docs-vale
 
 install:
 	$(DOCKER) composer install --no-interaction --no-progress --prefer-dist
@@ -140,6 +146,46 @@ bc-check:
 	    echo "No previous tag - skipping BC check"; \
 	  fi'
 
+# --- Documentation site (docs/, plan §9) ---------------------------------
+#
+# Node runs on the host: the site build needs no PHP at all, and the
+# `composer:2` image carries no Node. The PHP-side targets that will join
+# these — docs-api, docs-rules, docs-cookbook — go through $(DOCKER) with a
+# PHP_BIN prefix, because they do need an interpreter.
+
+docs-install:
+	cd docs && npm ci
+
+# The two reflectors need PHP and the API workspace; everything after them is
+# Node only, which is what keeps `docs-build` runnable on a machine with no PHP.
+docs-api:
+	$(DOCKER) sh -c 'git config --global --add safe.directory "*"; cd docs/.api-workspace && composer install --no-interaction --no-progress -q'
+	$(DOCKER) sh -c 'git config --global --add safe.directory "*"; DOCS_UNDERSTUDY_VERSION=$$(git describe --tags --always 2>/dev/null) php docs/scripts/reflect-api.php' > docs/scripts/api-snapshot.json
+	$(DOCKER) php docs/scripts/reflect-rules.php > docs/scripts/rules-snapshot.json
+	cd docs && npm run docs:api
+
+docs-dev:
+	cd docs && npm run docs:dev
+
+docs-build:
+	cd docs && npm run docs:build
+
+docs-cookbook:
+	PHP_BIN="$(DOCKER) php" node docs/scripts/check-cookbook.mjs
+
+docs-claims:
+	$(DOCKER) php docs/scripts/check-claims.php
+
+docs-migration:
+	cd docs && npm run docs:migration
+
+docs-links:
+	cd docs && npm run docs:check:links
+
+docs-vale:
+	vale sync
+	vale $(VALE_PATHS)
+
 help:
 	@echo "Usage: make <target>"
 	@echo ""
@@ -169,6 +215,16 @@ help:
 	@echo "  update-deps      composer update + normalize"
 	@echo "  bc-check         check backward compatibility against latest tag"
 	@echo "  release-check    build + rector + bc-check + mutation"
+	@echo ""
+	@echo "  docs-install     install the documentation site dependencies"
+	@echo "  docs-api         re-reflect the API and rules snapshots, then render the pages"
+	@echo "  docs-dev         serve the documentation site locally"
+	@echo "  docs-build       build the documentation site"
+	@echo "  docs-claims      assert the guide's claims against the engine"
+	@echo "  docs-cookbook    verify the cookbook case studies reproduce their output"
+	@echo "  docs-migration   re-render MIGRATION.md from the migrating-* pages"
+	@echo "  docs-links       check external links"
+	@echo "  docs-vale        lint the hand-written prose"
 
 audit-package:
 	@if [ -f ../bin/package-audit ]; then bash ../bin/package-audit "$(CURDIR)"; else echo "package-audit: available only inside the monorepo"; fi

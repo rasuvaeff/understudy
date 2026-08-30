@@ -1,0 +1,64 @@
+{
+    "phpstan": {
+        "version": "v0.2.0",
+        "reference": "911d4c47950803ea3e4fed74112598c1db09d640",
+        "repoBlob": "https://github.com/rasuvaeff/understudy-phpstan/blob/911d4c47950803ea3e4fed74112598c1db09d640/",
+        "registeredRules": [
+            "Rasuvaeff\\Understudy\\PhpStan\\Rule\\SpecificationCallRule",
+            "Rasuvaeff\\Understudy\\PhpStan\\Rule\\SpecificationStaticCallRule",
+            "Rasuvaeff\\Understudy\\PhpStan\\Rule\\FluentCardinalityRule",
+            "Rasuvaeff\\Understudy\\PhpStan\\Rule\\VoidReturnsRule",
+            "Rasuvaeff\\Understudy\\PhpStan\\Rule\\MatcherLeakRule"
+        ],
+        "identifiers": [
+            {
+                "identifier": "understudy.cardinality",
+                "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\SpecificationCheck",
+                "registered": false,
+                "summary": "Says what the engine would say, before the test runs.",
+                "file": "src/PhpStan/Internal/SpecificationCheck.php"
+            },
+            {
+                "identifier": "understudy.closure",
+                "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\SpecificationCheck",
+                "registered": false,
+                "summary": "Says what the engine would say, before the test runs.",
+                "file": "src/PhpStan/Internal/SpecificationCheck.php"
+            },
+            {
+                "identifier": "understudy.matcher",
+                "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\SpecificationCheck",
+                "registered": false,
+                "summary": "Says what the engine would say, before the test runs.",
+                "file": "src/PhpStan/Internal/SpecificationCheck.php"
+            },
+            {
+                "identifier": "understudy.matcherLeak",
+                "class": "Rasuvaeff\\Understudy\\PhpStan\\Rule\\MatcherLeakRule",
+                "registered": true,
+                "summary": "A matcher written outside a specification.",
+                "file": "src/PhpStan/Rule/MatcherLeakRule.php"
+            },
+            {
+                "identifier": "understudy.returns",
+                "class": "Rasuvaeff\\Understudy\\PhpStan\\Rule\\VoidReturnsRule",
+                "registered": true,
+                "summary": "`returns()` on a method that returns nothing.",
+                "file": "src/PhpStan/Rule/VoidReturnsRule.php"
+            }
+        ]
+    },
+    "psalm": {
+        "version": "v0.2.0",
+        "reference": "d4f53860f7e5a7e2463dc087ce5dc3eb1826e631",
+        "repoBlob": "https://github.com/rasuvaeff/understudy-psalm/blob/d4f53860f7e5a7e2463dc087ce5dc3eb1826e631/",
+        "issues": [
+            {
+                "issue": "UnderstudyMisuse",
+                "class": "Rasuvaeff\\Understudy\\Psalm\\Issue\\UnderstudyMisuse",
+                "summary": "A specification that cannot mean what it says.",
+                "file": "src/Psalm/Issue/UnderstudyMisuse.php"
+            }
+        ]
+    }
+}

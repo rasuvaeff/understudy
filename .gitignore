@@ -8,3 +8,12 @@ composer.lock
 /spikes/07-psalm-builder/composer.lock
 
 /.understudy-consumer-smoke/
+
+/docs/node_modules/
+/docs/src/.vitepress/dist/
+/docs/src/.vitepress/cache/
+/docs/.api-workspace/vendor/
+# Vale downloads the Microsoft package into styles/; the vocabulary under
+# styles/config/ is ours and is committed.
+/docs/.vale/styles/Microsoft/
+/docs/.vale/styles/Vale/
