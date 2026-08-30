@@ -1,10 +1,49 @@
 ---
 title: Fiber isolation
-description: "Why a test body run in a Fiber used to be able to leave an unmet expectation, and what the engine does about it. The canonical page; the Testo adapter links here."
+description: "One context per fiber rather than one static bag per process, and the false pass that closes."
 ---
 
 # Fiber isolation
 
-<!-- DRAFT (plan §10 step 2). Source of truth for this page: README.md 'Cleaning up'; understudy-testo README 'Fiber isolation' (171); perf/README.md #23 discussion -->
+Understudy keeps **one context per fiber**, not one static bag per process.
 
-_This page is not written yet._
+This is the canonical page for the behaviour. The [Testo adapter](/adapters/testo)
+describes what it does about it and links here.
+
+## What the split buys
+
+Each fiber gets its own recording phase, call log and sequence counter. Two
+fibers exercising the same double do not interleave into one sequence, so a
+protocol claim made in one is not broken by traffic from the other.
+
+## What stays whole
+
+Isolation and accounting are different things:
+
+| | Per fiber | Across every context the test used |
+|---|---|---|
+| Recording phase, call log, sequence counter | yes | |
+| `verifyAll()`, `reset()`, `idle()`, `checkpoint()` | | yes |
+
+A body that runs in a fiber is still the test's, and an adapter asks about the
+test from wherever it stands.
+
+## The failure this closes
+
+Without it, a test body run inside a fiber could leave an unmet `expect()`
+behind while the suite stayed green — a false **pass**, which is the one
+failure mode a verification library must not have.
+
+It is not free: the accounting that makes it work costs roughly 0.3µs on every
+double built, and that trade is recorded with its numbers in
+[Performance](/guide/performance). The trade was reviewed and accepted rather
+than absorbed quietly.
+
+## The rule to remember
+
+Configuration and verification must run in the context that **owns** the
+double. Ordinary calls may be made from another fiber and are still recorded in
+the owner's log.
+
+A double created inside `Understudy::scope()` is invalid after that scope
+closes — the same rule, with the nesting made explicit.
