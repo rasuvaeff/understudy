@@ -866,6 +866,72 @@ final class UnderstudyTest
         verify(fn() => $repository->tag('gamma'));
     }
 
+    public function verifyAllListsTheCallsThatDidNotMatchTheExpectation(): void
+    {
+        // The same report verify() renders, from the path a runner adapter
+        // actually takes. These two rendered different messages for one
+        // failure: verifyAll() had a sprintf of its own and showed the summary
+        // line alone, so the alias table and the argument marks — the only
+        // things that say WHICH call differed — were missing from every
+        // adapter-reported failure.
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->tag('gamma'));
+
+        $repository->tag('alpha');
+        $repository->tag('beta');
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            GoldenMessage::read('verify-all-lists-same-method-calls-with-marked-argument'),
+        );
+
+        Understudy::verifyAll();
+    }
+
+    public function verifyAllCarriesTheSameMethodCallsAsData(): void
+    {
+        // `observedCalls` is documented as "the calls to the same method", and
+        // it is the path a reporter takes instead of parsing the message. The
+        // filter that makes it true is invisible to a test that only reads the
+        // rendered text — FailureReport filters again on its own way in.
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->tag('gamma'));
+
+        $repository->tag('alpha');
+        $repository->count();
+
+        try {
+            Understudy::verifyAll();
+        } catch (VerificationFailed $failure) {
+            $observed = $failure->failures()[0]->observedCalls;
+
+            Assert::same(array_map(
+                static fn(Invocation $invocation): string => $invocation->method,
+                $observed ?? [],
+            ), ['tag']);
+
+            return;
+        }
+
+        Assert::fail('verifyAll() passed with an unmet expectation');
+    }
+
+    public function verifyAllSpellsAnUncalledExpectationTheSameWayVerifyDoes(): void
+    {
+        // "but it was never called", not "but it was called never" — the two
+        // paths disagreed on the wording of the same sentence.
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->count());
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            'Understudy `BookRepository` expected `count()` to be called exactly 1 time, but it was never called.',
+        );
+
+        Understudy::verifyAll();
+    }
+
     public function anObjectKeepsOneNameAcrossTheExpectationAndTheCallLog(): void
     {
         // The `*` marks a difference the report has to be able to show: both

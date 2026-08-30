@@ -52,7 +52,7 @@ when(fn () => $repository->find(123))->returns($book);
 | `Mockery::mock(BookRepository::class)` | `Understudy::for(BookRepository::class)` | |
 | `$mock->shouldReceive('find')` | `when(fn () => $mock->find(...))` | настоящий вызов; без строки с именем метода |
 | `->once()` / `->twice()` / `->times(3)` | `expect(fn () => ...)->times(3)` | `expect()` проверяется `verifyAll()` или адаптером |
-| `->atLeast()->once()` | `expect(...)->times(minimum: 1)` | |
+| `->atLeast()->once()` | `expect(...)->times(1, null)` | |
 | `->andReturn($book)` | `->returns($book)` | |
 | `->andReturnUsing(fn ...)` | `->answers(fn (Invocation $i) => ...)` | аргументы — из `$i->args` |
 | `->andThrow(new NotFound())` | `->throws(new NotFound())` | |
@@ -346,10 +346,17 @@ $options->all();                  // list<DeliveryOptions>, в порядке в
 use function Rasuvaeff\Understudy\expect;
 
 expect(fn () => $repository->save($book));            // ровно один раз
+expect(fn () => $repository->count())->times(3);      // ровно три раза
+expect(fn () => $repository->count())->times(0);      // ни разу
 expect(fn () => $repository->count())->times(1, 3);   // диапазон
+expect(fn () => $repository->count())->times(2, null); // не меньше двух
 
 Understudy::verifyAll();
 ```
+
+`times()` смотрит на **число переданных** аргументов, поэтому один аргумент —
+всегда точный счёт, как бы он ни был написан: `times(minimum: 2)` — это
+`times(2)`, а не открытый диапазон. Для диапазона пишите второй аргумент.
 
 `expect()` заявляет, сколько раз вызов обязан произойти, а `verifyAll()` это
 проверяет. Стаб `when()` — разрешение, а не заявление; `->times(2)` делает его
