@@ -47,7 +47,7 @@ here. Two rows are traps, marked ⚠.
 | `Mockery::mock(BookRepository::class)` | `Understudy::for(BookRepository::class)` | |
 | `$mock->shouldReceive('find')` | `when(fn () => $mock->find(...))` | a real call; no method-name string |
 | `->once()` / `->twice()` / `->times(3)` | `expect(fn () => ...)->times(3)` | an `expect()` is checked by `verifyAll()` / the adapter |
-| `->atLeast()->once()` | `expect(...)->times(minimum: 1)` | |
+| `->atLeast()->once()` | `expect(...)->times(1, null)` | |
 | `->andReturn($book)` | `->returns($book)` | |
 | `->andReturnUsing(fn ...)` | `->answers(fn (Invocation $i) => ...)` | arguments come from `$i->args` |
 | `->andThrow(new NotFound())` | `->throws(new NotFound())` | |
@@ -344,10 +344,17 @@ drop them, and the captor object is then simply empty again.
 use function Rasuvaeff\Understudy\expect;
 
 expect(fn () => $repository->save($book));            // exactly once
+expect(fn () => $repository->count())->times(3);      // exactly three times
+expect(fn () => $repository->count())->times(0);      // not at all
 expect(fn () => $repository->count())->times(1, 3);   // a range
+expect(fn () => $repository->count())->times(2, null); // at least twice
 
 Understudy::verifyAll();
 ```
+
+`times()` reads the number of arguments it was **given**, so one argument is an
+exact count however it is spelled: `times(minimum: 2)` is `times(2)`, not an
+open range. Write the second argument for that.
 
 `expect()` states how often a call must happen and `verifyAll()` checks it. A
 `when()` stub is permission rather than a claim — `->times(2)` turns it into
