@@ -86,15 +86,20 @@ each with a script you can run.
    line inside a raw HTML block ends that block in markdown-it, and the Vue SFC
    compiler then sees an unbalanced <div> and fails the build. Blank lines
    around the fence keep the div a well-formed HTML block on its own. */
-.terminal-sample div[class*='language-'] {
+/* Light mode only, for the same reason as custom.css: in dark mode VitePress's
+   code background is already dark and correct, and forcing the brand colour
+   over it would fight the theme rather than help it. */
+:root:not(.dark) .terminal-sample div[class*='language-'] {
   background: #1e1b2e;
   border: none;
+}
+:root:not(.dark) .terminal-sample div[class*='language-'] code {
+  color: #f2f1fa;
 }
 .terminal-sample div[class*='language-'] pre {
   padding: 1rem 1.2rem;
 }
 .terminal-sample div[class*='language-'] code {
-  color: #f2f1fa;
   font-size: 0.85rem;
   line-height: 1.6;
 }

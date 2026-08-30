@@ -1,5 +1,12 @@
 # Comparative benchmarks
 
+<!-- The region below is included verbatim by the documentation site
+     (docs/src/guide/performance.md). Keep both markers when you re-take
+     the numbers: VitePress fails an unfound region SILENTLY, rendering the
+     page as its heading and nothing else. The site supplies its own H1,
+     which is why the region starts below this file's. -->
+<!-- #region site -->
+
 Understudy against the three established PHP test-double libraries: Mockery,
 Prophecy and PHPUnit's own `MockObject`.
 
@@ -264,3 +271,4 @@ scale.
   never edit a figure without rerunning the harness that produced it.
 - The scenarios are behaviour contracts. Adding one is welcome; changing what an
   existing one measures invalidates every number recorded against it.
+<!-- #endregion site -->

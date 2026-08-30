@@ -9,8 +9,9 @@
         "docs:check:cookbook": "node scripts/check-cookbook.mjs",
         "docs:check:links": "node scripts/check-links.mjs",
         "docs:dev": "vitepress dev src",
-        "docs:build": "vitepress build src",
-        "docs:preview": "vitepress preview src"
+        "docs:build": "npm run docs:check:drafts && vitepress build src",
+        "docs:preview": "vitepress preview src",
+        "docs:check:drafts": "node scripts/check-drafts.mjs"
     },
     "devDependencies": {
         "markdown-link-check": "^3.15.0",
