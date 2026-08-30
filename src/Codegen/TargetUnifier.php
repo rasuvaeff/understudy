@@ -80,9 +80,9 @@ final class TargetUnifier
                     throw UnsupportedTarget::signatureConflict(
                         $name,
                         self::describe($classStatic) . ' declares `: '
-                        . TypeRenderer::returnType($classStatic->getReturnType()) . '`',
+                        . TypeRenderer::returnType(self::declaredReturnType($classStatic)) . '`',
                         self::describe($interfaceDeclaration) . ' declares `: '
-                        . TypeRenderer::returnType($interfaceDeclaration->getReturnType()) . '`',
+                        . TypeRenderer::returnType(self::declaredReturnType($interfaceDeclaration)) . '`',
                     );
                 }
 
@@ -349,6 +349,33 @@ final class TargetUnifier
     }
 
     /**
+     * The return type a method declares, tentative ones included.
+     *
+     * PHP's own interfaces carry TENTATIVE return types — `Countable::count()`
+     * is declared `: int`, and `getReturnType()` answers null for it, because
+     * an implementation is still allowed to omit or widen the type until the
+     * grace period ends. Reading only `getReturnType()` therefore made every
+     * built-in contract look untyped, and the generated override declared
+     * `mixed`: legal for `ArrayAccess::offsetGet` (tentatively `mixed` too),
+     * and a deprecation notice for `Countable::count`, on a call as ordinary
+     * as `Understudy::for(Repo::class, Countable::class)`. A future PHP turns
+     * that notice into an error.
+     *
+     * Declaring the tentative type satisfies the contract exactly, so no
+     * `#[\ReturnTypeWillChange]` is needed anywhere.
+     */
+    private static function declaredReturnType(\ReflectionMethod $method): ?\ReflectionType
+    {
+        // hasReturnType() rather than a `??` over the two getters: the two are
+        // mutually exclusive — a method with a tentative type has no declared
+        // one — so either order of a coalesce behaves identically and the
+        // swap is an equivalent mutant nothing can kill.
+        return $method->hasReturnType()
+            ? $method->getReturnType()
+            : $method->getTentativeReturnType();
+    }
+
+    /**
      * Return types are covariant, so an implementation must satisfy all of
      * them at once. `int` and `string` have no common subtype: no class can
      * implement both, and PHP rejects the attempt at compile time.
@@ -372,7 +399,7 @@ final class TargetUnifier
             }
 
             if ($satisfiesAll) {
-                return TypeRenderer::returnType($candidate->getReturnType(), $candidate->getDeclaringClass());
+                return TypeRenderer::returnType(self::declaredReturnType($candidate), $candidate->getDeclaringClass());
             }
         }
 
@@ -386,8 +413,8 @@ final class TargetUnifier
 
         throw UnsupportedTarget::signatureConflict(
             $name,
-            self::describe($left) . ' declares `: ' . TypeRenderer::returnType($left->getReturnType()) . '`',
-            self::describe($right) . ' declares `: ' . TypeRenderer::returnType($right->getReturnType()) . '`',
+            self::describe($left) . ' declares `: ' . TypeRenderer::returnType(self::declaredReturnType($left)) . '`',
+            self::describe($right) . ' declares `: ' . TypeRenderer::returnType(self::declaredReturnType($right)) . '`',
         );
     }
 
@@ -403,11 +430,11 @@ final class TargetUnifier
     private static function intersectReturnTypes(array $declarations): ?string
     {
         $first = $declarations[0];
-        $branches = self::returnTypeBranches($first->getReturnType(), $first->getDeclaringClass());
+        $branches = self::returnTypeBranches(self::declaredReturnType($first), $first->getDeclaringClass());
 
         foreach (array_slice($declarations, 1) as $declaration) {
             $requiredBranches = self::returnTypeBranches(
-                $declaration->getReturnType(),
+                self::declaredReturnType($declaration),
                 $declaration->getDeclaringClass(),
             );
             $intersections = [];
@@ -561,8 +588,8 @@ final class TargetUnifier
 
     private static function returnTypeSatisfies(\ReflectionMethod $candidate, \ReflectionMethod $required): bool
     {
-        $candidateBranches = self::returnTypeBranches($candidate->getReturnType(), $candidate->getDeclaringClass());
-        $requiredBranches = self::returnTypeBranches($required->getReturnType(), $required->getDeclaringClass());
+        $candidateBranches = self::returnTypeBranches(self::declaredReturnType($candidate), $candidate->getDeclaringClass());
+        $requiredBranches = self::returnTypeBranches(self::declaredReturnType($required), $required->getDeclaringClass());
 
         foreach ($candidateBranches as $candidateBranch) {
             $accepted = false;

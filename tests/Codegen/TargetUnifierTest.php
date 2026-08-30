@@ -239,6 +239,42 @@ final class TargetUnifierTest
         Assert::true(array_key_exists('write', $signatures));
     }
 
+    public function aBuiltInInterfaceKeepsItsTentativeReturnType(): void
+    {
+        // PHP's own interfaces declare TENTATIVE return types, and
+        // getReturnType() answers null for one — an implementation may still
+        // omit or widen it until the grace period ends. Reading only that made
+        // every built-in contract look untyped, so the override was generated
+        // `: mixed`, and PHP answered `Understudy::for(Repo::class,
+        // Countable::class)` with a deprecation notice. A future PHP turns
+        // that into an error.
+        $signatures = TargetUnifier::unify([new \ReflectionClass(\Countable::class)]);
+
+        Assert::same($signatures['count']->returnType, 'int');
+    }
+
+    public function aTentativeMixedStaysMixed(): void
+    {
+        // The other half of the same rule: ArrayAccess::offsetGet is
+        // tentatively `mixed`, and declaring `mixed` is what satisfies it.
+        // The old behaviour was right here by accident, which is why the bug
+        // survived — it only showed on a contract whose tentative type is
+        // narrower than `mixed`.
+        $signatures = TargetUnifier::unify([new \ReflectionClass(\ArrayAccess::class)]);
+
+        Assert::same($signatures['offsetGet']->returnType, 'mixed');
+    }
+
+    public function aBuiltInContractCombinesWithAnInterfaceOfOurOwn(): void
+    {
+        $signatures = TargetUnifier::unify([
+            new \ReflectionClass(ArityOne::class),
+            new \ReflectionClass(\Countable::class),
+        ]);
+
+        Assert::same($signatures['count']->returnType, 'int');
+    }
+
     public function everyContractMethodIsUnified(): void
     {
         $signatures = TargetUnifier::unify([new \ReflectionClass(ArityOne::class)]);
