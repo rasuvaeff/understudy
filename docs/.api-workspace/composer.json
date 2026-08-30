@@ -1,0 +1,29 @@
+{
+    "name": "rasuvaeff/understudy-docs-api-workspace",
+    "description": "Not a package: installs the four satellites alongside this checkout of the engine so docs/scripts/reflect-api.php can reflect all five src/ trees through one autoloader. Deliberately kept out of the engine's own composer.json — installing it must never change what `composer why testo/testo` reports for the engine.",
+    "type": "project",
+    "require": {
+        "php": "8.3 - 8.5",
+        "phpdocumentor/reflection-docblock": "^5.6",
+        "rasuvaeff/understudy-phpstan": "^0.2",
+        "rasuvaeff/understudy-phpunit": "^0.1",
+        "rasuvaeff/understudy-psalm": "^0.2",
+        "rasuvaeff/understudy-testo": "^0.1"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../..",
+            "options": {
+                "versions": {
+                    "rasuvaeff/understudy": "0.4.0"
+                }
+            }
+        }
+    ],
+    "config": {
+        "allow-plugins": false,
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}
