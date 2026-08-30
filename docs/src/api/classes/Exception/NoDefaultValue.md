@@ -9,7 +9,7 @@ description: "A loose understudy had to answer a call, but the declared return t
 
 `Rasuvaeff\Understudy\Exception\NoDefaultValue`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/NoDefaultValue.php#L14) — **Version:** working tree
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/NoDefaultValue.php#L14) — **Version:** v0.4.0-13-gb7b865f
 
 **Extends:** `RuntimeException`
 

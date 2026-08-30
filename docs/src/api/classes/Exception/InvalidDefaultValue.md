@@ -9,7 +9,7 @@ description: "A registered default factory produced a value the contract cannot 
 
 `Rasuvaeff\Understudy\Exception\InvalidDefaultValue`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidDefaultValue.php#L12) — **Version:** working tree
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidDefaultValue.php#L12) — **Version:** v0.4.0-13-gb7b865f
 
 **Extends:** `RuntimeException`
 

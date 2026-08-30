@@ -9,7 +9,7 @@ description: "A double outlived the context that created it — almost always a 
 
 `Rasuvaeff\Understudy\Exception\ForgottenDouble`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForgottenDouble.php#L16) — **Version:** working tree
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForgottenDouble.php#L16) — **Version:** v0.4.0-13-gb7b865f
 
 **Extends:** `LogicException`
 
