@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="rasuvaeff/understudy-phpunit">
+  <title>rasuvaeff/understudy-phpunit</title>
+  <path fill-rule="evenodd" fill="#2E8B57" d="M30 0 H90 A30 30 0 0 1 120 30 V90 A30 30 0 0 1 90 120 H30 A30 30 0 0 1 0 90 V30 A30 30 0 0 1 30 0 Z M120 45 A15 15 0 0 0 120 75 Z"/>
+  <rect x="24" y="24" width="54" height="54" rx="14" fill="#F0B429"/>
+  <rect x="36" y="36" width="66" height="66" rx="19" fill="#2E8B57"/>
+  <rect x="42" y="42" width="54" height="54" rx="14" fill="#FFFFFF"/>
+</svg>

@@ -21,7 +21,8 @@ MUTATION_BASE ?= origin/master
 
 .PHONY: bench build cs cs-fix psalm test mutation mutation-diff rector rector-fix install normalize \
        require-checker test-coverage test-coverage-ci update-deps release-check bc-check audit-package \
-       help perf perf-install perf-cold perf-memory pcov-image pcov-image-refresh
+       help perf perf-install perf-cold perf-memory pcov-image pcov-image-refresh \
+       docs-install docs-dev docs-build
 
 install:
 	$(DOCKER) composer install --no-interaction --no-progress --prefer-dist
@@ -140,6 +141,22 @@ bc-check:
 	    echo "No previous tag - skipping BC check"; \
 	  fi'
 
+# --- Documentation site (docs/, plan §9) ---------------------------------
+#
+# Node runs on the host: the site build needs no PHP at all, and the
+# `composer:2` image carries no Node. The PHP-side targets that will join
+# these — docs-api, docs-rules, docs-cookbook — go through $(DOCKER) with a
+# PHP_BIN prefix, because they do need an interpreter.
+
+docs-install:
+	cd docs && npm ci
+
+docs-dev:
+	cd docs && npm run docs:dev
+
+docs-build:
+	cd docs && npm run docs:build
+
 help:
 	@echo "Usage: make <target>"
 	@echo ""
@@ -169,6 +186,10 @@ help:
 	@echo "  update-deps      composer update + normalize"
 	@echo "  bc-check         check backward compatibility against latest tag"
 	@echo "  release-check    build + rector + bc-check + mutation"
+	@echo ""
+	@echo "  docs-install     install the documentation site dependencies"
+	@echo "  docs-dev         serve the documentation site locally"
+	@echo "  docs-build       build the documentation site"
 
 audit-package:
 	@if [ -f ../bin/package-audit ]; then bash ../bin/package-audit "$(CURDIR)"; else echo "package-audit: available only inside the monorepo"; fi

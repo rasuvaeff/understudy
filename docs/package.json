@@ -1,0 +1,19 @@
+{
+    "name": "understudy-family-docs",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "docs:api": "node scripts/generate-api.mjs",
+        "docs:check": "node scripts/check-integrity.mjs",
+        "docs:check:anchors": "node scripts/check-anchors.mjs",
+        "docs:check:cookbook": "node scripts/check-cookbook.mjs",
+        "docs:check:links": "node scripts/check-links.mjs",
+        "docs:dev": "vitepress dev src",
+        "docs:build": "vitepress build src",
+        "docs:preview": "vitepress preview src"
+    },
+    "devDependencies": {
+        "markdown-link-check": "^3.15.0",
+        "vitepress": "^1.6.4"
+    }
+}
