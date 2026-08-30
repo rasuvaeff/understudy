@@ -352,20 +352,37 @@ final class Understudy
             return null;
         }
 
+        // The same renderer verify() uses, rather than a sprintf of its own.
+        // Two paths reported the same failure and only one of them showed the
+        // call log — so an unmet expectation reported by verifyAll(), which is
+        // what every runner adapter calls, said "expected 2, got 1" and left
+        // the reader to find out which call differed. That log is where the
+        // alias table and the argument marks live, and it is the whole reason
+        // they exist. The paths also disagreed on wording: this one produced
+        // "but it was called never".
+        $sameMethod = array_values(array_filter(
+            $state->callLog(),
+            static fn(Invocation $invocation): bool => $invocation->method === $expectation->method,
+        ));
+
         return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
             kind: FailureKind::UnmetExpectation,
-            summary: sprintf(
-                'Understudy `%s` expected `%s` to be called %s, but it was called %s.',
-                $state->label(),
-                $expectation->describe(),
-                $cardinality->describe(),
-                $count === 0 ? 'never' : ($count === 1 ? '1 time' : $count . ' times'),
+            summary: FailureReport::render(
+                label: $state->label(),
+                expectation: $expectation->describe(),
+                expectedLow: $cardinality->minimum,
+                expectedHigh: $cardinality->maximum,
+                actual: $count,
+                callLog: $state->callLog(),
+                method: $expectation->method,
+                expectedArgs: $expectation->args,
             ),
             double: $state->label(),
             expectation: $expectation->describe(),
             expectedMinimum: $cardinality->minimum,
             expectedMaximum: $cardinality->maximum,
             actualCount: $count,
+            observedCalls: $sameMethod,
         ));
     }
 
