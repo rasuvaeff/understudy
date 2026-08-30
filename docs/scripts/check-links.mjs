@@ -66,7 +66,11 @@ const options = {
         // the working tree by check-integrity.mjs — on a pull request the
         // file is not on master yet, so the network answer is the opposite of
         // the truth.
-        { pattern: '^https://github\\.com/rasuvaeff/property-testing-core/(blob|tree)/' },
+        { pattern: '^https://github\\.com/rasuvaeff/understudy/(blob|tree)/' },
+        // The API reference stamps a satellite's source links with the commit
+        // SHA composer installed. That SHA is real, but api/ is skipped below
+        // anyway — this covers the same shape reached from a hand-written page.
+        { pattern: '^https://github\\.com/rasuvaeff/understudy-[a-z]+/(blob|tree)/' },
     ],
     timeout: '20s',
     retryOn429: true,

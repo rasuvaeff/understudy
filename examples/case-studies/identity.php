@@ -26,4 +26,4 @@ $original = new Book('Dune');
 $repository->save($original);
 $repository->save(new Book('Dune'));
 
-show(static fn () => verify(static fn () => $repository->save($original), times: 2));
+show(static fn() => verify(static fn() => $repository->save($original), times: 2));

@@ -80,6 +80,22 @@ often exactly the one the test meant to write. When nothing at all is
 configured for the method, there is nothing to compare against and the message
 stays the single line naming it.
 
+## Which path renders the call log
+
+Worth knowing, because it decides what you actually see:
+
+| Reported through | The summary line | The "following calls" block |
+|---|---|---|
+| [`verify()`](/guide/expectations/verify) | yes | yes |
+| `Understudy::verifyAll()` — what a [runner adapter](/adapters/testo) calls | yes | no |
+
+The two blocks quoted above come from the `verify()` path. An unmet `expect()`
+reported by `verifyAll()` at the end of a test prints its summary line alone.
+
+When a count failure leaves you without the log, ask for it directly —
+`Understudy::transcript($double)`, or `verify()` on the call you expected,
+which renders the comparison in full.
+
 ## Reading a failure as data
 
 An adapter or a reporter should not parse these strings.

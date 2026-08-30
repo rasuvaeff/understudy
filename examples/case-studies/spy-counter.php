@@ -21,7 +21,7 @@ interface BookRepository
 $repository = Understudy::for(BookRepository::class);
 $expected = new Book('Dune');
 
-expect(static fn () => $repository->save($expected));
+expect(static fn() => $repository->save($expected));
 
 // The subject also saves something the test never asked about.
 $repository->save($expected);
@@ -32,4 +32,4 @@ $repository->save(new Book('Neuromancer'));
 Understudy::verifyAll();
 echo "verifyAll() alone: passed\n\n";
 
-show(static fn () => Understudy::nothingElse($repository));
+show(static fn() => Understudy::nothingElse($repository));

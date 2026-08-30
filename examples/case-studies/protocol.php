@@ -26,9 +26,9 @@ $repository = Understudy::for(BookRepository::class);
 $book = new Book('Dune');
 
 Understudy::expectSequence(
-    static fn () => $repository->begin(),
-    static fn () => $repository->save($book),
-    static fn () => $repository->commit(),
+    static fn() => $repository->begin(),
+    static fn() => $repository->save($book),
+    static fn() => $repository->commit(),
 );
 
 // The subject reads between two steps of the protocol. Nothing configured

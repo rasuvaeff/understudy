@@ -22,15 +22,15 @@ interface BookRepository
 
 $repository = Understudy::for(BookRepository::class);
 
-when(static fn () => $repository->find(7))->returns(new Book('Dune'));
+when(static fn() => $repository->find(7))->returns(new Book('Dune'));
 
 // This one described a call the subject stopped making when the lookup moved
 // to find(). Nothing fails by default: a stub is permission.
-when(static fn () => $repository->findBySlug('dune'))->returns(new Book('Dune'));
+when(static fn() => $repository->findBySlug('dune'))->returns(new Book('Dune'));
 
 $repository->find(7);
 
 Understudy::verifyAll();
 echo "verifyAll() alone: passed\n\n";
 
-show(static fn () => Understudy::verifyAll(strictStubs: true));
+show(static fn() => Understudy::verifyAll(strictStubs: true));
