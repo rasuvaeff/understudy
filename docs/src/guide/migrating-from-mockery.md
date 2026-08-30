@@ -21,7 +21,7 @@ the site still gets them.
 | `Mockery::mock(BookRepository::class)` | `Understudy::for(BookRepository::class)` | |
 | `$mock->shouldReceive('find')` | `when(fn () => $mock->find(...))` | a real call; no method-name string |
 | `->once()` / `->twice()` / `->times(3)` | `expect(fn () => …)->times(3)` | an `expect()` is checked by `verifyAll()` or the adapter |
-| `->atLeast()->once()` | `expect(…)->times(minimum: 1)` | |
+| `->atLeast()->once()` | `expect(…)->times(1, null)` | |
 | `->andReturn($book)` | `->returns($book)` | |
 | `->andReturnUsing(fn …)` | `->answers(fn (Invocation $i) => …)` | arguments come from `$i->args` |
 | `->andThrow(new NotFound())` | `->throws(new NotFound())` | |

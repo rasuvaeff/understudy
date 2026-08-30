@@ -27,7 +27,7 @@ VALE_PATHS ?= docs/src/index.md docs/src/guide docs/src/cookbook docs/src/adapte
 .PHONY: bench build cs cs-fix psalm test mutation mutation-diff rector rector-fix install normalize \
        require-checker test-coverage test-coverage-ci update-deps release-check bc-check audit-package \
        help perf perf-install perf-cold perf-memory pcov-image pcov-image-refresh \
-       docs-install docs-api docs-dev docs-build docs-cookbook docs-migration docs-links docs-vale
+       docs-install docs-api docs-dev docs-build docs-claims docs-cookbook docs-migration docs-links docs-vale
 
 install:
 	$(DOCKER) composer install --no-interaction --no-progress --prefer-dist
@@ -173,6 +173,9 @@ docs-build:
 docs-cookbook:
 	PHP_BIN="$(DOCKER) php" node docs/scripts/check-cookbook.mjs
 
+docs-claims:
+	$(DOCKER) php docs/scripts/check-claims.php
+
 docs-migration:
 	cd docs && npm run docs:migration
 
@@ -217,6 +220,7 @@ help:
 	@echo "  docs-api         re-reflect the API and rules snapshots, then render the pages"
 	@echo "  docs-dev         serve the documentation site locally"
 	@echo "  docs-build       build the documentation site"
+	@echo "  docs-claims      assert the guide's claims against the engine"
 	@echo "  docs-cookbook    verify the cookbook case studies reproduce their output"
 	@echo "  docs-migration   re-render MIGRATION.md from the migrating-* pages"
 	@echo "  docs-links       check external links"

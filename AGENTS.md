@@ -429,10 +429,11 @@ it was built from is `_plans/UNDERSTUDY-DOCS-SITE-PLAN.md` in the monorepo.
 | **`{{` in prose needs `<code v-pre>`** | Vue interpolates it otherwise |
 | **A stub page cannot be built.** Remove its `<!-- DRAFT` comment when you write it | `check-drafts.mjs`, first in `docs:build` |
 | **Prose is linted.** `make docs-vale` must report zero findings; reword rather than add an exclusion | `.vale.ini` |
+| **A load-bearing claim in the guide gets an assertion.** `docs/scripts/check-claims.php` names the page beside each one | `make docs-claims`; the guide is the only part of the site nothing else holds — the reference is reflected and the cookbook is diffed |
 
 Commands: `make docs-install`, `make docs-api`, `make docs-dev`,
-`make docs-build`, `make docs-cookbook`, `make docs-migration`,
-`make docs-links`, `make docs-vale`. Only `docs-api` and `docs-cookbook`
+`make docs-build`, `make docs-claims`, `make docs-cookbook`, `make docs-migration`,
+`make docs-links`, `make docs-vale`. Only `docs-api`, `docs-claims` and `docs-cookbook`
 need PHP; the rest are Node, so the site stays buildable without a PHP
 toolchain.
 

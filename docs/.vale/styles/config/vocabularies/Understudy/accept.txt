@@ -65,3 +65,4 @@ POSIX
 PHAR
 bypassFinals
 phpspec
+[Uu]serland

@@ -16,6 +16,7 @@ on:
     paths: &paths
       - 'docs/**'
       - 'examples/case-studies/**'
+      - 'perf/**'
       - 'src/**'
       - 'perf/README.md'
       - 'llms.txt'
@@ -127,6 +128,12 @@ jobs:
       # ("the page quotes output the script no longer produces") is a content
       # problem, not a build problem — the distinction is worth one glance at
       # the job summary.
+      # Two content checks, both needing PHP, both after the build for the same
+      # reason: their failure ("the page says something the code does not do")
+      # is a content problem, not a build problem.
+      - name: Verify the guide's claims against the engine
+        run: php docs/scripts/check-claims.php
+
       - name: Verify cookbook case studies reproduce their quoted output
         run: node docs/scripts/check-cookbook.mjs
 

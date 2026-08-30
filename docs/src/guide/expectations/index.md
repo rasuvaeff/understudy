@@ -26,9 +26,16 @@ you after the test body — a forgotten call cannot turn a failing test green.
 |---|---|
 | `expect(…)` | exactly once |
 | `expect(…)->times(3)` | exactly three times |
+| `expect(…)->times(0)` | not at all |
 | `expect(…)->times(1, 3)` | between one and three |
-| `expect(…)->times(minimum: 2)` | at least twice, no upper bound |
-| `expect(…)->never()` | not at all |
+| `expect(…)->times(2, null)` | at least twice, no upper bound |
+
+::: warning One argument means "exactly"
+`times()` reads the number of arguments it was **given**, so a single argument
+is an exact count however it is spelled. `times(minimum: 2)` is `times(2)` —
+exactly twice — not an open range. Pass the second argument explicitly for
+that: `times(2, null)`.
+:::
 
 Declare a repeated count **once**, with `times()`. Two separate `expect()`
 registrations for the same call are refused rather than added together — see

@@ -19,9 +19,9 @@ same document as `MIGRATION.md` in the repository.
 |---|---|
 | `createMock(BookRepository::class)` / `createStub(…)` | `Understudy::for(…)` |
 | `->expects($this->once())->method('find')` | `expect(fn () => $repo->find(…))` |
-| `$this->once()` / `never()` / `exactly(n)` | `times(1)` / `never: true` / `times(n)` |
+| `$this->once()` / `never()` / `exactly(n)` | `times(1)` / `times(0)` / `times(n)` |
 | `$this->any()` | no `expect()` at all — use `when()` |
-| `$this->atLeast(n)` | `times(minimum: n)` |
+| `$this->atLeast(n)` | `times(n, null)` |
 | `->with(123, $this->anything())` | in the closure: `find(123, Arg::any())` |
 | `$this->equalTo($v)` | the literal `$v` |
 | `$this->identicalTo($v)` | `Arg::same($v)` |

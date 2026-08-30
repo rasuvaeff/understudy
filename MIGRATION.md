@@ -30,7 +30,7 @@ here, and the sections after it cover what a mechanical translation gets wrong.
 | `Mockery::mock(BookRepository::class)` | `Understudy::for(BookRepository::class)` | |
 | `$mock->shouldReceive('find')` | `when(fn () => $mock->find(...))` | a real call; no method-name string |
 | `->once()` / `->twice()` / `->times(3)` | `expect(fn () => …)->times(3)` | an `expect()` is checked by `verifyAll()` or the adapter |
-| `->atLeast()->once()` | `expect(…)->times(minimum: 1)` | |
+| `->atLeast()->once()` | `expect(…)->times(1, null)` | |
 | `->andReturn($book)` | `->returns($book)` | |
 | `->andReturnUsing(fn …)` | `->answers(fn (Invocation $i) => …)` | arguments come from `$i->args` |
 | `->andThrow(new NotFound())` | `->throws(new NotFound())` | |
@@ -169,9 +169,9 @@ against PHPUnit 12.5.33; the mapping holds for 10 through 13.
 |---|---|
 | `createMock(BookRepository::class)` / `createStub(…)` | `Understudy::for(…)` |
 | `->expects($this->once())->method('find')` | `expect(fn () => $repo->find(…))` |
-| `$this->once()` / `never()` / `exactly(n)` | `times(1)` / `never: true` / `times(n)` |
+| `$this->once()` / `never()` / `exactly(n)` | `times(1)` / `times(0)` / `times(n)` |
 | `$this->any()` | no `expect()` at all — use `when()` |
-| `$this->atLeast(n)` | `times(minimum: n)` |
+| `$this->atLeast(n)` | `times(n, null)` |
 | `->with(123, $this->anything())` | in the closure: `find(123, Arg::any())` |
 | `$this->equalTo($v)` | the literal `$v` |
 | `$this->identicalTo($v)` | `Arg::same($v)` |
