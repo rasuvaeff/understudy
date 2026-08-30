@@ -84,6 +84,15 @@ const sidebar = [
         ],
     },
     {
+        text: 'API reference',
+        items: [
+            { text: 'Overview', link: '/api/index' },
+            { text: 'Functions', link: '/api/functions' },
+            { text: 'Exceptions', link: '/api/exceptions' },
+            { text: 'Static analysis rules', link: '/api/rules' },
+        ],
+    },
+    {
         text: 'Adapters',
         items: [
             { text: 'Testo', link: '/adapters/testo' },
@@ -134,6 +143,7 @@ export default defineConfig({
             { text: 'Migrating', link: '/guide/migrating-from-mockery' },
             { text: 'Cookbook', link: '/cookbook/index' },
             { text: 'Adapters', link: '/adapters/testo' },
+            { text: 'API', link: '/api/index' },
         ],
         sidebar: { '/': sidebar },
         outlineTitle: 'On this page',
