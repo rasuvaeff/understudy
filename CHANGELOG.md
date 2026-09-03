@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- **The parity matrix gained `ForeignCapture`**: somebody else's zero-argument
+  `capture()` written inside a specification. Both analysers must report it,
+  and one of them did not — `understudy-psalm` decided a capture by the method
+  name and an empty argument list, because its issue hook is handed no resolved
+  receiver, and swallowed the diagnostic. Fixed in that package (#18) and
+  pinned here, which is what the matrix exists for.
+- `perf/README.md` records that the figures were re-verified for the v0.5.0
+  tag and left unchanged: three runs a side at the commit they were taken from
+  and on the release candidate, with our movement inside the competitors'.
+
 ## 0.5.0 — 2026-09-03
 
 A minor rather than a patch: a closing `scope()` verifies less than it did, and

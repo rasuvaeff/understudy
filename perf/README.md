@@ -97,6 +97,16 @@ variable in the root `Makefile`, not by flags typed at a prompt. Understudy at
 `442da10`, Mockery 1.6.15, Prophecy 1.26.1, PHPUnit 12.5.33. Taken 2026-08-27,
 before the 0.2.0 tag.
 
+**Re-verified for the v0.5.0 tag on 2026-09-03**, and left unchanged because
+there was nothing to change. Three runs of the full harness at `442da10` — the
+commit above — and three on the release candidate, same machine, same pinning,
+in one sitting. Understudy moved +0.7% to +3.3% across the six tables while
+Mockery, Prophecy and PHPUnit moved −4.3% to +4.2% in the same runs: the
+competitors' movement is the noise floor, and ours sits inside it, so nothing
+is attributable and the figures below still describe the library. This is the
+A/B the release rule asks for, and the reason it asks for the old commit to be
+re-run rather than compared against the number in this file.
+
 **The previous set was taken at `9837dfd` — a commit before 0.1.0**, so it
 described no released version at all. Between it and the first tag a regression
 landed that those figures did not show: double creation went from about 1.7µs to
