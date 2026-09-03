@@ -91,9 +91,7 @@ final class EngineLifecyclePropertyTest
         // The scope interlude runs whenever its command is drawn; which way
         // its close goes depends on the outer ledger at that instant, so the
         // two outcomes are labelled without a floor and pinned by examples.
-        Classify::cover($harness->cleanScopeCloses + $harness->refusedScopeCloses > 0, 'a nested scope lived and died', 5);
-        Classify::when($harness->cleanScopeCloses > 0, 'scope: closed clean');
-        Classify::when($harness->refusedScopeCloses > 0, 'scope: close refused by an outer claim');
+        Classify::cover($harness->cleanScopeCloses > 0, 'a nested scope lived and died', 5);
 
         // The runner advanced its own copy of the model; folding the same
         // pure transitions here gives the end state the real log must have
@@ -192,12 +190,11 @@ final class EngineLifecyclePropertyTest
             ],
         )];
 
-        // The two ways a nested scope can close, pinned deterministically:
-        // over a clean outer ledger the close verifies and passes; over a
-        // violated outer claim it throws, because the close's verify sweeps
-        // every live context. Either way the inner double dies with its
-        // context and the outer ledger is untouched — a scope checks, it
-        // never settles, which the trailing dispatch and verify prove.
+        // A nested scope closes on its own context, pinned deterministically
+        // in both surroundings: over a clean outer ledger, and over one whose
+        // claim is violated at that very moment. Either way the inner double
+        // dies with its context and the outer ledger is neither settled nor
+        // forgiven — the trailing dispatch and verify prove it.
         yield 'a scope closes clean over a clean outer ledger' => [new CommandSequence(
             new EngineState(),
             [
@@ -208,7 +205,7 @@ final class EngineLifecyclePropertyTest
             ],
         )];
 
-        yield 'a scope close is refused by a violated outer claim' => [new CommandSequence(
+        yield 'a scope closes clean over a violated outer claim' => [new CommandSequence(
             new EngineState(),
             [
                 new ConfigureExpectCommand(anyArgument: false, literalId: 1, minimum: 1, maximum: 1),

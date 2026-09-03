@@ -22,7 +22,6 @@ final class EngineHarness
     public int $settledCheckpoints = 0;
     public int $refusedRegistrations = 0;
     public int $cleanScopeCloses = 0;
-    public int $refusedScopeCloses = 0;
 
     public function __construct(public readonly BookRepository $double) {}
 }

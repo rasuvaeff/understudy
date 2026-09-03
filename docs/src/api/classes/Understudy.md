@@ -9,7 +9,7 @@ description: "The whole public surface, as static methods so that an understudy 
 
 `Rasuvaeff\Understudy\Understudy`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L39) — **Version:** v0.4.0-22-gc66ecdf
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L39) — **Version:** v0.4.1
 
 The whole public surface, as static methods so that an understudy itself can
 stay free of service members: every one of them would be a name the doubled
@@ -376,6 +376,17 @@ Runs a callback in a nested context of its own.
 On success the callback's expectations are verified; the context is then
 dropped either way. A failure inside the callback is never replaced by a
 teardown error — the original is what the reader needs.
+
+Verified is the context this call opened, and only it: the enclosing
+context is still running and its claims are none of a nested scope's
+business. A scope is a local lifetime — the caller reaches for it to end
+a few doubles early, often while its own expectations are deliberately
+unfinished — so answering for the whole test here would fail a
+self-contained scope for something the test has not got to yet. The
+test as a whole is answered for by `verifyAll()`, `checkpoint()` and the
+runner adapter's teardown, which are the calls that mean the test is
+over. A Fiber started inside the callback keeps a context of its own
+that outlives the scope, so it stays for those to check.
 
 ### checkpoint()
 

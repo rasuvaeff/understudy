@@ -32,6 +32,7 @@ if ($hasWorkspace) {
 }
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Understudy;
 
@@ -319,6 +320,29 @@ claim('lifecycle/index', 'scope() returns its callback value and drops the conte
     $out = Understudy::scope(static fn () => 42);
 
     return ($out === 42 && Understudy::idle()) ?: 'scope() leaked or returned wrong';
+});
+
+claim('lifecycle/index', 'a scope closes clean over an unsatisfied outer claim', function (): bool|string {
+    $outer = Understudy::for(Repo::class);
+    expect(fn () => $outer->find(1));
+
+    try {
+        Understudy::scope(static function (): void {
+            $inner = Understudy::for(Repo::class);
+            expect(fn () => $inner->find(2));
+            $inner->find(2);
+        });
+    } catch (VerificationFailed) {
+        return 'the scope answered for the enclosing context';
+    }
+
+    try {
+        Understudy::verifyAll();
+    } catch (VerificationFailed) {
+        return true;
+    }
+
+    return 'the outer claim was settled rather than left standing';
 });
 
 claim('lifecycle/retention', 'lean(): returned() raises OutcomeUnavailable', function (): bool|string {

@@ -1186,6 +1186,58 @@ final class LedgerTest
         });
     }
 
+    /**
+     * The regression behind issue #84: a scope is a local lifetime, and the
+     * enclosing context is still running. Closing one used to sweep every
+     * live context, so a self-contained scope failed for a claim the test had
+     * simply not got round to satisfying yet.
+     */
+    public function aScopeDoesNotAnswerForTheEnclosingContextsClaims(): void
+    {
+        $outer = Understudy::for(BookRepository::class);
+        expect(fn() => $outer->count());
+
+        Understudy::scope(static function (): void {
+            $inner = Understudy::for(BookRepository::class);
+            expect(fn() => $inner->count());
+
+            Assert::same($inner->count(), 0);
+        });
+
+        // Ignored, not forgiven: the claim the close passed over is exactly
+        // the one an explicit verification still refuses.
+        Expect::exception(VerificationFailed::class)->withMessageContaining('never');
+
+        Understudy::verifyAll();
+    }
+
+    /**
+     * The other half of the same rule: what the scope does own is still
+     * judged, and the report names the scope's double rather than the
+     * enclosing one whose claim is also open.
+     */
+    public function aScopeStillFailsOnItsOwnUnmetClaimUnderAViolatedOuterLedger(): void
+    {
+        $outer = Understudy::for(Clock::class);
+        expect(fn() => $outer->now());
+
+        $caught = null;
+
+        try {
+            Understudy::scope(static function (): void {
+                $inner = Understudy::for(BookRepository::class);
+
+                expect(fn() => $inner->count());
+            });
+        } catch (VerificationFailed $failure) {
+            $caught = $failure;
+        }
+
+        \assert($caught instanceof VerificationFailed);
+        Assert::string($caught->getMessage())->contains('BookRepository');
+        Assert::string($caught->getMessage())->notContains('Clock');
+    }
+
     public function scopeDoesNotReplaceTheCallbacksOwnFailure(): void
     {
         // An unmet expectation inside a failing scope is a symptom; the

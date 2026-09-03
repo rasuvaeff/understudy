@@ -22,7 +22,11 @@ registrations and their transcripts.
   through several stages and each stage has its own claims.
 - `scope()` opens a nested context, runs the callback, and drops the context
   either way. It returns whatever the callback returns, and a failure inside is
-  never replaced by a teardown error.
+  never replaced by a teardown error. On success it verifies the context it
+  opened, and only that one: the enclosing context is still running, so a claim
+  the test has yet to satisfy does not fail a self-contained scope. The test as
+  a whole is answered for by `verifyAll()`, `checkpoint()` and the runner
+  adapter's teardown.
 
 A double created in a scope is invalid after that scope closes.
 

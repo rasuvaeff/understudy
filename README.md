@@ -524,7 +524,11 @@ and used inside `Understudy::scope()`, which drops the context — outcomes
 included — before the lifecycle teardown runs.
 
 `scope()` returns whatever its callback returns, and drops the nested context
-either way — a failure inside is never replaced by a teardown error. A double
+either way — a failure inside is never replaced by a teardown error. On
+success it verifies the context it opened, and only that one: the enclosing
+context is still running, and a claim the test has not got round to satisfying
+is none of a nested scope's business. The test as a whole is answered for by
+`verifyAll()`, `checkpoint()` and the runner adapter's teardown. A double
 created in a scope is invalid after that scope closes. Configuration and
 verification must run in the context that owns the double; normal calls may be
 made from another Fiber and are still recorded in the owner's log.

@@ -348,8 +348,11 @@ Understudy::idle();                  // true when the current context holds no d
 ```
 
 `scope()` returns whatever the callback returns and drops its context either
-way; a failure inside the callback is never replaced by a teardown error. A
-double created there becomes forgotten when the scope closes. Configuration
+way; a failure inside the callback is never replaced by a teardown error. On
+success it verifies the context it opened and only that one — the enclosing
+context is still running, and its open claims are answered for by
+`verifyAll()`, `checkpoint()` and the runner adapter's teardown. A double
+created there becomes forgotten when the scope closes. Configuration
 and verification require the owning context; normal calls from another Fiber
 are allowed and are routed to the owner's log.
 `checkpoint()` keeps the understudies, their modes and their labels, and
