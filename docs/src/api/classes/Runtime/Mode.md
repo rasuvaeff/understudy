@@ -9,7 +9,7 @@ description: "How an understudy answers a call no expectation matched."
 
 `Rasuvaeff\Understudy\Runtime\Mode`
 
-**Enum** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Runtime/Mode.php#L12) — **Version:** v0.4.1
+**Enum** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Runtime/Mode.php#L12) — **Version:** v0.5.0
 
 **Implements:** `UnitEnum`
 

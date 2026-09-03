@@ -787,6 +787,14 @@ one the test meant to write. When nothing at all is configured for the method,
 there is nothing to compare against and the message stays the single line naming
 it.
 
+A message is written for a reader, and its wording is not part of the package's
+public contract: a patch release may reword one. Anything that acts on a
+failure rather than printing it — a runner adapter, an IDE plugin, a report
+aggregator — reads `VerificationFailed::failures()` instead, whose
+`FailureKind` cases and `VerificationFailure` readonly fields are frozen API
+from v0.1.0. A test asserting on the exact text of a message is asserting on
+prose.
+
 ### Cleaning up
 
 ```php

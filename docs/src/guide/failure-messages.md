@@ -85,3 +85,9 @@ stays the single line naming it.
 An adapter or a reporter should not parse these strings.
 `VerificationFailed::failures()` returns the same information structured; see
 `examples/structured-failures.php` in the repository.
+
+The wording of a message is not part of the public contract — a patch release
+may reword one. What is frozen from v0.1.0 are the `FailureKind` cases and the
+readonly fields of `VerificationFailure`, which is why anything acting on a
+failure reads those instead. A test asserting on the exact text of a message is
+asserting on prose.

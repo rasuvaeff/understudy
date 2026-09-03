@@ -9,7 +9,7 @@ description: "A forwarded call returned an object the double cannot stand in for
 
 `Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OriginalReturnTypeViolation.php#L12) — **Version:** v0.4.1
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OriginalReturnTypeViolation.php#L12) — **Version:** v0.5.0
 
 **Extends:** `RuntimeException`
 
