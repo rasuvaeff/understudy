@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — 2026-09-03
+
+A minor rather than a patch: a closing `scope()` verifies less than it did, and
+two `Arg::` factories now refuse a configuration they used to accept. Both are
+behaviour toward the consumer's own test code, which Composer's caret already
+treats as breaking on 0.x.
 
 - **`bin/consumer-smoke` now carries the analyser parity matrix**: eleven
   idioms — our `Arg` unqualified, aliased and fully qualified, the static verb
@@ -41,6 +46,10 @@
   stated in the docblocks and pinned by tests.
 - The mutation gate quoted in `README.md`, `README.ru.md` and `AGENTS.md` says
   92, which is what `infection.json5` has required since #76.
+- Both READMEs and the failure-messages guide say what was only in the 0.1.0
+  changelog: the wording of a failure message is not public contract, and
+  anything acting on a failure reads `FailureKind` and the readonly fields of
+  `VerificationFailure`, which are frozen.
 
 ## 0.4.1 — 2026-08-30
 

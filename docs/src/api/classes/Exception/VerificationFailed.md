@@ -9,7 +9,7 @@ description: "A verification about what the code under test did (or did not) do 
 
 `Rasuvaeff\Understudy\Exception\VerificationFailed`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/VerificationFailed.php#L20) — **Version:** v0.4.1
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/VerificationFailed.php#L20) — **Version:** v0.5.0
 
 **Extends:** `RuntimeException`
 

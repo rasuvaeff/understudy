@@ -240,7 +240,7 @@ final class VerificationFailureTest
 
         try {
             Understudy::verifyAll(strictStubs: true);
-            Assert::true(false);
+            Assert::true(actual: false);
         } catch (VerificationFailed $failed) {
             $failure = $failed->failures()[0];
 
@@ -264,7 +264,7 @@ final class VerificationFailureTest
 
         try {
             Understudy::unused($repository);
-            Assert::true(false);
+            Assert::true(actual: false);
         } catch (VerificationFailed $failed) {
             $failure = $failed->failures()[0];
 
@@ -286,7 +286,7 @@ final class VerificationFailureTest
 
         try {
             verify(fn() => $repository->count(), times: 5);
-            Assert::true(false);
+            Assert::true(actual: false);
         } catch (VerificationFailed $failed) {
             $observed = $failed->failures()[0]->observedCalls;
 
@@ -308,7 +308,7 @@ final class VerificationFailureTest
 
         try {
             Understudy::allVerified($repository);
-            Assert::true(false);
+            Assert::true(actual: false);
         } catch (VerificationFailed $failed) {
             Assert::same(count($failed->failures()), 2);
         }
@@ -328,7 +328,7 @@ final class VerificationFailureTest
                 fn() => $repository->count(),
                 fn() => $repository->titles(),
             );
-            Assert::true(false);
+            Assert::true(actual: false);
         } catch (VerificationFailed $failed) {
             Assert::same($failed->failures()[0]->expectedCalls, ['count()', 'titles()']);
         }

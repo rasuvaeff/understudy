@@ -1169,9 +1169,9 @@ final class LedgerTest
         foreach ([$first, $second] as $double) {
             try {
                 $double->count();
-                Assert::true(false);
+                Assert::true(actual: false);
             } catch (ForgottenDouble) {
-                Assert::true(true);
+                Assert::true(actual: true);
             }
         }
     }

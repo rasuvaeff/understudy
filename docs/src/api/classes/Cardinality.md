@@ -9,7 +9,7 @@ description: "How many times a call is allowed to happen."
 
 `Rasuvaeff\Understudy\Cardinality`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Cardinality.php#L13) — **Version:** v0.4.1
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Cardinality.php#L13) — **Version:** v0.5.0
 
 How many times a call is allowed to happen. `null` as the maximum means no
 upper bound.
