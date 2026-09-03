@@ -527,11 +527,13 @@ PHP
 # where two copies would drift and neither would be wrong on its own.
 #
 # Each file carries exactly one idiom and is named for it, so an analyser's
-# output can be judged by file name alone. `Foreign*` are the two that matter
-# most: somebody else's class named `Arg`, which an answer read off the source
-# text gets wrong in both directions.
+# output can be judged by file name alone. `Foreign*` are the three that matter
+# most: somebody else's class named `Arg` and somebody else's `capture()`.
+# Both are shapes an analyser can only get right by resolving the class, and
+# both were got wrong by reading the source text instead — in Psalm, in two
+# separate places, each found only because the other analyser disagreed.
 PARITY_SILENT='OwnUnqualified OwnAliased OwnQualified StaticVerb RestShort CaptorSpec'
-PARITY_REPORTED='ForeignUnqualified ForeignAliased RealCall RestLeak CaptorLeak'
+PARITY_REPORTED='ForeignUnqualified ForeignAliased ForeignCapture RealCall RestLeak CaptorLeak'
 
 # Writes the matrix into a leg's `src/`, beside whatever that leg already has.
 parity_fixtures() { # dir
@@ -726,6 +728,51 @@ final class ForeignUnqualified
         $gate = Understudy::for(Gate::class);
 
         when(fn(): bool => $gate->open(Arg::int()));
+    }
+}
+PHP
+
+    cat > "$src/Other/Recorder.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer\Other;
+
+/**
+ * Somebody else's object with a zero-argument `capture()`. It is not a captor,
+ * and an analyser that reads the method name instead of resolving the class
+ * takes it for one.
+ */
+final class Recorder
+{
+    public function capture(): mixed
+    {
+        return 0;
+    }
+}
+PHP
+
+    cat > "$src/ForeignCapture.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Consumer\Other\Recorder;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class ForeignCapture
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+        $recorder = new Recorder();
+
+        when(fn(): bool => $gate->open($recorder->capture()));
     }
 }
 PHP
