@@ -309,6 +309,12 @@ The type matchers are deliberately strict: `Arg::int()` rejects `'5'`, and
 `Arg::float()` rejects `1`. A matcher pins the declared type as much as the
 value, which is the point in a codebase that runs with `strict_types`.
 
+A matcher that could never match anything is refused where it is written, not
+left to fail an expectation in teardown: `Arg::int(min: 5, max: 1)` and its
+`float`/`count` siblings describe an empty range, and `Arg::string('/[unclosed')`
+is not a pattern PCRE compiles — the latter would also raise a warning inside
+the code under test on every call.
+
 `Arg::which()` calls only a public, non-static method that needs no arguments.
 A getter that throws counts as a mismatch, never as an error — matching runs
 while the code under test is executing, and a matcher must not be the thing
@@ -849,7 +855,7 @@ make build          # validate, normalize, require-checker, cs, psalm, test
 make cs-fix
 make psalm
 make test
-make mutation       # infection, gate at 85% MSI
+make mutation       # infection, gate at 92% MSI
 make release-check
 
 make perf-install   # once: the comparative benchmark harness in perf/

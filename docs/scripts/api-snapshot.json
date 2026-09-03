@@ -93,7 +93,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 72
+                    "startLine": 74
                 },
                 {
                     "name": "string",
@@ -116,7 +116,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 82
+                    "startLine": 86
                 },
                 {
                     "name": "bool",
@@ -131,7 +131,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 87
+                    "startLine": 95
                 },
                 {
                     "name": "same",
@@ -154,7 +154,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 95
+                    "startLine": 103
                 },
                 {
                     "name": "not",
@@ -177,7 +177,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 103
+                    "startLine": 111
                 },
                 {
                     "name": "allOf",
@@ -200,7 +200,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 114
+                    "startLine": 122
                 },
                 {
                     "name": "anyOf",
@@ -223,7 +223,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 125
+                    "startLine": 133
                 },
                 {
                     "name": "instanceOf",
@@ -246,7 +246,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 133
+                    "startLine": 141
                 },
                 {
                     "name": "captor",
@@ -269,7 +269,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 165
+                    "startLine": 173
                 },
                 {
                     "name": "satisfies",
@@ -292,14 +292,14 @@
                     ],
                     "returnType": "mixed",
                     "summary": "Matches whatever the predicate accepts.",
-                    "description": "",
+                    "description": "A predicate that throws is not caught, and that is the decision rather\nthan an omission. `Arg::which()` swallows a throwing getter because the\ngetter belongs to the argument — foreign code, reached while the subject\nis running, where \"it threw\" can only mean \"not this one\". A predicate\nis the test's own code: an exception in it is a broken test, and turning\nthat into a quiet mismatch would report the symptom (an expectation\nnever met) instead of the cause.",
                     "throws": [],
                     "throwsInBody": false,
                     "inheritedFrom": null,
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 176
+                    "startLine": 192
                 },
                 {
                     "name": "containing",
@@ -322,7 +322,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 187
+                    "startLine": 203
                 },
                 {
                     "name": "count",
@@ -352,7 +352,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 198
+                    "startLine": 214
                 },
                 {
                     "name": "which",
@@ -382,7 +382,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 208
+                    "startLine": 226
                 },
                 {
                     "name": "none",
@@ -397,7 +397,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 246
+                    "startLine": 330
                 },
                 {
                     "name": "remaining",
@@ -412,7 +412,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 255
+                    "startLine": 339
                 },
                 {
                     "name": "rest",
@@ -427,7 +427,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 276
+                    "startLine": 360
                 }
             ],
             "constants": [],
@@ -3195,7 +3195,7 @@
             "isApi": true,
             "isAbstract": false,
             "isThrowable": true,
-            "summary": "The closure handed to when()/verify()/calls() did not describe one call the\nway a specification must: no direct call on an understudy, more than one, or\narguments that cannot form a valid specification.",
+            "summary": "The closure handed to when()/verify()/calls() did not describe one call the\nway a specification must: no direct call on an understudy, more than one, or\narguments that cannot form a valid specification — which includes a matcher\nconfigured so that it could never match anything.",
             "description": "",
             "deprecated": null,
             "see": [],
@@ -3223,7 +3223,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 16
+                    "startLine": 17
                 },
                 {
                     "name": "notADouble",
@@ -3238,7 +3238,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 25
+                    "startLine": 26
                 },
                 {
                     "name": "misplacedTailMatcher",
@@ -3275,7 +3275,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 37
+                    "startLine": 38
                 },
                 {
                     "name": "emptyCombinator",
@@ -3298,7 +3298,74 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 52
+                    "startLine": 53
+                },
+                {
+                    "name": "invertedBounds",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "matcher",
+                            "type": "non-empty-string",
+                            "description": "the factory that was called, without `Arg::`",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "minimum",
+                            "type": "int|float",
+                            "description": "the lower bound as it was given",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "maximum",
+                            "type": "int|float",
+                            "description": "the upper bound as it was given",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "Rasuvaeff\\Understudy\\Exception\\InvalidCallSpecification",
+                    "summary": "A range matcher whose maximum sits below its minimum, so it describes an\nempty range and could never match.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 71
+                },
+                {
+                    "name": "invalidPattern",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "pattern",
+                            "type": "non-empty-string",
+                            "description": "the pattern as it was written",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "reason",
+                            "type": "non-empty-string|null",
+                            "description": "what PCRE said, when it said anything",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "Rasuvaeff\\Understudy\\Exception\\InvalidCallSpecification",
+                    "summary": "A pattern handed to `Arg::string()` that PCRE cannot compile.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 89
                 },
                 {
                     "name": "tailMatcherInCombinator",
@@ -3328,7 +3395,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 66
+                    "startLine": 104
                 },
                 {
                     "name": "emptySequence",
@@ -3343,7 +3410,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 77
+                    "startLine": 115
                 },
                 {
                     "name": "protocolAlreadyArmed",
@@ -3373,7 +3440,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 89
+                    "startLine": 127
                 },
                 {
                     "name": "incompleteSpecification",
@@ -3410,7 +3477,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 105
+                    "startLine": 143
                 },
                 {
                     "name": "omittedBeforeSpecified",
@@ -3447,7 +3514,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 121
+                    "startLine": 159
                 },
                 {
                     "name": "omittedTailNeedsRest",
@@ -3477,7 +3544,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 136
+                    "startLine": 174
                 },
                 {
                     "name": "closureFailed",
@@ -3500,7 +3567,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 147
+                    "startLine": 185
                 },
                 {
                     "name": "staticMethodCalled",
@@ -3523,12 +3590,12 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 159
+                    "startLine": 197
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L14",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L15",
             "implementedBy": []
         },
         {
@@ -13262,7 +13329,7 @@
                     "summary": "Checks every expectation of the current context: the ones `expect()`\ndeclared, and the stubs that opted in through `times()`.",
                     "description": "With `strictStubs`, a stub that was never called fails too — the\nMockito reading of \"why did you configure it, then?\".",
                     "throws": [],
-                    "throwsInBody": false,
+                    "throwsInBody": true,
                     "inheritedFrom": null,
                     "see": [],
                     "deprecated": null,
@@ -13318,7 +13385,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 418
+                    "startLine": 397
                 },
                 {
                     "name": "calls",
@@ -13341,7 +13408,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 504
+                    "startLine": 483
                 },
                 {
                     "name": "lastCall",
@@ -13364,7 +13431,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 526
+                    "startLine": 505
                 },
                 {
                     "name": "strict",
@@ -13387,7 +13454,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 544
+                    "startLine": 523
                 },
                 {
                     "name": "lean",
@@ -13410,7 +13477,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 567
+                    "startLine": 546
                 },
                 {
                     "name": "forwarding",
@@ -13440,7 +13507,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 585
+                    "startLine": 564
                 },
                 {
                     "name": "delegate",
@@ -13470,7 +13537,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 636
+                    "startLine": 615
                 },
                 {
                     "name": "wire",
@@ -13500,7 +13567,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 668
+                    "startLine": 647
                 },
                 {
                     "name": "bypassFinals",
@@ -13528,7 +13595,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 705
+                    "startLine": 684
                 },
                 {
                     "name": "defaults",
@@ -13558,7 +13625,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 790
+                    "startLine": 769
                 },
                 {
                     "name": "label",
@@ -13588,7 +13655,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 801
+                    "startLine": 780
                 },
                 {
                     "name": "unused",
@@ -13611,7 +13678,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 809
+                    "startLine": 788
                 },
                 {
                     "name": "forget",
@@ -13634,7 +13701,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 849
+                    "startLine": 828
                 },
                 {
                     "name": "nothingElse",
@@ -13664,7 +13731,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 870
+                    "startLine": 849
                 },
                 {
                     "name": "allVerified",
@@ -13687,7 +13754,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 913
+                    "startLine": 892
                 },
                 {
                     "name": "expectSequence",
@@ -13710,7 +13777,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 998
+                    "startLine": 977
                 },
                 {
                     "name": "verifySequence",
@@ -13726,14 +13793,14 @@
                     ],
                     "returnType": "void",
                     "summary": "Asserts that these calls are exactly what happened in this context, in\nthis order, across every understudy — no more, no fewer.",
-                    "description": "",
+                    "description": "Called with nothing, it asserts that nothing happened, and that is not\nthe oversight it resembles: `expectSequence()` refuses an empty protocol\nbecause arming one would put every later call on trial with no step to\ntry it against, while this one reads the log that already exists, and\n\"the log is empty\" is a real question with a real answer. A call that\ndid happen is reported the same way any extra call is.",
                     "throws": [],
                     "throwsInBody": true,
                     "inheritedFrom": null,
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1031
+                    "startLine": 1017
                 },
                 {
                     "name": "transcript",
@@ -13756,7 +13823,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1057
+                    "startLine": 1043
                 },
                 {
                     "name": "scope",
@@ -13779,14 +13846,14 @@
                     ],
                     "returnType": "mixed",
                     "summary": "Runs a callback in a nested context of its own.",
-                    "description": "On success the callback's expectations are verified; the context is then\ndropped either way. A failure inside the callback is never replaced by a\nteardown error — the original is what the reader needs.\n\nVerified is the context this call opened, and only it: the enclosing\ncontext is still running and its claims are none of a nested scope's\nbusiness. A scope is a local lifetime — the caller reaches for it to end\na few doubles early, often while its own expectations are deliberately\nunfinished — so answering for the whole test here would fail a\nself-contained scope for something the test has not got to yet. The\ntest as a whole is answered for by `verifyAll()`, `checkpoint()` and the\nrunner adapter's teardown, which are the calls that mean the test is\nover. A Fiber started inside the callback keeps a context of its own\nthat outlives the scope, so it stays for those to check.",
+                    "description": "On success the callback's expectations are verified; the context is then\ndropped either way. A failure inside the callback is never replaced by a\nteardown error — the original is what the reader needs.",
                     "throws": [],
                     "throwsInBody": false,
                     "inheritedFrom": null,
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1193
+                    "startLine": 1168
                 },
                 {
                     "name": "checkpoint",
@@ -13809,7 +13876,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1221
+                    "startLine": 1196
                 },
                 {
                     "name": "reset",
@@ -13824,7 +13891,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1248
+                    "startLine": 1223
                 },
                 {
                     "name": "idle",
@@ -13839,7 +13906,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1260
+                    "startLine": 1235
                 }
             ],
             "constants": [],

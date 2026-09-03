@@ -32,6 +32,7 @@ if ($hasWorkspace) {
 }
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Understudy;
@@ -343,6 +344,35 @@ claim('lifecycle/index', 'a scope closes clean over an unsatisfied outer claim',
     }
 
     return 'the outer claim was settled rather than left standing';
+});
+
+claim('stubbing/matchers', 'an inverted range is refused where it is written', function (): bool|string {
+    try {
+        Arg::int(min: 5, max: 1);
+    } catch (InvalidCallSpecification) {
+        return true;
+    }
+
+    return 'Arg::int(min: 5, max: 1) was accepted';
+});
+
+claim('stubbing/matchers', 'a pattern PCRE cannot compile is refused, quietly', function (): bool|string {
+    $raised = [];
+    set_error_handler(static function (int $severity, string $message) use (&$raised): bool {
+        $raised[] = $message;
+
+        return true;
+    });
+
+    try {
+        Arg::string('/[unclosed');
+
+        return 'Arg::string(\'/[unclosed\') was accepted';
+    } catch (InvalidCallSpecification) {
+        return $raised === [] ?: 'the refusal raised the warning it exists to prevent';
+    } finally {
+        restore_error_handler();
+    }
 });
 
 claim('lifecycle/retention', 'lean(): returned() raises OutcomeUnavailable', function (): bool|string {

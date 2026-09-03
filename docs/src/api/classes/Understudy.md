@@ -356,6 +356,13 @@ static verifySequence(callable $calls): void
 Asserts that these calls are exactly what happened in this context, in
 this order, across every understudy — no more, no fewer.
 
+Called with nothing, it asserts that nothing happened, and that is not
+the oversight it resembles: `expectSequence()` refuses an empty protocol
+because arming one would put every later call on trial with no step to
+try it against, while this one reads the log that already exists, and
+"the log is empty" is a real question with a real answer. A call that
+did happen is reported the same way any extra call is.
+
 ### transcript()
 
 ```php

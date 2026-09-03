@@ -12,6 +12,23 @@
   `verifyAll()`, `checkpoint()` and the runner adapter's teardown still report
   the enclosing claims. A test that relied on a scope surfacing an outer
   failure earlier will now see it at the end of the test instead. (#84)
+- **A matcher that could never match is refused where it is written.**
+  `Arg::int(min: 5, max: 1)` — and the same shape in `Arg::float()` and
+  `Arg::count()` — describes an empty range, and `Arg::string('/[unclosed')` is
+  not a pattern PCRE compiles. Both built a matcher that answered "no" to every
+  argument, so a typo surfaced as an expectation never met with nothing
+  pointing at its cause; the broken pattern also raised PHP's own warning on
+  every call from inside the code under test, which is the one thing a matcher
+  must not do. Both now raise `InvalidCallSpecification`, and the pattern's
+  message carries PCRE's own reason. (#86)
+- **Two decisions written down rather than changed.** A predicate handed to
+  `Arg::satisfies()` is the test's own code, so an exception in it travels
+  instead of being read as a mismatch — unlike `Arg::which()`, which reaches
+  into the argument. And `verifySequence()` with no calls asserts that nothing
+  happened, where `expectSequence()` refuses an empty protocol; both are now
+  stated in the docblocks and pinned by tests.
+- The mutation gate quoted in `README.md`, `README.ru.md` and `AGENTS.md` says
+  92, which is what `infection.json5` has required since #76.
 
 ## 0.4.1 — 2026-08-30
 

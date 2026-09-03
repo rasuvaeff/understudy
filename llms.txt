@@ -195,8 +195,11 @@ after it. Arguments match by `===`, or by matcher.
 Every `Arg::*` returns `mixed`, so passing one where the contract says `int`
 is not a type error in an IDE. `which()` calls only a public, non-static
 method needing no arguments; anything else, including a getter that throws, is
-a mismatch rather than an error. A matcher that reaches a real call raises
-`MatcherLeaked`.
+a mismatch rather than an error — but a predicate handed to `satisfies()` is
+the test's own code, so an exception in it travels. A matcher that could never
+match is refused at construction with `InvalidCallSpecification`: an inverted
+range (`int`/`float`/`count`) and a pattern PCRE cannot compile. A matcher that
+reaches a real call raises `MatcherLeaked`.
 
 `Arg::captor(?class-string $class = null): Captor` builds a typed argument
 captor — the replacement for reading `args[N]` out of the call log:

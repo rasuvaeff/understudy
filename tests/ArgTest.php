@@ -353,6 +353,195 @@ final class ArgTest
         Assert::false($matcher->matches($target));
     }
 
+    /**
+     * A range whose maximum sits below its minimum matches nothing at all, so
+     * an `expect()` holding one could never be met and the mistake surfaces in
+     * teardown with nothing pointing at its cause. Refused where it is
+     * written, like an empty combinator.
+     *
+     * @param callable(): mixed $build
+     */
+    #[DataProvider('invertedBoundsProvider')]
+    public function anInvertedRangeIsRefusedWhereItIsWritten(callable $build, string $message): void
+    {
+        Expect::exception(InvalidCallSpecification::class)->withMessage($message);
+
+        $build();
+    }
+
+    public static function invertedBoundsProvider(): iterable
+    {
+        yield 'int' => [
+            static fn(): mixed => Arg::int(min: 5, max: 1),
+            "`Arg::int()` was given a minimum of 5 and a maximum of 1, so it describes an empty "
+            . "range and would match no argument at all.\n"
+            . 'Order the bounds the other way, or leave one of them out to keep that side open.',
+        ];
+
+        yield 'float' => [
+            static fn(): mixed => Arg::float(min: 1.5, max: 0.5),
+            "`Arg::float()` was given a minimum of 1.5 and a maximum of 0.5, so it describes an "
+            . "empty range and would match no argument at all.\n"
+            . 'Order the bounds the other way, or leave one of them out to keep that side open.',
+        ];
+
+        yield 'count' => [
+            static fn(): mixed => Arg::count(minimum: 3, maximum: 1),
+            "`Arg::count()` was given a minimum of 3 and a maximum of 1, so it describes an empty "
+            . "range and would match no argument at all.\n"
+            . 'Order the bounds the other way, or leave one of them out to keep that side open.',
+        ];
+    }
+
+    /**
+     * The bounds that are legitimate stay legitimate: equal ones pin one
+     * value, and either side may be left open.
+     *
+     * @param callable(): mixed $build
+     */
+    #[DataProvider('acceptedBoundsProvider')]
+    public function boundsThatDescribeARealRangeAreAccepted(callable $build, mixed $argument): void
+    {
+        $matcher = $build();
+        \assert($matcher instanceof ArgumentMatcher);
+
+        Assert::true($matcher->matches($argument));
+    }
+
+    public static function acceptedBoundsProvider(): iterable
+    {
+        yield 'int, equal bounds' => [static fn(): mixed => Arg::int(min: 5, max: 5), 5];
+        yield 'int, open above' => [static fn(): mixed => Arg::int(min: 5), 6];
+        yield 'int, open below' => [static fn(): mixed => Arg::int(max: 5), 4];
+        yield 'float, equal bounds' => [static fn(): mixed => Arg::float(min: 1.5, max: 1.5), 1.5];
+        yield 'count, equal bounds' => [static fn(): mixed => Arg::count(minimum: 2, maximum: 2), [1, 2]];
+    }
+
+    /**
+     * A pattern that does not compile answers `false` to every string — which
+     * reads as "the argument was wrong" — and raises PHP's own warning on
+     * every call from inside the code under test. Both are refused at the
+     * matcher's construction, and PCRE's reason is carried into the message
+     * because the delimiter or the escaping is what has to be fixed.
+     */
+    public function anInvalidPatternIsRefusedWithPcresOwnReason(): void
+    {
+        $caught = null;
+
+        try {
+            Arg::string('/[unclosed/');
+        } catch (InvalidCallSpecification $refusal) {
+            $caught = $refusal;
+        }
+
+        \assert($caught instanceof InvalidCallSpecification);
+        Assert::string($caught->getMessage())
+            ->contains('`Arg::string()` was given `/[unclosed/`, which is not a valid PCRE pattern')
+            ->contains('missing terminating ] for character class')
+            ->notContains('preg_match():');
+    }
+
+    /**
+     * The probe must not raise the warning it exists to prevent — the whole
+     * point is that nothing reaches the error channel because a matcher was
+     * built. Read through `error_get_last()` rather than a handler of the
+     * test's own: handlers do not chain, so an inner one that declined the
+     * error would be invisible to an outer one while PHP reported it anyway.
+     */
+    public function refusingAPatternRaisesNoWarningOfItsOwn(): void
+    {
+        error_clear_last();
+
+        try {
+            Arg::string('/[unclosed/');
+        } catch (InvalidCallSpecification) {
+            // The refusal is the subject of the test above; here only the
+            // error channel is on trial.
+        }
+
+        Assert::null(error_get_last());
+    }
+
+    /**
+     * And it must hand the error channel back. A probe that installed a
+     * handler and kept it would silence the rest of the test run — every
+     * warning the code under test raises from that point on.
+     */
+    public function refusingAPatternRestoresTheErrorHandler(): void
+    {
+        $sentinel = static fn(int $severity, string $message): bool => true;
+        set_error_handler($sentinel);
+
+        try {
+            Arg::string('/[unclosed/');
+        } catch (InvalidCallSpecification) {
+            // Same as above: the refusal itself is tested elsewhere.
+        }
+
+        // set_error_handler() answers with the handler that was active, which
+        // is the sentinel only if the probe popped its own.
+        $active = set_error_handler(static fn(int $severity, string $message): bool => true);
+        restore_error_handler();
+        restore_error_handler();
+
+        Assert::same($active, $sentinel);
+    }
+
+    /**
+     * The message is asserted whole here, on a reason of the test's own
+     * choosing: PCRE words its complaints differently between library
+     * versions, so pinning the sentence through a real compile failure would
+     * pin the PCRE build as well.
+     */
+    #[DataProvider('invalidPatternMessageProvider')]
+    public function theRefusalSpellsOutWhatWasGiven(?string $reason, string $expected): void
+    {
+        Assert::same(InvalidCallSpecification::invalidPattern('/[unclosed/', $reason)->getMessage(), $expected);
+    }
+
+    public static function invalidPatternMessageProvider(): iterable
+    {
+        yield 'with a reason' => [
+            'missing terminating ] for character class',
+            "`Arg::string()` was given `/[unclosed/`, which is not a valid PCRE pattern: "
+            . "missing terminating ] for character class.\n"
+            . 'It would match no string and would raise a warning inside the code under test on '
+            . 'every call. Check the delimiters and the escaping.',
+        ];
+
+        yield 'with none' => [
+            null,
+            "`Arg::string()` was given `/[unclosed/`, which is not a valid PCRE pattern.\n"
+            . 'It would match no string and would raise a warning inside the code under test on '
+            . 'every call. Check the delimiters and the escaping.',
+        ];
+    }
+
+    public function aPatternThatCompilesIsAccepted(): void
+    {
+        $matcher = Arg::string('/^ord-/');
+        \assert($matcher instanceof ArgumentMatcher);
+
+        Assert::true($matcher->matches('ord-1'));
+        Assert::false($matcher->matches('inv-1'));
+    }
+
+    /**
+     * `Arg::which()` swallows a throwing getter because the getter belongs to
+     * the argument. A predicate belongs to the test, so its exception travels:
+     * a broken predicate reported as "no match" would surface as an
+     * expectation never met, pointing at the subject instead of at itself.
+     */
+    public function aThrowingPredicateIsNotSwallowed(): void
+    {
+        $matcher = Arg::satisfies(static fn(mixed $value): bool => throw new \DomainException('predicate is broken'));
+        \assert($matcher instanceof ArgumentMatcher);
+
+        Expect::exception(\DomainException::class)->withMessage('predicate is broken');
+
+        $matcher->matches('anything');
+    }
+
     public function countAcceptsACountableObject(): void
     {
         $countable = new \ArrayObject([1, 2]);

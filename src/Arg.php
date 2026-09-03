@@ -63,6 +63,8 @@ final class Arg
      */
     public static function int(?int $min = null, ?int $max = null): mixed
     {
+        self::bounds('int', $min, $max);
+
         return new IntInRange($min, $max);
     }
 
@@ -71,6 +73,8 @@ final class Arg
      */
     public static function float(?float $min = null, ?float $max = null): mixed
     {
+        self::bounds('float', $min, $max);
+
         return new FloatInRange($min, $max);
     }
 
@@ -81,6 +85,10 @@ final class Arg
      */
     public static function string(?string $matches = null): mixed
     {
+        if ($matches !== null) {
+            self::pattern($matches);
+        }
+
         return new StringMatching($matches);
     }
 
@@ -170,6 +178,14 @@ final class Arg
     /**
      * Matches whatever the predicate accepts.
      *
+     * A predicate that throws is not caught, and that is the decision rather
+     * than an omission. `Arg::which()` swallows a throwing getter because the
+     * getter belongs to the argument — foreign code, reached while the subject
+     * is running, where "it threw" can only mean "not this one". A predicate
+     * is the test's own code: an exception in it is a broken test, and turning
+     * that into a quiet mismatch would report the symptom (an expectation
+     * never met) instead of the cause.
+     *
      * @param callable(mixed): bool $predicate
      * @param non-empty-string      $description shown in failure messages
      */
@@ -197,6 +213,8 @@ final class Arg
      */
     public static function count(?int $minimum = null, ?int $maximum = null): mixed
     {
+        self::bounds('count', $minimum, $maximum);
+
         return new CountBetween($minimum, $maximum);
     }
 
@@ -208,6 +226,72 @@ final class Arg
     public static function which(string $method, mixed $value): mixed
     {
         return new QueryEquals($method, $value);
+    }
+
+    /**
+     * A range refused rather than silently weakened: a maximum below the
+     * minimum describes an empty range, so the matcher would answer `false`
+     * to every argument and an `expect()` holding it could never be met. The
+     * same rule `Cardinality::between()` follows.
+     */
+    /**
+     * @param non-empty-string $matcher
+     */
+    private static function bounds(string $matcher, int|float|null $minimum, int|float|null $maximum): void
+    {
+        if ($minimum !== null && $maximum !== null && $maximum < $minimum) {
+            throw InvalidCallSpecification::invertedBounds($matcher, $minimum, $maximum);
+        }
+    }
+
+    /**
+     * A PCRE pattern compiled once, here, rather than on every call from
+     * inside the code under test — where a broken one raises PHP's own
+     * warning and answers `false` to every argument, which reads as "the
+     * argument was wrong" and is the one thing a matcher must never do.
+     *
+     * The compile runs under an error handler of our own so that the probe
+     * does not raise the very warning it exists to prevent, and so that
+     * PCRE's reason reaches the message instead of being thrown away. Nothing
+     * between the two handler calls can throw — `preg_match()` reports a bad
+     * pattern through the error channel our handler is holding — so there is
+     * no `finally` to unwind.
+     */
+    /**
+     * @param non-empty-string $pattern
+     */
+    private static function pattern(string $pattern): void
+    {
+        $reason = null;
+
+        set_error_handler(static function (int $severity, string $message) use (&$reason): bool {
+            $reason = $message;
+
+            return true;
+        });
+
+        $compiled = preg_match($pattern, '') !== false;
+        restore_error_handler();
+
+        if (!$compiled) {
+            throw InvalidCallSpecification::invalidPattern($pattern, self::reason($reason));
+        }
+    }
+
+    /**
+     * PCRE's own complaint, without the function name PHP prefixes it with.
+     *
+     * @return non-empty-string|null
+     */
+    private static function reason(?string $message): ?string
+    {
+        if ($message === null) {
+            return null;
+        }
+
+        $stripped = preg_replace('/^preg_match\(\):\s*/', '', $message) ?? $message;
+
+        return $stripped === '' ? null : $stripped;
     }
 
     /**

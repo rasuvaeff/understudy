@@ -9,7 +9,7 @@ description: "The closure handed to when()/verify()/calls() did not describe one
 
 `Rasuvaeff\Understudy\Exception\InvalidCallSpecification`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L14) — **Version:** v0.4.1
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L15) — **Version:** v0.4.1
 
 **Extends:** `LogicException`
 
@@ -17,7 +17,8 @@ description: "The closure handed to when()/verify()/calls() did not describe one
 
 The closure handed to when()/verify()/calls() did not describe one call the
 way a specification must: no direct call on an understudy, more than one, or
-arguments that cannot form a valid specification.
+arguments that cannot form a valid specification — which includes a matcher
+configured so that it could never match anything.
 
 ## Methods
 
@@ -48,6 +49,37 @@ static misplacedTailMatcher(
 ```php
 static emptyCombinator(non-empty-string $matcher): Exception\InvalidCallSpecification
 ```
+
+### invertedBounds()
+
+```php
+static invertedBounds(
+    non-empty-string $matcher,
+    int|float $minimum,
+    int|float $maximum,
+): Exception\InvalidCallSpecification
+```
+
+A range matcher whose maximum sits below its minimum, so it describes an
+empty range and could never match.
+
+- `$matcher` — the factory that was called, without `Arg::`
+- `$minimum` — the lower bound as it was given
+- `$maximum` — the upper bound as it was given
+
+### invalidPattern()
+
+```php
+static invalidPattern(
+    non-empty-string $pattern,
+    non-empty-string|null $reason,
+): Exception\InvalidCallSpecification
+```
+
+A pattern handed to `Arg::string()` that PCRE cannot compile.
+
+- `$pattern` — the pattern as it was written
+- `$reason` — what PCRE said, when it said anything
 
 ### tailMatcherInCombinator()
 

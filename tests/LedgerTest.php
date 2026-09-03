@@ -744,6 +744,32 @@ final class LedgerTest
         Understudy::verifySequence(fn() => $repository->count());
     }
 
+    /**
+     * An empty `verifySequence()` asserts that nothing happened, where an
+     * empty `expectSequence()` is refused. The asymmetry is the difference
+     * between reading a log that exists and arming a protocol that would put
+     * every later call on trial with no step to try it against — pinned here
+     * so the two are not "made consistent" by accident.
+     */
+    #[ExpectNoAssertions]
+    public function anEmptyVerifySequenceAssertsThatNothingHappened(): void
+    {
+        Understudy::for(BookRepository::class);
+
+        Understudy::verifySequence();
+    }
+
+    public function anEmptyVerifySequenceFailsOnACallThatDidHappen(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        $repository->count();
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining('exactly 0 call(s)');
+
+        Understudy::verifySequence();
+    }
+
     #[ExpectNoAssertions]
     public function verifySequenceAccountsForTheWholeLog(): void
     {
