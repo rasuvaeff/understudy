@@ -195,11 +195,15 @@ seconds instead of the full run's minute — and the full run stays the gate.
   class')` matched the words "final classes" in a fixture's own docblock and
   turned three passing tests red for the wrong reason.
 
-- **The mutation gate is 90, and it does not move without a reason written
-  next to the number.** 85 -> 95 -> 94 -> 92 -> 93 -> 92 -> 90 is the whole
-  trajectory; the reasons for the older moves are in commit messages, which is
-  exactly why the rule exists — nobody reads a commit message while looking at
-  the number. `TargetUnifier` still carries most of the surviving mutants: it is
+- **The mutation gate is 92, and it does not move without a reason written
+  next to the number.** 85 -> 95 -> 94 -> 92 -> 93 -> 92 -> 90 -> 92 is the
+  whole trajectory; the reason for the last move is beside the number in
+  `infection.json5` (the escaped-mutant hunt of #76), and the reasons for the
+  older ones are in commit messages, which is exactly why the rule exists —
+  nobody reads a commit message while looking at the number. This file and
+  both READMEs quote the gate, and they went stale the moment the number moved
+  without them: quote it or leave it to `infection.json5`, never both silently.
+  `TargetUnifier` still carries most of the surviving mutants: it is
   reflection glue whose branches are combinations of what a signature can be,
   so honest `#[Covers]` attribution grows the denominator about as fast as new
   tests grow the numerator. Read the reasons before moving the number, and add

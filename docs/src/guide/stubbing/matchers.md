@@ -44,6 +44,19 @@ A matcher pins the declared type as much as the value, which is the point in a
 codebase running under `strict_types`. A matcher that quietly accepted the
 other type would hide exactly the bug the declaration exists to prevent.
 
+## A matcher that could never match is refused
+
+`Arg::int(min: 5, max: 1)` — and the same shape in `Arg::float()` and
+`Arg::count()` — describes an empty range, and `Arg::string('/[unclosed')` is
+not a pattern PCRE compiles. Both are typos, and both used to build a matcher
+that answered "no" to every argument, so the mistake surfaced as an
+expectation never met, with nothing pointing at its cause. They are refused
+with `InvalidCallSpecification` where they are written.
+
+The broken pattern had a second cost: `preg_match()` raises a warning on every
+call, from inside the code under test — which is the one thing a matcher must
+never do.
+
 ## `rest()` against `remaining()`
 
 They look similar and stand for different things:

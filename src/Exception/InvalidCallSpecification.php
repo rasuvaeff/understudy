@@ -7,7 +7,8 @@ namespace Rasuvaeff\Understudy\Exception;
 /**
  * The closure handed to when()/verify()/calls() did not describe one call the
  * way a specification must: no direct call on an understudy, more than one, or
- * arguments that cannot form a valid specification.
+ * arguments that cannot form a valid specification — which includes a matcher
+ * configured so that it could never match anything.
  *
  * @api
  */
@@ -56,6 +57,43 @@ final class InvalidCallSpecification extends \LogicException implements Understu
             . 'Pass what the argument has to satisfy, or use Arg::any() to accept anything.',
             $matcher,
             $matcher === 'allOf' ? 'every argument' : 'no argument at all',
+        ));
+    }
+
+    /**
+     * A range matcher whose maximum sits below its minimum, so it describes an
+     * empty range and could never match.
+     *
+     * @param non-empty-string $matcher the factory that was called, without `Arg::`
+     * @param int|float        $minimum the lower bound as it was given
+     * @param int|float        $maximum the upper bound as it was given
+     */
+    public static function invertedBounds(string $matcher, int|float $minimum, int|float $maximum): self
+    {
+        return new self(sprintf(
+            "`Arg::%s()` was given a minimum of %s and a maximum of %s, so it describes an empty "
+            . "range and would match no argument at all.\n"
+            . 'Order the bounds the other way, or leave one of them out to keep that side open.',
+            $matcher,
+            var_export($minimum, return: true),
+            var_export($maximum, return: true),
+        ));
+    }
+
+    /**
+     * A pattern handed to `Arg::string()` that PCRE cannot compile.
+     *
+     * @param non-empty-string      $pattern the pattern as it was written
+     * @param non-empty-string|null $reason  what PCRE said, when it said anything
+     */
+    public static function invalidPattern(string $pattern, ?string $reason): self
+    {
+        return new self(sprintf(
+            "`Arg::string()` was given `%s`, which is not a valid PCRE pattern%s\n"
+            . 'It would match no string and would raise a warning inside the code under test on '
+            . 'every call. Check the delimiters and the escaping.',
+            $pattern,
+            $reason === null ? '.' : ': ' . $reason . '.',
         ));
     }
 

@@ -155,6 +155,14 @@ Matches whatever the predicate accepts.
 
 - `$description` — shown in failure messages
 
+A predicate that throws is not caught, and that is the decision rather
+than an omission. `Arg::which()` swallows a throwing getter because the
+getter belongs to the argument — foreign code, reached while the subject
+is running, where "it threw" can only mean "not this one". A predicate
+is the test's own code: an exception in it is a broken test, and turning
+that into a quiet mismatch would report the symptom (an expectation
+never met) instead of the cause.
+
 ### containing()
 
 ```php

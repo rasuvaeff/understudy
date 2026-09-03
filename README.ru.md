@@ -306,6 +306,12 @@ when(fn () => $storage->recordOutcome('svc', Arg::rest()))
 `Arg::float()` отвергает `1`. Матчер закрепляет объявленный тип не меньше, чем
 значение, — ради этого он и нужен в коде со `strict_types`.
 
+Матчер, который не смог бы совпасть ни с чем, отвергается там, где написан, а
+не проваливает ожидание в teardown: `Arg::int(min: 5, max: 1)` и его собратья
+`float`/`count` описывают пустой диапазон, а `Arg::string('/[unclosed')` — не
+компилируемый PCRE-паттерн, который вдобавок поднимал бы warning внутри
+тестируемого кода на каждом вызове.
+
 `Arg::which()` вызывает только публичный нестатический метод без обязательных
 аргументов. Геттер, бросивший исключение, считается несовпадением, а не
 ошибкой: сопоставление идёт во время работы тестируемого кода, и матчер не
@@ -848,7 +854,7 @@ make build          # validate, normalize, require-checker, cs, psalm, test
 make cs-fix
 make psalm
 make test
-make mutation       # infection, гейт 85% MSI
+make mutation       # infection, гейт 92% MSI
 make release-check
 
 make perf-install   # один раз: сравнительный харнесс в perf/
