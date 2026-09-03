@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **`bin/consumer-smoke` now carries the analyser parity matrix**: eleven
+  idioms — our `Arg` unqualified, aliased and fully qualified, the static verb
+  form, `rest()` short and leaked, a captor capture in a specification and in a
+  real call, a namesake `Arg` under two spellings, and a plain leak — checked
+  against one table of expectations by both `understudy-psalm` and
+  `understudy-phpstan`. The two answer the same contract by opposite
+  mechanisms, and nothing compared them before; the analyser packages' own CI
+  runs these legs against their working tree. The phpunit leg gained the
+  composition hazard the adapter cannot defend against: a consumer class that
+  overrides `assertPostConditions()` without the documented alias loses
+  verification silently, and the README's recipe keeps it — both now executed
+  rather than described.
 - **A closing `scope()` no longer answers for the enclosing context.** It
   verified every live context of the test, so a self-contained nested scope
   failed on a claim the caller had simply not got round to satisfying yet —

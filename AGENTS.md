@@ -396,6 +396,26 @@ seconds instead of the full run's minute — and the full run stays the gate.
   it. CI runs the core leg on every PR that touches the distributed tree. The
   whole family from local checkouts at once — the run to make before a release —
   is `bin/understudy-consumer-smoke` in the workspace repository.
+- **The analyser parity matrix lives in `bin/consumer-smoke`, and nowhere
+  else.** `understudy-psalm` and `understudy-phpstan` answer the same public
+  contract by opposite mechanisms — one suppresses an issue after it is raised,
+  the other types the matcher as `never` so none is — and only a shared set of
+  inputs can say whether they agree. Put the fixtures in each analyser package
+  and there are two copies that drift, neither wrong on its own; put them here
+  and both packages already run them, because their own CI invokes
+  `core/bin/consumer-smoke --only=psalm|phpstan` against their working tree.
+  A new idiom the plugins have an opinion about is one fixture file plus one
+  word in `PARITY_SILENT` or `PARITY_REPORTED`, and a disagreement is a failing
+  smoke rather than a difference nobody compared. This CI does not run those
+  legs — the analyser packages' do.
+- **A composition the adapters cannot defend against is pinned by the smoke,
+  not by a warning.** A PHPUnit consumer that writes its own
+  `assertPostConditions()` silently wins over the trait's, and neither PHPUnit
+  nor the adapter can notice; the `#[Before]` guard does not catch it either,
+  because `#[After]` still resets. The phpunit leg runs both a bare override
+  (verification lost, test green) and the aliased recipe from the README
+  (verification kept). A documented remedy that nothing executes is a remedy
+  that rots.
 - Code: `declare(strict_types=1)`, `final readonly class` where nothing
   mutates, `#[\Override]`, explicit types, named arguments.
 - **`examples/` is a gate, not a showcase.** Every script checks itself through

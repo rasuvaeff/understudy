@@ -25,7 +25,14 @@
 #             loads nothing and reports nothing.
 #   phpunit — the trait under a real `vendor/bin/phpunit` run: an expectation
 #             the code never fulfilled has to reach the runner as a failure,
-#             and a satisfied one must not disturb a passing test.
+#             a satisfied one must not disturb a passing test, and the
+#             composition the adapter cannot defend against — a class writing
+#             its own `assertPostConditions()` — has to behave as documented.
+#
+# The two analyser legs also run one shared parity matrix: the same eleven
+# idioms, one table of expectations, two analysers that implement the contract
+# by opposite mechanisms. The table lives here rather than in either package,
+# because two copies of it would drift and neither would be wrong on its own.
 #
 # A local package is installed from `git archive HEAD`, not from its working
 # tree. That is the tree a consumer downloads: `export-ignore` applies, and a
@@ -510,6 +517,332 @@ PHP
 }
 
 # ── psalm plugin ────────────────────────────────────────────────────────────
+# ── the analyser parity matrix ──────────────────────────────────────────────
+#
+# One fixture set, two analysers, one table of expectations. Psalm and PHPStan
+# answer the same public contract by opposite mechanisms — Psalm suppresses an
+# issue after it is raised, PHPStan types the matcher as `never` so none is —
+# and nothing but a shared set of inputs can say whether they agree. The
+# expectations live here, in one place, rather than in each analyser package,
+# where two copies would drift and neither would be wrong on its own.
+#
+# Each file carries exactly one idiom and is named for it, so an analyser's
+# output can be judged by file name alone. `Foreign*` are the two that matter
+# most: somebody else's class named `Arg`, which an answer read off the source
+# text gets wrong in both directions.
+PARITY_SILENT='OwnUnqualified OwnAliased OwnQualified StaticVerb RestShort CaptorSpec'
+PARITY_REPORTED='ForeignUnqualified ForeignAliased RealCall RestLeak CaptorLeak'
+
+# Writes the matrix into a leg's `src/`, beside whatever that leg already has.
+parity_fixtures() { # dir
+    local src="$1/src"
+    mkdir -p "$src/Other"
+
+    cat > "$src/Ledger.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+interface Ledger
+{
+    public function record(string $service, int $code, bool $retried): bool;
+}
+PHP
+
+    cat > "$src/Other/Arg.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer\Other;
+
+/**
+ * Somebody else's class that happens to be named `Arg`. Nothing here is a
+ * matcher, and its `mixed` is a real problem in an `int` parameter.
+ */
+final class Arg
+{
+    public static function int(): mixed
+    {
+        return 0;
+    }
+}
+PHP
+
+    cat > "$src/OwnUnqualified.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class OwnUnqualified
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        when(fn(): bool => $gate->open(Arg::int(min: 1)));
+    }
+}
+PHP
+
+    cat > "$src/OwnAliased.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg as Matchers;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class OwnAliased
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        when(fn(): bool => $gate->open(Matchers::int(min: 1)));
+    }
+}
+PHP
+
+    cat > "$src/OwnQualified.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class OwnQualified
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        when(fn(): bool => $gate->open(\Rasuvaeff\Understudy\Arg::int(min: 1)));
+    }
+}
+PHP
+
+    cat > "$src/StaticVerb.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+final class StaticVerb
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        Understudy::expect(fn(): bool => $gate->open(Arg::int()));
+    }
+}
+PHP
+
+    cat > "$src/RestShort.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class RestShort
+{
+    public function setUp(): void
+    {
+        $ledger = Understudy::for(Ledger::class);
+
+        when(fn(): bool => $ledger->record('svc', Arg::rest()));
+    }
+}
+PHP
+
+    cat > "$src/CaptorSpec.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class CaptorSpec
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+        $code = Arg::captor();
+
+        when(fn(): bool => $gate->open($code->capture()));
+    }
+}
+PHP
+
+    cat > "$src/ForeignUnqualified.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Consumer\Other\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class ForeignUnqualified
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        when(fn(): bool => $gate->open(Arg::int()));
+    }
+}
+PHP
+
+    cat > "$src/ForeignAliased.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Consumer\Other\Arg as Matchers;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class ForeignAliased
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        when(fn(): bool => $gate->open(Matchers::int()));
+    }
+}
+PHP
+
+    cat > "$src/RealCall.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+final class RealCall
+{
+    public function callIt(): bool
+    {
+        $gate = Understudy::for(Gate::class);
+
+        return $gate->open(Arg::int());
+    }
+}
+PHP
+
+    cat > "$src/RestLeak.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+final class RestLeak
+{
+    public function callIt(): bool
+    {
+        $ledger = Understudy::for(Ledger::class);
+
+        return $ledger->record('svc', Arg::rest());
+    }
+}
+PHP
+
+    cat > "$src/CaptorLeak.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Understudy;
+
+final class CaptorLeak
+{
+    public function callIt(): bool
+    {
+        $gate = Understudy::for(Gate::class);
+        $code = Arg::captor();
+
+        return $gate->open($code->capture());
+    }
+}
+PHP
+}
+
+# Judges one analyser's output against the table above.
+parity_verdict() { # analyser, output
+    local analyser="$1" out="$2" failed=0 name hits
+
+    for name in $PARITY_SILENT; do
+        hits="$(printf '%s' "$out" | grep "$name\.php" || true)"
+        if [ -n "$hits" ]; then
+            printf '  FAIL  parity: %s.php must be silent, %s reported it:\n%s\n' "$name" "$analyser" "$hits"
+            failed=1
+        fi
+    done
+
+    for name in $PARITY_REPORTED; do
+        if ! printf '%s' "$out" | grep -q "$name\.php"; then
+            printf '  FAIL  parity: %s.php must be reported, %s said nothing\n' "$name" "$analyser"
+            failed=1
+        fi
+    done
+
+    [ "$failed" -eq 0 ] && printf '  ok    parity: %d silent and %d reported idioms agree with the table\n' \
+        "$(printf '%s' "$PARITY_SILENT" | wc -w)" "$(printf '%s' "$PARITY_REPORTED" | wc -w)"
+
+    return $failed
+}
+
 leg_psalm() {
     compose psalm '{
     "name": "rasuvaeff/understudy-consumer-smoke-psalm",
@@ -588,24 +921,30 @@ final class Leaked
 }
 PHP
 
+    parity_fixtures "$WORK/psalm"
+
     printf '\npsalm plugin…\n'
     install psalm ''
     check_local psalm core || return 1
     check_local psalm psalm || return 1
-    local out specified leaked
-    out="$(run psalm './vendor/bin/psalm --no-cache --no-progress --output-format=json 2>/dev/null' || true)"
+    local out specified leaked status_psalm=0
+    # Text rather than JSON: JSON is one line, so a per-file answer would have
+    # to parse it, and a failure would print every issue in the project.
+    out="$(run psalm './vendor/bin/psalm --no-cache --no-progress --output-format=text 2>/dev/null' || true)"
     # `pipefail` is on and grep exits 1 on no match, which is the expected
     # result for the specification half — hence the `|| true` on both counts.
     specified=$(printf '%s' "$out" | grep -c 'Specified\.php' || true)
     leaked=$(printf '%s' "$out" | grep -c 'Leaked\.php' || true)
     if [ "$specified" -eq 0 ] && [ "$leaked" -gt 0 ]; then
         printf '  ok    the plugin loads from a consumer psalm.xml and judges both sides\n'
-
-        return 0
+    else
+        printf '  FAIL  specification reported %s time(s), leak reported %s time(s)\n' "$specified" "$leaked"
+        status_psalm=1
     fi
-    printf '  FAIL  specification reported %s time(s), leak reported %s time(s)\n' "$specified" "$leaked"
 
-    return 1
+    parity_verdict psalm "$out" || status_psalm=1
+
+    return "$status_psalm"
 }
 
 # ── phpstan extension ───────────────────────────────────────────────────────
@@ -695,23 +1034,27 @@ final class Leaked
 }
 PHP
 
+    parity_fixtures "$WORK/phpstan"
+
     printf '\nphpstan extension…\n'
     install phpstan ''
     check_local phpstan core || return 1
     check_local phpstan phpstan || return 1
-    local out specified leaked
+    local out specified leaked status_phpstan=0
     out="$(run phpstan './vendor/bin/phpstan analyse --no-progress --error-format=raw 2>&1' || true)"
     specified=$(printf '%s' "$out" | grep -c 'Specified\.php' || true)
     leaked=$(printf '%s' "$out" | grep -c 'understudy\.matcherLeak\|is a matcher, and this is a real call' || true)
     if [ "$specified" -eq 0 ] && [ "$leaked" -gt 0 ]; then
         printf '  ok    extension-installer finds it from a bare phpstan.neon and it judges both sides\n'
-
-        return 0
+    else
+        printf '  FAIL  specification reported %s time(s), leak reported %s time(s):\n%s\n' \
+            "$specified" "$leaked" "$out"
+        status_phpstan=1
     fi
-    printf '  FAIL  specification reported %s time(s), leak reported %s time(s):\n%s\n' \
-        "$specified" "$leaked" "$out"
 
-    return 1
+    parity_verdict phpstan "$out" || status_phpstan=1
+
+    return "$status_phpstan"
 }
 
 # ── phpunit adapter ─────────────────────────────────────────────────────────
@@ -778,19 +1121,119 @@ final class GateTest extends TestCase
 }
 PHP
 
+    # The composition hazard the README warns about, from a consumer's side.
+    # A class that writes its own `assertPostConditions()` silently wins over
+    # the trait's — PHP resolves the conflict without a word, and PHPUnit
+    # gives the adapter no way to notice that its method stopped running. The
+    # `#[Before]` guard does not catch it either: `#[After]` still resets, so
+    # the next test starts on a clean context and nothing looks wrong. Both
+    # halves are pinned here, because the second is the documented way out and
+    # a recipe nothing exercises is a recipe that rots.
+    cat > "$WORK/phpunit/tests/OverrideGate.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer\Tests;
+
+interface OverrideGate
+{
+    public function open(int $code): bool;
+}
+PHP
+    cat > "$WORK/phpunit/tests/SilentOverrideTest.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer\Tests;
+
+use PHPUnit\Framework\TestCase;
+use Rasuvaeff\Understudy\PhpUnit\UnderstudyPHPUnitIntegration;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\expect;
+
+final class SilentOverrideTest extends TestCase
+{
+    use UnderstudyPHPUnitIntegration;
+
+    // No alias, no call: the trait's verification is gone, and this is what
+    // that looks like from outside — a green test over an unmet expectation.
+    protected function assertPostConditions(): void
+    {
+        parent::assertPostConditions();
+    }
+
+    public function testAnUnmetExpectationIsLostToTheOverride(): void
+    {
+        $gate = Understudy::for(OverrideGate::class);
+
+        expect(fn(): bool => $gate->open(30));
+
+        self::assertTrue(true);
+    }
+}
+PHP
+    cat > "$WORK/phpunit/tests/ComposedOverrideTest.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer\Tests;
+
+use PHPUnit\Framework\TestCase;
+use Rasuvaeff\Understudy\PhpUnit\UnderstudyPHPUnitIntegration;
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\expect;
+
+final class ComposedOverrideTest extends TestCase
+{
+    use UnderstudyPHPUnitIntegration {
+        UnderstudyPHPUnitIntegration::assertPostConditions as understudyAssertPostConditions;
+    }
+
+    // The README recipe, run rather than quoted.
+    protected function assertPostConditions(): void
+    {
+        $this->understudyAssertPostConditions();
+    }
+
+    public function testAnUnmetExpectationStillFailsUnderTheRecipe(): void
+    {
+        $gate = Understudy::for(OverrideGate::class);
+
+        expect(fn(): bool => $gate->open(40));
+    }
+}
+PHP
+
     printf '\nphpunit adapter…\n'
     install phpunit ''
     check_local phpunit core || return 1
     check_local phpunit phpunit || return 1
     local out
     out="$(run phpunit './vendor/bin/phpunit --no-progress 2>&1' || true)"
-    if printf '%s' "$out" | grep -q 'Tests: 2' && printf '%s' "$out" | grep -q 'Failures: 1' \
+    if printf '%s' "$out" | grep -q 'Tests: 4' && printf '%s' "$out" | grep -q 'Failures: 2' \
        && printf '%s' "$out" | grep -q 'open(2)'; then
         printf '  ok    the trait turns an unmet expectation into a runner failure\n'
+    else
+        printf '  FAIL  unexpected runner output:\n%s\n' "$out"
+
+        return 1
+    fi
+
+    # `open(40)` is the class that composed explicitly: its unmet expectation
+    # is one of the two failures. `open(30)` is the class that overrode
+    # without composing: it must NOT appear, because nothing reported it —
+    # which is the hazard, stated as a fact rather than as a warning.
+    if printf '%s' "$out" | grep -q 'open(40)' && ! printf '%s' "$out" | grep -q 'open(30)'; then
+        printf '  ok    the documented alias recipe verifies, and a bare override loses it silently\n'
 
         return 0
     fi
-    printf '  FAIL  unexpected runner output:\n%s\n' "$out"
+    printf '  FAIL  the override composition did not behave as documented:\n%s\n' "$out"
 
     return 1
 }
