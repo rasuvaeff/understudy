@@ -166,51 +166,28 @@ final class Understudy
      */
     public static function verifyAll(bool $strictStubs = false): void
     {
+        // Every context the test put understudies in, not only the one this
+        // call happens to stand in: a body run in a Fiber owns a context of
+        // its own, and skipping it let an unmet `expect()` pass unnoticed.
+        self::report(Runtime::liveContexts(), $strictStubs);
+    }
+
+    /**
+     * Raises one report over the given contexts, or returns quietly.
+     *
+     * @param list<RuntimeContext> $contexts
+     */
+    private static function report(array $contexts, bool $strictStubs): void
+    {
         // One alias table for the whole report, not one per failure:
         // `VerificationFailed` joins the summaries into a single message, and
         // an object numbered in the first summary has to keep that number in
         // the third — otherwise two `Book#1` on one screen mean two objects.
-        $failures = ArgumentFormatter::scope(static function () use ($strictStubs): array {
+        $failures = ArgumentFormatter::scope(static function () use ($contexts, $strictStubs): array {
             $failures = [];
 
-            // Every context the test put understudies in, not only the one
-            // this call happens to stand in: a body run in a Fiber owns a
-            // context of its own, and skipping it let an unmet `expect()`
-            // pass unnoticed.
-            foreach (Runtime::liveContexts() as $context) {
-                $contextFailures = [];
-
-                foreach ($context->allStates() as $state) {
-                    foreach ($state->expectations() as $expectation) {
-                        $failure = self::checkExpectation($state, $expectation, $strictStubs);
-
-                        if ($failure !== null) {
-                            $contextFailures[] = $failure;
-                        }
-                    }
-                }
-
-                $failures = [...$failures, ...array_reverse($contextFailures)];
-
-                // Ordering is read from the sequence counter, which is per
-                // context. Comparing across contexts would compare two
-                // unrelated countings, so each context answers for its own
-                // order.
-                $outOfOrder = self::checkOrdering(context: $context);
-
-                if ($outOfOrder !== null) {
-                    $failures[] = $outOfOrder;
-                }
-
-                // An armed protocol guards the order *and* claims the calls.
-                // Without this half, arming one and never exercising it — the
-                // subject stopped after step two, or a `catch` inside it
-                // swallowed the refusal — would pass in silence.
-                $unfinished = self::checkArmedSequence($context);
-
-                if ($unfinished !== null) {
-                    $failures[] = $unfinished;
-                }
+            foreach ($contexts as $context) {
+                $failures = [...$failures, ...self::failuresIn($context, $strictStubs)];
             }
 
             return $failures;
@@ -219,6 +196,50 @@ final class Understudy
         if ($failures !== []) {
             throw VerificationFailed::of($failures);
         }
+    }
+
+    /**
+     * Everything one context has to answer for: its expectations, its
+     * ordering and its armed protocol.
+     *
+     * @return list<VerificationFailure>
+     */
+    private static function failuresIn(RuntimeContext $context, bool $strictStubs): array
+    {
+        $contextFailures = [];
+
+        foreach ($context->allStates() as $state) {
+            foreach ($state->expectations() as $expectation) {
+                $failure = self::checkExpectation($state, $expectation, $strictStubs);
+
+                if ($failure !== null) {
+                    $contextFailures[] = $failure;
+                }
+            }
+        }
+
+        $failures = array_reverse($contextFailures);
+
+        // Ordering is read from the sequence counter, which is per context.
+        // Comparing across contexts would compare two unrelated countings, so
+        // each context answers for its own order.
+        $outOfOrder = self::checkOrdering(context: $context);
+
+        if ($outOfOrder !== null) {
+            $failures[] = $outOfOrder;
+        }
+
+        // An armed protocol guards the order *and* claims the calls. Without
+        // this half, arming one and never exercising it — the subject stopped
+        // after step two, or a `catch` inside it swallowed the refusal —
+        // would pass in silence.
+        $unfinished = self::checkArmedSequence($context);
+
+        if ($unfinished !== null) {
+            $failures[] = $unfinished;
+        }
+
+        return $failures;
     }
 
     /**
@@ -1152,6 +1173,17 @@ final class Understudy
      * dropped either way. A failure inside the callback is never replaced by a
      * teardown error — the original is what the reader needs.
      *
+     * Verified is the context this call opened, and only it: the enclosing
+     * context is still running and its claims are none of a nested scope's
+     * business. A scope is a local lifetime — the caller reaches for it to end
+     * a few doubles early, often while its own expectations are deliberately
+     * unfinished — so answering for the whole test here would fail a
+     * self-contained scope for something the test has not got to yet. The
+     * test as a whole is answered for by `verifyAll()`, `checkpoint()` and the
+     * runner adapter's teardown, which are the calls that mean the test is
+     * over. A Fiber started inside the callback keeps a context of its own
+     * that outlives the scope, so it stays for those to check.
+     *
      * @template T
      *
      * @param callable(): T $callback
@@ -1160,7 +1192,7 @@ final class Understudy
      */
     public static function scope(callable $callback, bool $strictStubs = false): mixed
     {
-        Runtime::pushScope();
+        $context = Runtime::pushScope();
         $succeeded = false;
 
         try {
@@ -1172,7 +1204,7 @@ final class Understudy
         } finally {
             try {
                 if ($succeeded) {
-                    self::verifyAll($strictStubs);
+                    self::report([$context], $strictStubs);
                 }
             } finally {
                 Runtime::popScope();

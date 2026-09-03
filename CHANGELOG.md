@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **A closing `scope()` no longer answers for the enclosing context.** It
+  verified every live context of the test, so a self-contained nested scope
+  failed on a claim the caller had simply not got round to satisfying yet —
+  including the recommended use of `scope()` to drop doubles holding OS
+  resources before the runner's teardown, which is exactly the position where
+  the enclosing expectations are still open. A close now verifies the context
+  it opened, and only that one; nothing is settled or forgiven, so
+  `verifyAll()`, `checkpoint()` and the runner adapter's teardown still report
+  the enclosing claims. A test that relied on a scope surfacing an outer
+  failure earlier will now see it at the end of the test instead. (#84)
+
 ## 0.4.1 — 2026-08-30
 
 - **`verifyAll()` renders the call log when an expectation goes unmet.** Two

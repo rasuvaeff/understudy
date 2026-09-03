@@ -9,7 +9,7 @@ description: "How one call ended: with a value or with a throwable."
 
 `Rasuvaeff\Understudy\Outcome`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Outcome.php#L16) — **Version:** v0.4.0-22-gc66ecdf
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Outcome.php#L16) — **Version:** v0.4.1
 
 How one call ended: with a value or with a throwable. Kept as its own type
 because `null` is a perfectly valid return value and cannot double as

@@ -55,6 +55,33 @@ final class FiberIntegrationTest
         }
     }
 
+    /**
+     * A scope answers for the context it opened and is about to drop. A Fiber
+     * started inside the callback owns a context that outlives the scope, so
+     * the close passes over it — and the test as a whole still sees it, which
+     * is the half that keeps the narrowing honest.
+     */
+    public function aScopeLeavesAFiberStartedInsideItToTheTest(): void
+    {
+        Understudy::scope(static function (): void {
+            $fiber = new \Fiber(static function (): void {
+                $double = Understudy::for(BookRepository::class);
+
+                expect(static fn() => $double->find(123));
+            });
+
+            $fiber->start();
+        });
+
+        try {
+            Understudy::verifyAll();
+
+            Assert::fail('Expected the Fiber body\'s unmet expectation to outlive the scope');
+        } catch (VerificationFailed $failure) {
+            Assert::string($failure->getMessage())->contains('find(123)')->contains('never');
+        }
+    }
+
     #[ExpectNoAssertions]
     public function aSatisfiedExpectationInsideAFiberVerifiesFromOutside(): void
     {
