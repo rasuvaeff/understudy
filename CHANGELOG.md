@@ -1,5 +1,75 @@
 # Changelog
 
+## 0.7.0 — 2026-09-04
+
+A minor rather than a patch: `Invocation` loses two public properties,
+`verify()` refuses argument combinations it used to resolve by precedence, and
+`notADouble()` gains a required argument. Composer's caret treats that as
+breaking on 0.x, and it is — though every one of them was the engine knowing
+something and not saying it.
+
+- **`Invocation::$file` and `$line` are gone.** They were promoted readonly
+  properties on an `@api` class that the dispatcher never filled in and
+  nothing ever read — public API whose only value was `null`. Filling them
+  would mean a `debug_backtrace()` on every dispatched call, which this
+  package will not pay for a field nobody asked for.
+- **`verify($call, never: true, times: 3)` is refused rather than resolved.**
+  `never` used to win and the count beside it was discarded without a word, so
+  a test could say two opposite things and pass. Both analyser packages report
+  this pairing and both promise a runtime counterpart for every complaint they
+  make; this is it, in their wording, so a user does not meet a second
+  phrasing of a mistake they have already seen.
+- **`verify($call, times: -1)` is refused as the nonsense argument it is.**
+  The bounds now go through `Cardinality`, which is what the fluent `times()`
+  has always used, so a negative count and a maximum below the minimum are
+  caught where they are written. `times: -1` used to become the range
+  `[-1, -1]` and fail as an unmet count.
+- **A facade method handed something that is not a double names itself.**
+  `Understudy::strict(new stdClass())` used to answer "the specification
+  closure did not call a method on an understudy" — and `strict()` has no
+  closure, so the reader was sent looking for a mistake they had not made.
+  `strict`, `lean`, `forwarding`, `label`, `unused`, `nothingElse`,
+  `allVerified` and `transcript` each say their own name now, the way
+  `forget()` already did. Knowing which facade was called also separates two
+  mistakes that used to share one message: an object that never was a double,
+  and a double whose context has been reset — the latter now gets the same
+  `ForgottenDouble` answer a CALL on that object already got.
+- **A loose double answers `: static` with itself.** The receiver IS the
+  double and the generated method really does declare `static`, so a fluent
+  contract chains without a stub for each link. It used to refuse with
+  `NoDefaultValue` — the one return type whose answer needs no invention at
+  all. Both READMEs say so, and say why `: self` is a different claim.
+- A return-type conflict no longer prints an unresolved `parent`. The message
+  paths rendered the type without the declaring class, so a reader on PHP 8.3
+  or 8.4 was told a target declares `: parent` and left to work out which
+  class that is; 8.5 resolves it in Reflection, which is why it went
+  unnoticed. Pinned by a test that fails on 8.3 without the fix.
+- `Runtime\Mode` is `@internal`, like the rest of `Runtime\`. It never
+  appears in a public signature — `strict()`, `lean()` and `forwarding()` are
+  what a user writes — so the `@api` on it promised a contract nobody could
+  reach and no document described.
+- Two orphaned docblocks removed, and `WhenBuilder` says why it is the one
+  class here that is not `final`. `FileWrapper::install()` says that it only
+  ever widens, and that a target list added to the global mode changes nothing
+  because global already reaches every class it names.
+
+- **A targeted `bypassFinals()` stops tokenising files it has no interest
+  in.** The guard was "does the source contain the word `final`", and
+  `finally` contains it — 58% of a real vendor tree passes, and in targeted
+  mode almost none of it declares anything asked for. A file that never names
+  a target's class cannot declare that class, so it never reaches the
+  tokenizer: 16 µs against 256 µs on a 41 KB file, or roughly a second of
+  tokenising per process. The filter is a NECESSARY condition, which is why it
+  is safe — its absence is proof, its presence decides nothing and the
+  tokenizer still says.
+- **`QueryEquals` keeps building its `ReflectionMethod` per call**, and that
+  is the answer rather than an omission: caching the decision per class and
+  calling the getter directly measures 94 ns against 104 ns, which is 0.6% of
+  the 1.65 µs a dispatch through this matcher costs. The number is in the
+  code, so the next audit reads it instead of re-asking.
+
+Fixes #95.
+
 ## 0.6.0 — 2026-09-04
 
 A minor rather than a patch: a pair of targets the unifier used to accept is

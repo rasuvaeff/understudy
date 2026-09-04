@@ -7,7 +7,13 @@ namespace Rasuvaeff\Understudy\Runtime;
 /**
  * How an understudy answers a call no expectation matched.
  *
- * @api
+ * `@internal` like the rest of `Runtime\`, and not by demotion: this enum
+ * never appears in a public signature. A user says `Understudy::strict()`,
+ * `lean()` or `forwarding()`, and the case is what those write down — so an
+ * `@api` on it promised a contract nobody could reach and no document
+ * described.
+ *
+ * @internal
  */
 enum Mode
 {

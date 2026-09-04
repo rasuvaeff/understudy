@@ -80,9 +80,15 @@ final class TargetUnifier
                     throw UnsupportedTarget::signatureConflict(
                         $name,
                         self::describe($classStatic) . ' declares `: '
-                        . TypeRenderer::returnType(self::declaredReturnType($classStatic)) . '`',
+                        . TypeRenderer::returnType(
+                            self::declaredReturnType($classStatic),
+                            $classStatic->getDeclaringClass(),
+                        ) . '`',
                         self::describe($interfaceDeclaration) . ' declares `: '
-                        . TypeRenderer::returnType(self::declaredReturnType($interfaceDeclaration)) . '`',
+                        . TypeRenderer::returnType(
+                            self::declaredReturnType($interfaceDeclaration),
+                            $interfaceDeclaration->getDeclaringClass(),
+                        ) . '`',
                     );
                 }
 
@@ -413,8 +419,10 @@ final class TargetUnifier
 
         throw UnsupportedTarget::signatureConflict(
             $name,
-            self::describe($left) . ' declares `: ' . TypeRenderer::returnType(self::declaredReturnType($left)) . '`',
-            self::describe($right) . ' declares `: ' . TypeRenderer::returnType(self::declaredReturnType($right)) . '`',
+            self::describe($left) . ' declares `: '
+                . TypeRenderer::returnType(self::declaredReturnType($left), $left->getDeclaringClass()) . '`',
+            self::describe($right) . ' declares `: '
+                . TypeRenderer::returnType(self::declaredReturnType($right), $right->getDeclaringClass()) . '`',
         );
     }
 

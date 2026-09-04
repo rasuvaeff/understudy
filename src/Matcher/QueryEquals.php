@@ -27,6 +27,14 @@ final readonly class QueryEquals implements ArgumentMatcher
         private mixed $expected,
     ) {}
 
+    /**
+     * The `ReflectionMethod` is built per call on purpose, and the audit that
+     * asked about it got an answer rather than a patch: caching the decision
+     * per class and calling the getter directly was measured at 94 ns against
+     * 104 ns, which is 0.6% of the 1.65 µs a dispatch through this matcher
+     * costs. Ten nanoseconds do not buy a process-global cache and the
+     * invalidation question that comes with it.
+     */
     #[\Override]
     public function matches(mixed $argument): bool
     {

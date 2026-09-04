@@ -127,7 +127,7 @@ final class Understudy
     {
         $signal = self::record($call);
         $expectation = new Expectation($signal->method, $signal->args);
-        $state = self::stateOf($signal->double);
+        $state = self::stateOf($signal->double, 'when');
         $expectation->setDeclarationOrder(Runtime::current()->nextDeclaration());
 
         $state->addExpectation($expectation);
@@ -149,7 +149,7 @@ final class Understudy
         $expectation = new Expectation($signal->method, $signal->args);
         $expectation->setCardinality(Cardinality::exactly(1));
         $expectation->declareClaim();
-        $state = self::stateOf($signal->double);
+        $state = self::stateOf($signal->double, 'expect');
         $expectation->setDeclarationOrder(Runtime::current()->nextDeclaration());
 
         $state->addExpectation($expectation);
@@ -423,7 +423,7 @@ final class Understudy
         bool $never = false,
     ): void {
         $signal = self::record($call);
-        $state = self::stateOf($signal->double);
+        $state = self::stateOf($signal->double, 'verify');
         $probe = new Expectation($signal->method, $signal->args);
 
         $matches = 0;
@@ -436,11 +436,9 @@ final class Understudy
             }
         }
 
-        [$low, $high] = match (true) {
-            $never => [0, 0],
-            $times !== null => [$times, $times],
-            default => [$minimum ?? 1, $maximum],
-        };
+        $bounds = self::verifyBounds($never, $times, $minimum, $maximum);
+        $low = $bounds->minimum;
+        $high = $bounds->maximum;
 
         if ($matches >= $low && ($high === null || $matches <= $high)) {
             // Counting the whole log each time and marking idempotently is
@@ -507,7 +505,7 @@ final class Understudy
         $probe = new Expectation($signal->method, $signal->args);
 
         return array_values(array_filter(
-            self::stateOf($signal->double)->callLog(),
+            self::stateOf($signal->double, 'calls')->callLog(),
             static fn(Invocation $i): bool => $probe->matches($i->method, $i->args),
         ));
     }
@@ -529,7 +527,7 @@ final class Understudy
         $probe = new Expectation($signal->method, $signal->args);
         $last = null;
 
-        foreach (self::stateOf($signal->double)->callLog() as $invocation) {
+        foreach (self::stateOf($signal->double, 'lastCall')->callLog() as $invocation) {
             if ($probe->matches($invocation->method, $invocation->args)) {
                 $last = $invocation;
             }
@@ -543,7 +541,7 @@ final class Understudy
      */
     public static function strict(object $double): void
     {
-        self::stateOf($double)->setMode(Mode::Strict);
+        self::stateOf($double, 'strict')->setMode(Mode::Strict);
     }
 
     /**
@@ -566,7 +564,7 @@ final class Understudy
      */
     public static function lean(object $double): void
     {
-        self::stateOf($double)->makeLean();
+        self::stateOf($double, 'lean')->makeLean();
     }
 
     /**
@@ -584,7 +582,7 @@ final class Understudy
      */
     public static function forwarding(object $double, ?object $real = null): void
     {
-        $state = self::stateOf($double);
+        $state = self::stateOf($double, 'forwarding');
 
         if ($real !== null) {
             // A double delegating to a double — itself included — sends every
@@ -800,7 +798,7 @@ final class Understudy
      */
     public static function label(object $double, string $label): void
     {
-        self::stateOf($double)->setLabel($label);
+        self::stateOf($double, 'label')->setLabel($label);
     }
 
     /**
@@ -808,7 +806,7 @@ final class Understudy
      */
     public static function unused(object $double): void
     {
-        $state = self::stateOf($double);
+        $state = self::stateOf($double, 'unused');
         $log = $state->callLog();
 
         if ($log === []) {
@@ -849,7 +847,7 @@ final class Understudy
     public static function forget(object $double): void
     {
         if (Runtime::ownerOf($double) === null) {
-            throw InvalidCallSpecification::notADouble();
+            throw InvalidCallSpecification::notADouble('forget');
         }
 
         if (!Runtime::isOwnedByCurrentContext($double)) {
@@ -875,7 +873,7 @@ final class Understudy
             $failures = [];
 
             foreach ([$double, ...array_values($more)] as $one) {
-                $state = self::stateOf($one);
+                $state = self::stateOf($one, 'nothingElse');
 
                 $unaccounted = array_values(array_filter(
                     $state->callLog(),
@@ -912,7 +910,7 @@ final class Understudy
      */
     public static function allVerified(object $double): void
     {
-        $state = self::stateOf($double);
+        $state = self::stateOf($double, 'allVerified');
 
         // Both halves land in one message, so both are numbered against one
         // alias table.
@@ -1015,7 +1013,7 @@ final class Understudy
 
         foreach ($calls as $call) {
             $signal = self::record($call);
-            self::stateOf($signal->double);
+            self::stateOf($signal->double, 'expectSequence');
             $steps[] = [$signal->double, new Expectation($signal->method, $signal->args)];
         }
 
@@ -1042,7 +1040,7 @@ final class Understudy
 
         foreach ($calls as $call) {
             $signal = self::record($call);
-            self::stateOf($signal->double);
+            self::stateOf($signal->double, 'verifySequence');
             $probes[] = [$signal->double, new Expectation($signal->method, $signal->args)];
         }
 
@@ -1063,7 +1061,7 @@ final class Understudy
      */
     public static function transcript(object $double): string
     {
-        $state = self::stateOf($double);
+        $state = self::stateOf($double, 'transcript');
         $log = $state->callLog();
 
         if ($log === []) {
@@ -1302,7 +1300,49 @@ final class Understudy
         throw InvalidCallSpecification::noCallRecorded();
     }
 
-    private static function stateOf(object $double): DoubleState
+    /**
+     * What `verify()`'s named arguments mean together, or a refusal.
+     *
+     * They used to be resolved by precedence: `never` won and everything
+     * beside it was discarded without a word, so `verify($call, never: true,
+     * times: 2)` — a claim that contradicts itself — passed as `never`. Both
+     * analyser packages report that pairing and both say every complaint of
+     * theirs has a runtime counterpart; this is the counterpart.
+     *
+     * Built through {@see Cardinality} rather than as a pair of bounds, which
+     * is what brings the negative-count and swapped-bound checks the fluent
+     * `times()` has always had: `verify($call, times: -1)` used to fail as an
+     * unmet count of `[-1, -1]` instead of as the nonsense argument it is.
+     */
+    private static function verifyBounds(bool $never, ?int $times, ?int $minimum, ?int $maximum): Cardinality
+    {
+        if ($never) {
+            foreach (['times' => $times, 'minimum' => $minimum, 'maximum' => $maximum] as $bound => $value) {
+                if ($value !== null) {
+                    throw InvalidCallSpecification::neverBesideACount($bound);
+                }
+            }
+
+            return Cardinality::never();
+        }
+
+        if ($times !== null && ($minimum !== null || $maximum !== null)) {
+            throw InvalidCallSpecification::exactCountBesideABound();
+        }
+
+        return $times === null
+            ? Cardinality::between($minimum ?? 1, $maximum)
+            : Cardinality::exactly($times);
+    }
+
+    /**
+     * The `$facade` is the verb the user wrote, and every caller names its
+     * own: a specification closure cannot be blamed for what a facade method
+     * was handed, and a facade method cannot be blamed for a closure.
+     *
+     * @param non-empty-string $facade
+     */
+    private static function stateOf(object $double, string $facade): DoubleState
     {
         $state = Runtime::stateOf($double);
 
@@ -1311,7 +1351,14 @@ final class Understudy
                 throw ForgottenDouble::retired();
             }
 
-            throw InvalidCallSpecification::noCallRecorded();
+            // Two different mistakes, and telling them apart is the whole
+            // point of knowing which verb was written: an object that never
+            // was a double, and a double whose context is gone, are not the
+            // same problem — and neither used to be named at all, because
+            // both were reported as a specification closure gone wrong.
+            throw DoubleFactory::isGenerated($double)
+                ? ForgottenDouble::afterReset($facade)
+                : InvalidCallSpecification::notADouble($facade);
         }
 
         if (!Runtime::isOwnedByCurrentContext($double)) {

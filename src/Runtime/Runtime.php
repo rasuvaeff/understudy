@@ -644,7 +644,14 @@ final class Runtime
             );
         }
 
-        return TypeDefaultResolver::forSignature($state->label(), $signature, $method, $context, $state->nested);
+        return TypeDefaultResolver::forSignature(
+            $state->label(),
+            $signature,
+            $method,
+            $context,
+            $state->nested,
+            $double,
+        );
     }
 
     /**

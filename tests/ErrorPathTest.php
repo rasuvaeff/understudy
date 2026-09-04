@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Exception\CannotWire;
+use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
 use Rasuvaeff\Understudy\Exception\OutcomeUnavailable;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
@@ -16,7 +17,9 @@ use Rasuvaeff\Understudy\Tests\Fixture\Librarian;
 use Rasuvaeff\Understudy\Understudy;
 use Rasuvaeff\Understudy\Wiring\Wire;
 use Testo\Assert;
+use Testo\Assert\ExpectNoAssertions;
 use Testo\Codecov\Covers;
+use Testo\Data\DataProvider;
 use Testo\Lifecycle\AfterTest;
 use Testo\Test;
 
@@ -40,12 +43,170 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(CannotWire::class)]
 #[Covers(Invocation::class)]
 #[Covers(OutcomeUnavailable::class)]
+#[Covers(InvalidCallSpecification::class)]
 final class ErrorPathTest
 {
     #[AfterTest]
     public function tearDown(): void
     {
         Understudy::reset();
+    }
+
+    // --- a facade method handed something that is not a double ---------------
+
+    /**
+     * The message names the method the object was handed to, because that is
+     * where the reader is standing. It used to blame a specification closure
+     * for every one of them — and `strict()` has no closure, so the reader was
+     * sent looking for a mistake they had not made.
+     */
+    #[DataProvider('facadeProvider')]
+    public function aFacadeMethodHandedANonDoubleNamesItself(string $facade, \Closure $call): void
+    {
+        try {
+            $call();
+        } catch (InvalidCallSpecification $refusal) {
+            Assert::string($refusal->getMessage())
+                ->contains('Understudy::' . $facade . '() expects an understudy')
+                ->notContains('specification closure');
+
+            return;
+        }
+
+        Assert::fail('Understudy::' . $facade . '() accepted an object that is not a double');
+    }
+
+    /**
+     * @return iterable<string, array{string, \Closure}>
+     */
+    public static function facadeProvider(): iterable
+    {
+        $alien = new \stdClass();
+
+        yield 'strict' => ['strict', static fn() => Understudy::strict($alien)];
+        yield 'lean' => ['lean', static fn() => Understudy::lean($alien)];
+        yield 'forwarding' => ['forwarding', static fn() => Understudy::forwarding($alien)];
+        yield 'label' => ['label', static fn() => Understudy::label($alien, 'x')];
+        yield 'unused' => ['unused', static fn() => Understudy::unused($alien)];
+        yield 'nothingElse' => ['nothingElse', static fn() => Understudy::nothingElse($alien)];
+        yield 'allVerified' => ['allVerified', static fn() => Understudy::allVerified($alien)];
+        yield 'transcript' => ['transcript', static fn() => Understudy::transcript($alien)];
+        yield 'forget' => ['forget', static fn() => Understudy::forget($alien)];
+    }
+
+    // --- verify()'s cardinality arguments -------------------------------------
+
+    /**
+     * A claim that contradicts itself is refused rather than resolved by
+     * precedence. `never` used to win and everything beside it was discarded
+     * without a word, so a test could say two opposite things and pass.
+     *
+     * Both analyser packages report each of these before the suite runs, and
+     * both promise a runtime counterpart for every complaint they make; the
+     * wording is theirs so a user does not meet a second phrasing of a mistake
+     * they have already seen.
+     */
+    #[DataProvider('contradictionProvider')]
+    public function verifyRefusesACardinalityThatContradictsItself(\Closure $call, string $expected): void
+    {
+        $double = Understudy::for(BookRepository::class);
+        $double->find(1);
+
+        try {
+            $call($double);
+        } catch (InvalidCallSpecification $refusal) {
+            Assert::same($refusal->getMessage(), $expected);
+
+            return;
+        }
+
+        Assert::fail('verify() accepted a cardinality that cannot hold');
+    }
+
+    /**
+     * @return iterable<string, array{\Closure, string}>
+     */
+    public static function contradictionProvider(): iterable
+    {
+        yield 'never beside times' => [
+            static fn(object $d) => Understudy::verify(static fn() => $d->find(1), times: 3, never: true),
+            '`never: true` says the call never happened, and `times` says how often it did. '
+            . 'Keep the one you mean.',
+        ];
+        yield 'never beside minimum' => [
+            static fn(object $d) => Understudy::verify(static fn() => $d->find(1), minimum: 1, never: true),
+            '`never: true` says the call never happened, and `minimum` says how often it did. '
+            . 'Keep the one you mean.',
+        ];
+        yield 'never beside maximum' => [
+            static fn(object $d) => Understudy::verify(static fn() => $d->find(1), maximum: 2, never: true),
+            '`never: true` says the call never happened, and `maximum` says how often it did. '
+            . 'Keep the one you mean.',
+        ];
+        yield 'an exact count beside a bound' => [
+            static fn(object $d) => Understudy::verify(static fn() => $d->find(1), times: 2, minimum: 1),
+            '`times` is an exact count, so a `minimum` or `maximum` beside it has nothing left '
+            . 'to constrain. Use one or the other.',
+        ];
+    }
+
+    /**
+     * The bounds go through {@see \Rasuvaeff\Understudy\Cardinality}, which is
+     * what the fluent `times()` has always used — so a negative count and a
+     * maximum below the minimum are refused as the nonsense arguments they
+     * are. `times: -1` used to be resolved into the range `[-1, -1]` and
+     * reported as an unmet count.
+     */
+    #[DataProvider('nonsenseBoundProvider')]
+    public function verifyRefusesABoundNoCountCouldMeet(\Closure $call, string $expected): void
+    {
+        $double = Understudy::for(BookRepository::class);
+        $double->find(1);
+
+        try {
+            $call($double);
+        } catch (\InvalidArgumentException $refusal) {
+            Assert::string($refusal->getMessage())->contains($expected);
+
+            return;
+        }
+
+        Assert::fail('verify() accepted a bound no count could meet');
+    }
+
+    /**
+     * @return iterable<string, array{\Closure, string}>
+     */
+    public static function nonsenseBoundProvider(): iterable
+    {
+        yield 'a negative exact count' => [
+            static fn(object $d) => Understudy::verify(static fn() => $d->find(1), times: -1),
+            'A call count cannot be negative',
+        ];
+        yield 'a negative minimum' => [
+            static fn(object $d) => Understudy::verify(static fn() => $d->find(1), minimum: -1),
+            'A call count cannot be negative',
+        ];
+        yield 'a maximum below the minimum' => [
+            static fn(object $d) => Understudy::verify(static fn() => $d->find(1), minimum: 5, maximum: 2),
+            'A maximum call count cannot be below the minimum',
+        ];
+    }
+
+    /**
+     * And the shapes that are not contradictions, which have to keep working:
+     * `never` alone, an exact count alone, a pair of bounds.
+     */
+    #[ExpectNoAssertions]
+    public function verifyStillAcceptsEveryCardinalityThatCanHold(): void
+    {
+        $double = Understudy::for(BookRepository::class);
+        $double->find(1);
+
+        Understudy::verify(static fn() => $double->find(1), times: 1);
+        Understudy::verify(static fn() => $double->find(1), minimum: 1, maximum: 3);
+        Understudy::verify(static fn() => $double->find(1), minimum: 1);
+        Understudy::verify(static fn() => $double->find(9), never: true);
     }
 
     // --- strict stubs ---------------------------------------------------------

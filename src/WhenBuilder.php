@@ -18,6 +18,13 @@ use Rasuvaeff\Understudy\Expectation\ThrowError;
  * template is declared here rather than added later: a published signature
  * cannot grow one without changing its contract.
  *
+ * Not `final`, and the one class here that is not: `ExpectBuilder` extends it
+ * to add the cardinality verbs, and the two are one fluent vocabulary rather
+ * than two. The cost is that `protected readonly Expectation` — an
+ * `@internal` type — is reachable from a subclass a consumer could write. That
+ * is tolerated rather than intended: nothing in the contract invites it, and
+ * closing it would mean duplicating every action verb.
+ *
  * @template TReturn
  *
  * @api

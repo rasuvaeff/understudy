@@ -106,9 +106,6 @@ final class DoubleState
     }
 
     /**
-     * @param non-empty-string $label
-     */
-    /**
      * The real instance a forwarding call delegates to, or null when the double
      * stands alone. Remembered separately from the mode: `for($real)` records
      * the instance so `callOriginal()` works, without making every unmatched

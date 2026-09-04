@@ -33,12 +33,13 @@ final class TypeDefaultResolver
         string $method,
         RuntimeContext $context,
         bool $nested = false,
+        ?object $double = null,
     ): mixed {
         if ($signature === null) {
             return null;
         }
 
-        return self::forType($label, $signature->returnType, $method, $context, $nested);
+        return self::forType($label, $signature->returnType, $method, $context, $nested, $double);
     }
 
     /**
@@ -73,6 +74,7 @@ final class TypeDefaultResolver
         string $method,
         RuntimeContext $context,
         bool $nested,
+        ?object $double = null,
     ): mixed {
         if (str_starts_with($type, '?')) {
             // A registration is the test saying what this type should be, and
@@ -168,6 +170,17 @@ final class TypeDefaultResolver
 
         if ($registered !== null) {
             return $registered[0];
+        }
+
+        // `: static` means "the receiver's class", and the receiver IS the
+        // double — the generated method really does declare `static`, so
+        // handing back `$double` satisfies it. This used to refuse, which made
+        // every fluent contract unusable without a stub for each link of the
+        // chain, for the one return type whose answer needs no invention at
+        // all. Null only where no double is in hand — a hooked property's
+        // type resolves through the same table.
+        if ($name === 'static' && $double !== null) {
+            return $double;
         }
 
         return match ($name) {

@@ -16,6 +16,12 @@
     // mutant count differs from the local one by dozens and a pair of
     // SELF-case mutants flip between runs.
     //
+    // The targeted-bypass pre-filter in `FinalStripper::strip()` adds one
+    // more, and its survival is the proof rather than a gap: removing the
+    // `return $source` falls through to the tokenizer, which computes exactly
+    // the same output. A fast path whose removal is undetectable is a fast
+    // path that changes nothing, which is the whole claim.
+    //
     // Two more genuine equivalents joined the remainder with the signed-zero
     // fix in `DoubleState::literalKey()`: the constant the two float zeros
     // collapse onto is arbitrary (a collision only widens the candidate list,

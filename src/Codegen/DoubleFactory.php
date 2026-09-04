@@ -16,6 +16,19 @@ use Rasuvaeff\Understudy\Runtime\Runtime;
  */
 final class DoubleFactory
 {
+    /** Where every generated double's class lives, and nothing else does. */
+    public const string GENERATED_NAMESPACE = __NAMESPACE__ . '\\Generated\\';
+
+    /**
+     * Whether this object is a double this factory made — asked by the facade
+     * methods, which are handed an object rather than a closure and otherwise
+     * cannot tell "never was a double" from "was one before a reset".
+     */
+    public static function isGenerated(object $double): bool
+    {
+        return str_starts_with($double::class, self::GENERATED_NAMESPACE);
+    }
+
     /** @var array<string, Blueprint> */
     private static array $blueprints = [];
 
@@ -78,7 +91,7 @@ final class DoubleFactory
         $properties = self::unifyAbstractHooks($targets);
         $generatedClass = 'Understudy_' . substr(hash('xxh128', $key), 0, 16);
 
-        $fqcn = __NAMESPACE__ . '\\Generated\\' . $generatedClass;
+        $fqcn = self::GENERATED_NAMESPACE . $generatedClass;
 
         if (!class_exists($fqcn, autoload: false)) {
             eval(self::render($generatedClass, $targets, $methods, $properties));
