@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Benchmarks;
 
+use Rasuvaeff\Understudy\Bypass\FinalStripper;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
@@ -27,6 +28,8 @@ final class DispatchBench
     private static ?Clock $looseDouble = null;
 
     private static ?Clock $handwritten = null;
+
+    private static ?string $uninteresting = null;
 
     // --- Creating -----------------------------------------------------------
 
@@ -77,6 +80,43 @@ final class DispatchBench
         self::$looseDouble ??= Understudy::for(Clock::class);
 
         self::$looseDouble->now();
+    }
+
+    // --- Reading a file while a targeted bypass is installed ----------------
+
+    /**
+     * What a targeted `bypassFinals()` charges per file it is not interested
+     * in — which is most of them: 58% of a real vendor tree contains the word
+     * `final` somewhere, and `finally` is enough.
+     *
+     * Measured against the tokenizer pass the pre-filter replaces, because
+     * that is what the alternative costs, not a hand-written anything.
+     */
+    #[Bench(['tokenising it anyway' => [self::class, 'tokeniseUninterestingFile']], calls: 200)]
+    public static function stripUninterestingFile(): void
+    {
+        FinalStripper::strip(self::uninteresting(), [['namespace' => 'App', 'class' => 'NoSuchClass']]);
+    }
+
+    public static function tokeniseUninterestingFile(): void
+    {
+        token_get_all(self::uninteresting());
+    }
+
+    /**
+     * Real source, and deliberately this package's own: a file that says
+     * `final` in a docblock and `finally` in a body, and declares nothing
+     * anybody asked to open.
+     */
+    private static function uninteresting(): string
+    {
+        if (self::$uninteresting === null) {
+            $source = file_get_contents(\dirname(__DIR__) . '/src/Runtime/Runtime.php');
+            \assert($source !== false);
+            self::$uninteresting = $source;
+        }
+
+        return self::$uninteresting;
     }
 
     private static function makeStubbed(): Clock

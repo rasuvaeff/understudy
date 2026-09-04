@@ -50,8 +50,22 @@ refuses argument combinations it used to resolve by precedence.
   ever widens, and that a target list added to the global mode changes nothing
   because global already reaches every class it names.
 
-Fixes #95. The audit's perf notes are deliberately not here: a dispatch
-hot-path change needs before/after numbers from `perf/`, not a plausible patch.
+- **A targeted `bypassFinals()` stops tokenising files it has no interest
+  in.** The guard was "does the source contain the word `final`", and
+  `finally` contains it — 58% of a real vendor tree passes, and in targeted
+  mode almost none of it declares anything asked for. A file that never names
+  a target's class cannot declare that class, so it never reaches the
+  tokenizer: 16 µs against 256 µs on a 41 KB file, or roughly a second of
+  tokenising per process. The filter is a NECESSARY condition, which is why it
+  is safe — its absence is proof, its presence decides nothing and the
+  tokenizer still says.
+- **`QueryEquals` keeps building its `ReflectionMethod` per call**, and that
+  is the answer rather than an omission: caching the decision per class and
+  calling the getter directly measures 94 ns against 104 ns, which is 0.6% of
+  the 1.65 µs a dispatch through this matcher costs. The number is in the
+  code, so the next audit reads it instead of re-asking.
+
+Fixes #95.
 
 ## 0.6.0 — 2026-09-04
 

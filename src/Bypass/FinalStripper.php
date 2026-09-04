@@ -36,6 +36,21 @@ final class FinalStripper
             return $source;
         }
 
+        // `finally` contains the word, and so does every comment that uses it:
+        // 58% of a real vendor tree passes the guard above, and in targeted
+        // mode almost none of it declares anything asked for. A file that does
+        // not mention a target's class name cannot declare that class, so the
+        // tokenizer never has to see it — measured at 0.55 ms against 0.016 ms
+        // for the check, or about a second of tokenising per process.
+        //
+        // Necessary rather than sufficient, which is the only reason it is
+        // safe: `class Foo` puts `Foo` in the source, so the absence of the
+        // name is proof, while its presence proves nothing and the tokenizer
+        // still decides. Case-insensitive, because PHP class names are.
+        if ($targets !== null && !self::mentionsATarget($source, $targets)) {
+            return $source;
+        }
+
         $tokens = token_get_all($source);
         $namespace = '';
         $output = '';
@@ -69,6 +84,22 @@ final class FinalStripper
         }
 
         return $output;
+    }
+
+    /**
+     * Whether the source names any target class at all.
+     *
+     * @param list<array{namespace: string, class: string}> $targets
+     */
+    private static function mentionsATarget(string $source, array $targets): bool
+    {
+        foreach ($targets as $target) {
+            if (stripos($source, $target['class']) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

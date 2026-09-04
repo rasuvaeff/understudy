@@ -54,6 +54,52 @@ final class FinalStripperTest
             '<?php namespace App; class Gate {} final class Wall {}',
         ];
 
+        // The pre-filter that keeps the tokenizer away from files nothing
+        // asked about. It is a NECESSARY condition — a file declaring `Gate`
+        // contains the word `Gate` — so its absence is proof and its presence
+        // decides nothing, which is what these three pin.
+        yield 'a file that never names a target is returned untouched' => [
+            '<?php namespace App; final class Wall {} try {} finally {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; final class Wall {} try {} finally {}',
+        ];
+
+        yield 'naming a target in a comment does not open a sibling' => [
+            '<?php namespace App; /** near Gate */ final class Wall {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; /** near Gate */ final class Wall {}',
+        ];
+
+        yield 'the target still opens when a comment is what carried its name' => [
+            '<?php namespace App; /** Gate */ final class Gate {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; /** Gate */ class Gate {}',
+        ];
+
+        yield 'a longer class whose name contains a target keeps final' => [
+            '<?php namespace App; final class GateKeeper {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; final class GateKeeper {}',
+        ];
+
+        // The pre-filter is case-insensitive and the tokenizer's own name
+        // comparison is not, which is the safe direction for them to differ
+        // in: a looser filter only ever lets MORE files reach the decision.
+        // PHP would call this declaration `App\Gate`, so a target written in
+        // another case is not opened — pre-existing behaviour, pinned here
+        // because the filter is now the first thing that sees the name.
+        yield 'a declaration in another case reaches the tokenizer and is left alone' => [
+            '<?php namespace App; final class gate {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; final class gate {}',
+        ];
+
+        yield 'an empty target list strips nothing' => [
+            '<?php namespace App; final class Gate {}',
+            [],
+            '<?php namespace App; final class Gate {}',
+        ];
+
         yield 'global mode opens every class' => [
             '<?php namespace App; final class Gate {} final class Wall {}',
             null,
