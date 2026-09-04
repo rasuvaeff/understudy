@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.1 — 2026-09-04
 
 - **`bypassFinals()` missed a target whose declaration is written in another
   case.** `final class gate` in `namespace App` IS `App\Gate` to PHP —
