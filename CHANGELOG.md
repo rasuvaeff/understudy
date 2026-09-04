@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.2 — 2026-09-04
 
 - **Documentation review fixes.** llms.txt no longer claims `bypassFinals()`
   and the runner adapters are «being built next» (both shipped long ago), and
