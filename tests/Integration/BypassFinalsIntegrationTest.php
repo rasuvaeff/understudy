@@ -37,6 +37,7 @@ final class BypassFinalsIntegrationTest
     public static function scenarioProvider(): iterable
     {
         yield 'a bypassed final class can be doubled' => ['targeted', 'doubled'];
+        yield 'a target is matched however either name is cased' => ['case-insensitive-target', 'doubled'];
         yield 'without bypass the refusal names the recipe' => ['without-bypass', 'refused with the recipe'];
         yield 'only the named class in a file is opened' => ['sibling-untouched', 'opened/still final'];
         yield 'global mode opens every class in a file' => ['global', 'opened/opened'];

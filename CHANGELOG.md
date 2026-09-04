@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **`bypassFinals()` missed a target whose declaration is written in another
+  case.** `final class gate` in `namespace App` IS `App\Gate` to PHP —
+  `class_exists()` says so, and `bypassFinals(\App\Gate::class)` accepted the
+  name and installed the target — but the strip compared both halves with
+  `===` and walked past the very declaration it was installed for. The class
+  stayed final, with nothing said until `for()` refused it. Both halves are
+  compared the way PHP compares them now. Fixes #97.
+
 ## 0.7.0 — 2026-09-04
 
 A minor rather than a patch: `Invocation` loses two public properties,

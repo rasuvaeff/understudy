@@ -82,16 +82,39 @@ final class FinalStripperTest
             '<?php namespace App; final class GateKeeper {}',
         ];
 
-        // The pre-filter is case-insensitive and the tokenizer's own name
-        // comparison is not, which is the safe direction for them to differ
-        // in: a looser filter only ever lets MORE files reach the decision.
-        // PHP would call this declaration `App\Gate`, so a target written in
-        // another case is not opened — pre-existing behaviour, pinned here
-        // because the filter is now the first thing that sees the name.
-        yield 'a declaration in another case reaches the tokenizer and is left alone' => [
+        // PHP calls this declaration `App\Gate` and so does `class_exists()`,
+        // so the strip has to as well. Comparing with `===` walked past the
+        // very declaration the target was installed for.
+        yield 'a class declared in another case is still the target' => [
             '<?php namespace App; final class gate {}',
             [['namespace' => 'App', 'class' => 'Gate']],
-            '<?php namespace App; final class gate {}',
+            '<?php namespace App; class gate {}',
+        ];
+
+        yield 'the namespace is case-insensitive too' => [
+            '<?php namespace app; final class Gate {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace app; class Gate {}',
+        ];
+
+        yield 'a target written in another case finds the declaration' => [
+            '<?php namespace App; final class Gate {}',
+            [['namespace' => 'APP', 'class' => 'GATE']],
+            '<?php namespace App; class Gate {}',
+        ];
+
+        // Case-insensitive is not name-insensitive: a different class in the
+        // same namespace keeps its `final` however either is spelled.
+        yield 'another class in the same namespace is untouched' => [
+            '<?php namespace App; final class Wall {}',
+            [['namespace' => 'app', 'class' => 'gate']],
+            '<?php namespace App; final class Wall {}',
+        ];
+
+        yield 'the right name in the wrong namespace is untouched' => [
+            '<?php namespace Other; final class Gate {}',
+            [['namespace' => 'app', 'class' => 'gate']],
+            '<?php namespace Other; final class Gate {}',
         ];
 
         yield 'an empty target list strips nothing' => [

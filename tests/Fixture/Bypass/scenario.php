@@ -31,6 +31,16 @@ echo match ($scenario) {
         return $double instanceof SealedGate ? 'doubled' : 'not a SealedGate';
     })(),
 
+    // The name handed to `bypassFinals()` is the one this file writes; the
+    // declaration writes it in another case. PHP calls them one class, and so
+    // must the strip.
+    'case-insensitive-target' => (static function (): string {
+        Understudy::bypassFinals(LowercaseGate::class);
+        $double = Understudy::for(LowercaseGate::class);
+
+        return $double instanceof LowercaseGate ? 'doubled' : 'not a LowercaseGate';
+    })(),
+
     'without-bypass' => (static function (): string {
         try {
             Understudy::for(SealedGate::class);

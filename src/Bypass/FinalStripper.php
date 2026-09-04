@@ -166,7 +166,14 @@ final class FinalStripper
             }
 
             foreach ($targets as $target) {
-                if ($target['class'] === $token[1] && $target['namespace'] === $namespace) {
+                // Case-insensitively, because that is what PHP does with
+                // these names: `final class gate` in `namespace App` IS
+                // `App\Gate`, and `class_exists()` says so. Comparing with
+                // `===` walked past the declaration the target was installed
+                // for and left the class final, with nothing said until
+                // `for()` refused it.
+                if (strcasecmp($target['class'], $token[1]) === 0
+                    && strcasecmp($target['namespace'], $namespace) === 0) {
                     return true;
                 }
             }
