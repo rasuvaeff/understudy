@@ -80,7 +80,7 @@ when(fn () => $repository->find(123))->returns($book);
 | stub: создать, застабить, вызвать, снести | 10.6µs | +17% | +76% | **−17%**¹ |
 | mock: создать, expect, вызвать, verify | 12.8µs | +4% | +128% | **−27%**² |
 | предельная цена одного вызова к стабу | 0.86µs | 1.61µs | 1.51µs | **0.69µs**¹ |
-| добавляет к старту процесса (холодный) | **1.00×** | 1.50× | 4.96× | 5.38׳ |
+| добавляет к старту процесса (холодный) | **1.00×** | 1.50× | 4.96× | 5.38³ |
 | удерживает на каждый живой дубль | **467–482 B** | 513 B | ~8.5 KB | ~1.25 KB |
 
 ¹ `createStub()` ² `createMock()` ³ отношение, а не миллисекунды: холодный
@@ -501,7 +501,7 @@ The protocol is:
 Understudy::checkpoint();                       // проверить и забыть завершённое
 $result = Understudy::scope(fn () => ...);      // вложенный контекст, проверяемый при успехе
 echo Understudy::transcript($repository);       // все вызовы и их исходы
-Understudy::idle();                             // true, если в контексте нет дублей
+Understudy::idle();                             // true, когда тест не держит дублей ни в одном контексте
 ```
 
 `transcript()` хранит каждый вызов до `reset()` или `checkpoint()`. Не
@@ -808,7 +808,7 @@ Configure it first: when(fn () => $double->tag(...))->returns(...)
 
 ```php
 Understudy::reset();
-Understudy::idle();   // true, если в текущем контексте нет ни одного дубля
+Understudy::idle();   // true, когда тест не держит дублей ни в одном контексте
 ```
 
 Адаптеры [understudy-testo](https://github.com/rasuvaeff/understudy-testo) и
@@ -869,7 +869,7 @@ Understudy генерирует по классу на набор контрак
 ## Разработка
 
 ```bash
-make build          # validate, normalize, require-checker, cs, psalm, test
+make build          # validate, normalize, require-checker, cs, psalm, unit, integration, examples
 make cs-fix
 make psalm
 make test

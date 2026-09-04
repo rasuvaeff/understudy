@@ -80,7 +80,7 @@ tables and the environment in [perf/README.md](perf/README.md).
 | stub: build, stub, one call, tear down | 10.6µs | +17% | +76% | **−17%**¹ |
 | mock: build, expect, call, verify | 12.8µs | +4% | +128% | **−27%**² |
 | marginal cost of one call to a stub | 0.86µs | 1.61µs | 1.51µs | **0.69µs**¹ |
-| added to process start (cold) | **1.00×** | 1.50× | 4.96× | 5.38׳ |
+| added to process start (cold) | **1.00×** | 1.50× | 4.96× | 5.38³ |
 | retained per live double | **467–482 B** | 513 B | ~8.5 KB | ~1.25 KB |
 
 ¹ `createStub()` ² `createMock()` ³ a ratio rather than milliseconds: cold start
@@ -500,7 +500,7 @@ stopped at.
 Understudy::checkpoint();                       // verify, then forget what is settled
 $result = Understudy::scope(fn () => ...);      // nested context, verified on success
 echo Understudy::transcript($repository);       // every call and its outcome
-Understudy::idle();                             // true when the context holds no doubles
+Understudy::idle();                             // true when the test holds no doubles, in any context
 ```
 
 `transcript()` retains every invocation until `reset()` or `checkpoint()`.
@@ -810,7 +810,7 @@ prose.
 
 ```php
 Understudy::reset();
-Understudy::idle();   // true when the current context holds no doubles
+Understudy::idle();   // true when the test holds no doubles, in any context
 ```
 
 The [understudy-testo](https://github.com/rasuvaeff/understudy-testo) and
@@ -870,7 +870,7 @@ so `bin/package-audit` runs them as a gate rather than linting them.
 ## Development
 
 ```bash
-make build          # validate, normalize, require-checker, cs, psalm, test
+make build          # validate, normalize, require-checker, cs, psalm, unit, integration, examples
 make cs-fix
 make psalm
 make test

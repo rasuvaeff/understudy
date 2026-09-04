@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- **Documentation review fixes.** llms.txt no longer claims `bypassFinals()`
+  and the runner adapters are «being built next» (both shipped long ago), and
+  now lists all four free functions and the `: static` loose-default rule.
+  The Prophecy migration table no longer teaches a non-existent
+  `expect(…)->never()` — the supported form is `expect(…)->times(0)`.
+  `idle()` comments across the READMEs, llms.txt and the guide now say what
+  the operation does: it covers every context of the test, not the current
+  one. The Performance table's `5.38³` footnote marker was a damaged
+  character. `examples/README.md` now documents `case-studies/` and the gate
+  that runs it (`make docs-cookbook`). AGENTS.md's dead link to the retired
+  site plan replaced with where the decisions live.
+
 ## 0.7.1 — 2026-09-04
 
 - **`bypassFinals()` missed a target whose declaration is written in another

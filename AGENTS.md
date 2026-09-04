@@ -10,8 +10,9 @@ $repo->find(123))->returns($book)`. There are no method-name strings and no
 service methods on the double itself.
 
 Public API lives in `Rasuvaeff\Understudy`: the `Understudy` facade, the free
-functions `when()`/`verify()` in `src/functions.php`, `Arg`, `Invocation`,
-`Outcome`, `WhenBuilder`, and the exceptions under `Exception\`. Everything
+functions `when()`/`expect()`/`expectSequence()`/`verify()` in
+`src/functions.php`, `Arg`, `Invocation`, `Outcome`, `WhenBuilder`, and the
+exceptions under `Exception\`. Everything
 under `Codegen\`, `Runtime\`, `Expectation\`, `Defaults\` and `Matcher\` is
 `@internal`.
 
@@ -438,7 +439,8 @@ seconds instead of the full run's minute — and the full run stays the gate.
 
 `docs/` holds the family site — one VitePress site for all five packages,
 deployed to <https://rasuvaeff.github.io/understudy/> from `master`. The plan
-it was built from is `_plans/UNDERSTUDY-DOCS-SITE-PLAN.md` in the monorepo.
+it was built from was retired from the monorepo once the site shipped; what it
+decided lives in this section and in `docs/scripts/check-integrity.mjs`.
 
 | Rule | Why |
 |---|---|

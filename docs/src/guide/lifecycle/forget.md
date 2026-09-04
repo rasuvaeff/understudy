@@ -34,7 +34,7 @@ One-way, like every other form of forgetting here.
 
 ```php
 Understudy::reset();
-Understudy::idle();   // true when the current context holds no doubles
+Understudy::idle();   // true when the test holds no doubles, in any context
 ```
 
 The [Testo](/adapters/testo) and [PHPUnit](/adapters/phpunit) adapters call
