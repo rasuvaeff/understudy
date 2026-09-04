@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 — 2026-09-04
 
-A minor when released: `Invocation` loses two public properties and `verify()`
-refuses argument combinations it used to resolve by precedence.
+A minor rather than a patch: `Invocation` loses two public properties,
+`verify()` refuses argument combinations it used to resolve by precedence, and
+`notADouble()` gains a required argument. Composer's caret treats that as
+breaking on 0.x, and it is — though every one of them was the engine knowing
+something and not saying it.
 
 - **`Invocation::$file` and `$line` are gone.** They were promoted readonly
   properties on an `@api` class that the dispatcher never filled in and
