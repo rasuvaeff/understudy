@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 — 2026-09-04
+
+A minor rather than a patch: a pair of targets the unifier used to accept is
+now refused. Composer's caret treats that as breaking on 0.x, and it is —
+though what those targets produced was a double that logged an argument value
+neither contract declares.
+
 
 - **Conflicting parameter defaults across unified contracts rejected the
   target instead of quietly becoming `null`.** `Understudy::for(A::class,
@@ -24,7 +30,6 @@
   random phase: both signed zeros, `0` against `0.0` and `'0'`, `''` against
   `null` and `false`, `1` against `true`, and `NAN`, which matches no call
   including itself.
-
 - **The parity matrix gained `ForeignCapture`**: somebody else's zero-argument
   `capture()` written inside a specification. Both analysers must report it,
   and one of them did not — `understudy-psalm` decided a capture by the method
