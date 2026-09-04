@@ -46,8 +46,6 @@ final class Invocation
         public readonly string $method,
         public readonly array $args,
         public readonly int $sequence,
-        public readonly ?string $file = null,
-        public readonly ?int $line = null,
         private readonly ?object $double = null,
         private readonly array $liveArgs = [],
     ) {}
@@ -85,9 +83,6 @@ final class Invocation
         return $this->double === $double;
     }
 
-    /**
-     * @internal called once by the dispatcher when the call finishes
-     */
     /**
      * Delegates this call to the double's real instance and returns what it
      * answered — the `answers()` escape hatch for "behave normally, except

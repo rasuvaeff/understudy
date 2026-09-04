@@ -1031,11 +1031,13 @@ final class UnderstudyTest
         $repository = Understudy::for(BookRepository::class);
         Understudy::reset();
 
-        Expect::exception(InvalidCallSpecification::class)->withMessage(
-            'The specification closure did not call a method on an understudy. '
-            . 'It must contain exactly one direct call, for example: '
-            . 'when(fn () => $repository->find(123))',
-        );
+        // The same answer a CALL on the same object gets, and for the same
+        // reason. It used to be told it was not a double at all — or, before
+        // the facade methods knew their own names, that a specification
+        // closure had gone wrong somewhere.
+        Expect::exception(ForgottenDouble::class)
+            ->withMessageContaining('no longer known to Understudy, but `label()` was called on it')
+            ->withMessageContaining('created before a reset()');
 
         Understudy::label($repository, 'catalogue');
     }

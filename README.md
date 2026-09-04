@@ -606,6 +606,12 @@ another, so `$a->b()->c()` says so rather than inventing a third collaborator
 the test never asked for. Registering a factory for `C` is how you say you meant
 it. Where no safe value exists it says so, and names the way out.
 
+A method declared `: static` is the exception that needs no invention: the
+receiver IS the double, so it answers with itself and a fluent contract chains
+without a stub for each link. `: self` is a different claim — it names the
+contract, not the receiver — and answers with a nested double like any other
+class-typed return.
+
 ### Saying what a default should be
 
 A nested double of `LoggerInterface` answers everything with a default and tells

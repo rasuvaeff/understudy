@@ -8,6 +8,8 @@ use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
+use Rasuvaeff\Understudy\Tests\Fixture\FluentBuilder;
+use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Data\DataProvider;
@@ -101,6 +103,57 @@ final class TypeDefaultResolverTest
         Assert::null(
             TypeDefaultResolver::forSignature('Contract', $this->signature('(\\A&\\B)|null'), 'method', new RuntimeContext()),
         );
+    }
+
+    /**
+     * `: static` names the receiver, and the receiver is the double — so the
+     * double is a valid answer and no invention is needed. It used to refuse,
+     * which made a fluent contract unusable without a stub for every link of
+     * the chain.
+     */
+    public function staticAnswersWithTheDoubleItself(): void
+    {
+        $double = new \stdClass();
+
+        Assert::same(
+            TypeDefaultResolver::forSignature(
+                'Contract',
+                $this->signature('static'),
+                'method',
+                new RuntimeContext(),
+                false,
+                $double,
+            ),
+            $double,
+        );
+    }
+
+    /**
+     * With no double in hand there is nothing `static` could mean — a hooked
+     * property's type resolves through this same table, and refusing is what
+     * the whole table does when it has no safe answer.
+     */
+    public function staticWithoutADoubleStillHasNoSafeDefault(): void
+    {
+        Expect::exception(NoDefaultValue::class);
+
+        TypeDefaultResolver::forSignature('Contract', $this->signature('static'), 'method', new RuntimeContext());
+    }
+
+    /**
+     * The same claim through a real double, because the resolver is only half
+     * of it: the generated method has to declare `static` for the answer to
+     * satisfy PHP's own return check, and a chain has to keep working past
+     * the first link.
+     */
+    public function aFluentContractChainsWithoutAStubPerLink(): void
+    {
+        $double = Understudy::for(FluentBuilder::class);
+
+        Assert::same($double->with(1)->with(2)->with(3), $double);
+        Assert::same($double->build(), '');
+
+        Understudy::reset();
     }
 
     public function anUnknownSignatureAnswersWithNull(): void

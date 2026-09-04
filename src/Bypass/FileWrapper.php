@@ -49,6 +49,12 @@ final class FileWrapper
     /**
      * Installs the wrapper, or widens what it already covers.
      *
+     * Widening only, in both directions: a list added to the global mode
+     * changes nothing, because global already reaches every class the list
+     * names. That is why the branch below looks like it drops the argument —
+     * it does, and the coverage it would have asked for is already there.
+     * Narrowing is `targetOnly()`, which says so in its name.
+     *
      * @param list<array{namespace: string, class: string}>|null $targets null asks for every class
      *                                                                    declaration, which is the
      *                                                                    global mode

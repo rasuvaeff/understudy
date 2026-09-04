@@ -23,11 +23,42 @@ final class InvalidCallSpecification extends \LogicException implements Understu
         );
     }
 
-    public static function notADouble(): self
+    /**
+     * Handed the object directly, so there is no closure to blame — naming
+     * one sends the reader looking for a mistake they have not made.
+     *
+     * @param non-empty-string $facade the method that was given the object
+     */
+    public static function notADouble(string $facade): self
+    {
+        return new self(sprintf(
+            'Understudy::%s() expects an understudy created by Understudy::for(). '
+            . 'This object is not one.',
+            $facade,
+        ));
+    }
+
+    /**
+     * The wording is the analysers' word for word, and deliberately so: a
+     * user who saw the report before running the suite must not have to
+     * recognise a second phrasing of the same mistake afterwards.
+     *
+     * @param non-empty-string $bound the count argument written beside `never`
+     */
+    public static function neverBesideACount(string $bound): self
+    {
+        return new self(sprintf(
+            '`never: true` says the call never happened, and `%s` says how often it did. '
+            . 'Keep the one you mean.',
+            $bound,
+        ));
+    }
+
+    public static function exactCountBesideABound(): self
     {
         return new self(
-            'Understudy::forget() expects an understudy created by Understudy::for(). '
-            . 'This object is not one.',
+            '`times` is an exact count, so a `minimum` or `maximum` beside it has nothing left '
+            . 'to constrain. Use one or the other.',
         );
     }
 

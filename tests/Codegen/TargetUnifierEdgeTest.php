@@ -11,6 +11,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\NullableObjectParam;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentParameterChild;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentReturnBase;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentReturnChild;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentReturnConflict;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfConstantExpression;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\TraversableReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\TypedReturn;
@@ -70,6 +71,28 @@ final class TargetUnifierEdgeTest
         $double = Understudy::for(ParentReturnChild::class);
 
         Assert::instanceOf($double->make(), ParentReturnBase::class);
+    }
+
+    /**
+     * And in the refusal, which is the place it survived: the message paths
+     * rendered the return type without the declaring class, so a reader on
+     * PHP 8.3 or 8.4 was told a target declares `: parent` and left to work
+     * out which class that is. PHP 8.5 resolves it in Reflection, which is
+     * exactly why it went unnoticed — the newest engine papers over it.
+     */
+    public function theParentKeywordIsResolvedInTheConflictMessageToo(): void
+    {
+        try {
+            Understudy::for(ParentReturnChild::class, ParentReturnConflict::class);
+        } catch (UnsupportedTarget $refusal) {
+            Assert::string($refusal->getMessage())
+                ->contains(ParentReturnBase::class)
+                ->notContains(': parent`');
+
+            return;
+        }
+
+        Assert::fail('unifying an unsatisfiable pair of return types did not refuse');
     }
 
     public function theParentKeywordIsResolvedInAParameterToo(): void
