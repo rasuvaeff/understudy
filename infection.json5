@@ -15,6 +15,13 @@
     // warning-only offsets). Two points of headroom stay because the CI
     // mutant count differs from the local one by dozens and a pair of
     // SELF-case mutants flip between runs.
+    //
+    // Two more genuine equivalents joined the remainder with the signed-zero
+    // fix in `DoubleState::literalKey()`: the constant the two float zeros
+    // collapse onto is arbitrary (a collision only widens the candidate list,
+    // which is filtered by `===` afterwards), and removing the call leaves
+    // the value unindexed, which is always correct because the index is an
+    // optimisation of a walk that still exists.
     "minMsi": 92,
     "mutators": {
         "@default": true,

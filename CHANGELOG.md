@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+- **Conflicting parameter defaults across unified contracts rejected the
+  target instead of quietly becoming `null`.** `Understudy::for(A::class,
+  B::class)` where both declare `tag(string $name, int $weight = 5)` and
+  `= 7` rendered `= null` and widened the type to `int|null` to make that
+  legal — so an omitted argument was logged as a value neither contract
+  declares, and `verify(fn () => $double->tag('alpha', 5))` did not match the
+  call `A` would have made. That is the failure `renderDefault()`'s own
+  docblock says the unifier refuses; now it does, the way the by-reference
+  conflict beside it already did. A default declared in one target and absent
+  or required in another is not a conflict and keeps working. Fixes #91.
+- **A stub armed with `-0.0` was invisible to a call made with `0.0`.** The
+  dispatch index keyed a literal first argument by `serialize()`, which is not
+  isomorphic to `===`: `-0.0 === 0.0` is true and `d:-0;` is not `d:0;`. The
+  index is only consulted from the second expectation on a method, so an
+  unrelated second stub changed the first one's behaviour. Fixes #92.
+- `DispatchIndexPropertyTest` gains a second property for identity, over
+  literals of every scalar type — the existing one draws `int` only, so no
+  float, let alone a signed zero, was ever reached. The pairs a key can get
+  wrong in either direction are named `Examples()` rather than left to the
+  random phase: both signed zeros, `0` against `0.0` and `'0'`, `''` against
+  `null` and `false`, `1` against `true`, and `NAN`, which matches no call
+  including itself.
+
 - **The parity matrix gained `ForeignCapture`**: somebody else's zero-argument
   `capture()` written inside a specification. Both analysers must report it,
   and one of them did not — `understudy-psalm` decided a capture by the method

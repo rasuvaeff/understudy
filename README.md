@@ -136,7 +136,12 @@ $double = Understudy::for(BookRepository::class, Countable::class);
 Understudy unifies compatible signatures across those interfaces: parameter
 types are widened, return types use the narrowest compatible declaration or a
 synthesised interface intersection, and named arguments follow the first
-(primary) interface. Static contract methods exist on the generated class so
+(primary) interface. What cannot be unified faithfully is refused with
+`UnsupportedTarget` rather than approximated — one target taking a parameter by
+reference and another by value, and two targets declaring the same optional
+parameter with different defaults. A default is part of what a call logs, so
+picking one of two would make the other's omitted argument record a value its
+contract never declares. Static contract methods exist on the generated class so
 the interface can be implemented, but calling one raises
 `InvalidCallSpecification`: a static call has no double instance to own its
 state.

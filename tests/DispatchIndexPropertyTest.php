@@ -10,6 +10,7 @@ use Rasuvaeff\PropertyTesting\Gen;
 use Rasuvaeff\PropertyTesting\Property;
 use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Tests\Fixture\Ledger;
 use Rasuvaeff\Understudy\Tests\Fixture\Tally;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
@@ -100,6 +101,106 @@ final class DispatchIndexPropertyTest
             'encoded' => Gen::arrayOf(Gen::intBetween(0, 12), 0, 8),
             'call' => Gen::intBetween(0, 6),
         ];
+    }
+
+    /**
+     * The literals the index has to tell apart, and the pairs `===` calls
+     * equal while their serialisations differ or the other way round.
+     *
+     * `-0.0` and `0.0` are one value to `===` and two to `serialize()`, which
+     * is what the key used to be: a stub armed with one was invisible to a
+     * call made with the other, but only once a second expectation brought
+     * the index into play — so an unrelated stub changed the first one's
+     * behaviour. `NAN` is the opposite: one key for values `===` calls
+     * distinct, which is harmless because the candidates the index returns
+     * are still compared with `===`.
+     *
+     * The rest are the pairs a looser key would conflate: `0` against `0.0`
+     * and `'0'`, `''` against `null` and `false`, `1` against `true`.
+     */
+    private const array LITERALS = [
+        -0.0, 0.0, 0, '0', '', null, false, true, 1, 1.0, NAN, 'a',
+    ];
+
+    /**
+     * The same claim as above for a first argument of any scalar type: the
+     * index answers whatever a most-recent-first walk comparing with `===`
+     * would have.
+     *
+     * A separate property rather than a wider alphabet in the one above,
+     * because that one is about ORDER — literals shadowing ranges shadowing
+     * catch-alls — and this one is about IDENTITY. Mixing them would leave
+     * both under-covered in the same number of runs.
+     *
+     * @param list<int> $armed indexes into {@see LITERALS}
+     */
+    #[Property(runs: 300, timeoutMs: 10_000)]
+    public function theIndexAgreesWithIdentityForAnyLiteral(array $armed, int $called): void
+    {
+        Classify::cover($armed === [], 'no expectations', 2.0);
+        Classify::cover(count($armed) > 1, 'the index is consulted at all', 40.0);
+        Classify::cover($this->identityAnswer($armed, $called) === null, 'nothing matched', 10.0);
+
+        $double = Understudy::for(Ledger::class);
+
+        foreach ($armed as $position => $index) {
+            $argument = self::LITERALS[$index];
+
+            when(static fn() => $double->at($argument))->returns($position);
+        }
+
+        Assert::same($double->at(self::LITERALS[$called]), $this->identityAnswer($armed, $called) ?? 0);
+    }
+
+    /**
+     * The pairs that made the key wrong, and the neighbours a fix could break
+     * by widening it. None of these is likely to be drawn twice in one run by
+     * chance, and each is a bug somebody has shipped.
+     */
+    public static function theIndexAgreesWithIdentityForAnyLiteralExamples(): iterable
+    {
+        // The bug: `-0.0` armed, `0.0` called, with a second expectation to
+        // make the index matter at all.
+        yield 'a negative zero answers a positive one' => [[0, 11], 1];
+        yield 'a positive zero answers a negative one' => [[1, 11], 0];
+        // The neighbours: distinct values a looser key would conflate.
+        yield 'an int zero is not a float zero' => [[2, 11], 1];
+        yield 'a string zero is not an int zero' => [[3, 11], 2];
+        yield 'an empty string is not null' => [[4, 11], 5];
+        yield 'false is not null' => [[6, 11], 5];
+        yield 'true is not one' => [[7, 11], 8];
+        yield 'an int one is not a float one' => [[8, 11], 9];
+        // NAN is equal to nothing, itself included.
+        yield 'NAN matches no call, not even NAN' => [[10, 11], 10];
+        yield 'a single expectation skips the index entirely' => [[0], 1];
+    }
+
+    /** @return array<string, ArbitraryInterface> */
+    public static function theIndexAgreesWithIdentityForAnyLiteralGenerators(): array
+    {
+        $last = count(self::LITERALS) - 1;
+
+        return [
+            'armed' => Gen::arrayOf(Gen::intBetween(0, $last), 0, 6),
+            'called' => Gen::intBetween(0, $last),
+        ];
+    }
+
+    /**
+     * The most recently registered expectation whose literal IS the call's,
+     * by the same `===` the dispatcher applies to its candidates.
+     *
+     * @param list<int> $armed
+     */
+    private function identityAnswer(array $armed, int $called): ?int
+    {
+        for ($position = count($armed) - 1; $position >= 0; --$position) {
+            if (self::LITERALS[$armed[$position]] === self::LITERALS[$called]) {
+                return $position;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -459,11 +459,29 @@ final class DoubleState
      * A cheap, exact discriminator for a first argument that is compared by
      * identity anyway. Anything that is not — a matcher, or a value whose
      * identity is not its content — has no key and stays in the walked list.
+     *
+     * The key has to agree with `===`, which `serialize()` does not do on its
+     * own: `-0.0 === 0.0` is true and their serialisations differ, so a stub
+     * armed with one was invisible to a call made with the other — but only
+     * once a second expectation on that method brought the index into play,
+     * which made an unrelated stub change the first one's behaviour.
+     *
+     * The other direction needs no handling. `NAN` gets one key for values
+     * `===` calls distinct, and that is harmless: the index only narrows the
+     * candidates, and `Expectation::matchesArguments()` still compares each
+     * one with `===`, rejecting a `NAN` expectation exactly as the walk it
+     * replaced did.
      */
     private function literalKey(mixed $value): ?string
     {
         if ($value instanceof ArgumentMatcher || is_array($value) || is_object($value) || is_resource($value)) {
             return null;
+        }
+
+        // True for both float zeros and, being strict, for neither the
+        // integer `0` nor `'0'` — which are different keys on purpose.
+        if ($value === 0.0) {
+            return serialize(0.0);
         }
 
         return serialize($value);
