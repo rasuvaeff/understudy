@@ -18,7 +18,8 @@ No runtime deps; `ext-mbstring` is not needed.
 - The closure must contain **exactly one** direct call on a double. Anything
   else raises `InvalidCallSpecification`.
 - A double exposes nothing beyond its contract. All operations are static
-  methods on `Understudy`, or the free functions `when()` / `verify()`.
+  methods on `Understudy`, or the free functions `when()` / `expect()` /
+  `expectSequence()` / `verify()`.
 - Interfaces and classes. A class may be the first target only (PHP has single
   inheritance); interfaces follow it. The target's constructor and destructor
   never run, private and static methods are left alone, protected ones are
@@ -347,7 +348,7 @@ where the stack trace points at `verifyAll()`. Rules, all of them load-bearing:
 Understudy::checkpoint();            // verify, then forget what is settled
 $result = Understudy::scope(fn () => ...);   // nested context, verified on success
 Understudy::transcript($repo);       // every call and outcome, for reading
-Understudy::idle();                  // true when the current context holds no doubles
+Understudy::idle();                  // true when the test holds no doubles, in any context
 ```
 
 `scope()` returns whatever the callback returns and drops its context either
@@ -408,7 +409,9 @@ Understudy::reset();                         // drop the current context
 Loose (default) answers with a type-safe default: `null` for `void`/`mixed`/
 nullable, `false`, `0`, `0.0`, `''`, `[]`, `new stdClass()`, an empty
 `Generator`, an `EmptyIterator`, a no-op callable. A type with no safe default
-raises `NoDefaultValue`; a `never` method raises `NeverMethodCalled`.
+raises `NoDefaultValue`; a `never` method raises `NeverMethodCalled`. A method
+declared `: static` answers with the double itself; `: self` names the contract
+and answers with a nested double.
 
 ### Exceptions
 
@@ -465,5 +468,4 @@ change. New kinds and newly-populated fields are additive.
 ## Not supported
 
 Static method mocking, patching at the point of use, deep stubs, duck doubles,
-sharing state across processes. `bypassFinals()` and the runner adapters are
-being built next.
+sharing state across processes.

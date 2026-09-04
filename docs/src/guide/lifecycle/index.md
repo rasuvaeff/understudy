@@ -9,7 +9,7 @@ description: "checkpoint(), scope(), transcript() and the call log — what owns
 Understudy::checkpoint();                       // verify, then forget what is settled
 $result = Understudy::scope(fn () => ...);      // nested context, verified on success
 echo Understudy::transcript($repository);       // every call and its outcome
-Understudy::idle();                             // true when the context holds no doubles
+Understudy::idle();                             // true when the test holds no doubles, in any context
 ```
 
 ## The context
@@ -77,7 +77,7 @@ problem, not a size one.
 
 ```php
 Understudy::reset();
-Understudy::idle();   // true when the current context holds no doubles
+Understudy::idle();   // true when the test holds no doubles, in any context
 ```
 
 The [Testo](/adapters/testo) and [PHPUnit](/adapters/phpunit) adapters verify

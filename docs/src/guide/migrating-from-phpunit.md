@@ -128,7 +128,7 @@ PHPUnit 10 dropped Prophecy from the box, so this is a common second hop.
 | `Argument::any()` / `type()` / `that()` | `Arg::any()` / `Arg::instanceOf()` / `Arg::satisfies()` |
 | `->shouldBeCalled()` | `expect(…)` |
 | `->shouldBeCalledTimes(n)` | `expect(…)->times(n)` |
-| `->shouldNotBeCalled()` | `expect(…)->never()` |
+| `->shouldNotBeCalled()` | `expect(…)->times(0)` |
 | `->shouldHaveBeenCalled()` | [`verify(…)`](/guide/expectations/verify) |
 | `$prophet->checkPredictions()` | `Understudy::verifyAll()`, or the adapter |
 
