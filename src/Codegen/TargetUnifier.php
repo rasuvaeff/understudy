@@ -894,7 +894,13 @@ final class TargetUnifier
         $parameterName = 'p' . $position;
         $untyped = false;
         $acceptsMatcher = false;
-        $declaredDefaults = [];
+        // Two scalars rather than a set keyed by the rendered default:
+        // PHP turns a numeric-string key into an int, so `'5'` and `'5'`
+        // would compare `!==` after a round trip through an array. The
+        // empty string is the "nobody declared one" sentinel —
+        // `renderDefault()` never returns it.
+        $declaredDefault = '';
+        $defaultDeclaredBy = null;
 
         foreach ($declarations as $declaration) {
             $parameter = $declaration->getParameters()[$position] ?? null;
@@ -936,7 +942,29 @@ final class TargetUnifier
             $requiredEverywhere = $requiredEverywhere && !$parameter->isOptional();
 
             if ($parameter->isDefaultValueAvailable()) {
-                $declaredDefaults[self::renderDefault($parameter, $name)] = true;
+                $declared = self::renderDefault($parameter, $name);
+
+                // Two targets disagreeing about the default is the one case
+                // the unifier cannot render faithfully. Keeping either would
+                // make the other's omitted argument log a value it never
+                // received, and `null` — which is what this used to do —
+                // makes both wrong at once while widening the type to hide
+                // it. A double that answers with a different default than the
+                // real thing is a test that passes for the wrong reason.
+                //
+                // The FIRST target to declare one is the one named against
+                // the disagreeing target, so a conflict among three reads as
+                // one pair and not as whichever two happened to be adjacent.
+                if ($defaultDeclaredBy === null) {
+                    $declaredDefault = $declared;
+                    $defaultDeclaredBy = $declaration;
+                } elseif ($declaredDefault !== $declared) {
+                    throw UnsupportedTarget::signatureConflict(
+                        $name,
+                        self::describe($defaultDeclaredBy) . ' defaults parameter #' . ($position + 1) . ' to ' . $declaredDefault,
+                        self::describe($declaration) . ' defaults it to ' . $declared,
+                    );
+                }
             }
         }
 
@@ -971,7 +999,12 @@ final class TargetUnifier
         // Keeping the contract's own default is what makes an omitted argument
         // observable: `tag('alpha')` must log the same arguments as
         // `tag('alpha', 1)`, or the two would verify as different calls.
-        $default = count($declaredDefaults) === 1 ? array_key_first($declaredDefaults) : 'null';
+        //
+        // Empty only when no target declares one — the parameter is optional
+        // here because another target does not declare it at all, so there is
+        // no contract default to preserve. Conflicting defaults never reach
+        // this line; they reject the target above.
+        $default = $declaredDefault === '' ? 'null' : $declaredDefault;
 
         if ($optional && $default === 'null' && $type !== '' && !str_contains($type, 'null')) {
             // `= null` on a non-nullable type is an implicitly nullable

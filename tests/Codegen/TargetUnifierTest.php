@@ -99,6 +99,10 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\StdClassAll;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StdClassFactory;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StringFlag;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StringyOnly;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\TaggerFive;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\TaggerFiveToo;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\TaggerRequired;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\TaggerSeven;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\TraversableAlphaUnion;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\TripleUnion;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\TrueFlag;
@@ -449,6 +453,58 @@ final class TargetUnifierTest
         );
 
         $this->unify(FeederByRef::class, FeederByValue::class);
+    }
+
+    /**
+     * The default is part of what the double logs: an omitted argument has to
+     * be recorded as the value the target would have received, or
+     * `tag('alpha')` and `tag('alpha', 5)` stop verifying as the same call.
+     *
+     * Two targets disagreeing about it is the one case that cannot be
+     * rendered faithfully — which is why it is refused rather than resolved.
+     * It used to render `= null` and widen the type to `int|null` to make
+     * that legal, so BOTH targets' omitted arguments logged a value neither
+     * contract declares, and nothing said so.
+     */
+    public function conflictingParameterDefaultsAreRejected(): void
+    {
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            "Cannot create one understudy for these targets: method `tag()` has no implementation that satisfies all of them.\n"
+            . '  `' . TaggerFive::class . "::tag()` defaults parameter #2 to 5\n"
+            . '  `' . TaggerSeven::class . '::tag()` defaults it to 7',
+        );
+
+        $this->unify(TaggerFive::class, TaggerSeven::class);
+    }
+
+    /**
+     * The neighbouring shapes that are NOT a conflict, and have to keep
+     * working: one target declaring the default and another declaring the
+     * parameter required leaves exactly one default to preserve, and the same
+     * default written twice is one value however many targets declare it.
+     */
+    public function aDefaultDeclaredOnlyOnceIsKept(): void
+    {
+        Assert::string($this->tagParameters(TaggerFive::class, TaggerRequired::class))
+            ->contains('$weight = 5');
+
+        Assert::string($this->tagParameters(TaggerFive::class, TaggerFive::class))
+            ->contains('$weight = 5');
+    }
+
+    /**
+     * Among three targets the report names the FIRST to declare a default
+     * against the one that disagrees — not whichever two happen to be
+     * adjacent, which would make the same conflict read differently
+     * depending on the order the targets were passed in.
+     */
+    public function theFirstTargetToDeclareADefaultIsTheOneNamed(): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining(TaggerFive::class . '::tag()` defaults parameter #2 to 5')
+            ->withMessageContaining(TaggerSeven::class . '::tag()` defaults it to 7');
+
+        $this->unify(TaggerFive::class, TaggerFiveToo::class, TaggerSeven::class);
     }
 
     public function returnByReferenceMismatchIsRejected(): void
@@ -1093,6 +1149,15 @@ final class TargetUnifierTest
             static fn(string $contract): \ReflectionClass => new \ReflectionClass($contract),
             array_values($contracts),
         ));
+    }
+
+    private function tagParameters(string ...$contracts): string
+    {
+        $signature = $this->unify(...$contracts)['tag'] ?? null;
+
+        Assert::instanceOf($signature, MethodSignature::class);
+
+        return $signature instanceof MethodSignature ? $signature->parameters : '';
     }
 
     private function showcase(string $method): MethodSignature
