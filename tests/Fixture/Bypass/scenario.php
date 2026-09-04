@@ -34,8 +34,16 @@ echo match ($scenario) {
     // The name handed to `bypassFinals()` is the one this file writes; the
     // declaration writes it in another case. PHP calls them one class, and so
     // must the strip.
-    'case-insensitive-target' => (static function (): string {
+    //
+    // Required by hand rather than autoloaded, and not for convenience:
+    // Composer's classmap keys a class by the case it was DECLARED in, and
+    // under `--classmap-authoritative` the lookup is exact — so the very
+    // mismatch this scenario is about would make the autoloader miss the file
+    // before the stripper ever saw it. The require goes through the wrapper
+    // exactly as an autoloaded include would.
+    'case-insensitive-target' => (static function () use ($fixtures): string {
         Understudy::bypassFinals(LowercaseGate::class);
+        require $fixtures . '/LowercaseGate.php';
         $double = Understudy::for(LowercaseGate::class);
 
         return $double instanceof LowercaseGate ? 'doubled' : 'not a LowercaseGate';
