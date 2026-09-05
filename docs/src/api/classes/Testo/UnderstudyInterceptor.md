@@ -9,7 +9,7 @@ description: "Ends every test with understudy's own bookkeeping done for it."
 
 `Rasuvaeff\Understudy\Testo\UnderstudyInterceptor`
 
-**Class** — **Package:** [rasuvaeff/understudy-testo](https://github.com/rasuvaeff/understudy-testo) — [Source](https://github.com/rasuvaeff/understudy-testo/blob/cb5eae3591ccf730503566f237679fb63a07a677/src/Testo/UnderstudyInterceptor.php#L51) — **Version:** v0.3.1
+**Class** — **Package:** [rasuvaeff/understudy-testo](https://github.com/rasuvaeff/understudy-testo) — [Source](https://github.com/rasuvaeff/understudy-testo/blob/cfadaafe636854ab66c55cf27d5acb122a707e2f/src/Testo/UnderstudyInterceptor.php#L51) — **Version:** v0.3.2
 
 **Implements:** `Testo\Pipeline\Middleware\TestRunInterceptor`, `Testo\Pipeline\Interceptor`
 
@@ -54,6 +54,8 @@ runTest(
     callable $next,
 ): Testo\Core\Context\TestResult
 ```
+
+Runs a Testo test and verifies any understudy expectations it created.
 
 *Documentation inherited from `Testo\Pipeline\Middleware\TestRunInterceptor`.*
 

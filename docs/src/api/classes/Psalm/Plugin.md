@@ -9,7 +9,7 @@ description: "Entry point registered through `extra.psalm.pluginClass`, so `vend
 
 `Rasuvaeff\Understudy\Psalm\Plugin`
 
-**Class** — **Package:** [rasuvaeff/understudy-psalm](https://github.com/rasuvaeff/understudy-psalm) — [Source](https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Plugin.php#L18) — **Version:** v0.8.1
+**Class** — **Package:** [rasuvaeff/understudy-psalm](https://github.com/rasuvaeff/understudy-psalm) — [Source](https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Plugin.php#L18) — **Version:** v0.8.2
 
 **Implements:** `Psalm\Plugin\PluginEntryPointInterface`, `Psalm\Plugin\PluginInterface`
 
@@ -27,4 +27,6 @@ __invoke(
     ?SimpleXMLElement $config = NULL,
 ): void
 ```
+
+Loads the plugin hooks and registers them with Psalm.
 
