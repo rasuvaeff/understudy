@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 — 2026-09-05
 
 - **`Understudy::for()` no longer kills the process on five built-in
   interfaces.** `Throwable`, `UnitEnum`, `BackedEnum`, `DateTimeInterface` and
