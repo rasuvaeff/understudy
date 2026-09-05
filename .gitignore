@@ -1,5 +1,8 @@
 vendor/
 composer.lock
+# The API reflection workspace is a project, not a library: its lock is what
+# the site documents the satellites from, and it moves with their releases.
+!/docs/.api-workspace/composer.lock
 .php-cs-fixer.cache
 /build/*
 !/build/.gitkeep

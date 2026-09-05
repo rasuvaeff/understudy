@@ -9,7 +9,7 @@ description: "Argument matchers, usable only inside a specification closure:"
 
 `Rasuvaeff\Understudy\Arg`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Arg.php#L49) — **Version:** v0.8.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Arg.php#L49) — **Version:** v0.9.0
 
 Argument matchers, usable only inside a specification closure:
 
