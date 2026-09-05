@@ -65,7 +65,11 @@ arithmetic reports `int<-1, max>` before the test even runs.
 ## The transcript
 
 `transcript()` renders every call and its outcome, and retains every invocation
-until `reset()` or `checkpoint()`.
+until `reset()`. `checkpoint()` clears only the calls it **settled** — the ones
+a matching `expect()` or a successful `verify()` claimed — because an unclaimed
+call is still what `nothingElse()` reads; a call covered by a `when()` stub
+alone survives every checkpoint of a long test. Use `reset()`, `scope()` or
+`lean()` to let go of everything.
 
 Avoid unbounded hot loops through a double when the arguments or results hold
 large object graphs; use a real fake for load-sized workloads. Where the

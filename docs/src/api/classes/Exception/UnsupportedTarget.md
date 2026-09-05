@@ -9,7 +9,7 @@ description: "The requested target cannot be doubled, and no option would make i
 
 `Rasuvaeff\Understudy\Exception\UnsupportedTarget`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/UnsupportedTarget.php#L13) — **Version:** v0.7.2
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/UnsupportedTarget.php#L13) — **Version:** v0.8.0
 
 **Extends:** `LogicException`
 
@@ -25,6 +25,9 @@ without the user changing something. The message names that something.
 ```php
 static missing(string $target): Exception\UnsupportedTarget
 ```
+
+No class or interface of that name is loadable — usually a typo, or a
+class the autoloader cannot see from the test.
 
 ### notDoublable()
 

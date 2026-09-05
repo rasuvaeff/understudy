@@ -58,7 +58,7 @@ when(fn () => $repository->find(123))->returns($book);
 | `->andThrow(new NotFound())` | `->throws(new NotFound())` | |
 | `->with(123, Mockery::any())` | в замыкании: `find(123, Arg::any())` | |
 | `Mockery::on(fn ($x) => ...)` | `Arg::satisfies(fn ($x) => ...)` | |
-| `$mock->shouldNotHaveReceived('save')` | `Understudy::unused($mock)` | |
+| `$mock->shouldNotHaveReceived('save')` | `verify(fn () => $mock->save(...), never: true)` | `Understudy::unused($mock)` — когда дубль не должны были трогать вообще |
 | `$mock->shouldHaveReceived('save')` | `verify(fn () => $mock->save(...))` | пост-фактум; добавьте `nothingElse()` — см. ниже |
 | `Mockery::close()` | reset() адаптера или свой teardown | |
 | `->makePartial()` / `Mockery::spy($real)` | `Understudy::delegate(Contract::class, $real)` + стабы поверх | стаб побеждает, остальное выполняется по-настоящему — и записывается |
@@ -304,16 +304,19 @@ when(fn () => $storage->recordOutcome('svc', Arg::rest()))
 Спецификация, остановившаяся раньше *без* `Arg::rest()` в конце, отвергается с
 объяснением — вместо того чтобы стать стабом, который молча никогда не
 совпадёт. Более поздняя узкая спецификация того же вызова по-прежнему
-побеждает широкий префиксный стаб. Один нюанс: статанализатор читает
-укороченный вызов против арности контракта и сообщит «too few arguments» на
-этой строке, пока не знает идиому.
+побеждает широкий префиксный стаб. Статанализатор читает укороченный вызов
+против арности контракта; плагин
+[understudy-psalm](https://github.com/rasuvaeff/understudy-psalm) и расширение
+[understudy-phpstan](https://github.com/rasuvaeff/understudy-phpstan) знают
+идиому и эту строку не краснят.
 
 Типовые матчеры намеренно строгие: `Arg::int()` отвергает `'5'`, а
 `Arg::float()` отвергает `1`. Матчер закрепляет объявленный тип не меньше, чем
 значение, — ради этого он и нужен в коде со `strict_types`.
 
-Матчер, который не смог бы совпасть ни с чем, отвергается там, где написан, а
-не проваливает ожидание в teardown: `Arg::int(min: 5, max: 1)` и его собратья
+Матчер, который не смог бы совпасть ни с чем, отвергается там, где написан —
+исключением `InvalidSpecificationArgument`, — а не проваливает ожидание в
+teardown: `Arg::int(min: 5, max: 1)` и его собратья
 `float`/`count` описывают пустой диапазон, `Arg::string('/[unclosed')` — не
 компилируемый PCRE-паттерн, который вдобавок поднимал бы warning внутри
 тестируемого кода на каждом вызове, а `Arg::instanceOf()` требует загружаемый
@@ -820,9 +823,10 @@ Configure it first: when(fn () => $double->tag(...))->returns(...)
 Сообщение написано для человека, и его формулировка в публичный контракт
 пакета не входит: патч-релиз вправе переписать текст. Всё, что действует по
 ошибке, а не печатает её — адаптер раннера, плагин IDE, агрегатор отчётов, —
-читает `VerificationFailed::failures()`: кейсы `FailureKind` и readonly-поля
-`VerificationFailure` заморожены как публичный API с v0.1.0. Тест, который
-ассертит точный текст сообщения, ассертит прозу.
+читает `VerificationFailed::failures()`: readonly-поля `VerificationFailure` и
+каждый существующий кейс `FailureKind` стабильны, а **новый** кейс может
+приехать в миноре — поэтому `match` по enum пишите с ветвью `default`, а не
+исчерпывающим. Тест, который ассертит точный текст сообщения, ассертит прозу.
 
 ### Очистка
 

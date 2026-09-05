@@ -30,7 +30,7 @@ Two rules the whole API rests on:
    closure must contain exactly one direct call on a double; anything else
    raises `InvalidCallSpecification`.
 2. **The double exposes nothing beyond its contract.** Every operation is a
-   static method on `Understudy` or one of the three free functions. There is
+   static method on `Understudy` or one of the four free functions. There is
    no `->shouldReceive()`, no `->expects()`, nothing to collide with a method
    the contract already has.
 
@@ -85,6 +85,7 @@ not a refactor. **Reviewers: check for it every time.**
 | Did anything else happen to this double? | `Understudy::nothingElse($a, $b, …)` |
 | Both, for one double | `Understudy::allVerified($double)` |
 | Was the whole protocol exactly this, in order? | `Understudy::verifySequence(...)` |
+| Fail at the call that breaks the order, not in teardown | `Understudy::expectSequence(...)`, armed before the run |
 | Was this double untouched? | `Understudy::unused($double)` |
 
 A call is *accounted for* when an `expect()` matched it or a **successful**
@@ -98,8 +99,9 @@ is the tool when the whole protocol matters — it compares double identity too.
 ## Matchers — `Arg`
 
 `any`, `int(min:, max:)`, `float(min:, max:)`, `bool`, `string(matches:)`,
-`same`, `not`, `instanceOf`, `satisfies`, `containing`, `count`, `which`,
-`none`, `remaining`.
+`same`, `not`, `allOf`, `anyOf`, `instanceOf`, `satisfies`, `containing`,
+`count`, `which`, `none`, `remaining`, `rest`; a typed captor through
+`Arg::captor()`.
 
 **Register broad first, specific after.** Matching takes the most recently
 registered stub that matches, so a catch-all registered last shadows
@@ -116,7 +118,15 @@ does not hand over to an older stub.
 
 Every `Arg::*` returns `mixed`, so passing one where the contract says `int`
 is not an IDE type error. A matcher that reaches a real call raises
-`MatcherLeaked`.
+`MatcherLeaked`; one that could never match — an inverted range, a broken
+pattern, an unloadable `instanceOf()` type — is refused where it is written
+with `InvalidSpecificationArgument`.
+
+`Arg::rest()` is the one matcher that lets a specification stop before the
+method's required parameters run out — `when(fn () => $s->record('svc',
+Arg::rest()))`; stopping early without it is refused. `Arg::captor(X::class)`
+plus `$captor->capture()` in the specification, then `$captor->last()` /
+`all()`, is the typed replacement for reading `args[N]` out of the call log.
 
 ## Choosing a target
 
@@ -127,6 +137,7 @@ is not an IDE type error. A matcher that reaches a real call raises
 | A non-final class | `Understudy::for(SomeClass::class)` |
 | A real instance, to spy on | `Understudy::for($real)` |
 | …and delegate unmatched calls to it | `Understudy::forwarding($double, $real)` |
+| A real instance with unmatched calls delegated, in one expression | `Understudy::delegate(Contract::class, $real)` |
 | A `final` class | `Understudy::bypassFinals(X::class)` **before it loads** |
 
 Refused, each by name: a `final` class without bypass, a class with a
@@ -153,8 +164,9 @@ Nearest registration wins by distance in the type graph; an equal-distance
 tie raises `AmbiguousDefaultFactory`. Registrations belong to the context and
 go with `reset()`.
 
-Note: a **nullable** return answers `null` before the registry is consulted,
-so a registration for `Book` has no effect on a method declared `?Book`.
+A registration outranks `null` on a nullable return: a method declared `?Book`
+answers with the registered `Book`, and is `null` only when nothing was
+registered for it.
 
 ## Building the system under test
 
@@ -177,7 +189,11 @@ Without one, call `Understudy::reset()` in your own teardown, always.
 
 `Understudy::scope(fn () => …)` opens a nested context verified on success and
 dropped either way. `Understudy::checkpoint()` verifies and clears what is
-settled, keeping the doubles — for a test that runs in phases.
+settled — the calls a matching `expect()` or a successful `verify()` claimed —
+keeping the doubles, for a test that runs in phases. `Understudy::lean($double)`
+keeps calls but not returned values: for a double whose returns own OS
+resources, which the log would otherwise hold until the adapter's reset, after
+your teardown.
 
 **Isolation is per Fiber; accounting is per test.** A Fiber gets its own
 recording phase, call log and sequence counter, but `verifyAll()`, `reset()`,
@@ -207,7 +223,8 @@ A caught `VerificationFailed` carries `->failures(): list<VerificationFailure>`
 `observedCalls`, `expectedCalls`, and its own rendered `summary`. The
 exception's message is exactly the summaries joined with a blank line. Use
 the records when a tool needs to act on a failure; use the message when a
-human reads it. The fields are frozen public API from v0.1.0.
+human reads it. The fields are stable; a new `FailureKind` case may arrive in a
+minor, so match on the enum with a `default` arm.
 
 ## Migrating from Mockery or a hand-rolled spy
 

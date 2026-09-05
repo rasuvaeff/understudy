@@ -21,10 +21,13 @@ use Rasuvaeff\Understudy\Expectation\ThrowError;
  *
  * Not `final`, and the one class here that is not: `ExpectBuilder` extends it
  * to add the cardinality verbs, and the two are one fluent vocabulary rather
- * than two. The cost is that `protected readonly Expectation` — an
- * `@internal` type — is reachable from a subclass a consumer could write. That
- * is tolerated rather than intended: nothing in the contract invites it, and
- * closing it would mean duplicating every action verb.
+ * than two. For everyone else it is closed by contract, not by keyword:
+ * subclassing is not supported, the `protected readonly Expectation` it
+ * carries is an `@internal` type that may change in any release, and a subclass
+ * reading it is on its own. The keyword is missing only because closing the
+ * class would mean duplicating every action verb on `ExpectBuilder` — and a
+ * `@final` tag is not an option either, since Psalm would then refuse
+ * `ExpectBuilder` itself.
  *
  * @template TReturn
  *
@@ -72,6 +75,10 @@ class WhenBuilder
         return $this;
     }
 
+    /**
+     * Throws this exact instance on the call — the same object every time the
+     * link answers, which is what a test holding a reference to it expects.
+     */
     public function throws(\Throwable $error): static
     {
         $this->expectation->setAction(new ThrowError($error), $this->slot);

@@ -425,7 +425,9 @@ final class ErrorPathTest
             Assert::string($failure->getMessage())
                 ->contains('a resource cannot be passed as a constructor argument');
         } finally {
-            \is_resource($handle) && fclose($handle);
+            if (\is_resource($handle)) {
+                fclose($handle);
+            }
         }
     }
 

@@ -7,7 +7,6 @@ namespace Rasuvaeff\Understudy\Runtime;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
-use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
@@ -343,9 +342,9 @@ final class Runtime
     {
         $owner = self::ownerOf($double);
 
-        if ($owner === null || $owner->stateOf($double) === null) {
-            throw InvalidCallSpecification::noCallRecorded();
-        }
+        // The facade has already answered for a stranger, a retired double and
+        // a foreign context through `stateOf()`; what reaches here is owned.
+        \assert($owner !== null && $owner->stateOf($double) !== null);
 
         $owner->forget($double);
         self::owners()->offsetUnset($double);

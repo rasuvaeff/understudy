@@ -159,4 +159,37 @@ final class LastCallAndForgetTest
 
         Understudy::forget(new \stdClass());
     }
+
+    /**
+     * The object IS a double, so the answer is the one every other facade
+     * gives for a retired one — not «this object is not one», which sent the
+     * reader looking for a mistake they had not made.
+     */
+    public function forgettingADoubleTwiceSaysItWasRetired(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        Understudy::forget($repository);
+
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            'This understudy was retired with Understudy::forget() and can no longer be asked '
+            . 'anything — not calls, not verification. A replacement built afterwards is a '
+            . 'different object; ask that one.',
+        );
+
+        Understudy::forget($repository);
+    }
+
+    public function forgettingADoubleAfterResetSaysItIsGone(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        Understudy::reset();
+
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            "This understudy is no longer known to Understudy, but `forget()` was called on it.\n"
+            . 'It was created before a reset(); create doubles inside the test that uses them '
+            . 'rather than sharing one across tests.',
+        );
+
+        Understudy::forget($repository);
+    }
 }

@@ -45,7 +45,8 @@ $repository->find(Arg::int());   // a real call, not a specification
 
 A matcher reaching a real call raises `MatcherLeaked` at run time, and an
 analyser package that hid it would be worse than no package at all. Both report
-it — PHPStan under the identifier `understudy.matcherLeak`.
+it — PHPStan under the identifier `understudy.matcherLeak`, at every level;
+Psalm through its own `MixedArgument`, which exists only at `errorLevel="1"`.
 
 Everything else around a specification keeps its reports too: a wrong argument
 beside a matcher, a method the double does not have, the statements around the
@@ -59,7 +60,7 @@ closure.
 | `understudy.cardinality` | `times(5, 2)`, a negative bound, `verify(…, never: true, times: 3)`, `times` beside a `minimum` |
 | `understudy.matcher` | a matcher whose kind the parameter can never accept: `Arg::int()` where a `string` is declared |
 | `understudy.returns` | `returns()` on a method declared `void`, where no value is ever observed |
-| `understudy.matcherLeak` | a matcher written outside a specification, where it reaches the code as a value |
+| `understudy.matcherLeak` | a matcher written outside a specification and outside any closure, where it reaches the code as a value; one hoisted into a variable, stored on a property or written in a closure handed over later is not one |
 
 Psalm reports the same family under one issue type, `UnderstudyMisuse`.
 

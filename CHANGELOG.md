@@ -1,5 +1,80 @@
 # Changelog
 
+## 0.9.0 — 2026-09-05
+
+The 1.0 candidate. A minor rather than a patch, and the last one before the
+contract freezes: every decision of the 1.0-readiness review lands here, so
+that the tag after this one can be `1.0.0` without a change to the surface.
+Two of them are breaking on 0.x and Composer's caret already treats them so.
+
+- **`forget()` answers `ForgottenDouble` for a double that is gone.** Called a
+  second time on the same double, or on one a `reset()` already dropped, it
+  said «Understudy::forget() expects an understudy created by Understudy::for().
+  This object is not one» — an `InvalidCallSpecification` about an object that
+  was one. It now goes through the same door as every other facade, so the
+  answer is `ForgottenDouble` (retired, or gone with a reset), a stranger is
+  still refused by name, and a foreign context is still
+  `ContextOwnershipViolation`.
+- **One rule for the two specification exceptions, and two factories move.**
+  `InvalidCallSpecification` is about the SHAPE of a specification — what is
+  called, where, how many times — and `InvalidSpecificationArgument` about a
+  VALUE inside it that no run could act on. An inverted `Arg::int/float/count()`
+  range and an `Arg::string()` pattern PCRE cannot compile are values, so
+  `invertedBounds()` and `invalidPattern()` move to `InvalidSpecificationArgument`
+  beside `Arg::instanceOf()`'s unloadable type, `times(5, 2)` and `returns()`.
+  A `catch (InvalidCallSpecification)` around those two paths has to become
+  `catch (InvalidSpecificationArgument)` — or `catch (UnderstudyError)`, which
+  both implement. Both classes say the rule in their docblocks.
+- **`Outcome` and `Cardinality` are `@internal`.** No public path accepted or
+  returned either: dispatch records outcomes through `Invocation`'s scalar
+  recorders and `Invocation::$outcome` stayed `null` for every call the engine
+  made, while `times()` and `verify()` take integers and a `VerificationFailure`
+  carries bounds as integers. Both were `@api` by inheritance from the first
+  design. `Invocation::recordOutcome()` and `Invocation::__construct()` are
+  `@internal` too — the dispatcher's bookkeeping, not a way to build a call by
+  hand.
+- **`WhenBuilder` is closed by contract.** Its docblock now says that
+  subclassing is not supported and that the `protected` expectation it carries
+  is an `@internal` type; the keyword stays off only because `ExpectBuilder` is
+  the subclass, and Psalm refuses a `@final` tag for the same reason.
+- **How `FailureKind` grows is written down.** The readonly fields of
+  `VerificationFailure` and every existing case are stable; a NEW case may
+  arrive in a minor, so a `match` over the enum needs a `default` arm. The
+  docblock, both READMEs, `llms.txt`, the skill file and the site say the same
+  thing — the 0.2.0 entry implied the opposite.
+- Docblocks that the API reference renders: `checkpoint()` said «the current
+  context» and spans every context the test used; `verify()` as a free
+  function did not document `$never`; `Arg::bool()`, `WhenBuilder::throws()`,
+  `Invocation::didReturn()/didThrow()/returned()/thrown()` and seven exception
+  factories rendered as bare signatures.
+- **The analyser parity matrix gains five idioms** (`bin/consumer-smoke`):
+  cardinality written past the first link, named bounds in either order, a
+  double reached through a helper, a first-class callable, and `returns()` on a
+  void method past the first link. The 0.8.0 wave fixed the first four in both
+  plugins without a row for any of them; the fifth is the same blindness found
+  a week later in `understudy-phpstan` 0.5.1.
+- **The skill file caught up with the engine.** `resources/skills/…/SKILL.md`
+  — the one document that ships in the archive — said a nullable return answers
+  `null` before the registry is consulted (the opposite has been true since
+  0.1.0), counted three free functions, listed no `allOf`/`anyOf`/`rest`/
+  `captor` and mentioned neither `expectSequence()` nor `lean()`.
+- Documentation catch-ups: seven 0.8.0 corrections reached the READMEs and
+  never the site (property defaults on class doubles, built-in interfaces as
+  return types, what `checkpoint()` clears, verbatim arguments and
+  `#[\SensitiveParameter]`, `instanceOf()` and PCRE `$` on the matchers page);
+  the Psalm page did not say that a leaked matcher is reported only at
+  `errorLevel="1"`; the adapter pages missed the 0.3.0/0.2.0 changes; the
+  Mockery table mapped `shouldNotHaveReceived()` to `unused()`, which asserts
+  no call at all; the README still told readers to expect a «too few
+  arguments» report on `Arg::rest()` that both analyser packages have handled
+  since 0.2.0.
+- Rector is green again — red since v0.7.0, under four releases with green
+  builds. `infection/infection` `^0.35`, `rasuvaeff/property-testing-testo`
+  `^0.9` (it was three minors behind), `.vale.ini` is `export-ignore`. The
+  mutation gate stays at 92 with the reason beside the number: the run
+  measures 94.1%, three mutants above 94, which is less than the CI count
+  moves between runs.
+
 ## 0.8.0 — 2026-09-05
 
 - **`Understudy::for()` no longer kills the process on five built-in

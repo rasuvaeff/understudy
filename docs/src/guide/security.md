@@ -19,6 +19,15 @@ never keyed by `spl_object_id()`, which PHP reuses after collection. An id-keyed
 registry would hand one double's registrations to an unrelated object that
 happened to be allocated in the same slot.
 
+**Arguments are printed verbatim in failure messages and in `transcript()`, with
+one exception.** A parameter the contract marks `#[\SensitiveParameter]` is
+rendered as its type and nothing else — `login('user', string
+SensitiveParameter)` — the way PHP redacts such a parameter in its own stack
+traces. Everything else goes into the message as written, and a failure message
+is read from a CI log: mark the parameter, or keep the secret out of the
+argument. The literals your own specification passes are not redacted; they are
+in your test file already.
+
 ::: danger It is a development dependency
 Do not install it in production. `composer require --dev`.
 :::

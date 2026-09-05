@@ -9,7 +9,7 @@ description: "The structured half of one verification failure — the same facts
 
 `Rasuvaeff\Understudy\VerificationFailure`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/VerificationFailure.php#L33) — **Version:** v0.7.2
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/VerificationFailure.php#L34) — **Version:** v0.8.0
 
 The structured half of one verification failure — the same facts the
 rendered message states, addressable by field.
@@ -29,10 +29,11 @@ Which fields are set depends on the kind:
 | `UnaccountedCalls` | label | — | — | unaccounted calls | the unaccounted calls | — |
 | `UnusedDouble` | label | — | `0`/`0` | calls received | every call | — |
 
-The readonly fields of this class, of [`FailureKind`](/api/classes/FailureKind), and of the
-exceptions carrying them are frozen public API from v0.1.0: renaming,
-removing or retyping any of them is a major-version change. New kinds and
-newly-populated fields are additive and may arrive in a minor.
+The readonly fields of this class and every existing [`FailureKind`](/api/classes/FailureKind)
+case are stable: renaming, removing or retyping one is a major-version
+change. A NEW kind, or a field newly populated for an existing kind, may
+arrive in a minor — so match on `FailureKind` with a `default` arm; an
+exhaustive `match` over the enum is not a supported way to consume it.
 
 ## Constructor
 

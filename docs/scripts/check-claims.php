@@ -33,6 +33,7 @@ if ($hasWorkspace) {
 
 use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
+use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Understudy;
@@ -349,7 +350,7 @@ claim('lifecycle/index', 'a scope closes clean over an unsatisfied outer claim',
 claim('stubbing/matchers', 'an inverted range is refused where it is written', function (): bool|string {
     try {
         Arg::int(min: 5, max: 1);
-    } catch (InvalidCallSpecification) {
+    } catch (InvalidSpecificationArgument) {
         return true;
     }
 
@@ -368,7 +369,7 @@ claim('stubbing/matchers', 'a pattern PCRE cannot compile is refused, quietly', 
         Arg::string('/[unclosed');
 
         return 'Arg::string(\'/[unclosed\') was accepted';
-    } catch (InvalidCallSpecification) {
+    } catch (InvalidSpecificationArgument) {
         return $raised === [] ?: 'the refusal raised the warning it exists to prevent';
     } finally {
         restore_error_handler();

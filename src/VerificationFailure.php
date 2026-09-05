@@ -23,10 +23,11 @@ namespace Rasuvaeff\Understudy;
  * | `UnaccountedCalls` | label | — | — | unaccounted calls | the unaccounted calls | — |
  * | `UnusedDouble` | label | — | `0`/`0` | calls received | every call | — |
  *
- * The readonly fields of this class, of {@see FailureKind}, and of the
- * exceptions carrying them are frozen public API from v0.1.0: renaming,
- * removing or retyping any of them is a major-version change. New kinds and
- * newly-populated fields are additive and may arrive in a minor.
+ * The readonly fields of this class and every existing {@see FailureKind}
+ * case are stable: renaming, removing or retyping one is a major-version
+ * change. A NEW kind, or a field newly populated for an existing kind, may
+ * arrive in a minor — so match on `FailureKind` with a `default` arm; an
+ * exhaustive `match` over the enum is not a supported way to consume it.
  *
  * @api
  */

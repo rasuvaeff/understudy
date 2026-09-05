@@ -12,6 +12,10 @@ namespace Rasuvaeff\Understudy\Exception;
  */
 final class UnsupportedTarget extends \LogicException implements UnderstudyError
 {
+    /**
+     * No class or interface of that name is loadable — usually a typo, or a
+     * class the autoloader cannot see from the test.
+     */
     public static function missing(string $target): self
     {
         return new self(sprintf(

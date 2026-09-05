@@ -9,7 +9,7 @@ description: "Ends every PHPUnit test with understudy's own bookkeeping done for
 
 `Rasuvaeff\Understudy\PhpUnit\UnderstudyPHPUnitIntegration`
 
-**undefined** — **Package:** [rasuvaeff/understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit) — [Source](https://github.com/rasuvaeff/understudy-phpunit/blob/d8389a7e82bfc020c02cbe37122593f8f949d664/src/PhpUnit/UnderstudyPHPUnitIntegration.php#L65) — **Version:** v0.1.3
+**undefined** — **Package:** [rasuvaeff/understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit) — [Source](https://github.com/rasuvaeff/understudy-phpunit/blob/d48d08dcb2d23a0359d2f756cc51e96c8ece7624/src/PhpUnit/UnderstudyPHPUnitIntegration.php#L83) — **Version:** v0.1.7
 
 Ends every PHPUnit test with understudy's own bookkeeping done for it.
 
@@ -21,14 +21,29 @@ final class CheckoutTest extends TestCase
 public function testChargesForTheCart(): void
     {
         $books = Understudy::for(BookRepositoryInterface::class);
-        when(fn () => $books->find(7))->returns(new Book(7));
+        expect(fn () => $books->find(7))->returns($expected = new Book(7));
 
-(new Checkout($books))->charge([7]);
+$receipt = (new Checkout($books))->charge([7]);
 
-expect(fn () => $books->find(7));   // verified for you
+self::assertSame($expected->price, $receipt->total);
     }
 }
 ```
+
+One registration says both things: `find(7)` must be called exactly once,
+and it answers `$expected`. Two rules of the engine decide that shape, and
+this snippet used to break both:
+
+- **Arm before the run.** An `expect()` counts only the calls that arrive
+  after it is declared. Written below the action it counts zero and fails
+  as "called never" about a call that did happen; to claim a call that has
+  already happened, use `verify()`.
+- **One registration per call.** A `when()` stub and an `expect()` naming
+  the same call are two registrations of one call, and the engine answers
+  with `ConflictingExpectation`.
+
+Kept in step with the README's Usage section and `examples/readme-usage.php`,
+which runs it; `DocumentedUsageTest` fails when the three drift apart.
 
 On a test that reached `PHPUnit\Framework\TestCase`::assertPostConditions() — that is,
 passed its body — the whole context is verified: an `expect()` the code
@@ -52,10 +67,13 @@ use Rasuvaeff\Understudy\PhpUnit\UnderstudyPHPUnitIntegration {
 
 protected function assertPostConditions(): void
 {
-    $this->understudyAssertPostConditions();
     // your post-conditions ...
+    $this->understudyAssertPostConditions();
 }
 ```
+
+The user's post-conditions run first — the check closer to the test body
+wins, same as the README says.
 
 No public members beyond what is documented above.
 

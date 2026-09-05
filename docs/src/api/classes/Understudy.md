@@ -9,7 +9,7 @@ description: "The whole public surface, as static methods so that an understudy 
 
 `Rasuvaeff\Understudy\Understudy`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L39) — **Version:** v0.7.2
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L39) — **Version:** v0.8.0
 
 The whole public surface, as static methods so that an understudy itself can
 stay free of service members: every one of them would be a name the doubled
@@ -401,8 +401,13 @@ that outlives the scope, so it stays for those to check.
 static checkpoint(bool $strictStubs = false): void
 ```
 
-Verifies the current context and clears what has been settled, keeping
-the understudies themselves — for a long test that runs in phases.
+Verifies every context the test put understudies in and clears what has
+been settled — the claims a matching `expect()` or a successful
+`verify()` accounted for — keeping the understudies, their modes and
+their labels, for a long test that runs in phases. A call covered by a
+`when()` stub alone stays in the log, because `nothingElse()` still
+reads it; `reset()`, `scope()` and `lean()` are the ways to let go of
+everything.
 
 ### reset()
 

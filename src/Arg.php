@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy;
 
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
+use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
 use Rasuvaeff\Understudy\Matcher\AllOf;
 use Rasuvaeff\Understudy\Matcher\AnyArgument;
 use Rasuvaeff\Understudy\Matcher\AnyOf;
@@ -92,6 +93,9 @@ final class Arg
         return new StringMatching($matches);
     }
 
+    /**
+     * Matches a `bool`, either value.
+     */
     public static function bool(): mixed
     {
         return new BooleanValue();
@@ -240,7 +244,7 @@ final class Arg
     private static function bounds(string $matcher, int|float|null $minimum, int|float|null $maximum): void
     {
         if ($minimum !== null && $maximum !== null && $maximum < $minimum) {
-            throw InvalidCallSpecification::invertedBounds($matcher, $minimum, $maximum);
+            throw InvalidSpecificationArgument::invertedBounds($matcher, $minimum, $maximum);
         }
     }
 
@@ -274,7 +278,7 @@ final class Arg
         restore_error_handler();
 
         if (!$compiled) {
-            throw InvalidCallSpecification::invalidPattern($pattern, self::reason($reason));
+            throw InvalidSpecificationArgument::invalidPattern($pattern, self::reason($reason));
         }
     }
 

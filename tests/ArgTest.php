@@ -6,6 +6,7 @@ namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
+use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
 use Rasuvaeff\Understudy\Matcher\AllOf;
 use Rasuvaeff\Understudy\Matcher\AnyArgument;
 use Rasuvaeff\Understudy\Matcher\AnyOf;
@@ -40,6 +41,7 @@ use Testo\Test;
 #[Test]
 #[Covers(Arg::class)]
 #[Covers(InvalidCallSpecification::class)]
+#[Covers(InvalidSpecificationArgument::class)]
 #[Covers(AllOf::class)]
 #[Covers(AnyArgument::class)]
 #[Covers(AnyOf::class)]
@@ -364,7 +366,7 @@ final class ArgTest
     #[DataProvider('invertedBoundsProvider')]
     public function anInvertedRangeIsRefusedWhereItIsWritten(callable $build, string $message): void
     {
-        Expect::exception(InvalidCallSpecification::class)->withMessage($message);
+        Expect::exception(InvalidSpecificationArgument::class)->withMessage($message);
 
         $build();
     }
@@ -430,11 +432,11 @@ final class ArgTest
 
         try {
             Arg::string('/[unclosed/');
-        } catch (InvalidCallSpecification $refusal) {
+        } catch (InvalidSpecificationArgument $refusal) {
             $caught = $refusal;
         }
 
-        \assert($caught instanceof InvalidCallSpecification);
+        \assert($caught instanceof InvalidSpecificationArgument);
         Assert::string($caught->getMessage())
             ->contains('`Arg::string()` was given `/[unclosed/`, which is not a valid PCRE pattern')
             ->contains('missing terminating ] for character class')
@@ -454,7 +456,7 @@ final class ArgTest
 
         try {
             Arg::string('/[unclosed/');
-        } catch (InvalidCallSpecification) {
+        } catch (InvalidSpecificationArgument) {
             // The refusal is the subject of the test above; here only the
             // error channel is on trial.
         }
@@ -474,7 +476,7 @@ final class ArgTest
 
         try {
             Arg::string('/[unclosed/');
-        } catch (InvalidCallSpecification) {
+        } catch (InvalidSpecificationArgument) {
             // Same as above: the refusal itself is tested elsewhere.
         }
 
@@ -496,7 +498,7 @@ final class ArgTest
     #[DataProvider('invalidPatternMessageProvider')]
     public function theRefusalSpellsOutWhatWasGiven(?string $reason, string $expected): void
     {
-        Assert::same(InvalidCallSpecification::invalidPattern('/[unclosed/', $reason)->getMessage(), $expected);
+        Assert::same(InvalidSpecificationArgument::invalidPattern('/[unclosed/', $reason)->getMessage(), $expected);
     }
 
     public static function invalidPatternMessageProvider(): iterable

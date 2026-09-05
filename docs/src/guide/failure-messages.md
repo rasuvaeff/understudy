@@ -80,6 +80,13 @@ often exactly the one the test meant to write. When nothing at all is
 configured for the method, there is nothing to compare against and the message
 stays the single line naming it.
 
+## What is redacted
+
+A parameter the contract marks `#[\SensitiveParameter]` is rendered as its type
+and nothing else — `login('user', string SensitiveParameter)` — in every message
+and in `transcript()`, the way PHP redacts such a parameter in its own traces.
+Everything else is printed as written; see [Security](/guide/security).
+
 ## Reading a failure as data
 
 An adapter or a reporter should not parse these strings.
@@ -87,7 +94,8 @@ An adapter or a reporter should not parse these strings.
 `examples/structured-failures.php` in the repository.
 
 The wording of a message is not part of the public contract — a patch release
-may reword one. What is frozen from v0.1.0 are the `FailureKind` cases and the
-readonly fields of `VerificationFailure`, which is why anything acting on a
-failure reads those instead. A test asserting on the exact text of a message is
-asserting on prose.
+may reword one. What is stable are the readonly fields of `VerificationFailure`
+and every existing `FailureKind` case, which is why anything acting on a failure
+reads those instead; a **new** kind may arrive in a minor release, so match on
+the enum with a `default` arm rather than exhaustively. A test asserting on the
+exact text of a message is asserting on prose.

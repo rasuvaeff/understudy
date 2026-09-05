@@ -846,13 +846,12 @@ final class Understudy
      */
     public static function forget(object $double): void
     {
-        if (Runtime::ownerOf($double) === null) {
-            throw InvalidCallSpecification::notADouble('forget');
-        }
-
-        if (!Runtime::isOwnedByCurrentContext($double)) {
-            throw ContextOwnershipViolation::forDouble();
-        }
+        // The same door every other facade goes through, so the answers are the
+        // same: a stranger is refused by name, a double retired or reset before
+        // answers `ForgottenDouble`, a foreign context answers
+        // `ContextOwnershipViolation`. Deciding by `ownerOf()` alone told the
+        // owner of a retired double that their object «is not one».
+        self::stateOf($double, 'forget');
 
         Runtime::forget($double);
     }
@@ -990,8 +989,6 @@ final class Understudy
      * subject never reached, so arming one and never exercising it fails.
      *
      * @param callable(): mixed ...$calls
-     *
-     * @api
      */
     public static function expectSequence(callable ...$calls): void
     {
@@ -1220,8 +1217,13 @@ final class Understudy
     }
 
     /**
-     * Verifies the current context and clears what has been settled, keeping
-     * the understudies themselves — for a long test that runs in phases.
+     * Verifies every context the test put understudies in and clears what has
+     * been settled — the claims a matching `expect()` or a successful
+     * `verify()` accounted for — keeping the understudies, their modes and
+     * their labels, for a long test that runs in phases. A call covered by a
+     * `when()` stub alone stays in the log, because `nothingElse()` still
+     * reads it; `reset()`, `scope()` and `lean()` are the ways to let go of
+     * everything.
      */
     public static function checkpoint(bool $strictStubs = false): void
     {

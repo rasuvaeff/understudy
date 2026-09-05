@@ -45,6 +45,8 @@ final class Invocation
      *                                   `#[\SensitiveParameter]`; carried on the call so a
      *                                   failure message and a transcript can redact the value
      *                                   the way PHP redacts it in its own traces
+     *
+     * @internal built by the dispatcher; the last three parameters are its bookkeeping
      */
     public function __construct(
         public readonly string $method,
@@ -113,6 +115,13 @@ final class Invocation
         return Runtime::callOriginal($this->double, $this->method, $this->liveArgs);
     }
 
+    /**
+     * The wrapped form of {@see recordReturned()} and {@see recordThrown()},
+     * kept for the callers that still hand over an `Outcome`; dispatch itself
+     * uses the scalar recorders because every call reaches them.
+     *
+     * @internal
+     */
     public function recordOutcome(Outcome $outcome): void
     {
         $this->outcome ??= $outcome;
@@ -193,11 +202,18 @@ final class Invocation
         return $this->accounted;
     }
 
+    /**
+     * Whether the call answered with a value — `null` included, which is why
+     * this is asked rather than inferred from {@see returned()}.
+     */
     public function didReturn(): bool
     {
         return $this->returnedState ?? $this->outcome?->didReturn() ?? false;
     }
 
+    /**
+     * Whether the call ended in a throwable, which {@see thrown()} then holds.
+     */
     public function didThrow(): bool
     {
         return $this->returnedState !== null
@@ -205,6 +221,12 @@ final class Invocation
             : $this->outcome?->didThrow() ?? false;
     }
 
+    /**
+     * The value the call answered with.
+     *
+     * @throws OutcomeUnavailable when the call threw instead, or when the
+     *                            understudy is lean and did not keep the value
+     */
     public function returned(): mixed
     {
         if ($this->returnedState === true) {
@@ -224,6 +246,9 @@ final class Invocation
         return $this->outcome?->returned($this->method);
     }
 
+    /**
+     * The throwable the call ended in, or null when it returned.
+     */
     public function thrown(): ?\Throwable
     {
         return $this->returnedState !== null

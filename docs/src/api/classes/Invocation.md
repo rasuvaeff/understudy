@@ -9,7 +9,7 @@ description: "One recorded call on an understudy."
 
 `Rasuvaeff\Understudy\Invocation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L20) — **Version:** v0.7.2
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L20) — **Version:** v0.8.0
 
 One recorded call on an understudy.
 
@@ -90,6 +90,10 @@ never ran, so the parent body would work over state that does not exist.
 recordOutcome(Outcome $outcome): void
 ```
 
+The wrapped form of recordReturned() and recordThrown(),
+kept for the callers that still hand over an `Outcome`; dispatch itself
+uses the scalar recorders because every call reaches them.
+
 ### recordReturned()
 
 ```php
@@ -144,11 +148,16 @@ isAccounted(): bool
 didReturn(): bool
 ```
 
+Whether the call answered with a value — `null` included, which is why
+this is asked rather than inferred from returned().
+
 ### didThrow()
 
 ```php
 didThrow(): bool
 ```
+
+Whether the call ended in a throwable, which thrown() then holds.
 
 ### returned()
 
@@ -156,9 +165,18 @@ didThrow(): bool
 returned(): mixed
 ```
 
+The value the call answered with.
+
+**Throws:**
+
+- [`Exception\OutcomeUnavailable`](/api/classes/Exception/OutcomeUnavailable) — when the call threw instead, or when the
+understudy is lean and did not keep the value
+
 ### thrown()
 
 ```php
 thrown(): ?Throwable
 ```
+
+The throwable the call ended in, or null when it returned.
 

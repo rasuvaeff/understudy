@@ -58,7 +58,7 @@ here. Two rows are traps, marked ⚠.
 | `->andThrow(new NotFound())` | `->throws(new NotFound())` | |
 | `->with(123, Mockery::any())` | inside the closure: `find(123, Arg::any())` | |
 | `Mockery::on(fn ($x) => ...)` | `Arg::satisfies(fn ($x) => ...)` | |
-| `$mock->shouldNotHaveReceived('save')` | `Understudy::unused($mock)` | |
+| `$mock->shouldNotHaveReceived('save')` | `verify(fn () => $mock->save(...), never: true)` | `Understudy::unused($mock)` when the double must not have been touched at all |
 | `$mock->shouldHaveReceived('save')` | `verify(fn () => $mock->save(...))` | after the fact; add `nothingElse()` — see below |
 | `Mockery::close()` | adapter's `reset()`, or your own teardown | |
 | `->makePartial()` / `Mockery::spy($real)` | `Understudy::delegate(Contract::class, $real)` + stubs on top | a stub wins, everything else runs for real — and is recorded |
@@ -306,16 +306,18 @@ when(fn () => $storage->recordOutcome('svc', Arg::rest()))
 A specification that stops early *without* ending in `Arg::rest()` is refused
 with the reason, rather than becoming a stub that silently never matches. A
 later, narrower specification for the same call still wins over the broad
-prefix stub. One thing to know: a static analyser reads the shortened call
-against the contract's arity, so expect a "too few arguments" diagnostic on
-that line until your analyser knows the idiom.
+prefix stub. A static analyser reads the shortened call against the contract's
+arity; the [understudy-psalm](https://github.com/rasuvaeff/understudy-psalm)
+plugin and the [understudy-phpstan](https://github.com/rasuvaeff/understudy-phpstan)
+extension know the idiom and keep that line quiet.
 
 The type matchers are deliberately strict: `Arg::int()` rejects `'5'`, and
 `Arg::float()` rejects `1`. A matcher pins the declared type as much as the
 value, which is the point in a codebase that runs with `strict_types`.
 
-A matcher that could never match anything is refused where it is written, not
-left to fail an expectation in teardown: `Arg::int(min: 5, max: 1)` and its
+A matcher that could never match anything is refused where it is written —
+with `InvalidSpecificationArgument` — rather than left to fail an expectation
+in teardown: `Arg::int(min: 5, max: 1)` and its
 `float`/`count` siblings describe an empty range, `Arg::string('/[unclosed')`
 is not a pattern PCRE compiles — the latter would also raise a warning inside
 the code under test on every call — and `Arg::instanceOf()` needs a class or
@@ -821,10 +823,11 @@ it.
 A message is written for a reader, and its wording is not part of the package's
 public contract: a patch release may reword one. Anything that acts on a
 failure rather than printing it — a runner adapter, an IDE plugin, a report
-aggregator — reads `VerificationFailed::failures()` instead, whose
-`FailureKind` cases and `VerificationFailure` readonly fields are frozen API
-from v0.1.0. A test asserting on the exact text of a message is asserting on
-prose.
+aggregator — reads `VerificationFailed::failures()` instead: the readonly
+fields of `VerificationFailure` and every existing `FailureKind` case are
+stable, and a **new** kind may arrive in a minor release, so match on the enum
+with a `default` arm rather than exhaustively. A test asserting on the exact
+text of a message is asserting on prose.
 
 ### Cleaning up
 

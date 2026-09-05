@@ -121,8 +121,8 @@ final class TypeDefaultResolverTest
                 $this->signature('static'),
                 'method',
                 new RuntimeContext(),
-                false,
-                $double,
+                nested: false,
+                double: $double,
             ),
             $double,
         );

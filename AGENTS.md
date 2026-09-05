@@ -11,10 +11,11 @@ service methods on the double itself.
 
 Public API lives in `Rasuvaeff\Understudy`: the `Understudy` facade, the free
 functions `when()`/`expect()`/`expectSequence()`/`verify()` in
-`src/functions.php`, `Arg`, `Invocation`, `Outcome`, `WhenBuilder`, and the
-exceptions under `Exception\`. Everything
-under `Codegen\`, `Runtime\`, `Expectation\`, `Defaults\` and `Matcher\` is
-`@internal`.
+`src/functions.php`, `Arg`, `Captor`, `Invocation`, `WhenBuilder`/`ExpectBuilder`,
+`FailureKind`, `VerificationFailure`, and the exceptions under `Exception\`.
+`Outcome` and `Cardinality` are `@internal` since 0.9 — no public path accepts
+or returns either — like everything under `Codegen\`, `Runtime\`,
+`Expectation\`, `Defaults\` and `Matcher\`.
 
 The design plan that drove milestones 0-7 shipped in full and was retired
 from the monorepo on 2026-08-28; what it decided lives in this file, the

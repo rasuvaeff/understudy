@@ -9,7 +9,7 @@ description: "`bypassFinals()` cannot do what was asked of it."
 
 `Rasuvaeff\Understudy\Exception\BypassUnavailable`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/BypassUnavailable.php#L12) — **Version:** v0.7.2
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/BypassUnavailable.php#L12) — **Version:** v0.8.0
 
 **Extends:** `LogicException`
 
@@ -36,4 +36,7 @@ static notAClass(class-string $class, string $kind): Exception\BypassUnavailable
 ```php
 static foreignWrapper(string $owner): Exception\BypassUnavailable
 ```
+
+Something else already transforms PHP source on `file://`; replacing it
+would silently disable whatever it does.
 
