@@ -5,12 +5,12 @@ name: docs
 # is reflected out of all five `src/` trees at build time.
 #
 # Pull requests build and check but never deploy. `master` deploys. The
-# reference documents the satellites from their PUBLISHED tags: a satellite
-# release changes what belongs on this site without changing a single file
-# here. Deliberately no `repository_dispatch` wired to a satellite release —
-# a cross-repository PAT for a rare event that the weekly cron already bounds
-# is not worth the secret-management overhead; `workflow_dispatch` covers the
-# "I want it now" case by hand.
+# reference documents the satellites at the versions
+# `docs/.api-workspace/composer.lock` holds — a caret on 0.x pins a minor, so
+# the lock moves in the release PR that follows a satellite release, and the
+# `composer outdated` step below turns a lock left behind into a red build
+# rather than a site that quietly documents a version three minors old (which
+# is what happened between 2026-08-28 and 2026-09-05).
 on:
   pull_request:
     paths: &paths
@@ -29,7 +29,8 @@ on:
     branches:
       - master
     paths: *paths
-  # The reference is never more than a week behind an adapter release.
+  # The weekly run re-reads the lock, so a satellite release nobody pinned is
+  # reported within a week even when nothing here changed.
   schedule:
     - cron: '41 5 * * 1' # Mondays, 05:41 UTC
   workflow_dispatch:
@@ -82,6 +83,13 @@ jobs:
       - name: Install the API reflection workspace
         working-directory: docs/.api-workspace
         run: composer install --no-interaction --no-progress
+
+      # A satellite with a release the pins do not reach is documented at the
+      # wrong version, silently. `--direct` looks at the four satellites only
+      # (and the docblock parser, ignored), `--strict` makes it a red build.
+      - name: Refuse a workspace that documents a satellite behind its release
+        working-directory: docs/.api-workspace
+        run: composer outdated --direct --strict --ignore phpdocumentor/reflection-docblock
 
       # What every engine reference page is stamped with. On a tagged commit
       # `git describe` prints the tag; between releases it prints the nearest

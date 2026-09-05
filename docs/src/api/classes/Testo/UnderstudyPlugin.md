@@ -9,7 +9,7 @@ description: "Registers UnderstudyInterceptor so every test of the suite ends wi
 
 `Rasuvaeff\Understudy\Testo\UnderstudyPlugin`
 
-**Class** — **Package:** [rasuvaeff/understudy-testo](https://github.com/rasuvaeff/understudy-testo) — [Source](https://github.com/rasuvaeff/understudy-testo/blob/dead543cd518323bf94aa1c7df69b947c71a40e9/src/Testo/UnderstudyPlugin.php#L29) — **Version:** v0.1.4
+**Class** — **Package:** [rasuvaeff/understudy-testo](https://github.com/rasuvaeff/understudy-testo) — [Source](https://github.com/rasuvaeff/understudy-testo/blob/cb5eae3591ccf730503566f237679fb63a07a677/src/Testo/UnderstudyPlugin.php#L29) — **Version:** v0.3.1
 
 **Implements:** `Testo\Common\PluginConfigurator`
 

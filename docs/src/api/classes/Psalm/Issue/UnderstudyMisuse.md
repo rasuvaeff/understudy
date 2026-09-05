@@ -9,7 +9,7 @@ description: "A specification that cannot mean what it says."
 
 `Rasuvaeff\Understudy\Psalm\Issue\UnderstudyMisuse`
 
-**Class** — **Package:** [rasuvaeff/understudy-psalm](https://github.com/rasuvaeff/understudy-psalm) — [Source](https://github.com/rasuvaeff/understudy-psalm/blob/d4f53860f7e5a7e2463dc087ce5dc3eb1826e631/src/Psalm/Issue/UnderstudyMisuse.php#L20) — **Version:** v0.2.0
+**Class** — **Package:** [rasuvaeff/understudy-psalm](https://github.com/rasuvaeff/understudy-psalm) — [Source](https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Issue/UnderstudyMisuse.php#L20) — **Version:** v0.8.1
 
 **Extends:** `Psalm\Issue\PluginIssue`
 

@@ -85,3 +85,10 @@ jobs:
 
       - name: Psalm
         run: composer psalm
+
+      # Part of `composer release-check`, and until now run by nobody but a
+      # human before a tag: rector was red under green builds for five
+      # releases of this family before anyone looked. Same job, so the
+      # required check keeps its name.
+      - name: Rector
+        run: composer rector

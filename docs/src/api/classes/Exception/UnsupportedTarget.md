@@ -9,7 +9,7 @@ description: "The requested target cannot be doubled, and no option would make i
 
 `Rasuvaeff\Understudy\Exception\UnsupportedTarget`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/UnsupportedTarget.php#L13) — **Version:** v0.8.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/UnsupportedTarget.php#L13) — **Version:** v0.9.0
 
 **Extends:** `LogicException`
 

@@ -61,13 +61,33 @@ function phpFiles(string $dir): array
  * in a docblock or a comment is documentation, not a declaration, and only the
  * literal the code actually emits should put a row in the reference.
  *
+ * Only a literal assigned to a constant whose name ends in `IDENTIFIER`
+ * counts. The extension names its rule identifiers that way
+ * (`SpecificationCheck::CLOSURE_IDENTIFIER`, `VoidReturnsRule::IDENTIFIER`),
+ * and a string that merely starts with `understudy.` is not one of them:
+ * `ClosureShape::RECEIVER = 'understudy.receiverOfCall'` is a php-parser
+ * node attribute, and matching on the prefix alone put it on the rules page as
+ * a sixth identifier a user could never write into `ignoreErrors`.
+ *
  * @return list<string>
  */
 function identifiersIn(string $path): array
 {
     $found = [];
+    $constant = null;
     foreach (token_get_all((string) file_get_contents($path)) as $token) {
-        if (!is_array($token) || $token[0] !== T_CONSTANT_ENCAPSED_STRING) {
+        if ($token === ';') {
+            $constant = null;
+            continue;
+        }
+        if (!is_array($token)) {
+            continue;
+        }
+        if ($token[0] === T_STRING) {
+            $constant = $token[1];
+            continue;
+        }
+        if ($token[0] !== T_CONSTANT_ENCAPSED_STRING || $constant === null || !str_ends_with($constant, 'IDENTIFIER')) {
             continue;
         }
         $value = trim($token[1], "'\"");

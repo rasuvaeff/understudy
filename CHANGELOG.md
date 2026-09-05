@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+- **The API reference documents the satellites at their current versions.**
+  `docs/.api-workspace/composer.json` pinned `understudy-psalm ^0.2`,
+  `understudy-phpstan ^0.2`, `understudy-phpunit ^0.1` and `understudy-testo
+  ^0.1` — a caret on 0.x pins a minor — so the site reflected the plugins at
+  0.2.0 and the adapters at 0.1.x while 0.8.0, 0.5.0, 0.2.0 and 0.3.0 were out,
+  and the weekly rebuild rebuilt the same thing. The pins move to the current
+  lines, the workspace lock is committed so the pages in the repository and on
+  the site come from the same install, and `docs.yml` runs `composer outdated
+  --direct --strict` in the workspace: a satellite release the pins do not
+  reach is a red build now, not a stale page.
+- `static-analysis.yml` runs `composer rector` in the Psalm job. It is part of
+  `composer release-check` and was run by nobody but a human before a tag —
+  this package went out four times with it red under green builds.
+- Two defects of the reference generator that the refresh exposed:
+  `docs/scripts/reflect-rules.php` took every string literal starting with
+  `understudy.` for a rule identifier, so `ClosureShape`'s php-parser attribute
+  `understudy.receiverOfCall` sat on the rules page as a sixth identifier nobody
+  could write into `ignoreErrors` (only constants named `*IDENTIFIER` count
+  now); and `generate-api.mjs` had no label for a trait, so the PHPUnit
+  adapter's page was headed «undefined».
+
 ## 0.9.0 — 2026-09-05
 
 The 1.0 candidate. A minor rather than a patch, and the last one before the

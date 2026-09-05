@@ -9,7 +9,7 @@ description: "A method declared `: never` was called without an expectation that
 
 `Rasuvaeff\Understudy\Exception\NeverMethodCalled`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/NeverMethodCalled.php#L14) — **Version:** v0.8.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/NeverMethodCalled.php#L14) — **Version:** v0.9.0
 
 **Extends:** `RuntimeException`
 

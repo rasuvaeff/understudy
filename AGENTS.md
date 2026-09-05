@@ -451,6 +451,7 @@ decided lives in this section and in `docs/scripts/check-integrity.mjs`.
 | **A new `@api` free function needs `make docs-api` too**, and a row in `llms.txt` | checks 2b and 7 — the class-only pipeline used to drop functions silently |
 | **A new PHPStan rule needs its row on `/api/rules` in the same PR** | check 9; the analyser packages have no other public contract |
 | **`MIGRATION.md` is generated** from `docs/src/guide/migrating-*.md`. Edit the pages, run `make docs-migration` | check via `docs:check:migration` |
+| **`docs/.api-workspace/composer.lock` is committed and moves with every satellite release.** A caret on 0.x pins a minor, so `^0.2` documented `understudy-psalm` 0.2.0 while 0.8.0 was out; bump the pin, `composer update` in the workspace, `make docs-api`, commit all three | `docs.yml` runs `composer outdated --direct --strict` there and goes red otherwise |
 | **`make perf` means re-reading three files**: `perf/README.md`, `README.md`'s Performance table and `README.ru.md`'s. Keep the `<!-- #region site -->` markers and the `Taken YYYY-MM-DD` line | checks 10 and 11 |
 | **An `@include` that cannot resolve fails silently in VitePress** — the page renders as its heading and nothing else | check 12 |
 | **`{{` in prose needs `<code v-pre>`** | Vue interpolates it otherwise |
