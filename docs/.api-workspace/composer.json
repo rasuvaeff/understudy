@@ -6,7 +6,7 @@
         "php": "8.3 - 8.5",
         "phpdocumentor/reflection-docblock": "^5.6",
         "rasuvaeff/understudy-phpstan": "^0.5",
-        "rasuvaeff/understudy-phpunit": "^0.3",
+        "rasuvaeff/understudy-phpunit": "^0.4",
         "rasuvaeff/understudy-psalm": "^0.8",
         "rasuvaeff/understudy-testo": "^0.3"
     },
