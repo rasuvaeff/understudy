@@ -14,6 +14,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class NeverMethodCalled extends \RuntimeException implements UnderstudyError
 {
     /**
+     * Builds the error for an unconfigured `never` method call.
+     *
      * @param non-empty-string $label
      * @param non-empty-string $method
      */
@@ -29,6 +31,8 @@ final class NeverMethodCalled extends \RuntimeException implements UnderstudyErr
     }
 
     /**
+     * Builds the error for a `never` expectation with no action.
+     *
      * @param non-empty-string $label
      * @param non-empty-string $method
      */
@@ -44,6 +48,8 @@ final class NeverMethodCalled extends \RuntimeException implements UnderstudyErr
     }
 
     /**
+     * Builds the error for a `never` method configured to return.
+     *
      * @param non-empty-string $label
      * @param non-empty-string $method
      */

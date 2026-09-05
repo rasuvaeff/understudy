@@ -45,7 +45,7 @@ matcher that reaches its specification through a variable, a property or a
 helper.
 :::
 
-## The two 0.4 idioms
+## The two matcher idioms
 
 - **`Arg::rest()`** legitimately passes fewer arguments than the contract
   declares, so `TooFewArguments` goes quiet on that call — but only when the

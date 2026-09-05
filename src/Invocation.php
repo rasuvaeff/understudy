@@ -73,6 +73,8 @@ final class Invocation
     }
 
     /**
+     * Stores the arguments after a by-reference call has returned.
+     *
      * @param list<mixed> $args
      *
      * @internal
@@ -83,6 +85,8 @@ final class Invocation
     }
 
     /**
+     * Checks whether this invocation belongs to a given double.
+     *
      * @internal
      */
     public function belongsTo(object $double): bool
@@ -116,6 +120,8 @@ final class Invocation
     }
 
     /**
+     * Records an outcome wrapper for internal compatibility.
+     *
      * The wrapped form of {@see recordReturned()} and {@see recordThrown()},
      * kept for the callers that still hand over an `Outcome`; dispatch itself
      * uses the scalar recorders because every call reaches them.
@@ -128,6 +134,8 @@ final class Invocation
     }
 
     /**
+     * Records a returned value without retaining an outcome wrapper.
+     *
      * Records a returned value without allocating an Outcome wrapper. The
      * wrapper remains supported by recordOutcome() for internal compatibility;
      * dispatch uses this scalar path because every call reaches it.
@@ -145,6 +153,8 @@ final class Invocation
     }
 
     /**
+     * Records that the call returned but its value was discarded.
+     *
      * Records that the call returned without keeping what it returned — the
      * lean double's reading of an outcome. The distinction from "threw" and
      * from "returned null" is kept: `didReturn()` stays true, and `returned()`
@@ -163,6 +173,8 @@ final class Invocation
     }
 
     /**
+     * Reports whether the returned value was discarded.
+     *
      * @internal
      */
     public function isReturnDiscarded(): bool
@@ -171,6 +183,8 @@ final class Invocation
     }
 
     /**
+     * Records the throwable produced by the call.
+     *
      * @internal
      */
     public function recordThrown(\Throwable $thrown): void
@@ -184,6 +198,8 @@ final class Invocation
     }
 
     /**
+     * Marks this invocation as claimed by verification or an expectation.
+     *
      * Marks this call as accounted for: an expectation matched it, or a
      * verification claimed it. `nothingElse()` is the question this answers.
      *
@@ -195,6 +211,8 @@ final class Invocation
     }
 
     /**
+     * Reports whether verification or an expectation claimed this invocation.
+     *
      * @internal
      */
     public function isAccounted(): bool

@@ -12,6 +12,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class CannotWire extends \InvalidArgumentException implements UnderstudyError
 {
     /**
+     * Builds the error for a subject that cannot be wired as a concrete class.
+     *
      * Takes a plain string, not a `class-string`: "there is no such class" is
      * one of the reasons it reports.
      */
@@ -26,6 +28,8 @@ final class CannotWire extends \InvalidArgumentException implements UnderstudyEr
     }
 
     /**
+     * Builds the error for an inaccessible subject constructor.
+     *
      * @param class-string $sut
      */
     public static function inaccessibleConstructor(string $sut, string $visibility): self
@@ -40,6 +44,8 @@ final class CannotWire extends \InvalidArgumentException implements UnderstudyEr
     }
 
     /**
+     * Builds the error for an unknown constructor override.
+     *
      * @param class-string $sut
      */
     public static function unknownOverride(string $sut, string $name, string $known): self
@@ -54,6 +60,8 @@ final class CannotWire extends \InvalidArgumentException implements UnderstudyEr
     }
 
     /**
+     * Builds the error for an override with an incompatible type.
+     *
      * @param class-string $sut
      */
     public static function incompatibleOverride(string $sut, string $name, string $expected, string $given): self
@@ -70,6 +78,8 @@ final class CannotWire extends \InvalidArgumentException implements UnderstudyEr
     }
 
     /**
+     * Builds the error for a constructor parameter with no safe answer.
+     *
      * @param class-string $sut
      */
     public static function undecidableParameter(string $sut, string $name, string $type, string $reason): self
@@ -87,6 +97,8 @@ final class CannotWire extends \InvalidArgumentException implements UnderstudyEr
     }
 
     /**
+     * Builds the error for a by-reference constructor parameter.
+     *
      * @param class-string $sut
      */
     public static function referenceParameter(string $sut, string $name): self

@@ -14,6 +14,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class MatcherLeaked extends \LogicException implements UnderstudyError
 {
     /**
+     * Builds the error for a matcher used in a real call.
+     *
      * @param non-empty-string $method
      * @param non-empty-string $matcher
      */

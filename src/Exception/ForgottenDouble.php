@@ -16,6 +16,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class ForgottenDouble extends \LogicException implements UnderstudyError
 {
     /**
+     * Builds the error for calling a double after its context was reset.
+     *
      * @param non-empty-string $method
      */
     public static function afterReset(string $method): self
@@ -29,6 +31,8 @@ final class ForgottenDouble extends \LogicException implements UnderstudyError
     }
 
     /**
+     * Builds the error for calling a deliberately retired double.
+     *
      * @param non-empty-string $method
      */
     public static function onPurpose(string $method): self
@@ -41,6 +45,8 @@ final class ForgottenDouble extends \LogicException implements UnderstudyError
     }
 
     /**
+     * Builds the error for reading a property after reset.
+     *
      * @param non-empty-string $property
      */
     public static function propertyAfterReset(string $property): self
@@ -54,6 +60,8 @@ final class ForgottenDouble extends \LogicException implements UnderstudyError
     }
 
     /**
+     * Builds the error for asking a retired double through the facade.
+     *
      * A facade — `strict()`, `verify()`, `nothingElse()`, `forget()` itself —
      * was asked about a double that `Understudy::forget()` retired.
      */
@@ -67,6 +75,8 @@ final class ForgottenDouble extends \LogicException implements UnderstudyError
     }
 
     /**
+     * Builds the error for a default factory returning a retired double.
+     *
      * @param class-string $contract
      */
     public static function fromDefaultFactory(string $contract): self

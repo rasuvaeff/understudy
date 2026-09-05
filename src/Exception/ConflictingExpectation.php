@@ -21,6 +21,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class ConflictingExpectation extends \LogicException implements UnderstudyError
 {
     /**
+     * Builds the error for a claim registered after an identical stub.
+     *
      * @param non-empty-string $label
      * @param non-empty-string $spec
      */
@@ -37,6 +39,8 @@ final class ConflictingExpectation extends \LogicException implements Understudy
     }
 
     /**
+     * Builds the error for a stub registered after a counted expectation.
+     *
      * @param non-empty-string $label
      * @param non-empty-string $spec
      */
@@ -53,6 +57,8 @@ final class ConflictingExpectation extends \LogicException implements Understudy
     }
 
     /**
+     * Builds the error for duplicate counted expectations.
+     *
      * @param non-empty-string $label
      * @param non-empty-string $spec
      */

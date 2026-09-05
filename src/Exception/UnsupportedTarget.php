@@ -25,6 +25,8 @@ final class UnsupportedTarget extends \LogicException implements UnderstudyError
     }
 
     /**
+     * Builds the error for a target that cannot be doubled.
+     *
      * @param non-empty-string $target
      */
     public static function notDoublable(string $target, string $reason): self
@@ -37,6 +39,8 @@ final class UnsupportedTarget extends \LogicException implements UnderstudyError
     }
 
     /**
+     * Builds the error for incompatible target signatures.
+     *
      * @param non-empty-string $method
      */
     public static function signatureConflict(string $method, string $left, string $right): self

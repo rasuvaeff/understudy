@@ -12,6 +12,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class InvalidDefaultValue extends \RuntimeException implements UnderstudyError
 {
     /**
+     * Builds the error for a factory value with the wrong type.
+     *
      * @param class-string $requested
      */
     public static function ofWrongType(string $requested, string $produced): self

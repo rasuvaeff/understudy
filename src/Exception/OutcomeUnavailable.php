@@ -14,6 +14,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class OutcomeUnavailable extends \LogicException implements UnderstudyError
 {
     /**
+     * Builds the error for reading a return value after a throw.
+     *
      * @param non-empty-string $method
      */
     public static function threwInstead(string $method, \Throwable $thrown): self
@@ -26,6 +28,8 @@ final class OutcomeUnavailable extends \LogicException implements UnderstudyErro
     }
 
     /**
+     * Builds the error for reading a value discarded by lean mode.
+     *
      * @param non-empty-string $method
      */
     public static function discardedByLean(string $method): self

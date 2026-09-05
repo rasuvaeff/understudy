@@ -140,6 +140,8 @@ final class Arg
     }
 
     /**
+     * Matches an object by its class or interface.
+     *
      * @param class-string $type
      */
     public static function instanceOf(string $type): mixed

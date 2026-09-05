@@ -12,6 +12,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class BypassUnavailable extends \LogicException implements UnderstudyError
 {
     /**
+     * Builds the error for a class loaded before bypass could be installed.
+     *
      * @param class-string $class
      */
     public static function alreadyLoaded(string $class): self
@@ -26,6 +28,8 @@ final class BypassUnavailable extends \LogicException implements UnderstudyError
     }
 
     /**
+     * Builds the error for a target that is not a class.
+     *
      * @param class-string $class
      */
     public static function notAClass(string $class, string $kind): self
@@ -39,6 +43,8 @@ final class BypassUnavailable extends \LogicException implements UnderstudyError
     }
 
     /**
+     * Builds the error for an already-installed foreign source wrapper.
+     *
      * Something else already transforms PHP source on `file://`; replacing it
      * would silently disable whatever it does.
      */

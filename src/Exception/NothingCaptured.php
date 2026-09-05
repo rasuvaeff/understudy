@@ -13,6 +13,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class NothingCaptured extends \LogicException implements UnderstudyError
 {
     /**
+     * Builds the error for reading an empty captor.
+     *
      * @param class-string|null $class
      */
     public static function forCaptor(?string $class): self

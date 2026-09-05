@@ -13,6 +13,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class ForwardingTargetMismatch extends \InvalidArgumentException implements UnderstudyError
 {
     /**
+     * Builds the error for forwarding to another understudy.
+     *
      * @param non-empty-string $label
      */
     public static function understudyTarget(string $label): self
@@ -26,6 +28,8 @@ final class ForwardingTargetMismatch extends \InvalidArgumentException implement
     }
 
     /**
+     * Builds the error for a forwarding target missing a contract.
+     *
      * @param non-empty-string $label
      * @param class-string     $contract
      */

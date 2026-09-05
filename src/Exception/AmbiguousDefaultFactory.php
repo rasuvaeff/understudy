@@ -12,6 +12,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class AmbiguousDefaultFactory extends \LogicException implements UnderstudyError
 {
     /**
+     * Builds the error for equally close default factories.
+     *
      * @param class-string            $requested
      * @param non-empty-list<class-string> $candidates
      */

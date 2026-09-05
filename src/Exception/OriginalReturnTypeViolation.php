@@ -12,6 +12,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class OriginalReturnTypeViolation extends \RuntimeException implements UnderstudyError
 {
     /**
+     * Builds the error for a forwarded fluent call returning another object.
+     *
      * @param non-empty-string $label
      * @param non-empty-string $method
      */
