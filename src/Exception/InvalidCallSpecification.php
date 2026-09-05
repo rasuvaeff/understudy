@@ -5,15 +5,29 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Exception;
 
 /**
- * The closure handed to when()/verify()/calls() did not describe one call the
- * way a specification must: no direct call on an understudy, more than one, or
- * arguments that cannot form a valid specification — which includes a matcher
- * configured so that it could never match anything.
+ * A specification of the wrong SHAPE: the closure handed to when()/verify()/
+ * calls() made no direct call on an understudy, made it on a static method or
+ * threw first; a tail matcher was not the last argument; the specification
+ * stopped before the required parameters ran out without saying so with
+ * `Arg::rest()`; a combinator was given nothing to combine; `verify()` was
+ * handed arguments that contradict each other; a facade was handed an object
+ * that is not a double; a protocol was armed over one still running.
+ *
+ * The line between this class and {@see InvalidSpecificationArgument}: this
+ * one is about how a specification is written — what is called, where, how
+ * many times — and that one about a VALUE inside it that no run could act on
+ * (an inverted range, a count below zero, a pattern PCRE cannot compile, a
+ * type that is not loadable). A `LogicException`, because the test is
+ * malformed rather than given a bad number.
  *
  * @api
  */
 final class InvalidCallSpecification extends \LogicException implements UnderstudyError
 {
+    /**
+     * The closure ran to its end without any generated method signalling: it
+     * called nothing on a double, or only something that is not one.
+     */
     public static function noCallRecorded(): self
     {
         return new self(
@@ -54,6 +68,10 @@ final class InvalidCallSpecification extends \LogicException implements Understu
         ));
     }
 
+    /**
+     * `verify($call, times: 2, minimum: 1)`: an exact count leaves a bound
+     * nothing to constrain, so one of the two is a mistake.
+     */
     public static function exactCountBesideABound(): self
     {
         return new self(
@@ -92,43 +110,6 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
-     * A range matcher whose maximum sits below its minimum, so it describes an
-     * empty range and could never match.
-     *
-     * @param non-empty-string $matcher the factory that was called, without `Arg::`
-     * @param int|float        $minimum the lower bound as it was given
-     * @param int|float        $maximum the upper bound as it was given
-     */
-    public static function invertedBounds(string $matcher, int|float $minimum, int|float $maximum): self
-    {
-        return new self(sprintf(
-            "`Arg::%s()` was given a minimum of %s and a maximum of %s, so it describes an empty "
-            . "range and would match no argument at all.\n"
-            . 'Order the bounds the other way, or leave one of them out to keep that side open.',
-            $matcher,
-            var_export($minimum, return: true),
-            var_export($maximum, return: true),
-        ));
-    }
-
-    /**
-     * A pattern handed to `Arg::string()` that PCRE cannot compile.
-     *
-     * @param non-empty-string      $pattern the pattern as it was written
-     * @param non-empty-string|null $reason  what PCRE said, when it said anything
-     */
-    public static function invalidPattern(string $pattern, ?string $reason): self
-    {
-        return new self(sprintf(
-            "`Arg::string()` was given `%s`, which is not a valid PCRE pattern%s\n"
-            . 'It would match no string and would raise a warning inside the code under test on '
-            . 'every call. Check the delimiters and the escaping.',
-            $pattern,
-            $reason === null ? '.' : ': ' . $reason . '.',
-        ));
-    }
-
-    /**
      * @param non-empty-string $matcher
      * @param non-empty-string $operand
      */
@@ -143,6 +124,10 @@ final class InvalidCallSpecification extends \LogicException implements Understu
         ));
     }
 
+    /**
+     * `expectSequence()` with no steps: arming an empty protocol would put every
+     * later call on trial with nothing to try it against.
+     */
     public static function emptySequence(): self
     {
         return new self(
@@ -213,6 +198,10 @@ final class InvalidCallSpecification extends \LogicException implements Understu
         ));
     }
 
+    /**
+     * The specification closure threw before any generated method signalled;
+     * the original is kept as `previous`, because it is the actual mistake.
+     */
     public static function closureFailed(\Throwable $previous): self
     {
         return new self(

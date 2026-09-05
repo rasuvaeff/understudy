@@ -47,15 +47,21 @@ other type would hide exactly the bug the declaration exists to prevent.
 ## A matcher that could never match is refused
 
 `Arg::int(min: 5, max: 1)` — and the same shape in `Arg::float()` and
-`Arg::count()` — describes an empty range, and `Arg::string('/[unclosed')` is
-not a pattern PCRE compiles. Both are typos, and both used to build a matcher
-that answered "no" to every argument, so the mistake surfaced as an
-expectation never met, with nothing pointing at its cause. They are refused
-with `InvalidCallSpecification` where they are written.
+`Arg::count()` — describes an empty range, `Arg::string('/[unclosed')` is not
+a pattern PCRE compiles, and `Arg::instanceOf('Nope\Missing')` names a type
+nothing can be an instance of. Each used to build a matcher that answered "no"
+to every argument, so the mistake surfaced as an expectation never met, with
+nothing pointing at its cause. They are refused with
+`InvalidSpecificationArgument` where they are written.
 
 The broken pattern had a second cost: `preg_match()` raises a warning on every
 call, from inside the code under test — which is the one thing a matcher must
 never do.
+
+A pattern that does compile is yours and is used as written, PCRE semantics
+included: `$` matches before a trailing newline, so `Arg::string('/^ord-\d+$/')`
+accepts `"ord-1\n"`. Anchor with `\z` (or add the `D` modifier) where that
+matters.
 
 ## `rest()` against `remaining()`
 

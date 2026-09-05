@@ -77,6 +77,7 @@ function expectSequence(callable ...$calls): void
  * @param int<0, max>|null  $times
  * @param int<0, max>|null  $minimum
  * @param int<0, max>|null  $maximum
+ * @param bool              $never   the call must not have happened at all; refused beside a count
  *
  * @api
  */

@@ -200,9 +200,10 @@ is not a type error in an IDE. `which()` calls only a public, non-static
 method needing no arguments; anything else, including a getter that throws, is
 a mismatch rather than an error — but a predicate handed to `satisfies()` is
 the test's own code, so an exception in it travels. A matcher that could never
-match is refused at construction with `InvalidCallSpecification`: an inverted
-range (`int`/`float`/`count`) and a pattern PCRE cannot compile. A matcher that
-reaches a real call raises `MatcherLeaked`.
+match is refused at construction with `InvalidSpecificationArgument`: an
+inverted range (`int`/`float`/`count`), a pattern PCRE cannot compile, and
+`instanceOf()` naming a type that is not loadable. A matcher that reaches a
+real call raises `MatcherLeaked`.
 
 `Arg::captor(?class-string $class = null): Captor` builds a typed argument
 captor — the replacement for reading `args[N]` out of the call log:
@@ -260,10 +261,6 @@ also satisfies a strict double — the call was expected.
 Pest declares its own global `expect()`. Import this one as
 `use function Rasuvaeff\Understudy\expect as expectCall;`, or call
 `Understudy::expect()`.
-
-`Cardinality` is the immutable call-count value object. Its factories are
-`exactly()`, `atLeast()`, `between()`, `any()`, and `never()`; `allows()` tests
-a count and `describe()` renders it for diagnostics.
 
 ### Chaining behaviour — `then()`
 
@@ -381,9 +378,10 @@ $calls = Understudy::calls(fn () => $repo->find(Arg::any())); // list<Invocation
 $last  = Understudy::lastCall(fn () => $repo->find(Arg::any())); // ?Invocation
 ```
 
-`Invocation`: `->method`, `->args`, `->sequence`, `->didReturn()`,
-`->didThrow()`, `->returned()`, `->thrown()`. Its outcome is held as an
-`Outcome`, built by `Outcome::returnedValue()` / `Outcome::thrownError()`.
+`Invocation`: `->method`, `->args`, `->sequence`, `->sensitiveArguments`,
+`->argsAfter()`, `->didReturn()`, `->didThrow()`, `->returned()`, `->thrown()`,
+`->callOriginal()`. The outcome is asked about, never inferred from a value:
+`null` is a valid return.
 
 `returned()` on a call that threw raises `OutcomeUnavailable` — `null` is a
 valid return value and cannot signal "nothing".
@@ -424,8 +422,8 @@ All implement `Rasuvaeff\Understudy\Exception\UnderstudyError`.
 
 | Exception | Raised when |
 |---|---|
-| `InvalidCallSpecification` | the closure made no call, or threw first |
-| `InvalidSpecificationArgument` | an argument no run could act on: `times(5, 2)`, a negative count, `returns()` with nothing to return, `Arg::instanceOf()` naming a class that is not loadable. Extends `\InvalidArgumentException`, which is what these paths threw before they implemented `UnderstudyError` |
+| `InvalidCallSpecification` | the SHAPE of a specification is wrong: the closure made no call on a double, called a static method or threw first; a tail matcher is not the last argument; the specification stopped early without `Arg::rest()`; an empty `allOf()`/`anyOf()`; `verify()` arguments that contradict each other; a facade handed an object that is not a double; a protocol armed over a running one |
+| `InvalidSpecificationArgument` | a VALUE no run could act on: `times(5, 2)`, a negative count, `returns()` with nothing to return, an inverted `Arg::int/float/count()` range, an `Arg::string()` pattern PCRE cannot compile, `Arg::instanceOf()` naming a type that is not loadable. Extends `\InvalidArgumentException` |
 | `UnsupportedTarget` | target missing, undoublable, or targets conflict |
 | `StrictModeViolation` | a strict double got an unconfigured call |
 | `NoDefaultValue` | loose mode has no safe value for the return type |
@@ -467,9 +465,10 @@ try {
 }
 ```
 
-The readonly fields of `VerificationFailure`/`FailureKind` are frozen public
-API from v0.1.0 — renaming, removing or retyping one is a major-version
-change. New kinds and newly-populated fields are additive.
+The readonly fields of `VerificationFailure` and the existing `FailureKind`
+cases are stable: renaming, removing or retyping one is a major-version change.
+A NEW kind, or a field newly populated for an existing kind, may arrive in a
+minor — match on `FailureKind` with a `default` arm, never exhaustively.
 
 ## Not supported
 

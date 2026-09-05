@@ -39,10 +39,10 @@ const pkgDir = join(docsDir, '..')
 // arrives documented or reddens the build.
 const COMPLETENESS_BUDGET = {
     'type without a summary': 0,
-    'method without a summary': 76,
-    'parameter without a description': 162,
-    'constructor parameter without a description': 15,
-    'throwing method without @throws': 11,
+    'method without a summary': 49,
+    'parameter without a description': 154,
+    'constructor parameter without a description': 10,
+    'throwing method without @throws': 8,
 }
 
 const errors = []

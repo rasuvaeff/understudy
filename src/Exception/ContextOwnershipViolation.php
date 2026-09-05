@@ -13,6 +13,10 @@ namespace Rasuvaeff\Understudy\Exception;
  */
 final class ContextOwnershipViolation extends \LogicException implements UnderstudyError
 {
+    /**
+     * A double was configured or verified from a context other than the one
+     * that created it — another Fiber, or outside the scope it was built in.
+     */
     public static function forDouble(): self
     {
         return new self(

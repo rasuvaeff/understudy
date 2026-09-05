@@ -94,7 +94,9 @@ A test whose only check is an understudy expectation is **not** risky. Testo
 calls a passing test risky when it recorded no assertion, and it decides that
 before this adapter can contribute the verification — so the adapter takes the
 verdict back when its own record is the only one in the history. Tests that
-also assert on their own keep whatever verdict they earned.
+also assert on their own keep whatever verdict they earned, and **a test that
+created no double is not touched at all**: nothing is recorded for it, its
+assertion count is its own, and the runner's verdict stands.
 
 ::: warning One place it is not visible
 The `assert-history` block Testo prints. The collector renders that text before
@@ -124,6 +126,12 @@ returned is still referenced while your `#[AfterTest]` runs.
 
 For a value that owns an OS resource this matters, and it has bitten a real
 suite. See [Retention and lean()](/guide/lifecycle/retention).
+
+Verification runs after your teardown here too — in the interceptor, outside
+`#[AfterTest]` — while the [PHPUnit adapter](/adapters/phpunit) verifies in
+`assertPostConditions()`, which PHPUnit calls *before* `tearDown()`. Neither is
+wrong, but a test whose expectation is fulfilled by teardown itself passes here
+and fails there.
 
 ## API
 

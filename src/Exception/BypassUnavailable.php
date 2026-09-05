@@ -38,6 +38,10 @@ final class BypassUnavailable extends \LogicException implements UnderstudyError
         ));
     }
 
+    /**
+     * Something else already transforms PHP source on `file://`; replacing it
+     * would silently disable whatever it does.
+     */
     public static function foreignWrapper(string $owner): self
     {
         return new self(sprintf(

@@ -33,6 +33,14 @@ so `$a->b()->c()` says so rather than inventing a third collaborator the test
 never asked for. Registering a factory for `C` is how you say you meant it —
 see [Defaults registry](/guide/defaults).
 
+A built-in interface is the exception: a method declared `: Stringable`,
+`: Countable`, `: JsonSerializable`, `: ArrayAccess` or `: IteratorAggregate`
+answers `NoDefaultValue` and names the way out, even though `Understudy::for()`
+doubles all five. Such a return type almost always means a concrete
+implementation, and standing a stub in for it would answer a question the test
+did not ask. An interface of your own that extends one of them does get a nested
+double.
+
 Where no safe value exists, the double says so, and names the way out.
 
 ## Strict fails at the call

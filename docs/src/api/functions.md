@@ -64,7 +64,7 @@ expectSequence(
 
 ## verify()
 
-`Rasuvaeff\Understudy\verify()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L83)
+`Rasuvaeff\Understudy\verify()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L84)
 
 ```php
 verify(callable $call, int<0, max>|null $times = NULL, int<0, max>|null $minimum = NULL, int<0, max>|null $maximum = NULL, bool $never = false): void
@@ -82,7 +82,7 @@ verify(fn () => $repository->recordView($book), times: 2);
 | `$times = NULL` | `int<0, max>\|null` |  |
 | `$minimum = NULL` | `int<0, max>\|null` |  |
 | `$maximum = NULL` | `int<0, max>\|null` |  |
-| `$never = false` | `bool` |  |
+| `$never = false` | `bool` | the call must not have happened at all; refused beside a count |
 
 ## when()
 

@@ -9,7 +9,7 @@ description: "`callOriginal()` was asked to delegate, and there is nothing to de
 
 `Rasuvaeff\Understudy\Exception\OriginalCallUnavailable`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OriginalCallUnavailable.php#L12) — **Version:** v0.7.2
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OriginalCallUnavailable.php#L12) — **Version:** v0.8.0
 
 **Extends:** `LogicException`
 

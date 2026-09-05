@@ -532,8 +532,16 @@ PHP
 # Both are shapes an analyser can only get right by resolving the class, and
 # both were got wrong by reading the source text instead — in Psalm, in two
 # separate places, each found only because the other analyser disagreed.
-PARITY_SILENT='OwnUnqualified OwnAliased OwnQualified StaticVerb RestShort CaptorSpec'
-PARITY_REPORTED='ForeignUnqualified ForeignAliased ForeignCapture RealCall RestLeak CaptorLeak'
+#
+# The second group is the misuse rules, added after the 2026-09-05 review found
+# both plugins wrong on the same four shapes and the matrix silent about all
+# of them: cardinality read only on the first link of the chain, named bounds
+# read positionally, a helper call counted as a second specified call, and a
+# first-class callable that crashed one analyser outright. `VoidReturnsChain`
+# is the same blindness on `returns()` a week later. A shape the plugins have
+# an opinion about gets a file here the day the opinion is formed.
+PARITY_SILENT='OwnUnqualified OwnAliased OwnQualified StaticVerb RestShort CaptorSpec NamedBoundsSwapped HelperReceiver FirstClassCallable'
+PARITY_REPORTED='ForeignUnqualified ForeignAliased ForeignCapture RealCall RestLeak CaptorLeak CardinalityAfterVerb VoidReturnsChain'
 
 # Writes the matrix into a leg's `src/`, beside whatever that leg already has.
 parity_fixtures() { # dir
@@ -860,6 +868,130 @@ final class CaptorLeak
         $code = Arg::captor();
 
         return $gate->open($code->capture());
+    }
+}
+PHP
+
+    cat > "$src/Log.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+interface Log
+{
+    public function write(string $line): void;
+}
+PHP
+
+    cat > "$src/CardinalityAfterVerb.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\expect;
+
+final class CardinalityAfterVerb
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        expect(fn(): bool => $gate->open(1))->returns(true)->times(5, 2);
+    }
+}
+PHP
+
+    cat > "$src/NamedBoundsSwapped.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\expect;
+
+final class NamedBoundsSwapped
+{
+    public function setUp(): void
+    {
+        $gate = Understudy::for(Gate::class);
+
+        expect(fn(): bool => $gate->open(1))->times(maximum: 5, minimum: 1);
+    }
+}
+PHP
+
+    cat > "$src/HelperReceiver.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class HelperReceiver
+{
+    public function setUp(): void
+    {
+        when(fn(): bool => $this->gate()->open(1));
+    }
+
+    private function gate(): Gate
+    {
+        return Understudy::for(Gate::class);
+    }
+}
+PHP
+
+    cat > "$src/FirstClassCallable.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+final class FirstClassCallable
+{
+    public function length(): int
+    {
+        $length = strlen(...);
+
+        return $length('abc');
+    }
+}
+PHP
+
+    cat > "$src/VoidReturnsChain.php" <<'PHP'
+<?php
+
+declare(strict_types=1);
+
+namespace Consumer;
+
+use Rasuvaeff\Understudy\Understudy;
+
+use function Rasuvaeff\Understudy\when;
+
+final class VoidReturnsChain
+{
+    public function setUp(): void
+    {
+        $log = Understudy::for(Log::class);
+
+        when(static function () use ($log): void {
+            $log->write('x');
+        })->times(2)->returns('done');
     }
 }
 PHP

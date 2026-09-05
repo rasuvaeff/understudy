@@ -9,7 +9,7 @@ description: "Ends every test with understudy's own bookkeeping done for it."
 
 `Rasuvaeff\Understudy\Testo\UnderstudyInterceptor`
 
-**Class** — **Package:** [rasuvaeff/understudy-testo](https://github.com/rasuvaeff/understudy-testo) — [Source](https://github.com/rasuvaeff/understudy-testo/blob/2ff72ea1c4400953bf9437655ceb1df1d02ca350/src/Testo/UnderstudyInterceptor.php#L51) — **Version:** v0.1.3
+**Class** — **Package:** [rasuvaeff/understudy-testo](https://github.com/rasuvaeff/understudy-testo) — [Source](https://github.com/rasuvaeff/understudy-testo/blob/dead543cd518323bf94aa1c7df69b947c71a40e9/src/Testo/UnderstudyInterceptor.php#L51) — **Version:** v0.1.4
 
 **Implements:** `Testo\Pipeline\Middleware\TestRunInterceptor`, `Testo\Pipeline\Interceptor`
 

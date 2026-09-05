@@ -11,7 +11,13 @@ use Rasuvaeff\Understudy\Exception\OutcomeUnavailable;
  * because `null` is a perfectly valid return value and cannot double as
  * "nothing was returned".
  *
- * @api
+ * `@internal` since 0.9: dispatch records outcomes through the scalar path
+ * (`Invocation::recordReturned()` / `recordThrown()`), so no public path ever
+ * builds or receives one — `Invocation::didReturn()`, `returned()`, `didThrow()`
+ * and `thrown()` are the public reading of an outcome. It was `@api` by
+ * inheritance from the first design, not because anything reached it.
+ *
+ * @internal
  */
 final readonly class Outcome
 {

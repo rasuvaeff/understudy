@@ -53,6 +53,10 @@ final class ForgottenDouble extends \LogicException implements UnderstudyError
         ));
     }
 
+    /**
+     * A facade — `strict()`, `verify()`, `nothingElse()`, `forget()` itself —
+     * was asked about a double that `Understudy::forget()` retired.
+     */
     public static function retired(): self
     {
         return new self(

@@ -9,7 +9,7 @@ description: "A double outlived the context that created it — almost always a 
 
 `Rasuvaeff\Understudy\Exception\ForgottenDouble`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForgottenDouble.php#L16) — **Version:** v0.7.2
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForgottenDouble.php#L16) — **Version:** v0.8.0
 
 **Extends:** `LogicException`
 
@@ -46,6 +46,9 @@ static propertyAfterReset(non-empty-string $property): Exception\ForgottenDouble
 ```php
 static retired(): Exception\ForgottenDouble
 ```
+
+A facade — `strict()`, `verify()`, `nothingElse()`, `forget()` itself —
+was asked about a double that `Understudy::forget()` retired.
 
 ### fromDefaultFactory()
 

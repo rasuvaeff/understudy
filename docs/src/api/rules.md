@@ -9,15 +9,15 @@ description: "Every identifier the PHPStan extension reports and every issue typ
 
 Neither analyser package has an `@api` class, and that is correct rather than a missing annotation: `understudy-phpstan` is registered through `extension.neon` and `understudy-psalm` through `psalm-plugin enable`, so a user never names one of their classes. What a user does write is an **identifier**, in `ignoreErrors` or a suppression. That is the contract, so that is what is reflected here.
 
-## PHPStan · `rasuvaeff/understudy-phpstan` v0.2.0
+## PHPStan · `rasuvaeff/understudy-phpstan` v0.2.1
 
 | Identifier | Reported by | Summary |
 |---|---|---|
-| `understudy.cardinality` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/911d4c47950803ea3e4fed74112598c1db09d640/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
-| `understudy.closure` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/911d4c47950803ea3e4fed74112598c1db09d640/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
-| `understudy.matcher` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/911d4c47950803ea3e4fed74112598c1db09d640/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
-| `understudy.matcherLeak` | [`MatcherLeakRule`](https://github.com/rasuvaeff/understudy-phpstan/blob/911d4c47950803ea3e4fed74112598c1db09d640/src/PhpStan/Rule/MatcherLeakRule.php) | A matcher written outside a specification. |
-| `understudy.returns` | [`VoidReturnsRule`](https://github.com/rasuvaeff/understudy-phpstan/blob/911d4c47950803ea3e4fed74112598c1db09d640/src/PhpStan/Rule/VoidReturnsRule.php) | `returns()` on a method that returns nothing. |
+| `understudy.cardinality` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/55df82300b4eba83c101d835f6abe02159215d97/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
+| `understudy.closure` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/55df82300b4eba83c101d835f6abe02159215d97/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
+| `understudy.matcher` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/55df82300b4eba83c101d835f6abe02159215d97/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
+| `understudy.matcherLeak` | [`MatcherLeakRule`](https://github.com/rasuvaeff/understudy-phpstan/blob/55df82300b4eba83c101d835f6abe02159215d97/src/PhpStan/Rule/MatcherLeakRule.php) | A matcher written outside a specification. |
+| `understudy.returns` | [`VoidReturnsRule`](https://github.com/rasuvaeff/understudy-phpstan/blob/55df82300b4eba83c101d835f6abe02159215d97/src/PhpStan/Rule/VoidReturnsRule.php) | `returns()` on a method that returns nothing. |
 
 Silence one by its identifier:
 

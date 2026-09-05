@@ -34,6 +34,17 @@ report inside a specification closure, and **only** there:
 The last row is the point. A matcher reaching a real call raises `MatcherLeaked`
 at run time, and a plugin that hid it would be worse than no plugin at all.
 
+::: warning What reports that last row is Psalm, and it needs `errorLevel="1"`
+The plugin suppresses; the report it leaves standing is Psalm's own
+`MixedArgument`, which exists only at level 1. At levels 2 and above a leaked
+matcher draws nothing here — the runtime `MatcherLeaked` catches it, one test
+run later. The [PHPStan extension](/adapters/phpstan) has a rule of its own
+(`understudy.matcherLeak`) and reports at every level; this plugin deliberately
+does not, because a rule strict enough to catch a leak textually also misreads a
+matcher that reaches its specification through a variable, a property or a
+helper.
+:::
+
 ## The two 0.4 idioms
 
 - **`Arg::rest()`** legitimately passes fewer arguments than the contract

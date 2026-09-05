@@ -82,7 +82,7 @@ specification that can never match is exactly the mistake a green suite hides.
 | `understudy.cardinality` | `times(5, 2)`, a negative bound, `verify(…, never: true, times: 3)`, `times` beside a `minimum` |
 | `understudy.matcher` | a matcher whose kind the parameter can never accept: `Arg::int()` where a `string` is declared |
 | `understudy.returns` | `returns()` on a method declared `void`, where no value is ever observed |
-| `understudy.matcherLeak` | a matcher written outside a specification, where it reaches the code as a value |
+| `understudy.matcherLeak` | a matcher written outside a specification and outside any closure, where it reaches the code as a value; one hoisted into a variable, stored on a property or written in a closure handed over later is not one |
 
 To silence one, use its identifier:
 

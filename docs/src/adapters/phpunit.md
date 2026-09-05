@@ -24,7 +24,7 @@ Pest works too — it runs on PHPUnit, so the same trait applies through
 | **Verify after success** | after a body that reaches `assertPostConditions()`, every `expect()` is checked. An expectation the code never fulfilled fails the test as an assertion failure |
 | **Original failure wins** | after a failing body nothing is verified, so the adapter can never mask the error that actually happened |
 | **Reset always** | an `#[After]` hook drops the context unconditionally. One test can never leak a double into the next |
-| **Early guard** | a `#[Before]` hook refuses to start over a context some earlier test left behind, which is what broken integration looks like |
+| **Early guard** | a `#[Before]` hook refuses to start over a context some earlier test left behind, which is what broken integration looks like — or one that `setUpBeforeClass()` filled: the context lives for one test, so create doubles in `setUp()` |
 
 ## Using it
 
@@ -78,6 +78,15 @@ abstract class ProjectTestCase extends TestCase
 ```
 
 See [Strict stubs](/guide/expectations/strict-stubs).
+
+**Verification runs before your teardown here, and after it under
+[Testo](/adapters/testo).** `assertPostConditions()` is called by PHPUnit
+*before* `tearDown()`; the Testo interceptor runs outside `#[AfterTest]`.
+Neither is wrong, but a test whose expectation is fulfilled by teardown itself
+fails here and passes there. `reset()` runs after teardown in both.
+
+A test that creates no double is not touched at all: nothing is counted for it,
+so `#[DoesNotPerformAssertions]` keeps meaning what it says.
 
 ## Overriding `assertPostConditions()`
 

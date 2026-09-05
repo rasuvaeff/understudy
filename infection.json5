@@ -28,6 +28,16 @@
     // which is filtered by `===` afterwards), and removing the call leaves
     // the value unindexed, which is always correct because the index is an
     // optimisation of a walk that still exists.
+    //
+    // Re-measured 2026-09-05 for 0.9.0, the 1.0 candidate: 3093 mutants,
+    // 182 escaped, Covered Code MSI 94.1% — three mutants above 94. The
+    // 1.0-readiness review asked for 94 "if the measurement after the
+    // changes is at or above it", and it is, by a margin smaller than the
+    // dozens by which the CI mutant count differs from the local one. A gate
+    // whose verdict flips on which PHP built the run measures the
+    // environment, not the suite (see AGENTS.md), so the number stays at 92
+    // until the escaped list — TargetUnifier 45, FinalStripper 29, Runtime 28
+    // — has been hunted down far enough to give 94 real headroom.
     "minMsi": 92,
     "mutators": {
         "@default": true,

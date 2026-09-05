@@ -10,7 +10,12 @@ use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
  * How many times a call is allowed to happen. `null` as the maximum means no
  * upper bound.
  *
- * @api
+ * `@internal` since 0.9: no public path accepts or returns one — `times()` and
+ * `verify()` take integers, and a `VerificationFailure` carries the bounds as
+ * `expectedMinimum`/`expectedMaximum`. Declaring it `@api` promised a value
+ * object nobody could hand to the library or get back from it.
+ *
+ * @internal
  */
 final readonly class Cardinality
 {
@@ -27,6 +32,9 @@ final readonly class Cardinality
         }
     }
 
+    /**
+     * Exactly this many calls — the default an `expect()` starts with.
+     */
     public static function exactly(int $times): self
     {
         $bounded = self::nonNegative($times);
@@ -34,11 +42,18 @@ final readonly class Cardinality
         return new self($bounded, $bounded);
     }
 
+    /**
+     * This many calls or more, with no upper bound.
+     */
     public static function atLeast(int $minimum): self
     {
         return new self(self::nonNegative($minimum), null);
     }
 
+    /**
+     * A closed range, or an open one when the maximum is null — the shape
+     * `times($minimum, $maximum)` and `verify(minimum:, maximum:)` build.
+     */
     public static function between(int $minimum, ?int $maximum): self
     {
         return new self(
@@ -70,6 +85,9 @@ final readonly class Cardinality
         return new self(0, null);
     }
 
+    /**
+     * Not even once — `verify(…, never: true)`.
+     */
     public static function never(): self
     {
         return new self(0, 0);

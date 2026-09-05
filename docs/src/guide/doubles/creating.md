@@ -53,7 +53,7 @@ What a class double does and does not do:
 | Public and protected methods | overridden and dispatched; a protected one shows up in the transcript and under strict mode, but PHP's own visibility keeps it out of a specification closure |
 | Private and static methods | untouched — the target keeps them, because there is no instance state to intercept |
 | The destructor | replaced with an empty one, so nothing is torn down that was never built |
-| Writable public properties | start at an empty value of their type; object-typed, hooked, `final`, `readonly` and `private(set)` ones are left uninitialized, and reading one raises PHP's own error |
+| Writable public properties | a declared default is kept; everything else starts at an empty value of its type — including a property **promoted** through the constructor, because the constructor is skipped, so `$double->promoted` differs from the real object. Object-typed, hooked, `final`, `readonly` and `private(set)` ones are left uninitialized, and reading one raises PHP's own error |
 | `clone` | produces a double of its own: same contracts, no expectations, no call log, owned by the context that cloned it |
 
 A `readonly` target produces a `readonly` double, which PHP requires and which
