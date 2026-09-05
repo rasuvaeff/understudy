@@ -906,7 +906,7 @@ make build          # validate, normalize, require-checker, cs, psalm, unit, int
 make cs-fix
 make psalm
 make test
-make mutation       # infection, gate at 92% MSI
+make mutation       # infection, release gate at 92% MSI for the 0.x line
 make release-check
 
 make perf-install   # once: the comparative benchmark harness in perf/
@@ -914,6 +914,11 @@ make perf           # against Mockery, Prophecy and PHPUnit
 make perf-cold      # cold start, one process per double
 make perf-memory    # bytes retained per live double
 ```
+
+The `0.x` release policy keeps Infection's Covered Code gate at 92% MSI. A
+single local run above that value does not change the gate because mutant
+counts vary across environments. Before `1.0`, the threshold will be
+reconsidered only after a reproducible CI-like matrix shows stable headroom.
 
 Or through Docker directly:
 

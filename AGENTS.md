@@ -211,6 +211,10 @@ seconds instead of the full run's minute — and the full run stays the gate.
   tests grow the numerator. Read the reasons before moving the number, and add
   one when you do — a gate whose verdict flips on which PHP built the run is
   measuring the environment, not the suite.
+  For the published `0.x` line, `minMsi: 92` is therefore the explicit release
+  policy: a single local run at 94.1% is evidence, not a new gate. Before the
+  `1.0` release, rerun a reproducible CI-like matrix and raise the threshold
+  only when it has stable headroom above the new value.
 - **The only `&` in the package is in generated code, and that is deliberate.**
   Psalm cannot follow a reference into an object property and says so by name;
   the way out is not a suppression but moving the reference to where Psalm never
