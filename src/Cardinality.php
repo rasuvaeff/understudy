@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy;
 
+use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
+
 /**
  * How many times a call is allowed to happen. `null` as the maximum means no
  * upper bound.
@@ -21,11 +23,7 @@ final readonly class Cardinality
         public ?int $maximum,
     ) {
         if ($maximum !== null && $maximum < $minimum) {
-            throw new \InvalidArgumentException(sprintf(
-                'A maximum call count cannot be below the minimum, got minimum %d and maximum %d',
-                $minimum,
-                $maximum,
-            ));
+            throw InvalidSpecificationArgument::maximumBelowMinimum($minimum, $maximum);
         }
     }
 
@@ -58,7 +56,7 @@ final readonly class Cardinality
     private static function nonNegative(int $count): int
     {
         if ($count < 0) {
-            throw new \InvalidArgumentException('A call count cannot be negative, got ' . $count);
+            throw InvalidSpecificationArgument::negativeCount($count);
         }
 
         return $count;

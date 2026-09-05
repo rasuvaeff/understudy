@@ -41,6 +41,10 @@ final class Invocation
      * @param list<mixed>      $liveArgs the arguments as the caller still holds them,
      *                                   references included — what delegation needs,
      *                                   where {@see $args} is a reading of them
+     * @param list<int>        $sensitiveArguments positions the contract marked
+     *                                   `#[\SensitiveParameter]`; carried on the call so a
+     *                                   failure message and a transcript can redact the value
+     *                                   the way PHP redacts it in its own traces
      */
     public function __construct(
         public readonly string $method,
@@ -48,6 +52,7 @@ final class Invocation
         public readonly int $sequence,
         private readonly ?object $double = null,
         private readonly array $liveArgs = [],
+        public readonly array $sensitiveArguments = [],
     ) {}
 
     /**

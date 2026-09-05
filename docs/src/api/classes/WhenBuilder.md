@@ -9,7 +9,7 @@ description: "Configures what a stubbed call does."
 
 `Rasuvaeff\Understudy\WhenBuilder`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L25) — **Version:** v0.5.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L33) — **Version:** v0.7.2
 
 **Type parameters:**
 
@@ -22,6 +22,13 @@ PHPStan cannot infer it from the closure on their own — `understudy-psalm`
 fills it in, and until then the parameter stays `mixed`, which is why the
 template is declared here rather than added later: a published signature
 cannot grow one without changing its contract.
+
+Not `final`, and the one class here that is not: `ExpectBuilder` extends it
+to add the cardinality verbs, and the two are one fluent vocabulary rather
+than two. The cost is that `protected readonly Expectation` — an
+`@internal` type — is reachable from a subclass a consumer could write. That
+is tolerated rather than intended: nothing in the contract invites it, and
+closing it would mean duplicating every action verb.
 
 ## Constructor
 

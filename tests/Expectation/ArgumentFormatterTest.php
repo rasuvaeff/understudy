@@ -269,18 +269,30 @@ final class ArgumentFormatterTest
     public function aStringThatIsNotUtf8FallsBackToBytes(): void
     {
         // PCRE cannot count characters in bytes that are not UTF-8; the byte
-        // fallback keeps a binary blob from flooding the failure message.
+        // fallback keeps a binary blob from flooding the failure message. The
+        // bytes themselves are escaped: a half sequence printed raw is what
+        // the single-line rule exists to prevent.
         Assert::same(
             ArgumentFormatter::format(str_repeat("\xFF", 50)),
-            "'" . str_repeat("\xFF", 40) . "…'",
+            "'" . str_repeat('\\xFF', 40) . "…'",
         );
     }
 
-    public function aShortStringThatIsNotUtf8SurvivesWhole(): void
+    public function aShortStringThatIsNotUtf8IsEscapedByteByByte(): void
     {
-        $value = "\xFF\xFE";
+        Assert::same(ArgumentFormatter::format("\xFF\xFE"), "'\\xFF\\xFE'");
+    }
 
-        Assert::same(ArgumentFormatter::format($value), "'" . $value . "'");
+    /**
+     * A NUL and its neighbours would break the one line each argument is
+     * rendered on, and log processors disagree about what a raw NUL means.
+     * Valid UTF-8 above ASCII is left alone: it is readable, and truncate()
+     * already keeps a multibyte character whole.
+     */
+    public function controlBytesAreEscapedAndMultibyteTextIsNot(): void
+    {
+        Assert::same(ArgumentFormatter::format("a\x00b\x01"), "'a\\x00b\\x01'");
+        Assert::same(ArgumentFormatter::format('дом'), "'дом'");
     }
 
     public function truncationKeepsTheStringsOwnBeginning(): void

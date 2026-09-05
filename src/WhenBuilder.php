@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy;
 
+use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
 use Rasuvaeff\Understudy\Expectation\ComputeAnswer;
 use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Expectation\ReturnValue;
@@ -54,7 +55,7 @@ class WhenBuilder
         $list = array_values($values);
 
         if ($list === []) {
-            throw new \InvalidArgumentException('returns() needs at least one value');
+            throw InvalidSpecificationArgument::noReturnValues();
         }
 
         // Several values ARE a chain: `returns($a, $b)` is exactly

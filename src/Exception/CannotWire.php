@@ -59,7 +59,7 @@ final class CannotWire extends \InvalidArgumentException implements UnderstudyEr
     public static function incompatibleOverride(string $sut, string $name, string $expected, string $given): self
     {
         return new self(sprintf(
-            "Cannot wire `%s`: the override for `\$%s` is a `%s`, and the constructor declares `%s`.\n"
+            "Cannot wire `%s`: the override for `\$%s` has type `%s`, and the constructor declares `%s`.\n"
             . 'The check happens before the constructor runs, so a wrong type is reported here rather than '
             . 'as a TypeError from inside the subject.',
             $sut,

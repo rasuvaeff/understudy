@@ -119,7 +119,7 @@ final class DefaultFactoriesTest
 
         Expect::exception(InvalidDefaultValue::class)
             ->withMessage(
-                "The default factory registered for `" . Logger::class . "` produced a `stdClass`.\n"
+                "The default factory registered for `" . Logger::class . "` produced a value of type `stdClass`.\n"
                 . 'A factory has to return something the requested type can hold, or the double answers with '
                 . 'a value the code under test cannot use.',
             );

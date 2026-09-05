@@ -20,6 +20,7 @@ Every `@api` type across all five packages that implements `Throwable`.
 | [`ForwardingTargetMismatch`](/api/classes/Exception/ForwardingTargetMismatch) | core | `InvalidArgumentException` | The instance offered as a forwarding target does not satisfy what the double stands in for. |
 | [`InvalidCallSpecification`](/api/classes/Exception/InvalidCallSpecification) | core | `LogicException` | The closure handed to when()/verify()/calls() did not describe one call the way a specification… |
 | [`InvalidDefaultValue`](/api/classes/Exception/InvalidDefaultValue) | core | `RuntimeException` | A registered default factory produced a value the contract cannot hold. |
+| [`InvalidSpecificationArgument`](/api/classes/Exception/InvalidSpecificationArgument) | core | `InvalidArgumentException` | An argument to a specification that no run could act on: a maximum call count below its minimum, a… |
 | [`MatcherLeaked`](/api/classes/Exception/MatcherLeaked) | core | `LogicException` | A matcher reached a real call instead of a specification closure. |
 | [`NeverMethodCalled`](/api/classes/Exception/NeverMethodCalled) | core | `RuntimeException` | A method declared `: never` was called without an expectation that throws. |
 | [`NoDefaultValue`](/api/classes/Exception/NoDefaultValue) | core | `RuntimeException` | A loose understudy had to answer a call, but the declared return type has no safe default. |

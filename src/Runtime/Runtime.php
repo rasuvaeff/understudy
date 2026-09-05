@@ -462,7 +462,8 @@ final class Runtime
         // through it, and the log would then show a value the caller never
         // passed. Both sides are kept, and only for the methods that can move —
         // snapshotting every call would cost the whole suite for a rare case.
-        $tracksReferences = $state->blueprint->method($method)?->hasReferenceParameters ?? false;
+        $signature = $state->blueprint->method($method);
+        $tracksReferences = $signature?->hasReferenceParameters ?? false;
 
         $invocation = new Invocation(
             method: $method,
@@ -470,6 +471,7 @@ final class Runtime
             sequence: $context->nextSequence(),
             double: $double,
             liveArgs: $args,
+            sensitiveArguments: $signature?->sensitiveParameters ?? [],
         );
         $state->record($invocation);
 

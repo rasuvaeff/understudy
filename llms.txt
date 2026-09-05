@@ -23,7 +23,9 @@ No runtime deps; `ext-mbstring` is not needed.
 - Interfaces and classes. A class may be the first target only (PHP has single
   inheritance); interfaces follow it. The target's constructor and destructor
   never run, private and static methods are left alone, protected ones are
-  dispatched but unconfigurable, writable public properties start empty, and a
+  dispatched but unconfigurable, a writable public property keeps a declared
+  default and otherwise starts empty -- including one PROMOTED through the
+  constructor, which is skipped, so it differs from the real object -- and a
   `clone` is a double of its own.
 - Refused before generation, each with the reason: a `final` class, a class with
   a non-private `final` instance method, an enum, a trait, an internal class, an
@@ -184,7 +186,7 @@ after it. Arguments match by `===`, or by matcher.
 | `not($v)` | negates a literal or another matcher |
 | `allOf(...)` | everything every operand accepts; an operand is a matcher or a literal |
 | `anyOf(...)` | anything at least one operand accepts |
-| `instanceOf($class)` | an instance of the class or interface |
+| `instanceOf($class)` | an instance of the class or interface; a name that is not loadable is refused, not silently never-matching |
 | `satisfies($fn, $description)` | whatever the predicate accepts |
 | `containing($entries)` | an array holding these entries and possibly more |
 | `count(minimum:, maximum:)` | an array or `Countable` of that size |
@@ -360,11 +362,14 @@ created there becomes forgotten when the scope closes. Configuration
 and verification require the owning context; normal calls from another Fiber
 are allowed and are routed to the owner's log.
 `checkpoint()` keeps the understudies, their modes and their labels, and
-clears the expectations and calls the current phase has settled.
+clears the expectations and the SETTLED calls of the current phase — settled
+meaning claimed by a matching `expect()` or a successful `verify()`. A call
+covered by a `when()` stub alone is never claimed and survives, because
+`nothingElse()` still reads it.
 
-`transcript()` retains every invocation until `reset()` or `checkpoint()`;
-avoid unbounded hot loops through doubles when arguments or results hold large
-object graphs.
+`transcript()` retains every invocation until `reset()` (see `checkpoint()`
+above: it clears only the settled ones); avoid unbounded hot loops through
+doubles when arguments or results hold large object graphs.
 
 Failure raises `VerificationFailed`, whose message names the double, the
 expectation, the actual count, and marks differing arguments with `*`.
@@ -420,6 +425,7 @@ All implement `Rasuvaeff\Understudy\Exception\UnderstudyError`.
 | Exception | Raised when |
 |---|---|
 | `InvalidCallSpecification` | the closure made no call, or threw first |
+| `InvalidSpecificationArgument` | an argument no run could act on: `times(5, 2)`, a negative count, `returns()` with nothing to return, `Arg::instanceOf()` naming a class that is not loadable. Extends `\InvalidArgumentException`, which is what these paths threw before they implemented `UnderstudyError` |
 | `UnsupportedTarget` | target missing, undoublable, or targets conflict |
 | `StrictModeViolation` | a strict double got an unconfigured call |
 | `NoDefaultValue` | loose mode has no safe value for the return type |

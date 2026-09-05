@@ -160,7 +160,7 @@ What a class double does and does not do:
 | public and protected methods | overridden and dispatched; a protected one shows up in the transcript and under strict mode, but PHP's own visibility keeps it out of a setup closure |
 | private and static methods | untouched — the target keeps them, because there is no instance state to intercept |
 | the destructor | replaced with an empty one, so nothing is torn down that was never built |
-| writable public properties | start at an empty value of their type; object-typed, hooked, `final`, `readonly` and `private(set)` ones are left uninitialized, and reading one raises PHP's own error |
+| writable public properties | a declared default is kept; everything else starts at an empty value of its type — including a property **promoted** through the constructor, because the constructor is skipped, so `$double->promoted` differs from the real object. Object-typed, hooked, `final`, `readonly` and `private(set)` ones are left uninitialized, and reading one raises PHP's own error |
 | `clone` | produces a double of its own: same contracts, no expectations, no call log, owned by the context that cloned it |
 
 A `readonly` target produces a `readonly` double, which PHP requires and which
@@ -316,9 +316,15 @@ value, which is the point in a codebase that runs with `strict_types`.
 
 A matcher that could never match anything is refused where it is written, not
 left to fail an expectation in teardown: `Arg::int(min: 5, max: 1)` and its
-`float`/`count` siblings describe an empty range, and `Arg::string('/[unclosed')`
+`float`/`count` siblings describe an empty range, `Arg::string('/[unclosed')`
 is not a pattern PCRE compiles — the latter would also raise a warning inside
-the code under test on every call.
+the code under test on every call — and `Arg::instanceOf()` needs a class or
+interface that is loadable, because a name that is not would simply never
+match and say so nowhere.
+
+The pattern is yours and is used as written, PCRE semantics included: `$`
+matches before a trailing newline, so `Arg::string('/^ord-\d+$/')` accepts
+`"ord-1\n"`. Anchor with `\z` (or add the `D` modifier) where that matters.
 
 `Arg::which()` calls only a public, non-static method that needs no arguments.
 A getter that throws counts as a mismatch, never as an error — matching runs
@@ -503,7 +509,13 @@ echo Understudy::transcript($repository);       // every call and its outcome
 Understudy::idle();                             // true when the test holds no doubles, in any context
 ```
 
-`transcript()` retains every invocation until `reset()` or `checkpoint()`.
+`transcript()` retains every invocation until `reset()`. `checkpoint()` clears
+only the calls it **settled** — the ones a matching `expect()` or a successful
+`verify()` claimed — because an unclaimed call is still what `nothingElse()`
+reads. A call covered by a `when()` stub alone is never claimed, so it, and the
+value it holds, survive every checkpoint of a long test. Use `reset()`,
+`scope()` or `lean()` to let go of everything.
+
 Avoid unbounded hot loops through a double when the arguments or results hold
 large object graphs; use a real fake for load-sized workloads.
 
@@ -600,6 +612,14 @@ never hands back an unconstructed instance of a real class. What it can hand
 back is another understudy: a return type that can itself be doubled becomes
 one, one level deep, which the same test can configure. That double is a
 generated stand-in, not the target with its constructor skipped.
+
+A built-in interface is the exception: a method declared `: Stringable`,
+`: Countable`, `: JsonSerializable`, `: ArrayAccess` or `: IteratorAggregate`
+answers `NoDefaultValue` and names the way out, even though `Understudy::for()`
+doubles all five. Such a return type almost always means a concrete
+implementation, and standing a stub in for it would answer a question the test
+did not ask. An interface of your own that extends one of them does get a
+nested double.
 
 One level, and no further — a double created this way refuses to produce
 another, so `$a->b()->c()` says so rather than inventing a third collaborator
@@ -847,6 +867,15 @@ Understudy generates a class per set of contracts and evaluates it once per
 process. It never loads code from user input, never touches the filesystem, and
 holds all state in `WeakMap`s keyed by the double object — never by
 `spl_object_id()`, which PHP reuses after collection.
+
+**Arguments are printed verbatim in failure messages and in `transcript()`,
+with one exception.** A parameter the contract marks `#[\SensitiveParameter]`
+is rendered as its type and nothing else — `login('user', string
+SensitiveParameter)` — the way PHP redacts such a parameter in its own stack
+traces. Everything else goes into the message as written, and a failure message
+is read from a CI log: mark the parameter, or keep the secret out of the
+argument. The literals your own specification passes are not redacted; they are
+in your test file already.
 
 It is a development dependency. Do not install it in production.
 

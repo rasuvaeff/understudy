@@ -17,7 +17,7 @@ final class InvalidDefaultValue extends \RuntimeException implements UnderstudyE
     public static function ofWrongType(string $requested, string $produced): self
     {
         return new self(sprintf(
-            "The default factory registered for `%s` produced a `%s`.\n"
+            "The default factory registered for `%s` produced a value of type `%s`.\n"
             . 'A factory has to return something the requested type can hold, or the double answers with a '
             . 'value the code under test cannot use.',
             $requested,

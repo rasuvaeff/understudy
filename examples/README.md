@@ -21,7 +21,7 @@ demonstrate changes.
 underscore is what marks it an include rather than a script of its own.
 
 `case-studies/` holds the cookbook scenarios: each one reproduces a real
-failure message quoted on a [cookbook](docs/src/cookbook) page of the
+failure message quoted on a [cookbook](../docs/src/cookbook) page of the
 documentation site. They are gated by `make docs-cookbook`, which diffs their
 output against the pages — not by `composer build` — and their `_bootstrap.php`
 is the include, same convention as `_check.php`.

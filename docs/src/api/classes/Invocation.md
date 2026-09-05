@@ -9,7 +9,7 @@ description: "One recorded call on an understudy."
 
 `Rasuvaeff\Understudy\Invocation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L20) — **Version:** v0.5.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L20) — **Version:** v0.7.2
 
 One recorded call on an understudy.
 
@@ -24,10 +24,9 @@ __construct(
     non-empty-string $method,
     list $args,
     positive-int $sequence,
-    ?string $file = NULL,
-    ?int $line = NULL,
     ?object $double = NULL,
     list $liveArgs = [],
+    list<int> $sensitiveArguments = [],
 )
 ```
 
@@ -36,10 +35,9 @@ __construct(
 | `$method` | `non-empty-string` | *required* |  |
 | `$args` | `list` | *required* |  |
 | `$sequence` | `positive-int` | *required* | position in this context's global call order |
-| `$file` | `?string` | `NULL` |  |
-| `$line` | `?int` | `NULL` |  |
 | `$double` | `?object` | `NULL` |  |
 | `$liveArgs` | `list` | `[]` | the arguments as the caller still holds them, references included — what delegation needs, where $args is a reading of them |
+| `$sensitiveArguments` | `list<int>` | `[]` | positions the contract marked `#[\SensitiveParameter]`; carried on the call so a failure message and a transcript can redact the value the way PHP redacts it in its own traces |
 
 ## Methods
 

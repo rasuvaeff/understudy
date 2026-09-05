@@ -20,6 +20,9 @@ final class ArgumentFormatter
     /** As many public properties as an array shows entries. */
     private const int MAX_PROPERTIES = 5;
 
+    /** Appended where a value was cut, and never escaped as payload. */
+    private const string CUT = '…';
+
     /** A property name that needs no quoting to be read back. */
     private const string IDENTIFIER = '/^[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*\z/';
 
@@ -87,6 +90,11 @@ final class ArgumentFormatter
             $value === null => 'null',
             $value === true => 'true',
             $value === false => 'false',
+            // NAN is cast with a warning on PHP 8.5 — raised from inside the
+            // library, while it renders a message about a failure, which under
+            // `failOnWarning` turns the report into a different failure. INF
+            // and -INF cast silently and read fine.
+            is_float($value) && is_nan($value) => 'NAN',
             is_int($value), is_float($value) => (string) $value,
             is_string($value) => self::formatString($value),
             is_array($value) => self::formatArray($value, $depth),
@@ -106,6 +114,15 @@ final class ArgumentFormatter
     {
         $truncated = self::truncate($value);
 
+        // The cut marker is ours and is valid UTF-8; escaping it along with a
+        // binary payload would print its three bytes instead of the character.
+        $marker = '';
+
+        if ($truncated !== $value && str_ends_with($truncated, self::CUT)) {
+            $marker = self::CUT;
+            $truncated = substr($truncated, 0, -strlen(self::CUT));
+        }
+
         // A raw newline or quote would break the single line a failure message
         // renders each argument on, and hide what actually differed.
         //
@@ -118,7 +135,35 @@ final class ArgumentFormatter
             "\t" => '\\t',
         ]);
 
-        return "'" . $escaped . "'";
+        // Control bytes go out as `\xNN` for the same reason: a NUL travelled
+        // into the message — and into `transcript()` — as the raw byte, which
+        // log processors treat differently from one another and a terminal may
+        // not show at all.
+        //
+        // A string that is not valid UTF-8 has its high bytes escaped too. In
+        // valid text those bytes are a multibyte character, which is readable
+        // and which `truncate()` already keeps whole; in a binary argument
+        // they are the half sequence that made the line unreadable.
+        $pattern = self::isUtf8($value)
+            ? '/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/'
+            : '/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\xff]/';
+
+        $escaped = (string) preg_replace_callback(
+            $pattern,
+            static fn(array $match): string => sprintf('\\x%02X', ord($match[0])),
+            $escaped,
+        );
+
+        return "'" . $escaped . $marker . "'";
+    }
+
+    /**
+     * Whether the bytes are valid UTF-8, asked with PCRE so the package needs
+     * no ext-mbstring — the same reason {@see truncate()} counts that way.
+     */
+    private static function isUtf8(string $value): bool
+    {
+        return preg_match('//u', $value) === 1;
     }
 
     /**

@@ -182,7 +182,7 @@ final class WireTest
         Assert::same($built->values, $accepted);
 
         Expect::exception(CannotWire::class)
-            ->withMessageContaining('is a `' . $rejectedType . '`')
+            ->withMessageContaining('has type `' . $rejectedType . '`')
             ->withMessageContaining('declares `list<' . $declared . '>`');
 
         Understudy::wire($subject, ['values' => [$rejected]]);
@@ -310,7 +310,7 @@ final class WireTest
     {
         Expect::exception(CannotWire::class)
             ->withMessage(
-                'Cannot wire `' . CatalogService::class . '`: the override for `$repository` is a `stdClass`, '
+                'Cannot wire `' . CatalogService::class . '`: the override for `$repository` has type `stdClass`, '
                 . 'and the constructor declares `' . Repository::class . "`.\n"
                 . 'The check happens before the constructor runs, so a wrong type is reported here rather '
                 . 'than as a TypeError from inside the subject.',
@@ -343,7 +343,7 @@ final class WireTest
     public function nullIsRefusedAsAnOverrideForANonNullableParameter(): void
     {
         Expect::exception(CannotWire::class)
-            ->withMessageContaining('the override for `$repository` is a `null`');
+            ->withMessageContaining('the override for `$repository` has type `null`');
 
         Understudy::wire(CatalogService::class, ['repository' => null]);
     }

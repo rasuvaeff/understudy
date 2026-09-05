@@ -9,7 +9,7 @@ description: "The closure handed to when()/verify()/calls() did not describe one
 
 `Rasuvaeff\Understudy\Exception\InvalidCallSpecification`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L15) — **Version:** v0.5.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L15) — **Version:** v0.7.2
 
 **Extends:** `LogicException`
 
@@ -31,7 +31,30 @@ static noCallRecorded(): Exception\InvalidCallSpecification
 ### notADouble()
 
 ```php
-static notADouble(): Exception\InvalidCallSpecification
+static notADouble(non-empty-string $facade): Exception\InvalidCallSpecification
+```
+
+Handed the object directly, so there is no closure to blame — naming
+one sends the reader looking for a mistake they have not made.
+
+- `$facade` — the method that was given the object
+
+### neverBesideACount()
+
+```php
+static neverBesideACount(non-empty-string $bound): Exception\InvalidCallSpecification
+```
+
+The wording is the analysers' word for word, and deliberately so: a
+user who saw the report before running the suite must not have to
+recognise a second phrasing of the same mistake afterwards.
+
+- `$bound` — the count argument written beside `never`
+
+### exactCountBesideABound()
+
+```php
+static exactCountBesideABound(): Exception\InvalidCallSpecification
 ```
 
 ### misplacedTailMatcher()
