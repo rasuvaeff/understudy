@@ -9,7 +9,7 @@ description: "An invocation's outcome was read as the wrong kind: a returned val
 
 `Rasuvaeff\Understudy\Exception\OutcomeUnavailable`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OutcomeUnavailable.php#L14) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OutcomeUnavailable.php#L14) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `LogicException`
 
@@ -30,9 +30,13 @@ static threwInstead(
 ): Exception\OutcomeUnavailable
 ```
 
+Builds the error for reading a return value after a throw.
+
 ### discardedByLean()
 
 ```php
 static discardedByLean(non-empty-string $method): Exception\OutcomeUnavailable
 ```
+
+Builds the error for reading a value discarded by lean mode.
 

@@ -30,6 +30,8 @@ final class VerificationFailed extends \RuntimeException implements UnderstudyEr
     }
 
     /**
+     * Builds a verification failure from its structured records.
+     *
      * @param non-empty-list<VerificationFailure> $failures
      */
     public static function of(array $failures): self

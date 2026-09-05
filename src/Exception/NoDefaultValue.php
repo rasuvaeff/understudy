@@ -14,6 +14,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class NoDefaultValue extends \RuntimeException implements UnderstudyError
 {
     /**
+     * Builds the error for a return type with no safe default.
+     *
      * @param non-empty-string $label
      * @param non-empty-string $method
      */

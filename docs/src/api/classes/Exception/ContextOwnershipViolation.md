@@ -9,7 +9,7 @@ description: "Configuration and verification belong to the context that created 
 
 `Rasuvaeff\Understudy\Exception\ContextOwnershipViolation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ContextOwnershipViolation.php#L14) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ContextOwnershipViolation.php#L14) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `LogicException`
 
@@ -27,6 +27,8 @@ make lifecycle verification race with work owned elsewhere.
 ```php
 static forDouble(): Exception\ContextOwnershipViolation
 ```
+
+Builds the error for using a double from another runtime context.
 
 A double was configured or verified from a context other than the one
 that created it — another Fiber, or outside the scope it was built in.

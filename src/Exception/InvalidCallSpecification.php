@@ -81,6 +81,8 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
+     * Builds the error for a tail matcher in the wrong position.
+     *
      * @param non-empty-string $method
      * @param non-empty-string $matcher
      */
@@ -97,6 +99,8 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
+     * Builds the error for an empty matcher combinator.
+     *
      * @param non-empty-string $matcher
      */
     public static function emptyCombinator(string $matcher): self
@@ -110,6 +114,8 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
+     * Builds the error for putting a tail matcher inside a combinator.
+     *
      * @param non-empty-string $matcher
      * @param non-empty-string $operand
      */
@@ -137,6 +143,8 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
+     * Builds the error for arming a protocol while another is active.
+     *
      * @param positive-int $position
      * @param positive-int $length
      */
@@ -152,6 +160,8 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
+     * Builds the error for an incomplete call specification.
+     *
      * @param non-empty-string $method
      * @param int<0, max>      $given
      * @param int<0, max>      $declared
@@ -168,6 +178,8 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
+     * Builds the error for an omitted argument before a specified one.
+     *
      * @param non-empty-string $method
      * @param int<0, max>      $omitted
      * @param int<0, max>      $specified
@@ -184,6 +196,8 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
+     * Builds the error for an omitted required tail without `Arg::rest()`.
+     *
      * @param non-empty-string $method
      * @param non-empty-string $matcher
      */
@@ -212,6 +226,8 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
+     * Builds the error for a static method used in a specification.
+     *
      * @param non-empty-string $method
      */
     public static function staticMethodCalled(string $method): self

@@ -12,6 +12,8 @@ namespace Rasuvaeff\Understudy\Exception;
 final class OriginalCallUnavailable extends \LogicException implements UnderstudyError
 {
     /**
+     * Builds the error for forwarding without a real instance.
+     *
      * @param non-empty-string $label
      */
     public static function forMode(string $label): self
@@ -26,6 +28,8 @@ final class OriginalCallUnavailable extends \LogicException implements Understud
     }
 
     /**
+     * Builds the error for delegating a call without a target.
+     *
      * @param non-empty-string $label
      * @param non-empty-string $method
      */

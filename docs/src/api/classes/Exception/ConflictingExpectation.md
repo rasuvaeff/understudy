@@ -9,7 +9,7 @@ description: "A `when()` or `expect()` names a call another registration already
 
 `Rasuvaeff\Understudy\Exception\ConflictingExpectation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ConflictingExpectation.php#L21) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ConflictingExpectation.php#L21) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `LogicException`
 
@@ -37,6 +37,8 @@ static claimAfterStub(
 ): Exception\ConflictingExpectation
 ```
 
+Builds the error for a claim registered after an identical stub.
+
 ### stubAfterCountedExpectation()
 
 ```php
@@ -46,6 +48,8 @@ static stubAfterCountedExpectation(
 ): Exception\ConflictingExpectation
 ```
 
+Builds the error for a stub registered after a counted expectation.
+
 ### duplicateCountedExpectation()
 
 ```php
@@ -54,4 +58,6 @@ static duplicateCountedExpectation(
     non-empty-string $spec,
 ): Exception\ConflictingExpectation
 ```
+
+Builds the error for duplicate counted expectations.
 

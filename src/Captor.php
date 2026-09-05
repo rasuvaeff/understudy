@@ -87,6 +87,8 @@ final class Captor
     }
 
     /**
+     * Records a value captured by a matched specification.
+     *
      * @internal called by the dispatcher once the whole specification matched
      */
     public function record(mixed $value): void
@@ -96,6 +98,8 @@ final class Captor
     }
 
     /**
+     * Clears values captured in a finished runtime context.
+     *
      * @internal called when the context the values were captured in ends
      */
     public function discard(): void

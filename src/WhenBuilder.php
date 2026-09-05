@@ -87,6 +87,8 @@ class WhenBuilder
     }
 
     /**
+     * Computes the return value for each matching call.
+     *
      * @param callable(Invocation): TReturn $answer
      */
     public function answers(callable $answer): static

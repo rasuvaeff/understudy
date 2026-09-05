@@ -42,7 +42,7 @@ Below level 9 there is nothing to fix here — PHPStan does not check `mixed`
 against a declared parameter — and the rest of the extension works at every
 level.
 
-The two 0.4 idioms are covered the same way: `Arg::rest()` makes the
+The two matcher idioms are covered the same way: `Arg::rest()` makes the
 `arguments.count` report go quiet wherever a call's last written argument is
 `Arg::rest()`, and `$captor->capture()` is typed `never` like the `Arg::`
 factories (the receiver's type is what decides — a foreign `capture()` is left

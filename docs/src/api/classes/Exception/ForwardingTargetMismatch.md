@@ -9,7 +9,7 @@ description: "The instance offered as a forwarding target does not satisfy what 
 
 `Rasuvaeff\Understudy\Exception\ForwardingTargetMismatch`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForwardingTargetMismatch.php#L13) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForwardingTargetMismatch.php#L13) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `InvalidArgumentException`
 
@@ -26,6 +26,8 @@ stands in for.
 static understudyTarget(non-empty-string $label): Exception\ForwardingTargetMismatch
 ```
 
+Builds the error for forwarding to another understudy.
+
 ### missingContract()
 
 ```php
@@ -35,4 +37,6 @@ static missingContract(
     string $given,
 ): Exception\ForwardingTargetMismatch
 ```
+
+Builds the error for a forwarding target missing a contract.
 

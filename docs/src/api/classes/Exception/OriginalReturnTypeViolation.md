@@ -9,7 +9,7 @@ description: "A forwarded call returned an object the double cannot stand in for
 
 `Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OriginalReturnTypeViolation.php#L12) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OriginalReturnTypeViolation.php#L12) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `RuntimeException`
 
@@ -28,4 +28,6 @@ static foreignInstance(
     string $returned,
 ): Exception\OriginalReturnTypeViolation
 ```
+
+Builds the error for a forwarded fluent call returning another object.
 

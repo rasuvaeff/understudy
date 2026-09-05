@@ -9,7 +9,7 @@ description: "A method declared `: never` was called without an expectation that
 
 `Rasuvaeff\Understudy\Exception\NeverMethodCalled`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/NeverMethodCalled.php#L14) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/NeverMethodCalled.php#L14) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `RuntimeException`
 
@@ -31,6 +31,8 @@ static withoutExpectation(
 ): Exception\NeverMethodCalled
 ```
 
+Builds the error for an unconfigured `never` method call.
+
 ### withoutAnAction()
 
 ```php
@@ -40,6 +42,8 @@ static withoutAnAction(
 ): Exception\NeverMethodCalled
 ```
 
+Builds the error for a `never` expectation with no action.
+
 ### configuredToReturn()
 
 ```php
@@ -48,4 +52,6 @@ static configuredToReturn(
     non-empty-string $method,
 ): Exception\NeverMethodCalled
 ```
+
+Builds the error for a `never` method configured to return.
 

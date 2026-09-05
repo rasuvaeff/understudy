@@ -9,7 +9,7 @@ description: "Two registered default factories are equally close to the requeste
 
 `Rasuvaeff\Understudy\Exception\AmbiguousDefaultFactory`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/AmbiguousDefaultFactory.php#L12) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/AmbiguousDefaultFactory.php#L12) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `LogicException`
 
@@ -27,4 +27,6 @@ static between(
     non-empty-list<class-string> $candidates,
 ): Exception\AmbiguousDefaultFactory
 ```
+
+Builds the error for equally close default factories.
 

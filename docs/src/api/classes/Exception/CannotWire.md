@@ -9,7 +9,7 @@ description: "`wire()` cannot build the subject, or cannot decide what to pass i
 
 `Rasuvaeff\Understudy\Exception\CannotWire`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/CannotWire.php#L12) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/CannotWire.php#L12) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `InvalidArgumentException`
 
@@ -25,6 +25,8 @@ description: "`wire()` cannot build the subject, or cannot decide what to pass i
 static notAConcreteClass(string $sut, string $reason): Exception\CannotWire
 ```
 
+Builds the error for a subject that cannot be wired as a concrete class.
+
 Takes a plain string, not a `class-string`: "there is no such class" is
 one of the reasons it reports.
 
@@ -37,6 +39,8 @@ static inaccessibleConstructor(
 ): Exception\CannotWire
 ```
 
+Builds the error for an inaccessible subject constructor.
+
 ### unknownOverride()
 
 ```php
@@ -46,6 +50,8 @@ static unknownOverride(
     string $known,
 ): Exception\CannotWire
 ```
+
+Builds the error for an unknown constructor override.
 
 ### incompatibleOverride()
 
@@ -58,6 +64,8 @@ static incompatibleOverride(
 ): Exception\CannotWire
 ```
 
+Builds the error for an override with an incompatible type.
+
 ### undecidableParameter()
 
 ```php
@@ -69,9 +77,13 @@ static undecidableParameter(
 ): Exception\CannotWire
 ```
 
+Builds the error for a constructor parameter with no safe answer.
+
 ### referenceParameter()
 
 ```php
 static referenceParameter(class-string $sut, string $name): Exception\CannotWire
 ```
+
+Builds the error for a by-reference constructor parameter.
 

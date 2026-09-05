@@ -9,7 +9,7 @@ description: "A double outlived the context that created it — almost always a 
 
 `Rasuvaeff\Understudy\Exception\ForgottenDouble`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForgottenDouble.php#L16) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForgottenDouble.php#L16) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `LogicException`
 
@@ -29,11 +29,15 @@ non-nullable method and surface far from the actual mistake.
 static afterReset(non-empty-string $method): Exception\ForgottenDouble
 ```
 
+Builds the error for calling a double after its context was reset.
+
 ### onPurpose()
 
 ```php
 static onPurpose(non-empty-string $method): Exception\ForgottenDouble
 ```
+
+Builds the error for calling a deliberately retired double.
 
 ### propertyAfterReset()
 
@@ -41,11 +45,15 @@ static onPurpose(non-empty-string $method): Exception\ForgottenDouble
 static propertyAfterReset(non-empty-string $property): Exception\ForgottenDouble
 ```
 
+Builds the error for reading a property after reset.
+
 ### retired()
 
 ```php
 static retired(): Exception\ForgottenDouble
 ```
+
+Builds the error for asking a retired double through the facade.
 
 A facade — `strict()`, `verify()`, `nothingElse()`, `forget()` itself —
 was asked about a double that `Understudy::forget()` retired.
@@ -55,4 +63,6 @@ was asked about a double that `Understudy::forget()` retired.
 ```php
 static fromDefaultFactory(class-string $contract): Exception\ForgottenDouble
 ```
+
+Builds the error for a default factory returning a retired double.
 

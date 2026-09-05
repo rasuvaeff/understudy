@@ -9,7 +9,7 @@ description: "The requested target cannot be doubled, and no option would make i
 
 `Rasuvaeff\Understudy\Exception\UnsupportedTarget`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/UnsupportedTarget.php#L13) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/UnsupportedTarget.php#L13) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `LogicException`
 
@@ -38,6 +38,8 @@ static notDoublable(
 ): Exception\UnsupportedTarget
 ```
 
+Builds the error for a target that cannot be doubled.
+
 ### signatureConflict()
 
 ```php
@@ -47,4 +49,6 @@ static signatureConflict(
     string $right,
 ): Exception\UnsupportedTarget
 ```
+
+Builds the error for incompatible target signatures.
 
