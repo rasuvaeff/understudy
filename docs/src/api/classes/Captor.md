@@ -9,7 +9,7 @@ description: "A typed argument captor, built by Arg::captor()."
 
 `Rasuvaeff\Understudy\Captor`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Captor.php#L38) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Captor.php#L38) — **Version:** v0.9.0-2-g2ad61e3
 
 **Type parameters:**
 
@@ -88,9 +88,13 @@ Every captured value, in call order.
 record(mixed $value): void
 ```
 
+Records a value captured by a matched specification.
+
 ### discard()
 
 ```php
 discard(): void
 ```
+
+Clears values captured in a finished runtime context.
 

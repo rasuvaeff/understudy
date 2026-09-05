@@ -9,7 +9,7 @@ description: "`callOriginal()` was asked to delegate, and there is nothing to de
 
 `Rasuvaeff\Understudy\Exception\OriginalCallUnavailable`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OriginalCallUnavailable.php#L12) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OriginalCallUnavailable.php#L12) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `LogicException`
 
@@ -25,6 +25,8 @@ description: "`callOriginal()` was asked to delegate, and there is nothing to de
 static forMode(non-empty-string $label): Exception\OriginalCallUnavailable
 ```
 
+Builds the error for forwarding without a real instance.
+
 ### withoutTarget()
 
 ```php
@@ -33,4 +35,6 @@ static withoutTarget(
     non-empty-string $method,
 ): Exception\OriginalCallUnavailable
 ```
+
+Builds the error for delegating a call without a target.
 

@@ -9,7 +9,7 @@ description: "One recorded call on an understudy."
 
 `Rasuvaeff\Understudy\Invocation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L20) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L20) — **Version:** v0.9.0-2-g2ad61e3
 
 One recorded call on an understudy.
 
@@ -60,11 +60,15 @@ $args".
 recordFinalArguments(list $args): void
 ```
 
+Stores the arguments after a by-reference call has returned.
+
 ### belongsTo()
 
 ```php
 belongsTo(object $double): bool
 ```
+
+Checks whether this invocation belongs to a given double.
 
 ### callOriginal()
 
@@ -90,7 +94,9 @@ never ran, so the parent body would work over state that does not exist.
 recordOutcome(Outcome $outcome): void
 ```
 
-The wrapped form of recordReturned() and recordThrown(),
+Records an outcome wrapper for internal compatibility.
+
+The wrapped form of `recordReturned`() and `recordThrown`(),
 kept for the callers that still hand over an `Outcome`; dispatch itself
 uses the scalar recorders because every call reaches them.
 
@@ -99,6 +105,8 @@ uses the scalar recorders because every call reaches them.
 ```php
 recordReturned(mixed $value): void
 ```
+
+Records a returned value without retaining an outcome wrapper.
 
 Records a returned value without allocating an Outcome wrapper. The
 wrapper remains supported by recordOutcome() for internal compatibility;
@@ -109,6 +117,8 @@ dispatch uses this scalar path because every call reaches it.
 ```php
 recordDiscardedReturn(): void
 ```
+
+Records that the call returned but its value was discarded.
 
 Records that the call returned without keeping what it returned — the
 lean double's reading of an outcome. The distinction from "threw" and
@@ -121,17 +131,23 @@ refuses by name instead of inventing a value.
 isReturnDiscarded(): bool
 ```
 
+Reports whether the returned value was discarded.
+
 ### recordThrown()
 
 ```php
 recordThrown(Throwable $thrown): void
 ```
 
+Records the throwable produced by the call.
+
 ### markAccounted()
 
 ```php
 markAccounted(): void
 ```
+
+Marks this invocation as claimed by verification or an expectation.
 
 Marks this call as accounted for: an expectation matched it, or a
 verification claimed it. `nothingElse()` is the question this answers.
@@ -141,6 +157,8 @@ verification claimed it. `nothingElse()` is the question this answers.
 ```php
 isAccounted(): bool
 ```
+
+Reports whether verification or an expectation claimed this invocation.
 
 ### didReturn()
 

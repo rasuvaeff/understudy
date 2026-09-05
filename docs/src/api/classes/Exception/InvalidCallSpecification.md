@@ -9,7 +9,7 @@ description: "A specification of the wrong SHAPE: the closure handed to when()/v
 
 `Rasuvaeff\Understudy\Exception\InvalidCallSpecification`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L25) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L25) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `LogicException`
 
@@ -83,11 +83,15 @@ static misplacedTailMatcher(
 ): Exception\InvalidCallSpecification
 ```
 
+Builds the error for a tail matcher in the wrong position.
+
 ### emptyCombinator()
 
 ```php
 static emptyCombinator(non-empty-string $matcher): Exception\InvalidCallSpecification
 ```
+
+Builds the error for an empty matcher combinator.
 
 ### tailMatcherInCombinator()
 
@@ -97,6 +101,8 @@ static tailMatcherInCombinator(
     non-empty-string $operand,
 ): Exception\InvalidCallSpecification
 ```
+
+Builds the error for putting a tail matcher inside a combinator.
 
 ### emptySequence()
 
@@ -116,6 +122,8 @@ static protocolAlreadyArmed(
 ): Exception\InvalidCallSpecification
 ```
 
+Builds the error for arming a protocol while another is active.
+
 ### incompleteSpecification()
 
 ```php
@@ -125,6 +133,8 @@ static incompleteSpecification(
     int<0, max> $declared,
 ): Exception\InvalidCallSpecification
 ```
+
+Builds the error for an incomplete call specification.
 
 ### omittedBeforeSpecified()
 
@@ -136,6 +146,8 @@ static omittedBeforeSpecified(
 ): Exception\InvalidCallSpecification
 ```
 
+Builds the error for an omitted argument before a specified one.
+
 ### omittedTailNeedsRest()
 
 ```php
@@ -144,6 +156,8 @@ static omittedTailNeedsRest(
     non-empty-string $matcher,
 ): Exception\InvalidCallSpecification
 ```
+
+Builds the error for an omitted required tail without `Arg::rest()`.
 
 ### closureFailed()
 
@@ -159,4 +173,6 @@ the original is kept as `previous`, because it is the actual mistake.
 ```php
 static staticMethodCalled(non-empty-string $method): Exception\InvalidCallSpecification
 ```
+
+Builds the error for a static method used in a specification.
 

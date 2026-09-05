@@ -9,7 +9,7 @@ description: "`Captor::last()` was read before any matched call carried a value 
 
 `Rasuvaeff\Understudy\Exception\NothingCaptured`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/NothingCaptured.php#L13) — **Version:** v0.9.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/NothingCaptured.php#L13) — **Version:** v0.9.0-2-g2ad61e3
 
 **Extends:** `LogicException`
 
@@ -25,4 +25,6 @@ its `capture()` argument.
 ```php
 static forCaptor(class-string|null $class): Exception\NothingCaptured
 ```
+
+Builds the error for reading an empty captor.
 
