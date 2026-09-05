@@ -906,7 +906,7 @@ make build          # validate, normalize, require-checker, cs, psalm, unit, int
 make cs-fix
 make psalm
 make test
-make mutation       # infection, гейт 92% MSI
+make mutation       # infection, релизный гейт 92% MSI для линии 0.x
 make release-check
 
 make perf-install   # один раз: сравнительный харнесс в perf/
@@ -914,6 +914,11 @@ make perf           # против Mockery, Prophecy и PHPUnit
 make perf-cold      # холодный старт, один процесс на дубль
 make perf-memory    # память на живой дубль
 ```
+
+Для релизов линии `0.x` политика оставляет гейт Covered Code в Infection на
+уровне 92% MSI. Один локальный прогон выше этого значения сам по себе гейт не
+меняет: число мутантов зависит от окружения. Перед `1.0` порог пересмотрим
+только после воспроизводимой CI-подобной матрицы со стабильным запасом.
 
 Или напрямую через Docker:
 
