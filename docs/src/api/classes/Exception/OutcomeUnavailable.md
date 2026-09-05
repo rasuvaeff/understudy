@@ -9,7 +9,7 @@ description: "An invocation's outcome was read as the wrong kind: a returned val
 
 `Rasuvaeff\Understudy\Exception\OutcomeUnavailable`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OutcomeUnavailable.php#L14) — **Version:** v0.9.0-2-g2ad61e3
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OutcomeUnavailable.php#L14) — **Version:** v0.9.0-5-geda3337
 
 **Extends:** `LogicException`
 

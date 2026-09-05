@@ -2,7 +2,7 @@
     "classes": [
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Arg",
             "kind": "class",
@@ -437,7 +437,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Bypass\\FileWrapper",
             "kind": "class",
@@ -1099,7 +1099,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Bypass\\FinalStripper",
             "kind": "class",
@@ -1159,7 +1159,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Captor",
             "kind": "class",
@@ -1287,7 +1287,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Cardinality",
             "kind": "class",
@@ -1480,7 +1480,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\Blueprint",
             "kind": "class",
@@ -1617,7 +1617,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\DoubleFactory",
             "kind": "class",
@@ -1746,7 +1746,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\MethodSignature",
             "kind": "class",
@@ -1875,7 +1875,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\PropertyDefaults",
             "kind": "class",
@@ -1928,7 +1928,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\PropertySignature",
             "kind": "class",
@@ -2018,7 +2018,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\TargetUnifier",
             "kind": "class",
@@ -2071,7 +2071,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\TypeRenderer",
             "kind": "class",
@@ -2191,7 +2191,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Defaults\\DefaultFactories",
             "kind": "class",
@@ -2296,7 +2296,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Defaults\\TypeDefaultResolver",
             "kind": "class",
@@ -2435,7 +2435,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\AmbiguousDefaultFactory",
             "kind": "class",
@@ -2495,7 +2495,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\BypassUnavailable",
             "kind": "class",
@@ -2601,7 +2601,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\CannotWire",
             "kind": "class",
@@ -2846,7 +2846,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ConflictingExpectation",
             "kind": "class",
@@ -2966,7 +2966,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ContextOwnershipViolation",
             "kind": "class",
@@ -3011,7 +3011,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ForgottenDouble",
             "kind": "class",
@@ -3148,7 +3148,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ForwardingTargetMismatch",
             "kind": "class",
@@ -3238,7 +3238,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\InvalidCallSpecification",
             "kind": "class",
@@ -3629,7 +3629,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\InvalidDefaultValue",
             "kind": "class",
@@ -3689,7 +3689,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\InvalidSpecificationArgument",
             "kind": "class",
@@ -3877,7 +3877,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\MatcherLeaked",
             "kind": "class",
@@ -3944,7 +3944,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\NeverMethodCalled",
             "kind": "class",
@@ -4064,7 +4064,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\NoDefaultValue",
             "kind": "class",
@@ -4131,7 +4131,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\NothingCaptured",
             "kind": "class",
@@ -4184,7 +4184,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\OriginalCallUnavailable",
             "kind": "class",
@@ -4267,7 +4267,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\OriginalReturnTypeViolation",
             "kind": "class",
@@ -4334,7 +4334,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\OutcomeUnavailable",
             "kind": "class",
@@ -4417,7 +4417,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\StrictModeViolation",
             "kind": "class",
@@ -4484,7 +4484,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\UnderstudyError",
             "kind": "interface",
@@ -4533,7 +4533,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\UnsupportedTarget",
             "kind": "class",
@@ -4653,7 +4653,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\VerificationFailed",
             "kind": "class",
@@ -4740,7 +4740,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\ExpectBuilder",
             "kind": "class",
@@ -4788,7 +4788,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\Action",
             "kind": "interface",
@@ -4845,7 +4845,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ArgumentFormatter",
             "kind": "class",
@@ -4928,7 +4928,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ComputeAnswer",
             "kind": "class",
@@ -4995,7 +4995,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\Expectation",
             "kind": "class",
@@ -5453,7 +5453,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ReturnValue",
             "kind": "class",
@@ -5520,7 +5520,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ThrowError",
             "kind": "class",
@@ -5587,7 +5587,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\FailureKind",
             "kind": "enum",
@@ -5676,7 +5676,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\FailureReport",
             "kind": "class",
@@ -5861,7 +5861,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Invocation",
             "kind": "class",
@@ -6217,7 +6217,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AllOf",
             "kind": "class",
@@ -6301,7 +6301,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyArgument",
             "kind": "class",
@@ -6375,7 +6375,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyOf",
             "kind": "class",
@@ -6459,7 +6459,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyRest",
             "kind": "class",
@@ -6559,7 +6559,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyTail",
             "kind": "class",
@@ -6659,7 +6659,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\ArgumentMatcher",
             "kind": "interface",
@@ -6747,7 +6747,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\ArrayContaining",
             "kind": "class",
@@ -6831,7 +6831,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\BooleanValue",
             "kind": "class",
@@ -6905,7 +6905,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Bounds",
             "kind": "class",
@@ -6965,7 +6965,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Capturing",
             "kind": "class",
@@ -7058,7 +7058,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\CountBetween",
             "kind": "class",
@@ -7151,7 +7151,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\EmptyTail",
             "kind": "class",
@@ -7251,7 +7251,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\FloatInRange",
             "kind": "class",
@@ -7344,7 +7344,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\IdenticalTo",
             "kind": "class",
@@ -7428,7 +7428,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\InstanceOfType",
             "kind": "class",
@@ -7512,7 +7512,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\IntInRange",
             "kind": "class",
@@ -7605,7 +7605,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Negated",
             "kind": "class",
@@ -7689,7 +7689,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Operand",
             "kind": "class",
@@ -7772,7 +7772,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\QueryEquals",
             "kind": "class",
@@ -7865,7 +7865,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Satisfying",
             "kind": "class",
@@ -7958,7 +7958,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\StringMatching",
             "kind": "class",
@@ -8042,7 +8042,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\TailMatcher",
             "kind": "interface",
@@ -8101,7 +8101,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Outcome",
             "kind": "class",
@@ -10440,8 +10440,8 @@
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\BuilderReturnType",
             "kind": "class",
             "isApi": false,
@@ -10509,13 +10509,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/BuilderReturnType.php#L19",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/BuilderReturnType.php#L19",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\CaptorRecorder",
             "kind": "class",
             "isApi": false,
@@ -10583,13 +10583,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/CaptorRecorder.php#L39",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/CaptorRecorder.php#L39",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\BuilderType",
             "kind": "class",
             "isApi": false,
@@ -10657,13 +10657,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Internal/BuilderType.php#L37",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Internal/BuilderType.php#L37",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\Cardinality",
             "kind": "class",
             "isApi": false,
@@ -10740,13 +10740,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Internal/Cardinality.php#L16",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Internal/Cardinality.php#L16",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\ClosureShape",
             "kind": "class",
             "isApi": false,
@@ -10836,13 +10836,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Internal/ClosureShape.php#L30",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Internal/ClosureShape.php#L30",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\MatcherClass",
             "kind": "class",
             "isApi": false,
@@ -10889,13 +10889,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Internal/MatcherClass.php#L20",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Internal/MatcherClass.php#L20",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\MatcherKind",
             "kind": "class",
             "isApi": false,
@@ -10949,13 +10949,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Internal/MatcherKind.php#L41",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Internal/MatcherKind.php#L41",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\ScopeIndex",
             "kind": "class",
             "isApi": false,
@@ -11061,13 +11061,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Internal/ScopeIndex.php#L16",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Internal/ScopeIndex.php#L16",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\VerbNames",
             "kind": "class",
             "isApi": false,
@@ -11151,13 +11151,13 @@
                 }
             ],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Internal/VerbNames.php#L17",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Internal/VerbNames.php#L17",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\WireShape",
             "kind": "class",
             "isApi": false,
@@ -11211,13 +11211,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Internal/WireShape.php#L32",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Internal/WireShape.php#L32",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Issue\\UnderstudyMisuse",
             "kind": "class",
             "isApi": true,
@@ -11236,13 +11236,13 @@
             "publicMethods": [],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Issue/UnderstudyMisuse.php#L20",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Issue/UnderstudyMisuse.php#L20",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\MatcherArgument",
             "kind": "class",
             "isApi": false,
@@ -11293,13 +11293,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/MatcherArgument.php#L34",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/MatcherArgument.php#L34",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Plugin",
             "kind": "class",
             "isApi": true,
@@ -11339,7 +11339,7 @@
                         }
                     ],
                     "returnType": "void",
-                    "summary": "",
+                    "summary": "Loads the plugin hooks and registers them with Psalm.",
                     "description": "",
                     "throws": [],
                     "throwsInBody": false,
@@ -11349,18 +11349,18 @@
                     "attributes": [
                         "Override"
                     ],
-                    "startLine": 21
+                    "startLine": 24
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/Plugin.php#L18",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Plugin.php#L18",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\SpecificationRules",
             "kind": "class",
             "isApi": false,
@@ -11411,13 +11411,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/SpecificationRules.php#L50",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/SpecificationRules.php#L50",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\SpecificationScope",
             "kind": "class",
             "isApi": false,
@@ -11528,13 +11528,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/SpecificationScope.php#L31",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/SpecificationScope.php#L31",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v0.8.1",
-            "rootReference": "a5371cb3f323de133bb20d89ac0cdb2ab2cb572d",
+            "rootVersion": "v0.8.2",
+            "rootReference": "f4c7afef1f2a8da96ff051008fb1131a0d7739f8",
             "class": "Rasuvaeff\\Understudy\\Psalm\\StaticBuilderReturnType",
             "kind": "class",
             "isApi": false,
@@ -11602,12 +11602,12 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/a5371cb3f323de133bb20d89ac0cdb2ab2cb572d/src/Psalm/StaticBuilderReturnType.php#L23",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/StaticBuilderReturnType.php#L23",
             "implementedBy": []
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\Absent",
             "kind": "enum",
@@ -11650,7 +11650,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\ArmedSequence",
             "kind": "class",
@@ -11818,7 +11818,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\DoubleState",
             "kind": "class",
@@ -12299,7 +12299,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\InvocationSignal",
             "kind": "class",
@@ -12375,7 +12375,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\Mode",
             "kind": "enum",
@@ -12438,7 +12438,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\ReferenceSlot",
             "kind": "class",
@@ -12474,7 +12474,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\Runtime",
             "kind": "class",
@@ -13023,7 +13023,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
             "kind": "class",
@@ -13370,7 +13370,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\SequenceVerdict",
             "kind": "enum",
@@ -13443,8 +13443,8 @@
         },
         {
             "root": "testo",
-            "rootVersion": "v0.3.1",
-            "rootReference": "cb5eae3591ccf730503566f237679fb63a07a677",
+            "rootVersion": "v0.3.2",
+            "rootReference": "cfadaafe636854ab66c55cf27d5acb122a707e2f",
             "class": "Rasuvaeff\\Understudy\\Testo\\UnderstudyInterceptor",
             "kind": "class",
             "isApi": true,
@@ -13496,7 +13496,7 @@
                         }
                     ],
                     "returnType": "Testo\\Core\\Context\\TestResult",
-                    "summary": "",
+                    "summary": "Runs a Testo test and verifies any understudy expectations it created.",
                     "description": "",
                     "throws": [],
                     "throwsInBody": false,
@@ -13506,18 +13506,18 @@
                     "attributes": [
                         "Override"
                     ],
-                    "startLine": 73
+                    "startLine": 75
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-testo/blob/cb5eae3591ccf730503566f237679fb63a07a677/src/Testo/UnderstudyInterceptor.php#L51",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-testo/blob/cfadaafe636854ab66c55cf27d5acb122a707e2f/src/Testo/UnderstudyInterceptor.php#L51",
             "implementedBy": []
         },
         {
             "root": "testo",
-            "rootVersion": "v0.3.1",
-            "rootReference": "cb5eae3591ccf730503566f237679fb63a07a677",
+            "rootVersion": "v0.3.2",
+            "rootReference": "cfadaafe636854ab66c55cf27d5acb122a707e2f",
             "class": "Rasuvaeff\\Understudy\\Testo\\UnderstudyPlugin",
             "kind": "class",
             "isApi": true,
@@ -13559,7 +13559,7 @@
                         }
                     ],
                     "returnType": "void",
-                    "summary": "",
+                    "summary": "Registers the Understudy interceptor with Testo's interceptor collector.",
                     "description": "",
                     "throws": [],
                     "throwsInBody": false,
@@ -13569,17 +13569,17 @@
                     "attributes": [
                         "Override"
                     ],
-                    "startLine": 36
+                    "startLine": 39
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-testo/blob/cb5eae3591ccf730503566f237679fb63a07a677/src/Testo/UnderstudyPlugin.php#L29",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-testo/blob/cfadaafe636854ab66c55cf27d5acb122a707e2f/src/Testo/UnderstudyPlugin.php#L29",
             "implementedBy": []
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Understudy",
             "kind": "class",
@@ -14276,7 +14276,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\VerificationFailure",
             "kind": "class",
@@ -14383,7 +14383,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\WhenBuilder",
             "kind": "class",
@@ -14537,7 +14537,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Wiring\\Wire",
             "kind": "class",
@@ -14602,7 +14602,7 @@
     "functions": [
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\expect",
@@ -14626,7 +14626,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\expectSequence",
@@ -14650,7 +14650,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\verify",
@@ -14702,7 +14702,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v0.9.0-2-g2ad61e3",
+            "rootVersion": "v0.9.0-5-geda3337",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\when",
