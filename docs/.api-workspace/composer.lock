@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "dd7957d4e46599d66ae2175c4c47f3e1",
+    "content-hash": "929355fc47445ac1b71988206c00382b",
     "packages": [
         {
             "name": "amphp/amp",
@@ -3018,7 +3018,7 @@
             "dist": {
                 "type": "path",
                 "url": "../..",
-                "reference": "eda3337bbd0b101108dd66d237ea12f8aef85df3"
+                "reference": "110a3978c889eec6184c66869247886528f2403c"
             },
             "require": {
                 "ext-tokenizer": "*",
@@ -3224,16 +3224,16 @@
         },
         {
             "name": "rasuvaeff/understudy-phpunit",
-            "version": "v0.3.0",
+            "version": "v0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rasuvaeff/understudy-phpunit.git",
-                "reference": "1c5d658896cd8086b4f80087782f3c0a80e31501"
+                "reference": "181b68ef1c0c16143269d6f9e1f0490ab38a7d89"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpunit/zipball/1c5d658896cd8086b4f80087782f3c0a80e31501",
-                "reference": "1c5d658896cd8086b4f80087782f3c0a80e31501",
+                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpunit/zipball/181b68ef1c0c16143269d6f9e1f0490ab38a7d89",
+                "reference": "181b68ef1c0c16143269d6f9e1f0490ab38a7d89",
                 "shasum": ""
             },
             "require": {
@@ -3284,7 +3284,7 @@
                 "issues": "https://github.com/rasuvaeff/understudy-phpunit/issues",
                 "source": "https://github.com/rasuvaeff/understudy-phpunit"
             },
-            "time": "2026-09-05T13:16:32+00:00"
+            "time": "2026-09-05T17:45:06+00:00"
         },
         {
             "name": "rasuvaeff/understudy-psalm",
