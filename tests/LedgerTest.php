@@ -14,6 +14,7 @@ use Rasuvaeff\Understudy\FailureKind;
 use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Outcome;
+use Rasuvaeff\Understudy\Runtime\ArmedSequence;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
@@ -49,6 +50,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Expectation::class)]
 #[Covers(Invocation::class)]
 #[Covers(Outcome::class)]
+#[Covers(ArmedSequence::class)]
 #[Covers(FailureReport::class)]
 #[Covers(ContextOwnershipViolation::class)]
 #[Covers(ForgottenDouble::class)]
