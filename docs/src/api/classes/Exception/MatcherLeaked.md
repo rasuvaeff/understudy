@@ -9,7 +9,7 @@ description: "A matcher reached a real call instead of a specification closure."
 
 `Rasuvaeff\Understudy\Exception\MatcherLeaked`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/MatcherLeaked.php#L14) — **Version:** v0.5.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/MatcherLeaked.php#L14) — **Version:** v0.7.2
 
 **Extends:** `LogicException`
 

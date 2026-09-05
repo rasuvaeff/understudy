@@ -9,7 +9,7 @@ description: "A typed argument captor, built by Arg::captor()."
 
 `Rasuvaeff\Understudy\Captor`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Captor.php#L38) — **Version:** v0.5.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Captor.php#L38) — **Version:** v0.7.2
 
 **Type parameters:**
 

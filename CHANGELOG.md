@@ -1,5 +1,52 @@
 # Changelog
 
+## Unreleased
+
+- **`Understudy::for()` no longer kills the process on five built-in
+  interfaces.** `Throwable`, `UnitEnum`, `BackedEnum`, `DateTimeInterface` and
+  `Traversable` walked past every refusal in the factory and were answered by
+  the compiler instead — a fatal out of `eval()`, uncatchable by `try` or by an
+  adapter, and fatal to the whole suite run rather than to one test. Each is now
+  an `UnsupportedTarget` naming the way through. `Iterator`,
+  `IteratorAggregate`, `Stringable` and `Countable` keep doubling: it was never
+  about being built in.
+- **A duplicated contract is accepted rather than fatal.**
+  `Understudy::for(A::class, A::class)` — a list assembled programmatically —
+  produced the same uncatchable fatal, because `implements A, A` does not
+  compile.
+- **`#[\SensitiveParameter]` is honoured.** The value of such a parameter is
+  rendered as its type — `login('user', string SensitiveParameter)` — in
+  failure messages and in `transcript()`, the way PHP redacts it in its own
+  stack traces. It used to go into both verbatim, which is to say into a CI log.
+- **Three public paths now throw an `UnderstudyError`.** `times(5, 2)`, a
+  negative count and `returns()` with no values threw a bare
+  `\InvalidArgumentException`, while `UnderstudyError` declares itself
+  implemented by every exception this library throws — so a `catch
+  (UnderstudyError $e)`, which `llms.txt` recommends, walked past them. The new
+  `InvalidSpecificationArgument` extends `\InvalidArgumentException`, so a catch
+  by the SPL type keeps working.
+- **`Arg::instanceOf()` refuses a class that is not loadable.** It used to
+  match nothing, forever, and say so nowhere — the reader saw only "expected …
+  but it was never called" and looked for the cause in the subject under test.
+- **`NAN` no longer raises a PHP warning while a failure message is rendered.**
+  On PHP 8.5 `(string) NAN` warns, from inside the library, during the render of
+  a report about a failure — which under `failOnWarning` turns the report into a
+  different failure.
+- **Control bytes and binary strings are escaped in messages.** A NUL or half a
+  broken UTF-8 sequence travelled into the failure text and the transcript as
+  the raw byte, breaking the single line the escaping exists to keep. Valid
+  multibyte text is untouched.
+- `CannotWire` and `InvalidDefaultValue` say "has type `array`" and "produced a
+  value of type `array`" instead of "is a `array`".
+- Documentation: `checkpoint()` clears only the **settled** calls, not the call
+  log (the text promised otherwise, and the code was right); a declared property
+  default is kept while a promoted one is not; a built-in interface as a return
+  type does not become a nested double; `Arg::string()` uses PCRE semantics for
+  `$`; both Security sections say that arguments are printed verbatim except
+  sensitive ones. A broken cookbook link in `examples/README.md` and a dead plan
+  reference in `docs.yml` are gone, and the committed API pages are regenerated
+  from the current `src/` (they were built from a v0.5.0 snapshot).
+
 ## 0.7.2 — 2026-09-04
 
 - **Documentation review fixes.** llms.txt no longer claims `bypassFinals()`

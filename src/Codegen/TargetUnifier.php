@@ -335,7 +335,39 @@ final class TargetUnifier
             // An override may widen visibility but never narrow it, so one
             // public declaration makes the whole override public.
             visibility: self::visibilityOf($declarations),
+            sensitiveParameters: self::sensitiveParameters($declarations),
         );
+    }
+
+    /**
+     * Positions any declaration marks `#[\SensitiveParameter]`.
+     *
+     * Any, not all: the attribute is a statement that the value must not be
+     * printed, and one contract asking for that is enough. PHP redacts such
+     * parameters in its own stack traces; understudy formats arguments itself,
+     * so without this the value went verbatim into the failure message and the
+     * transcript — which is to say into a CI log.
+     *
+     * @param non-empty-list<\ReflectionMethod> $declarations
+     *
+     * @return list<int>
+     */
+    private static function sensitiveParameters(array $declarations): array
+    {
+        $positions = [];
+
+        foreach ($declarations as $declaration) {
+            foreach ($declaration->getParameters() as $position => $parameter) {
+                if ($parameter->getAttributes(\SensitiveParameter::class) !== []) {
+                    $positions[$position] = true;
+                }
+            }
+        }
+
+        $sorted = array_keys($positions);
+        sort($sorted);
+
+        return $sorted;
     }
 
     /**

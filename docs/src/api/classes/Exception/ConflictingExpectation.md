@@ -9,7 +9,7 @@ description: "A `when()` or `expect()` names a call another registration already
 
 `Rasuvaeff\Understudy\Exception\ConflictingExpectation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ConflictingExpectation.php#L21) — **Version:** v0.5.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ConflictingExpectation.php#L21) — **Version:** v0.7.2
 
 **Extends:** `LogicException`
 

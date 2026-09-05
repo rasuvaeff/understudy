@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests;
 
+use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Cardinality;
 use Rasuvaeff\Understudy\Exception\CannotWire;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
 use Rasuvaeff\Understudy\Exception\OutcomeUnavailable;
+use Rasuvaeff\Understudy\Exception\UnderstudyError;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
+use Rasuvaeff\Understudy\Tests\Fixture\Credentials;
 use Rasuvaeff\Understudy\Tests\Fixture\Defaults\NullableShapes;
 use Rasuvaeff\Understudy\Tests\Fixture\Librarian;
 use Rasuvaeff\Understudy\Understudy;
@@ -50,6 +54,82 @@ final class ErrorPathTest
     public function tearDown(): void
     {
         Understudy::reset();
+    }
+
+    /**
+     * PHP redacts a `#[\SensitiveParameter]` in its own stack traces;
+     * understudy formats arguments itself and printed the value verbatim,
+     * into the failure message and into `transcript()` — which is to say into
+     * a CI log. The type is kept: knowing the argument was a string and not
+     * null is most of what the message is read for.
+     */
+    public function aSensitiveArgumentIsRedactedInTheFailureMessage(): void
+    {
+        $login = Understudy::for(Credentials::class);
+        when(fn(): bool => $login->login('user', Arg::any()))->returns(true);
+        $login->login('user', 'ACTUAL-SUPER-SECRET');
+
+        try {
+            Understudy::verify(fn(): bool => $login->login('user', 'EXPECTED'), times: 1);
+        } catch (VerificationFailed $failure) {
+            // Marked as differing, like any other argument that did not match
+            // — the redaction replaces the value, not the reporting.
+            Assert::string($failure->getMessage())->contains('*string SensitiveParameter*');
+            Assert::false(str_contains($failure->getMessage(), 'ACTUAL-SUPER-SECRET'));
+
+            return;
+        }
+
+        Assert::fail('Expected the verification to fail');
+    }
+
+    public function aSensitiveArgumentIsRedactedInTheTranscript(): void
+    {
+        $login = Understudy::for(Credentials::class);
+        when(fn(): bool => $login->login('user', Arg::any()))->returns(true);
+        $login->login('user', 'ACTUAL-SUPER-SECRET');
+
+        $transcript = Understudy::transcript($login);
+
+        Assert::string($transcript)->contains("login('user', string SensitiveParameter)");
+        Assert::false(str_contains($transcript, 'ACTUAL-SUPER-SECRET'));
+    }
+
+    /**
+     * The three paths that threw a bare `\InvalidArgumentException` while
+     * `UnderstudyError` claimed to be implemented by every exception this
+     * library throws. A user who followed that claim caught none of them.
+     *
+     * @param callable(): mixed $call
+     */
+    #[DataProvider('specificationArgumentProvider')]
+    public function aRefusedSpecificationArgumentIsAnUnderstudyError(callable $call): void
+    {
+        try {
+            $call();
+        } catch (UnderstudyError $error) {
+            // And still an InvalidArgumentException, so a catch by the SPL
+            // type written before this change keeps working.
+            Assert::instanceOf($error, \InvalidArgumentException::class);
+
+            return;
+        }
+
+        Assert::fail('Expected the argument to be refused');
+    }
+
+    public static function specificationArgumentProvider(): iterable
+    {
+        yield 'a maximum below the minimum' => [static fn(): mixed => Cardinality::between(5, 2)];
+        yield 'a negative count' => [static fn(): mixed => Cardinality::exactly(-1)];
+        yield 'returns() with nothing to return' => [static function (): mixed {
+            $books = Understudy::for(BookRepository::class);
+
+            return when(static fn(): ?Book => $books->find(1))->returns();
+        }];
+        yield 'a matcher for a class that does not exist' => [
+            static fn(): mixed => Arg::instanceOf('Nope\\Missing'),
+        ];
     }
 
     // --- a facade method handed something that is not a double ---------------

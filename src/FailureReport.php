@@ -76,11 +76,38 @@ final class FailureReport
     public static function renderCall(Invocation $invocation): string
     {
         return ArgumentFormatter::scope(
-            static fn(): string => $invocation->method . '(' . implode(', ', array_map(
-                static fn(mixed $argument): string => ArgumentFormatter::format($argument),
-                $invocation->args,
-            )) . ')',
+            static function () use ($invocation): string {
+                $arguments = [];
+
+                /** @var mixed $argument */
+                foreach ($invocation->args as $position => $argument) {
+                    $arguments[] = self::renderArgument($invocation, $position, $argument);
+                }
+
+                return $invocation->method . '(' . implode(', ', $arguments) . ')';
+            },
         );
+    }
+
+    /**
+     * One recorded argument, redacted where the contract asked for it.
+     *
+     * PHP redacts a `#[\SensitiveParameter]` in its own stack traces;
+     * understudy formats arguments itself and printed the value verbatim —
+     * into the failure message and into `transcript()`, which is to say into
+     * a CI log. The placeholder is PHP's own wording, so a reader who has
+     * seen a redacted trace recognises it.
+     *
+     * The type is kept: knowing a password argument was a string and not null
+     * is most of what the message is read for, and it gives nothing away.
+     */
+    private static function renderArgument(Invocation $invocation, int $position, mixed $argument): string
+    {
+        if (!\in_array($position, $invocation->sensitiveArguments, strict: true)) {
+            return ArgumentFormatter::format($argument);
+        }
+
+        return sprintf('%s SensitiveParameter', get_debug_type($argument));
     }
 
     /**
@@ -138,7 +165,7 @@ final class FailureReport
 
                 /** @var mixed $argument */
                 foreach ($invocation->args as $position => $argument) {
-                    $rendered = ArgumentFormatter::format($argument);
+                    $rendered = self::renderArgument($invocation, $position, $argument);
                     $arguments[] = self::differs($expectedArgs, $position, $argument)
                         ? '*' . $rendered . '*'
                         : $rendered;

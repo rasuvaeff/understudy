@@ -58,6 +58,12 @@ final class DoubleFactory
      */
     public static function blueprintFor(array $contracts): Blueprint
     {
+        // A list assembled programmatically can name the same contract twice,
+        // and `implements A, A` does not compile — as a fatal out of `eval()`,
+        // uncatchable and fatal to the whole run. The duplicate says nothing
+        // the first mention did not, so it is dropped rather than refused.
+        /** @var non-empty-list<class-string> $contracts */
+        $contracts = array_values(array_unique($contracts));
         $key = implode('|', $contracts);
 
         return self::$blueprints[$key] ??= self::compile($contracts, $key);
@@ -123,11 +129,50 @@ final class DoubleFactory
 
         $reflection = new \ReflectionClass($contract);
 
-        if (!$reflection->isInterface()) {
+        if ($reflection->isInterface()) {
+            self::rejectUndoublableInterface($contract);
+        } else {
             self::rejectUndoublableClass($reflection, $contract, $primary);
         }
 
         return $reflection;
+    }
+
+    /**
+     * The five interfaces the language forbids a userland class to implement.
+     *
+     * Every other refusal in this file is a considered `UnsupportedTarget`;
+     * these used to walk past all of them and be answered by the compiler
+     * instead, as a fatal error out of `eval()` — uncatchable by `try`, by an
+     * adapter, by anything, and fatal to the whole suite run rather than to
+     * one test. `DateTimeInterface` and `Throwable` are among the first
+     * contracts anybody reaches for, a clock and an error, so the fatal was
+     * not a corner.
+     *
+     * Not a property of being built in: `Iterator`, `IteratorAggregate`,
+     * `Stringable` and `Countable` double perfectly well. It is these five
+     * specifically, and each of them has a way through.
+     *
+     * @param class-string $contract
+     */
+    private static function rejectUndoublableInterface(string $contract): void
+    {
+        $reason = match (ltrim(strtolower($contract), '\\')) {
+            'throwable' => 'PHP forbids a userland class to implement Throwable directly. Double a '
+                . 'concrete exception class instead, or an interface of your own that extends none of it.',
+            'unitenum', 'backedenum' => 'only an enum may implement it, and an enum cannot be doubled at all — '
+                . 'its cases are the values themselves. Pass the case you need, or double an interface the '
+                . 'enum implements.',
+            'datetimeinterface' => 'PHP forbids a userland class to implement DateTimeInterface. Pass a real '
+                . '\DateTimeImmutable, or put a clock interface of your own in front of it and double that.',
+            'traversable' => 'PHP requires it to be reached through Iterator or IteratorAggregate. Double '
+                . 'one of those — both work here — or an interface of yours that extends one.',
+            default => null,
+        };
+
+        if ($reason !== null) {
+            throw UnsupportedTarget::notDoublable($contract, $reason);
+        }
     }
 
     /**

@@ -13,6 +13,7 @@ use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
+use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\AbstractLedger;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Bookkeeper;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Countable;
@@ -34,6 +35,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingWiderParameter;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Codecov\Covers;
+use Testo\Data\DataProvider;
 use Testo\Expect;
 use Testo\Lifecycle\AfterTest;
 use Testo\Test;
@@ -229,6 +231,102 @@ final class ClassDoubleTest
             ->withMessageContaining('incompatible static signature');
 
         Understudy::for(\StaticParameterTargetForReview::class, \StaticParameterContractForReview::class);
+    }
+
+    /**
+     * Five interfaces the language forbids a userland class to implement.
+     * They used to walk past every refusal in the factory and be answered by
+     * the compiler instead, as a fatal out of `eval()` — uncatchable, and
+     * fatal to the whole run rather than to one test. `DateTimeInterface` and
+     * `Throwable` are the first two contracts anybody reaches for.
+     *
+     * The whole message is asserted, not a fragment: it is the only thing the
+     * reader gets, and every half of a concatenation in one is a mutant a
+     * `contains()` cannot see.
+     *
+     * @param class-string $contract the interface `for()` must refuse
+     * @param string       $reason   the message after the name of the target
+     */
+    #[DataProvider('undoublableInterfaceProvider')]
+    public function aBuiltInInterfaceNoClassMayImplementIsRefused(string $contract, string $reason): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessage(sprintf('Cannot create an understudy for `%s`: %s', $contract, $reason));
+
+        Understudy::for($contract);
+    }
+
+    public static function undoublableInterfaceProvider(): iterable
+    {
+        yield 'throwable' => [
+            \Throwable::class,
+            'PHP forbids a userland class to implement Throwable directly. Double a concrete exception '
+            . 'class instead, or an interface of your own that extends none of it.',
+        ];
+        yield 'unit enum' => [
+            \UnitEnum::class,
+            'only an enum may implement it, and an enum cannot be doubled at all — its cases are the '
+            . 'values themselves. Pass the case you need, or double an interface the enum implements.',
+        ];
+        yield 'backed enum' => [
+            \BackedEnum::class,
+            'only an enum may implement it, and an enum cannot be doubled at all — its cases are the '
+            . 'values themselves. Pass the case you need, or double an interface the enum implements.',
+        ];
+        yield 'date time' => [
+            \DateTimeInterface::class,
+            'PHP forbids a userland class to implement DateTimeInterface. Pass a real \DateTimeImmutable, '
+            . 'or put a clock interface of your own in front of it and double that.',
+        ];
+        yield 'traversable' => [
+            \Traversable::class,
+            'PHP requires it to be reached through Iterator or IteratorAggregate. Double one of those — '
+            . 'both work here — or an interface of yours that extends one.',
+        ];
+    }
+
+    /**
+     * A name written with a leading backslash is the same interface, and
+     * `Understudy::for('\\Throwable')` is how it reads when the list is
+     * assembled from strings rather than from `::class`.
+     */
+    public function aLeadingBackslashDoesNotHideTheRefusal(): void
+    {
+        Expect::exception(UnsupportedTarget::class)->withMessageContaining('Double a concrete exception class');
+
+        Understudy::for('\\Throwable');
+    }
+
+    /**
+     * The neighbours: being built in is not the reason those five are
+     * refused, and a rule written that way would take these with it.
+     *
+     * @param class-string $contract
+     */
+    #[DataProvider('doublableBuiltInProvider')]
+    public function aBuiltInInterfaceThatMayBeImplementedStillDoubles(string $contract): void
+    {
+        Assert::instanceOf(Understudy::for($contract), $contract);
+    }
+
+    public static function doublableBuiltInProvider(): iterable
+    {
+        yield 'iterator' => [\Iterator::class];
+        yield 'iterator aggregate' => [\IteratorAggregate::class];
+        yield 'stringable' => [\Stringable::class];
+        yield 'countable' => [\Countable::class];
+    }
+
+    /**
+     * A contract list assembled programmatically can name the same interface
+     * twice, and `implements A, A` does not compile — another fatal out of
+     * `eval()`. The duplicate adds nothing the first mention did not.
+     */
+    public function aDuplicatedContractIsAcceptedRatherThanFatal(): void
+    {
+        $double = Understudy::for(BookRepository::class, BookRepository::class);
+
+        Assert::instanceOf($double, BookRepository::class);
     }
 
     /**

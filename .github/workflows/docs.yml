@@ -1,6 +1,6 @@
 name: docs
 
-# The family documentation site (_plans/UNDERSTUDY-DOCS-SITE-PLAN.md).
+# The family documentation site.
 # One site for five packages: this repository holds it, and the API reference
 # is reflected out of all five `src/` trees at build time.
 #

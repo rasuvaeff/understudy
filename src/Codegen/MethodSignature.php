@@ -21,6 +21,10 @@ final readonly class MethodSignature
      *                                      takes, so the common path pays nothing
      * @param 'public'|'protected' $visibility a protected method is overridden and dispatched like any
      *                                         other, but native visibility keeps it out of setup closures
+     * @param list<int> $sensitiveParameters positions the contract marked `#[\SensitiveParameter]`.
+     *                                       Resolved here, with the rest of the reflection, because a
+     *                                       failure message is rendered on the hot path of a failing
+     *                                       test and PHP redacts these in its own traces
      */
     public function __construct(
         public string $name,
@@ -33,5 +37,6 @@ final readonly class MethodSignature
         public bool $hasReferenceParameters = false,
         public bool $static = false,
         public string $visibility = 'public',
+        public array $sensitiveParameters = [],
     ) {}
 }

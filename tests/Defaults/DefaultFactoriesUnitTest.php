@@ -124,7 +124,7 @@ final class DefaultFactoriesUnitTest
         $registry->register(Logger::class, static fn(): Concrete => new Concrete());
 
         Expect::exception(InvalidDefaultValue::class)
-            ->withMessageContaining('produced a `' . Concrete::class . '`');
+            ->withMessageContaining('produced a value of type `' . Concrete::class . '`');
 
         $registry->valueFor(Logger::class);
     }
