@@ -9,7 +9,7 @@ description: "A VALUE inside a specification that no run could act on: a maximum
 
 `Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidSpecificationArgument.php#L24) — **Version:** v0.9.0-5-geda3337
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidSpecificationArgument.php#L24) — **Version:** v0.9.0-10-g74f1dd3
 
 **Extends:** `InvalidArgumentException`
 
@@ -30,6 +30,22 @@ around them keeps working; it implements `UnderstudyError` because that
 interface is implemented by every exception this library throws.
 
 ## Methods
+
+### unknownArgument()
+
+```php
+static unknownArgument(
+    non-empty-string $method,
+    int|string $parameter,
+    array<int,non-empty-string> $known,
+): Exception\InvalidSpecificationArgument
+```
+
+`Invocation::arg()` asked for a parameter the method does not declare.
+
+- `$method` — the method the call was made on
+- `$parameter` — the position or name that was asked for
+- `$known` — the contract's own parameter names, in order
 
 ### maximumBelowMinimum()
 

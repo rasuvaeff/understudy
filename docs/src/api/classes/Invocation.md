@@ -9,7 +9,7 @@ description: "One recorded call on an understudy."
 
 `Rasuvaeff\Understudy\Invocation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L20) — **Version:** v0.9.0-5-geda3337
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L21) — **Version:** v0.9.0-10-g74f1dd3
 
 One recorded call on an understudy.
 
@@ -27,6 +27,7 @@ __construct(
     ?object $double = NULL,
     list $liveArgs = [],
     list<int> $sensitiveArguments = [],
+    array<int,non-empty-string> $parameterNames = [],
 )
 ```
 
@@ -38,8 +39,29 @@ __construct(
 | `$double` | `?object` | `NULL` |  |
 | `$liveArgs` | `list` | `[]` | the arguments as the caller still holds them, references included — what delegation needs, where $args is a reading of them |
 | `$sensitiveArguments` | `list<int>` | `[]` | positions the contract marked `#[\SensitiveParameter]`; carried on the call so a failure message and a transcript can redact the value the way PHP redacts it in its own traces |
+| `$parameterNames` | `array<int,non-empty-string>` | `[]` | the contract's own name for each fixed parameter, so a call can be read by name |
 
 ## Methods
+
+### arg()
+
+```php
+arg(int|string $parameter): mixed
+```
+
+One argument, by position or by the contract's own parameter name.
+
+- `$parameter` — zero-based position, or the contract's own parameter name
+
+**Throws:**
+
+- [`Exception\InvalidSpecificationArgument`](/api/classes/Exception/InvalidSpecificationArgument) — when the method declares no such parameter
+
+`$call->args[0]` is opaque in a longer specification, and a library
+whose specifications are real calls should let a call be read the way it
+was written. A name that is not a fixed parameter of the method — a
+value the variadic tail absorbed, or a typo — is refused rather than
+answered with null, which is a value an argument can legitimately have.
 
 ### argsAfter()
 

@@ -133,8 +133,9 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     /**
      * Builds the error for a matcher nested inside an array argument.
      *
-     * @param non-empty-string $method
-     * @param non-empty-string $matcher
+     * @param non-empty-string $method   the method the specification named
+     * @param int              $position  zero-based position of the array argument
+     * @param non-empty-string $matcher   how the buried matcher describes itself
      */
     public static function matcherInsideArray(string $method, int $position, string $matcher): self
     {
@@ -152,7 +153,7 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     /**
      * Builds the error for a captor inside a combinator.
      *
-     * @param non-empty-string $matcher
+     * @param non-empty-string $matcher the combinator the captor was passed to, without `Arg::`
      */
     public static function captorInCombinator(string $matcher): self
     {

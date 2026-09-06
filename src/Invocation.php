@@ -69,6 +69,10 @@ final class Invocation
      * was written. A name that is not a fixed parameter of the method — a
      * value the variadic tail absorbed, or a typo — is refused rather than
      * answered with null, which is a value an argument can legitimately have.
+     *
+     * @param int|string $parameter zero-based position, or the contract's own parameter name
+     *
+     * @throws InvalidSpecificationArgument when the method declares no such parameter
      */
     public function arg(int|string $parameter): mixed
     {

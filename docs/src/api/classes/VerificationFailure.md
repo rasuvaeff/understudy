@@ -9,7 +9,7 @@ description: "The structured half of one verification failure — the same facts
 
 `Rasuvaeff\Understudy\VerificationFailure`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/VerificationFailure.php#L34) — **Version:** v0.9.0-5-geda3337
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/VerificationFailure.php#L34) — **Version:** v0.9.0-10-g74f1dd3
 
 The structured half of one verification failure — the same facts the
 rendered message states, addressable by field.

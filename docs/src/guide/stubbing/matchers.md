@@ -26,7 +26,7 @@ when(fn () => $repository->find(Arg::any()))->returns($book);
 | `Arg::anyOf(...)` | anything at least one operand accepts, so `anyOf('draft', 'review')` reads as a set |
 | `Arg::instanceOf($class)` | an instance of the class or interface |
 | `Arg::satisfies($fn)` | whatever the predicate accepts |
-| `Arg::containing($entries)` | an array holding these entries and possibly more |
+| `Arg::containing($entries)` | an array holding these entries and possibly more; an entry may itself be a matcher |
 | `Arg::count(minimum:, maximum:)` | an array or `Countable` of that size |
 | `Arg::which($method, $value)` | an object whose getter answers this value |
 | `Arg::none()` | an empty variadic tail — last argument only |
@@ -35,6 +35,23 @@ when(fn () => $repository->find(Arg::any()))->returns($book);
 
 There is also [`Arg::captor()`](/guide/stubbing/capturing), which matches and
 records at the same time.
+
+## An optional parameter needs no matcher
+
+The contract says a caller may leave it out, so a specification that leaves it
+out says nothing about it — and matches whatever the call passed there:
+
+```php
+// claimReady(DateTimeImmutable $t, int $max, array $kinds = [], int $limit = 1000)
+verify(fn () => $storage->claimReady(Arg::any(), Arg::any(), Arg::any()), times: 1);
+```
+
+matches `claimReady($now, 3, [], 100)`. A failure message renders a position
+the specification never mentioned as `…`, so the report distinguishes it from
+an `any()` the test did write: `claimReady(any(), any(), any(), …)`.
+
+A **required** parameter is a different claim — every real call carries one —
+so stopping before it still has to be said with `rest()` below.
 
 ## The type matchers are strict on purpose
 
@@ -73,15 +90,16 @@ They look similar and stand for different things:
 | `Arg::rest()` | "the arguments written here matter, the rest of the arity does not" |
 
 `rest()` is the one matcher that lets a specification stop before the method's
-required parameters run out:
+**required** parameters run out — an optional one needs nothing:
 
 ```php
 when(fn () => $storage->recordOutcome('svc', Arg::rest()))
     ->throws(new RuntimeException('storage unavailable'));
 ```
 
-A specification that stops early **without** ending in `Arg::rest()` is refused
-with the reason, rather than becoming a stub that silently never matches. A
+A specification that stops before a required parameter **without** ending in
+`Arg::rest()` is refused with the reason, rather than becoming a stub that
+silently never matches. A
 later, narrower specification for the same call still wins over the broad
 prefix stub.
 
@@ -91,6 +109,20 @@ expect a "too few arguments" diagnostic on that line until your analyser knows
 the idiom. The [Psalm plugin](/adapters/psalm) and the
 [PHPStan extension](/adapters/phpstan) teach it.
 :::
+
+## A matcher inside an array argument
+
+An array argument is compared by identity, so a matcher buried in one would
+match nothing and say nothing about it. It is refused where it is written, and
+the message names what to use instead:
+
+```php
+when(fn () => $repo->search(['status' => Arg::any()]));            // refused
+when(fn () => $repo->search(Arg::containing(['status' => Arg::any()])));  // this
+```
+
+`Arg::containing()` reads matchers in its own entries, nested as deep as the
+payload goes.
 
 ## `Arg::which()` and a getter that throws
 

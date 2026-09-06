@@ -9,7 +9,7 @@ description: "The whole public surface, as static methods so that an understudy 
 
 `Rasuvaeff\Understudy\Understudy`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L39) — **Version:** v0.9.0-5-geda3337
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L40) — **Version:** v0.9.0-10-g74f1dd3
 
 The whole public surface, as static methods so that an understudy itself can
 stay free of service members: every one of them would be a name the doubled
@@ -107,10 +107,16 @@ the test even runs.
 ### strict()
 
 ```php
-static strict(object $double): void
+static strict(\T $double): object
 ```
 
 Makes an understudy fail on any call no expectation matched.
+
+Answers with the double it configured, so the mode can be chosen where
+the double is handed over — `ClientInterface::class =>
+Understudy::strict(Understudy::for(ClientInterface::class))` in a
+container definition, rather than as a statement that has to find a
+variable to name.
 
 ### lean()
 
@@ -258,11 +264,14 @@ each other's, and `reset()` drops them with the test.
 ### label()
 
 ```php
-static label(object $double, non-empty-string $label): void
+static label(\T $double, non-empty-string $label): object
 ```
 
 Names one understudy in failure messages, which is what makes two
 doubles of the same contract tellable apart.
+
+Answers with the double it named, for the same reason
+[`Understudy`](/api/classes/Understudy)::strict() does.
 
 ### unused()
 

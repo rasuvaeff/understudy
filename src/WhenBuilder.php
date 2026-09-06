@@ -103,7 +103,7 @@ class WhenBuilder
      *     ));
      * ```
      *
-     * @param callable(Invocation): \Throwable $build
+     * @param callable(Invocation): \Throwable $build builds the exception from the call it answers
      */
     public function throwsWith(callable $build): static
     {

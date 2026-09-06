@@ -44,6 +44,17 @@ matches but does not record. Capture at declaration or at verification, not in
 a protocol.
 :::
 
+::: warning Not inside a combinator
+A captor inside `Arg::allOf()`, `anyOf()`, `not()` or `containing()` is
+refused where it is written. It used to be accepted, and then matched without
+ever recording: recording happens once the whole specification matched, for
+the captors the specification holds in a position of their own. The
+specification was correct in every observable way except the one it was
+written for, and the only way to find out was an assertion on an empty captor
+further down the test. For an ordered history across several arguments, read
+[`Understudy::calls()`](/guide/lifecycle/index#reading-the-call-log) instead.
+:::
+
 ## Reading it
 
 | Call | On an empty captor |

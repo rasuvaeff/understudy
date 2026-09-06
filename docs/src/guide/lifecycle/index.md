@@ -44,13 +44,18 @@ use Rasuvaeff\Understudy\Arg;
 $calls = Understudy::calls(fn () => $repository->find(Arg::any()));
 
 $calls[0]->args;          // [123]
+$calls[0]->arg('id');     // 123 — by the contract's own parameter name
 $calls[0]->didReturn();   // true
 $calls[0]->returned();    // the value it answered with
 $calls[1]->thrown();      // the throwable, if it threw
 ```
 
 `null` is a valid return value, which is why the outcome is **asked about**
-(`didReturn()`) rather than inferred from the value.
+(`didReturn()`) rather than inferred from the value. `arg()` takes a position
+or the contract's parameter name, and refuses a name the method does not
+declare rather than answering `null` — which is a value an argument can
+legitimately have. An argument the caller omitted reads as the contract's
+default, exactly as it does in `args`.
 
 ```php
 $last = Understudy::lastCall(fn () => $repository->find(Arg::any()));

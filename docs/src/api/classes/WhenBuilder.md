@@ -9,7 +9,7 @@ description: "Configures what a stubbed call does."
 
 `Rasuvaeff\Understudy\WhenBuilder`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L36) — **Version:** v0.9.0-5-geda3337
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L37) — **Version:** v0.9.0-10-g74f1dd3
 
 **Type parameters:**
 
@@ -64,6 +64,29 @@ throws(Throwable $error): static
 
 Throws this exact instance on the call — the same object every time the
 link answers, which is what a test holding a reference to it expects.
+
+### throwsWith()
+
+```php
+throwsWith(callable $build): static
+```
+
+Throws an exception built from the call itself, one per call.
+
+- `$build` — builds the exception from the call it answers
+
+The shape `throws()` cannot express: an exception that carries what the
+call was made with — `new PublishException($message, outboxMessage:
+$call->args[0])`. A throwing `answers()` closure does the same thing and
+stays supported; this reads as what it is at the call site.
+
+```php
+when(fn () => $publisher->publish(Arg::any()))
+    ->throwsWith(fn (Invocation $call) => new PublishException(
+        message: 'Publish failed',
+        outboxMessage: $call->arg('message'),
+    ));
+```
 
 ### answers()
 

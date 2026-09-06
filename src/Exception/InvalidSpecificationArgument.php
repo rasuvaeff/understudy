@@ -26,8 +26,9 @@ final class InvalidSpecificationArgument extends \InvalidArgumentException imple
     /**
      * `Invocation::arg()` asked for a parameter the method does not declare.
      *
-     * @param non-empty-string             $method
-     * @param array<int, non-empty-string> $known
+     * @param non-empty-string             $method    the method the call was made on
+     * @param int|string                   $parameter the position or name that was asked for
+     * @param array<int, non-empty-string> $known     the contract's own parameter names, in order
      */
     public static function unknownArgument(string $method, int|string $parameter, array $known): self
     {
