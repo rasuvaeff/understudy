@@ -2,6 +2,74 @@
 
 ## Unreleased
 
+### A specification is read the way the contract reads a call
+
+- **An optional parameter a specification did not spell no longer arrives as
+  the contract's default value.** It used to, and arity therefore became an
+  implicit part of every specification:
+  `claimReady(Arg::any(), Arg::any(), Arg::any())` did not match
+  `claimReady($now, 3, [], 100)` on a method whose fourth parameter defaults to
+  `1000`, and the report said `never called` beside a call whose only
+  difference was a position the author never wrote. Every generated parameter
+  now defaults to the arity sentinel, optional ones included, and what an
+  omission means follows the contract: one it declares **optional** may be left
+  out by any caller, so a specification that leaves it out says nothing about
+  it and matches whatever was passed there; one it declares **required** is
+  present in every real call, so stopping before it still has to be said with
+  `Arg::rest()`. A failure message renders an unspelled position as `…`, which
+  is what tells it apart from an `any()` the test did write. Found migrating
+  `yii3-outbox` and `yii3-centrifugo` (#123).
+- **`Arg::rest()` works where the remaining parameters are optional.** The
+  matcher list called it "declared parameters left unspelled" and the engine
+  refused it — `translate(Arg::rest())` on a signature with four optional
+  parameters raised "`rest()` … may only be the last argument" about argument
+  #1 — because the optional ones had already become literals by the time the
+  check looked. Same root cause, and the docs, the message and the matcher now
+  agree (#125).
+- **A real call is unchanged**: dispatch materializes the declared default for
+  an argument the caller omitted, so `tag('alpha')` and `tag('alpha', 1)` are
+  still one call in the log. What changed with it is that a double's
+  *generated signature* no longer advertises the contract's defaults — it
+  carries the sentinel — so Reflection over a double reports them differently
+  than Reflection over the contract.
+- **`mixed $v = null` was a fatal error.** The nullability widening applied to
+  `mixed` too, and `mixed|null` is a type PHP refuses at compile time: an
+  uncatchable fatal out of `eval()`, for a signature that is neither exotic nor
+  rare. The widening now belongs to the branch where the union is real, and is
+  driven by what the contract declares rather than by what the double renders.
+
+### Refusals for what used to be silent
+
+- **A captor inside `Arg::allOf()`, `anyOf()`, `not()` or `containing()`
+  matched and recorded nothing.** The specification behaved correctly in every
+  observable way except the one it was written for, and the only way to find
+  out was an assertion on an empty captor further down the test. It is refused
+  where it is written (#124).
+- **A matcher inside a plain array argument matched nothing** —
+  `find(['id' => Arg::any()])` compares by identity — and said nothing about
+  it. Refused, and `Arg::containing()` now reads matchers in its own entries,
+  nested, so there is something to be refused *towards*.
+- **Understudy's own refusals are no longer rewrapped** in "the specification
+  closure threw before it reached an understudy", which buried the sentence
+  that said what to change.
+- **A protocol step due on another double says so.** Two doubles under one
+  `expectSequence()` render every step by its call alone, so `count()` arriving
+  on the wrong one read as the step that was due — identical text, and no hint
+  that the difference was the receiver.
+
+### Additions
+
+- **`Understudy::strict()` and `Understudy::label()` answer with the double
+  they configured**, so the mode can be chosen where the double is handed over:
+  `ClientInterface::class => Understudy::strict(Understudy::for(ClientInterface::class))`
+  used to store `null` and fail three steps away from the cause (#126).
+- **`WhenBuilder::throwsWith()`** builds the exception from the call it
+  answers, one per call — the shape `throws()` cannot express, and which
+  everyone re-derived as a throwing `answers()` closure (#127).
+- **`Invocation::arg()`** reads one argument by position or by the contract's
+  own parameter name, and refuses a name the method does not declare rather
+  than answering `null` (#127).
+
 - **The API reference documents the satellites at their current versions.**
   `docs/.api-workspace/composer.json` pinned `understudy-psalm ^0.2`,
   `understudy-phpstan ^0.2`, `understudy-phpunit ^0.1` and `understudy-testo
