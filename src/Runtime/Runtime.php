@@ -849,6 +849,18 @@ final class Runtime
     public static function referenceSlot(object $double, string $method, array $args): ReferenceSlot
     {
         $state = (self::ownerOf($double) ?? self::current())->stateOf($double);
+
+        // Before `hasActionFor()`, not after: it walks the expectations the
+        // way dispatch will, and dispatch will see the arguments with the
+        // omitted ones put back. Asking it about a sentinel would answer
+        // "nothing configured" for a specification that spells the default,
+        // and the slot would keep the mode's own value instead of the
+        // configured one. A recording phase is the exception — the sentinel
+        // is what it came for.
+        if ($state !== null && !self::current()->isRecording()) {
+            self::materializeOmittedArguments($state->blueprint->method($method), $method, $args);
+        }
+
         $configured = $state?->hasActionFor($method, $args) ?? false;
 
         /** @var mixed $value */

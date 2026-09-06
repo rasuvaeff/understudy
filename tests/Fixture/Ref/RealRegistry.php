@@ -12,6 +12,9 @@ class RealRegistry implements Registry
     /** @var list<string> */
     private array $labels = [];
 
+    /** @var array<string, array<string, mixed>> */
+    private array $buckets = [];
+
     /** @var array<int, array<string, mixed>> */
     private array $rows = [];
 
@@ -52,6 +55,16 @@ class RealRegistry implements Registry
     }
 
     #[\Override]
+    /**
+     * @return array<string, mixed>
+     */
+    public function &bucket(string $key, int $size = 3): array
+    {
+        $this->buckets[$key] ??= ['size' => $size];
+
+        return $this->buckets[$key];
+    }
+
     public function count(): int
     {
         return count($this->stored);
