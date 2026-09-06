@@ -486,6 +486,21 @@ final class TargetUnifierTest
      * parameter required leaves exactly one default to preserve, and the same
      * default written twice is one value however many targets declare it.
      */
+    /**
+     * A position optional only because another target does not declare it has
+     * no contract default to put back — dispatch fills it with `null`, and the
+     * signature has to say so rather than dereferencing a parameter that is
+     * not there.
+     */
+    public function aPositionNoTargetDefaultsHasNoDefaultToMaterialize(): void
+    {
+        $signature = $this->unify(ArityOne::class, ArityTwo::class)['emit'];
+
+        Assert::false($signature->isOptional(0));
+        Assert::true($signature->isOptional(1));
+        Assert::null($signature->defaultAt(1));
+    }
+
     public function aDefaultDeclaredOnlyOnceIsKept(): void
     {
         // Kept as the contract's, not as the signature's: the rendered

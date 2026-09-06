@@ -72,7 +72,12 @@ final class InvocationSignal extends \Exception
             return $this;
         }
 
-        $signature = DoubleFactory::blueprintOfGenerated($this->double::class)?->method($this->method);
+        // The one nullable dereference: whether a position is optional is asked
+        // three times below, and asking a signature that may be missing three
+        // times reads as three different doubts about the same thing.
+        $optional = DoubleFactory::blueprintOfGenerated($this->double::class)
+            ?->method($this->method)
+            ?->optionalParameters ?? [];
         $args = $this->args;
         $count = count($args);
 
@@ -91,7 +96,7 @@ final class InvocationSignal extends \Exception
                 continue;
             }
 
-            if ($signature?->isOptional($position) !== true) {
+            if (!\array_key_exists($position, $optional)) {
                 // A named argument skipped over a parameter no caller can
                 // skip: the specification describes a call that cannot happen.
                 throw InvalidCallSpecification::omittedBeforeSpecified(
@@ -122,7 +127,7 @@ final class InvocationSignal extends \Exception
         }
 
         for ($position = $tailFrom; $position < $count; ++$position) {
-            if ($signature?->isOptional($position) !== true) {
+            if (!\array_key_exists($position, $optional)) {
                 throw InvalidCallSpecification::incompleteSpecification($this->method, $tailFrom, $count);
             }
         }

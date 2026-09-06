@@ -331,6 +331,21 @@ final class RestArgumentsTest
     }
 
     /**
+     * The value put back is the contract's own default, not something derived
+     * from where the parameter sits: `note()` defaults its second parameter to
+     * `7` precisely so that a position cannot stand in for a value.
+     */
+    public function theMaterializedDefaultIsTheContractsValue(): void
+    {
+        $this->storage->note('hello');
+
+        Assert::same(
+            Understudy::lastCall(fn() => $this->storage->note(Arg::any(), Arg::any()))?->args,
+            ['hello', 7],
+        );
+    }
+
+    /**
      * A named argument may skip an optional parameter, so a specification
      * written with named arguments may too.
      */
@@ -399,6 +414,47 @@ final class RestArgumentsTest
             ['user' => ['id' => Arg::int()]],
             Arg::rest(),
         ));
+    }
+
+    /**
+     * The walk is depth-capped, for the same reason a snapshot's is: `$a[] =
+     * &$a` is legal PHP, and a search that followed it would not return. Eight
+     * levels are searched; the ninth is where bounded work stops, and a
+     * matcher that deep is a shape nobody writes by hand.
+     */
+    public function theSearchForABuriedMatcherIsDepthCapped(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)
+            ->withMessageContaining('sits inside the array given as argument #3');
+
+        when(fn(): ?string => $this->storage->recordOutcome('svc', 1, $this->nest(8), Arg::rest()));
+    }
+
+    #[ExpectNoAssertions]
+    public function aMatcherPastTheDepthCapIsNotSearchedFor(): void
+    {
+        when(fn(): ?string => $this->storage->recordOutcome('svc', 1, $this->nest(9), Arg::rest()));
+    }
+
+    /**
+     * A matcher wrapped in `$depth` levels of array.
+     *
+     * @param int<1, max> $depth
+     *
+     * @return array<int, mixed>
+     */
+    private function nest(int $depth): array
+    {
+        /** @var mixed $value */
+        $value = Arg::any();
+
+        for ($level = 0; $level < $depth; ++$level) {
+            $value = [$value];
+        }
+
+        \assert(\is_array($value));
+
+        return $value;
     }
 
     /**
