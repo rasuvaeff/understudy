@@ -299,8 +299,12 @@ seconds instead of the full run's minute — and the full run stays the gate.
   the signature path. Every other magic method — including `__get`, `__set`,
   `__call`, `__invoke` and `__toString` — accepts the widened
   `OriginalType|ArgumentMatcher` parameter union on 8.3, 8.4 and 8.5.
-- **Never call `getDefaultValue()` to find out what a default is.** On
-  `= new Foo()` it runs the constructor. The default's source expression comes
+- **Never call `getDefaultValue()` to find out what a default is at generation
+  time.** On `= new Foo()` it runs the constructor. Dispatch is the exception,
+  and the only one: `MethodSignature::defaultAt()` calls it for an argument the
+  caller omitted, which is the moment PHP itself would have evaluated the
+  initializer — and per call, so `= new Foo()` still builds one object per
+  call rather than sharing one. The default's source expression comes
   from `ReflectionParameter::__toString()`, which renders it fully qualified
   without reading the declaring file — and is the only way to see a `new`
   default without evaluating it. Two things it does not qualify:
@@ -383,9 +387,22 @@ seconds instead of the full run's minute — and the full run stays the gate.
   divergent return types (covariant) and by-reference mismatches.
 - **Generated methods collect arguments by name, never `func_get_args()`**,
   which omits parameters left at their default — `tag('alpha')` and
-  `tag('alpha', 1)` must record as the same call.
-- **`= null` on a non-nullable parameter is a deprecated implicit nullable.**
-  When a parameter becomes optional through unification, `null` joins the type.
+  `tag('alpha', 1)` must record as the same call. `func_num_args()` cannot
+  stand in for the sentinel either: with named arguments PHP reports the
+  *filled* count, so a specification that skipped a middle parameter would be
+  invisible.
+- **Every generated parameter defaults to the arity sentinel, optional ones
+  included.** That is what lets a specification leave a parameter unspelled and
+  *mean* it: a materialized default in its place is indistinguishable from
+  spelling the default value, which made arity an implicit part of every
+  specification (#123). Dispatch puts the contract's default back for a real
+  call, so `tag('alpha')` and `tag('alpha', 1)` still log as one call. Two
+  consequences to hold on to: a double's generated signature no longer
+  advertises the contract's defaults, and `null` joins the type only where **no
+  target declares a default** — a position optional because another target does
+  not declare it at all. Widening on the rendered default is what made
+  `mixed $v = null` render as `mixed|null`, an uncatchable fatal out of
+  `eval()`.
 - **Mutation numbers lie unless every class has its own `#[Covers]` test.**
   Infection's mutant-to-test mapping is `#[Covers]`-driven: with one test class
   covering one class, the run reported 56 mutants at 93% MSI while the honest
