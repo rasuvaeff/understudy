@@ -2,7 +2,7 @@
 
 ## 0.10.0 — 2026-09-06
 
-The wave the 1.0 candidate turned out to still need: nine defects found by
+The wave the 1.0 candidate turned out to still need: ten defects found by
 migrating the monorepo onto the library and by probing the engine against its
 own documentation. Two of them change what a specification means, which is why
 this is a minor and not the tag after 0.9.0.
@@ -57,6 +57,13 @@ this is a minor and not the tag after 0.9.0.
 - **Understudy's own refusals are no longer rewrapped** in "the specification
   closure threw before it reached an understudy", which buried the sentence
   that said what to change.
+- **A by-reference slot was chosen from arguments dispatch had not yet
+  completed.** `referenceSlot()` asks which expectation will answer *before*
+  dispatch, and asked with the omitted arguments still sentinels: a
+  specification spelling the contract's default answered "nothing configured",
+  so the slot kept what the test had written through the reference instead of
+  being replaced by the configured value. The call answered correctly and the
+  next read did not.
 - **A protocol step due on another double says so.** Two doubles under one
   `expectSequence()` render every step by its call alone, so `count()` arriving
   on the wrong one read as the step that was due — identical text, and no hint
