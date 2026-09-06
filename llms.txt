@@ -15,6 +15,11 @@ No runtime deps; `ext-mbstring` is not needed.
 
 - A call is specified by making it inside a closure, never by a method-name
   string: `when(fn () => $repo->find(123))`.
+- A parameter the specification does not spell means "whatever was passed"
+  where the contract declares it optional, and is refused unless `Arg::rest()`
+  covers it where the contract declares it required. A real call still logs the
+  contract's default for an argument the caller omitted, so `tag('a')` and
+  `tag('a', 1)` are one call.
 - The closure must contain **exactly one** direct call on a double. Anything
   else raises `InvalidCallSpecification`.
 - A double exposes nothing beyond its contract. All operations are static
@@ -163,6 +168,9 @@ use Rasuvaeff\Understudy\Invocation;
 when(fn () => $repo->find(1))->returns($book);
 when(fn () => $repo->find(1))->returns($first, $second);   // one per call, last repeats
 when(fn () => $repo->find(1))->throws(new NotFound());
+when(fn () => $repo->save(Arg::any()))->throwsWith(        // built per call, from the call
+    fn (Invocation $call) => new Rejected($call->arg('book')),
+);
 when(fn () => $repo->find(Arg::any()))->answers(
     fn (Invocation $call) => new Book((string) $call->args[0]),
 );
@@ -193,7 +201,14 @@ after it. Arguments match by `===`, or by matcher.
 | `which($method, $value)` | an object whose getter answers this value |
 | `none()` | an empty variadic tail; last argument only |
 | `remaining()` | the whole variadic tail, any length; last argument only |
-| `rest()` | declared parameters left unspelled; last argument only — the one matcher that lets a specification pass fewer arguments than the method requires: `when(fn () => $s->recordOutcome('svc', Arg::rest()))`. Stopping early without it is refused |
+| `rest()` | declared parameters left unspelled; last argument only — the one matcher that lets a specification stop before a REQUIRED parameter: `when(fn () => $s->recordOutcome('svc', Arg::rest()))`. Stopping before one without it is refused |
+
+An optional parameter needs no matcher: the contract lets a caller omit it, so
+a specification that omits it says nothing about it and matches whatever was
+passed there. Failure messages render such a position as `…`, never as
+`any()`. A matcher inside a plain array argument is refused (an array is
+compared by identity) — `Arg::containing()` describes part of an array and
+reads matchers in its entries, nested.
 
 Every `Arg::*` returns `mixed`, so passing one where the contract says `int`
 is not a type error in an IDE. `which()` calls only a public, non-static
@@ -218,7 +233,9 @@ $options->all();    // list<DeliveryOptions>, in call order
 ```
 
 `capture()` matches like `instanceOf($class)` (untyped: like `any()`); the
-value is recorded only once the whole specification matched. Works in
+value is recorded only once the whole specification matched. A captor inside
+`allOf()`/`anyOf()`/`not()`/`containing()` is refused where it is written: it
+would match and record nothing. Works in
 `when()`, `expect()` and `verify()` (a `verify()` captures from the calls it
 claimed, on success only); in an `expectSequence()` step it matches but does
 not record. Captured values are dropped with the context —
@@ -378,7 +395,7 @@ $calls = Understudy::calls(fn () => $repo->find(Arg::any())); // list<Invocation
 $last  = Understudy::lastCall(fn () => $repo->find(Arg::any())); // ?Invocation
 ```
 
-`Invocation`: `->method`, `->args`, `->sequence`, `->sensitiveArguments`,
+`Invocation`: `->method`, `->args`, `->arg(int|string)`, `->sequence`, `->sensitiveArguments`,
 `->argsAfter()`, `->didReturn()`, `->didThrow()`, `->returned()`, `->thrown()`,
 `->callOriginal()`. The outcome is asked about, never inferred from a value:
 `null` is a valid return.
@@ -404,8 +421,8 @@ One-way; a replacement is a different object.
 ### Modes and naming
 
 ```php
-Understudy::strict($repo);                   // unmatched call fails immediately
-Understudy::label($repo, 'primary cache');   // name it in failure messages
+Understudy::strict($repo);                   // unmatched call fails; answers with $repo
+Understudy::label($repo, 'primary cache');   // name it in failures; answers with $repo
 Understudy::reset();                         // drop the current context
 ```
 
@@ -422,8 +439,8 @@ All implement `Rasuvaeff\Understudy\Exception\UnderstudyError`.
 
 | Exception | Raised when |
 |---|---|
-| `InvalidCallSpecification` | the SHAPE of a specification is wrong: the closure made no call on a double, called a static method or threw first; a tail matcher is not the last argument; the specification stopped early without `Arg::rest()`; an empty `allOf()`/`anyOf()`; `verify()` arguments that contradict each other; a facade handed an object that is not a double; a protocol armed over a running one |
-| `InvalidSpecificationArgument` | a VALUE no run could act on: `times(5, 2)`, a negative count, `returns()` with nothing to return, an inverted `Arg::int/float/count()` range, an `Arg::string()` pattern PCRE cannot compile, `Arg::instanceOf()` naming a type that is not loadable. Extends `\InvalidArgumentException` |
+| `InvalidCallSpecification` | the SHAPE of a specification is wrong: the closure made no call on a double, called a static method or threw first; a tail matcher is not the last argument; the specification stopped before a required parameter without `Arg::rest()`; a matcher nested inside an array argument; a captor inside a combinator; an empty `allOf()`/`anyOf()`; `verify()` arguments that contradict each other; a facade handed an object that is not a double; a protocol armed over a running one |
+| `InvalidSpecificationArgument` | a VALUE no run could act on: `times(5, 2)`, a negative count, `returns()` with nothing to return, an inverted `Arg::int/float/count()` range, an `Arg::string()` pattern PCRE cannot compile, `Arg::instanceOf()` naming a type that is not loadable, `Invocation::arg()` naming a parameter the method does not declare. Extends `\InvalidArgumentException` |
 | `UnsupportedTarget` | target missing, undoublable, or targets conflict |
 | `StrictModeViolation` | a strict double got an unconfigured call |
 | `NoDefaultValue` | loose mode has no safe value for the return type |

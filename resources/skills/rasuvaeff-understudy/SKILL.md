@@ -122,11 +122,100 @@ is not an IDE type error. A matcher that reaches a real call raises
 pattern, an unloadable `instanceOf()` type — is refused where it is written
 with `InvalidSpecificationArgument`.
 
-`Arg::rest()` is the one matcher that lets a specification stop before the
-method's required parameters run out — `when(fn () => $s->record('svc',
-Arg::rest()))`; stopping early without it is refused. `Arg::captor(X::class)`
-plus `$captor->capture()` in the specification, then `$captor->last()` /
-`all()`, is the typed replacement for reading `args[N]` out of the call log.
+**An optional parameter needs no matcher at all.** The contract lets a caller
+omit it, so a specification that omits it says nothing about it and matches
+whatever was passed there; a failure message renders that position as `…`.
+`Arg::rest()` is for the other case — stopping before a **required**
+parameter, `when(fn () => $s->record('svc', Arg::rest()))` — and stopping
+before one without it is refused.
+
+A matcher buried in a plain array argument is refused too (an array is
+compared by identity): `Arg::containing(['id' => Arg::int()])` is how part of
+a payload is described, and it reads matchers in its own entries.
+
+`Arg::captor(X::class)` plus `$captor->capture()` in the specification, then
+`$captor->last()` / `all()`, is the typed replacement for reading `args[N]`
+out of the call log. A captor inside `allOf()`/`anyOf()`/`not()`/
+`containing()` is refused: it would match and record nothing.
+
+## Five doubles that cover a real package
+
+Migrating four packages onto this library replaced about thirty hand-rolled
+doubles, and these five archetypes covered every one of them. Reach for the
+one that fits before inventing a sixth.
+
+**1. A request-capturing client** (PSR-18 and every shape like it):
+
+```php
+$requests = Arg::captor(RequestInterface::class);
+when(fn () => $client->sendRequest($requests->capture()))
+    ->answers(fn (Invocation $call): ResponseInterface => $this->currentResponse);
+
+$requests->last()->getUri()->getPath();
+```
+
+`NothingCaptured` failing a test that never sent a request is the feature, not
+a nuisance.
+
+**2. A strict dependency nothing may call:**
+
+```php
+$httpClient = Understudy::strict(Understudy::for(ClientInterface::class));
+```
+
+Replaces the `throw new LogicException('not called in this test')` fake, and
+fails **at** the call rather than never.
+
+**3. A counting spy — `calls()`, not captors.** For an ordered history, and
+for anything that has to include calls that threw:
+
+```php
+$publishedIds = array_map(
+    static fn (Invocation $call): string => $call->arg('message')->getId(),
+    Understudy::calls(fn () => $publisher->publish(Arg::any())),
+);
+```
+
+A PSR-3 logger across two levels took four captors before `calls()` collapsed
+it to one line. Captors are for typed positional reads; `calls()` is for
+histories.
+
+**4. A fault-injecting decorator over a real implementation:**
+
+```php
+$inner = new InMemoryStorage();
+$storage = Understudy::delegate(StorageInterface::class, $inner);
+
+$inner->save($seed);                                             // seed WITHOUT recording
+when(fn () => $storage->markPublished(Arg::any()))->throws($failure);
+verify(fn () => $storage->save(Arg::any()), never: true);        // seeds stay uncounted
+```
+
+The non-obvious part is the seeding: through the inner instance, or the seeds
+pollute `verify()` counts. This replaced two stateful decorator classes of 73
+and 87 lines.
+
+**5. Per-object behaviour — broad first, specific after:**
+
+```php
+when(fn () => $publisher->publish(Arg::any()));                       // permission FIRST
+when(fn () => $publisher->publish(Arg::which('getId', 'msg-1')))      // specific AFTER
+    ->throwsWith(fn (Invocation $call) => new PublishException(
+        message: 'Publish failed',
+        outboxMessage: $call->arg('message'),
+    ));
+```
+
+`throwsWith()` is what makes this one readable: the exception carries the
+argument of the very call it answers, which `throws()` cannot know.
+
+### What is NOT a double's job
+
+Value fixtures (a PSR-7 request built by hand), a movable clock, a stateful
+in-memory model, a property-test harness, and anything the DI container binds
+for the test are ordinary objects. A double stands in for a **collaborator
+the test wants to observe or steer** — reaching for one elsewhere buys
+indirection and pays for it in a test nobody can read.
 
 ## Choosing a target
 
@@ -270,5 +359,7 @@ graph in the arguments multiplies by the run count.
 - [ ] `verify(..., never: true)`, not `verify(...)->times(0)`.
 - [ ] An adapter is installed, or `reset()` runs in teardown.
 - [ ] No `Arg::*` left in a real call — that is `MatcherLeaked`.
+- [ ] No captor inside a combinator, and no matcher inside an array argument —
+      both are refused where they are written.
 - [ ] A static contract method is not being doubled: calling one raises
       `InvalidCallSpecification`. Inject an instance dependency instead.

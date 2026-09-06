@@ -152,6 +152,26 @@ final class ByReferenceTest
         Assert::same($registry->values(), ['configured' => true]);
     }
 
+    /**
+     * The slot is chosen before dispatch, by walking the expectations the way
+     * dispatch will — so it has to see the same arguments dispatch will see.
+     * With the omitted ones still sentinels, a specification that spells the
+     * contract's default answered "nothing configured", the slot kept what the
+     * test had written through the reference, and the configured value was
+     * quietly not the one that came back.
+     */
+    public function aConfiguredAnswerReplacesTheSlotOfACallThatOmittedAnArgument(): void
+    {
+        $registry = Understudy::for(Registry::class);
+
+        when(static fn(): array => $registry->bucket('a', 3))->returns(['configured' => true]);
+
+        $bucket = &$registry->bucket('a');
+        $bucket['written'] = true;
+
+        Assert::same($registry->bucket('a'), ['configured' => true]);
+    }
+
     public function aByReferenceCallIsRecordedLikeAnyOther(): void
     {
         $registry = Understudy::for(Registry::class);

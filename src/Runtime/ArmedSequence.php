@@ -86,6 +86,33 @@ final class ArmedSequence
     }
 
     /**
+     * The double the step due belongs to, or null once the protocol has run
+     * out.
+     */
+    public function pendingOwner(): ?object
+    {
+        return $this->steps[$this->cursor][0] ?? null;
+    }
+
+    /**
+     * Which steps belong to a double other than this one.
+     *
+     * A protocol across two doubles renders every step by its call alone, so
+     * `num()` arriving on the wrong double reads as the step that was due —
+     * identical text, and no hint that the difference is the receiver. This is
+     * what lets the report say which lines are somebody else's.
+     *
+     * @return list<bool>
+     */
+    public function stepsOwnedElsewhere(object $double): array
+    {
+        return array_map(
+            static fn(array $step): bool => $step[0] !== $double,
+            $this->steps,
+        );
+    }
+
+    /**
      * Offers one call to the protocol, advancing it when the call is the step
      * due. Called before anything answers the call: a call refused here must
      * not have been counted by an expectation or answered by an action.

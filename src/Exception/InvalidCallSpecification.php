@@ -131,6 +131,42 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
+     * Builds the error for a matcher nested inside an array argument.
+     *
+     * @param non-empty-string $method   the method the specification named
+     * @param int              $position  zero-based position of the array argument
+     * @param non-empty-string $matcher   how the buried matcher describes itself
+     */
+    public static function matcherInsideArray(string $method, int $position, string $matcher): self
+    {
+        return new self(sprintf(
+            "`%s` sits inside the array given as argument #%d of `%s()`, where it is compared by "
+            . "identity and can never match.\n"
+            . 'Describe the array with Arg::containing([...]), which reads matchers in its entries, '
+            . 'or the whole argument with Arg::satisfies().',
+            $matcher,
+            $position + 1,
+            $method,
+        ));
+    }
+
+    /**
+     * Builds the error for a captor inside a combinator.
+     *
+     * @param non-empty-string $matcher the combinator the captor was passed to, without `Arg::`
+     */
+    public static function captorInCombinator(string $matcher): self
+    {
+        return new self(sprintf(
+            "A captor records the argument it stands for, and `Arg::%s()` builds one matcher out of "
+            . "others, so a captor inside it would match without ever recording.\n"
+            . 'Put the captor in the argument position itself, or read the calls with '
+            . 'Understudy::calls().',
+            $matcher,
+        ));
+    }
+
+    /**
      * `expectSequence()` with no steps: arming an empty protocol would put every
      * later call on trial with nothing to try it against.
      */
@@ -169,8 +205,9 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     public static function incompleteSpecification(string $method, int $given, int $declared): self
     {
         return new self(sprintf(
-            "The specification for `%s()` passed %d of its %d arguments.\n"
-            . 'Spell every argument, or say the rest does not matter by ending with Arg::rest().',
+            "The specification for `%s()` passed %d of its %d arguments, and the ones it left out "
+            . "are not all optional.\n"
+            . 'Spell every required argument, or say the rest does not matter by ending with Arg::rest().',
             $method,
             $given,
             $declared,
@@ -187,8 +224,9 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     public static function omittedBeforeSpecified(string $method, int $omitted, int $specified): self
     {
         return new self(sprintf(
-            "The specification for `%s()` omitted argument #%d but specified argument #%d after it.\n"
-            . 'A specification spells its arguments in order — use Arg::any() for one that does not matter.',
+            "The specification for `%s()` omitted argument #%d — which the contract declares required — "
+            . "but specified argument #%d after it.\n"
+            . 'A specification spells its required arguments in order — use Arg::any() for one that does not matter.',
             $method,
             $omitted + 1,
             $specified + 1,
@@ -205,7 +243,7 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     {
         return new self(sprintf(
             "`%s` describes a variadic tail, not parameters left unspelled, and the specification "
-            . "for `%s()` stopped before its required parameters ran out.\n"
+            . "for `%s()` stopped before its parameters ran out.\n"
             . 'End with Arg::rest() to say the remaining parameters do not matter.',
             $matcher,
             $method,

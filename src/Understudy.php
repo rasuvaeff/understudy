@@ -13,6 +13,7 @@ use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\ForwardingTargetMismatch;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
+use Rasuvaeff\Understudy\Exception\UnderstudyError;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
@@ -538,10 +539,24 @@ final class Understudy
 
     /**
      * Makes an understudy fail on any call no expectation matched.
+     *
+     * Answers with the double it configured, so the mode can be chosen where
+     * the double is handed over — `ClientInterface::class =>
+     * Understudy::strict(Understudy::for(ClientInterface::class))` in a
+     * container definition, rather than as a statement that has to find a
+     * variable to name.
+     *
+     * @template T of object
+     *
+     * @param T $double
+     *
+     * @return T
      */
-    public static function strict(object $double): void
+    public static function strict(object $double): object
     {
         self::stateOf($double, 'strict')->setMode(Mode::Strict);
+
+        return $double;
     }
 
     /**
@@ -794,11 +809,21 @@ final class Understudy
      * Names one understudy in failure messages, which is what makes two
      * doubles of the same contract tellable apart.
      *
+     * Answers with the double it named, for the same reason
+     * {@see self::strict()} does.
+     *
+     * @template T of object
+     *
+     * @param T               $double
      * @param non-empty-string $label
+     *
+     * @return T
      */
-    public static function label(object $double, string $label): void
+    public static function label(object $double, string $label): object
     {
         self::stateOf($double, 'label')->setLabel($label);
+
+        return $double;
     }
 
     /**
@@ -1292,7 +1317,14 @@ final class Understudy
             // parameters answered with their sentinel defaults, and those are
             // stripped — or the omission is refused — before anything reads
             // the arguments as a specification.
-            return $signal->withoutAbsentArguments();
+            return $signal->asSpecification();
+        } catch (UnderstudyError $failure) {
+            // Our own refusals are already about the specification — a matcher
+            // built with an impossible range, a captor inside a combinator, a
+            // double the test retired. Wrapping one in "the closure threw
+            // before it reached an understudy" would bury the sentence that
+            // says what to change.
+            throw $failure;
         } catch (\Throwable $failure) {
             throw InvalidCallSpecification::closureFailed($failure);
         } finally {

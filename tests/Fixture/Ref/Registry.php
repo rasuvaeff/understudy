@@ -15,6 +15,9 @@ interface Registry
     /** @return array<string, mixed> */
     public function &row(int $id): array;
 
+    /** An optional parameter on a by-reference method: the slot's owner is chosen before dispatch. */
+    public function &bucket(string $key, int $size = 3): array;
+
     public function fill(string &$slot, string $value): void;
 
     /**

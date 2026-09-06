@@ -9,7 +9,7 @@ description: "Ends every PHPUnit test with understudy's own bookkeeping done for
 
 `Rasuvaeff\Understudy\PhpUnit\UnderstudyPHPUnitIntegration`
 
-**Trait** — **Package:** [rasuvaeff/understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit) — [Source](https://github.com/rasuvaeff/understudy-phpunit/blob/1c5d658896cd8086b4f80087782f3c0a80e31501/src/PhpUnit/UnderstudyPHPUnitIntegration.php#L83) — **Version:** v0.3.0
+**Trait** — **Package:** [rasuvaeff/understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit) — [Source](https://github.com/rasuvaeff/understudy-phpunit/blob/181b68ef1c0c16143269d6f9e1f0490ab38a7d89/src/PhpUnit/UnderstudyPHPUnitIntegration.php#L83) — **Version:** v0.4.0
 
 Ends every PHPUnit test with understudy's own bookkeeping done for it.
 

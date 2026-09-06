@@ -18,6 +18,15 @@ Strictness is per double, not per test. It is a different setting from
 [strict stubs](/guide/expectations/strict-stubs), which is about registrations
 nobody used.
 
+`Understudy::strict()` and `Understudy::label()` answer with the double they
+configured, so the mode can be chosen where the double is handed over:
+
+```php
+$definitions = [
+    ClientInterface::class => Understudy::strict(Understudy::for(ClientInterface::class)),
+];
+```
+
 ## What loose will and will not invent
 
 A loose double never invents a value by running another class's constructor, and

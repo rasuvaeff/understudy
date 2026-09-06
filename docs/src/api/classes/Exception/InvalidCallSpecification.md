@@ -9,7 +9,7 @@ description: "A specification of the wrong SHAPE: the closure handed to when()/v
 
 `Rasuvaeff\Understudy\Exception\InvalidCallSpecification`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L25) — **Version:** v0.9.0-5-geda3337
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L25) — **Version:** v0.9.0-10-g74f1dd3
 
 **Extends:** `LogicException`
 
@@ -103,6 +103,32 @@ static tailMatcherInCombinator(
 ```
 
 Builds the error for putting a tail matcher inside a combinator.
+
+### matcherInsideArray()
+
+```php
+static matcherInsideArray(
+    non-empty-string $method,
+    int $position,
+    non-empty-string $matcher,
+): Exception\InvalidCallSpecification
+```
+
+Builds the error for a matcher nested inside an array argument.
+
+- `$method` — the method the specification named
+- `$position` — zero-based position of the array argument
+- `$matcher` — how the buried matcher describes itself
+
+### captorInCombinator()
+
+```php
+static captorInCombinator(non-empty-string $matcher): Exception\InvalidCallSpecification
+```
+
+Builds the error for a captor inside a combinator.
+
+- `$matcher` — the combinator the captor was passed to, without `Arg::`
 
 ### emptySequence()
 

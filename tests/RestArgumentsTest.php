@@ -9,6 +9,8 @@ use Rasuvaeff\Understudy\Exception\ConflictingExpectation;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Matcher\AnyRest;
+use Rasuvaeff\Understudy\Matcher\Unspelled;
+use Rasuvaeff\Understudy\Matcher\UnspelledTail;
 use Rasuvaeff\Understudy\Runtime\Absent;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Runtime;
@@ -35,6 +37,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Understudy::class)]
 #[Covers(\Rasuvaeff\Understudy\Expectation\Expectation::class)]
 #[Covers(AnyRest::class)]
+#[Covers(Unspelled::class)]
+#[Covers(UnspelledTail::class)]
 #[Covers(Absent::class)]
 #[Covers(InvocationSignal::class)]
 #[Covers(InvalidCallSpecification::class)]
@@ -177,8 +181,9 @@ final class RestArgumentsTest
     public function anIncompleteSpecificationWithoutRestIsRefused(): void
     {
         Expect::exception(InvalidCallSpecification::class)->withMessage(
-            "The specification for `recordOutcome()` passed 1 of its 7 arguments.\n"
-            . 'Spell every argument, or say the rest does not matter by ending with Arg::rest().',
+            "The specification for `recordOutcome()` passed 1 of its 7 arguments, and the ones it "
+            . "left out are not all optional.\n"
+            . 'Spell every required argument, or say the rest does not matter by ending with Arg::rest().',
         );
 
         when(fn(): ?string => $this->storage->recordOutcome('svc'));
@@ -195,8 +200,10 @@ final class RestArgumentsTest
     public function aNamedArgumentSkippingAParameterIsRefused(): void
     {
         Expect::exception(InvalidCallSpecification::class)->withMessage(
-            "The specification for `recordOutcome()` omitted argument #2 but specified argument #7 after it.\n"
-            . 'A specification spells its arguments in order — use Arg::any() for one that does not matter.',
+            "The specification for `recordOutcome()` omitted argument #2 — which the contract declares "
+            . "required — but specified argument #7 after it.\n"
+            . 'A specification spells its required arguments in order — use Arg::any() for one that '
+            . 'does not matter.',
         );
 
         when(fn(): ?string => $this->storage->recordOutcome(key: 'svc', attemptId: 'attempt-1'));
@@ -210,8 +217,10 @@ final class RestArgumentsTest
     public function aHoleRightBeforeTheNextSpecifiedArgumentIsRefused(): void
     {
         Expect::exception(InvalidCallSpecification::class)->withMessage(
-            "The specification for `recordOutcome()` omitted argument #2 but specified argument #3 after it.\n"
-            . 'A specification spells its arguments in order — use Arg::any() for one that does not matter.',
+            "The specification for `recordOutcome()` omitted argument #2 — which the contract declares "
+            . "required — but specified argument #3 after it.\n"
+            . 'A specification spells its required arguments in order — use Arg::any() for one that '
+            . 'does not matter.',
         );
 
         when(fn(): ?string => $this->storage->recordOutcome(key: 'svc', config: []));
@@ -221,7 +230,7 @@ final class RestArgumentsTest
     {
         Expect::exception(InvalidCallSpecification::class)->withMessage(
             "`remaining()` describes a variadic tail, not parameters left unspelled, and the "
-            . "specification for `recordOutcome()` stopped before its required parameters ran out.\n"
+            . "specification for `recordOutcome()` stopped before its parameters ran out.\n"
             . 'End with Arg::rest() to say the remaining parameters do not matter.',
         );
 
@@ -274,5 +283,191 @@ final class RestArgumentsTest
         Assert::null($this->storage->recordOutcome(...$this->fullArguments()));
 
         verify(fn(): ?string => $this->storage->recordOutcome(Arg::rest()), times: 1);
+    }
+
+    // --- Optional parameters a specification did not spell -------------------
+
+    /**
+     * The contract says a caller may omit an optional parameter; a
+     * specification that omits it therefore says nothing about it, and matches
+     * whatever the code under test passed there.
+     *
+     * Materializing the declared default instead — which is what the double
+     * used to do — made arity an implicit part of every specification, and the
+     * report then said `never called` beside a call that differed only in a
+     * position the author never wrote.
+     */
+    #[ExpectNoAssertions]
+    public function anUnspelledOptionalParameterMatchesWhateverWasPassed(): void
+    {
+        $this->storage->tag('alpha', 5);
+
+        verify(fn() => $this->storage->tag('alpha'), times: 1);
+    }
+
+    #[ExpectNoAssertions]
+    public function anUnspelledOptionalParameterAlsoMatchesTheDefaultedCall(): void
+    {
+        $this->storage->tag('alpha');
+        $this->storage->tag('alpha', 5);
+        $this->storage->tag('beta', 5);
+
+        verify(fn() => $this->storage->tag('alpha'), times: 2);
+    }
+
+    /**
+     * The real call is the other half: an omitted argument is logged as the
+     * value the contract gives it, so `tag('alpha')` and `tag('alpha', 1)`
+     * stay the same call in the log.
+     */
+    public function arealCallMaterializesTheContractsDefault(): void
+    {
+        $this->storage->tag('alpha');
+
+        Assert::same(
+            Understudy::lastCall(fn() => $this->storage->tag(Arg::any(), Arg::any()))?->args,
+            ['alpha', 1],
+        );
+    }
+
+    /**
+     * The value put back is the contract's own default, not something derived
+     * from where the parameter sits: `note()` defaults its second parameter to
+     * `7` precisely so that a position cannot stand in for a value.
+     */
+    public function theMaterializedDefaultIsTheContractsValue(): void
+    {
+        $this->storage->note('hello');
+
+        Assert::same(
+            Understudy::lastCall(fn() => $this->storage->note(Arg::any(), Arg::any()))?->args,
+            ['hello', 7],
+        );
+    }
+
+    /**
+     * A named argument may skip an optional parameter, so a specification
+     * written with named arguments may too.
+     */
+    #[ExpectNoAssertions]
+    public function aNamedArgumentSkippingAnOptionalParameterSaysNothingAboutIt(): void
+    {
+        $this->storage->emit('ch', 'a');
+        $this->storage->tag(name: 'alpha', weight: 9);
+
+        verify(fn() => $this->storage->tag(name: 'alpha'), times: 1);
+    }
+
+    /**
+     * `Arg::rest()` on a signature whose remaining parameters are all optional
+     * is accepted: the docs call it "declared parameters left unspelled", and
+     * the engine used to refuse it because the optional ones had already
+     * become literals by the time it looked.
+     */
+    #[ExpectNoAssertions]
+    public function restIsAcceptedWhereOnlyOptionalParametersFollow(): void
+    {
+        when(fn() => $this->storage->tag(Arg::any(), Arg::rest()));
+        when(fn() => $this->storage->tag(Arg::rest()));
+    }
+
+    /**
+     * The report distinguishes what the test specified from what it left to
+     * the contract: `…` is not `any()`, which the test would have had to write.
+     */
+    public function anUnspelledParameterRendersAsAnEllipsis(): void
+    {
+        $this->storage->tag('alpha', 5);
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining("tag('beta', …)");
+
+        verify(fn() => $this->storage->tag('beta'));
+    }
+
+    // --- A matcher that cannot act where it was put -------------------------
+
+    /**
+     * A literal array is compared by identity, so a matcher inside one matches
+     * nothing and says nothing about it. `Arg::containing()` is the matcher
+     * that describes part of an array, and the refusal names it.
+     */
+    public function aMatcherInsideAnArrayArgumentIsRefused(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            "`any()` sits inside the array given as argument #3 of `recordOutcome()`, where it is "
+            . "compared by identity and can never match.\n"
+            . 'Describe the array with Arg::containing([...]), which reads matchers in its entries, '
+            . 'or the whole argument with Arg::satisfies().',
+        );
+
+        when(fn(): ?string => $this->storage->recordOutcome('svc', 1, ['id' => Arg::any()], Arg::rest()));
+    }
+
+    public function aMatcherNestedDeeperInsideAnArrayArgumentIsRefusedToo(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)
+            ->withMessageContaining('sits inside the array given as argument #3');
+
+        when(fn(): ?string => $this->storage->recordOutcome(
+            'svc',
+            1,
+            ['user' => ['id' => Arg::int()]],
+            Arg::rest(),
+        ));
+    }
+
+    /**
+     * The walk is depth-capped, for the same reason a snapshot's is: `$a[] =
+     * &$a` is legal PHP, and a search that followed it would not return. Eight
+     * levels are searched; the ninth is where bounded work stops, and a
+     * matcher that deep is a shape nobody writes by hand.
+     */
+    public function theSearchForABuriedMatcherIsDepthCapped(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)
+            ->withMessageContaining('sits inside the array given as argument #3');
+
+        when(fn(): ?string => $this->storage->recordOutcome('svc', 1, $this->nest(8), Arg::rest()));
+    }
+
+    #[ExpectNoAssertions]
+    public function aMatcherPastTheDepthCapIsNotSearchedFor(): void
+    {
+        when(fn(): ?string => $this->storage->recordOutcome('svc', 1, $this->nest(9), Arg::rest()));
+    }
+
+    /**
+     * A matcher wrapped in `$depth` levels of array.
+     *
+     * @param int<1, max> $depth
+     *
+     * @return array<int, mixed>
+     */
+    private function nest(int $depth): array
+    {
+        /** @var mixed $value */
+        $value = Arg::any();
+
+        for ($level = 0; $level < $depth; ++$level) {
+            $value = [$value];
+        }
+
+        \assert(\is_array($value));
+
+        return $value;
+    }
+
+    /**
+     * A specification and a stub naming the same call still collide when the
+     * omission is what they have in common — the unspelled tail is part of the
+     * specification, not a wildcard that makes two of them different.
+     */
+    public function twoVerbsOmittingTheSameOptionalParameterStillCollide(): void
+    {
+        when(fn() => $this->storage->tag('alpha'));
+
+        Expect::exception(ConflictingExpectation::class);
+
+        Understudy::expect(fn() => $this->storage->tag('alpha'));
     }
 }

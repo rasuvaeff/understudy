@@ -292,10 +292,23 @@ fallback should handle later calls.
 | `Arg::remaining()` | the whole variadic tail, any length — last argument only |
 | `Arg::rest()` | declared parameters left unspelled — last argument only |
 
+An **optional** parameter needs no matcher at all. The contract says a caller
+may leave it out, so a specification that leaves it out says nothing about it
+and matches whatever the call passed there:
+
+```php
+// claimReady(DateTimeImmutable $t, int $max, array $kinds = [], int $limit = 1000)
+verify(fn () => $storage->claimReady(Arg::any(), Arg::any(), Arg::any()), times: 1);
+```
+
+matches `claimReady($now, 3, [], 100)`. A failure message renders the
+positions the specification never mentioned as `…`, so the report tells the
+two apart: `claimReady(any(), any(), any(), …)`.
+
 `Arg::rest()` and `Arg::remaining()` differ in what they stand for:
 `remaining()` matches the variadic tail a method declares, while `rest()` says
 "the arguments before me matter, the rest of the arity does not" — it is the
-one matcher that lets a specification stop before the method's required
+one matcher that lets a specification stop before the method's **required**
 parameters run out:
 
 ```php
@@ -303,8 +316,9 @@ when(fn () => $storage->recordOutcome('svc', Arg::rest()))
     ->throws(new RuntimeException('storage unavailable'));
 ```
 
-A specification that stops early *without* ending in `Arg::rest()` is refused
-with the reason, rather than becoming a stub that silently never matches. A
+A specification that stops before a required parameter *without* ending in
+`Arg::rest()` is refused with the reason, rather than becoming a stub that
+silently never matches. A
 later, narrower specification for the same call still wins over the broad
 prefix stub. A static analyser reads the shortened call against the contract's
 arity; the [understudy-psalm](https://github.com/rasuvaeff/understudy-psalm)
@@ -327,6 +341,13 @@ match and say so nowhere.
 The pattern is yours and is used as written, PCRE semantics included: `$`
 matches before a trailing newline, so `Arg::string('/^ord-\d+$/')` accepts
 `"ord-1\n"`. Anchor with `\z` (or add the `D` modifier) where that matters.
+
+A matcher inside a plain array argument is refused for the same reason: an
+array is compared by identity, so `find(['id' => Arg::any()])` would match
+nothing and say nothing about it. `Arg::containing()` is the matcher that
+describes part of an array, and it reads matchers in its own entries —
+`Arg::containing(['id' => Arg::int(min: 1)])`, nested as deep as the payload
+goes.
 
 `Arg::which()` calls only a public, non-static method that needs no arguments.
 A getter that throws counts as a mismatch, never as an error — matching runs
@@ -356,7 +377,11 @@ call the other arguments rejected captures nothing. It works in `when()`,
 `expect()` and `verify()` alike; a `verify()` captures from the calls it just
 claimed, the Mockito reading. A `capture()` inside an `expectSequence()` step
 matches but does not record — capture at declaration or at verification, not
-in a protocol. `last()` on a captor that captured nothing
+in a protocol. A captor inside `Arg::allOf()`, `anyOf()`, `not()` or
+`containing()` is refused where it is written: a combinator asks its operands
+whether they match, and a captor there would accept the call and record
+nothing — correct in every observable way except the one it was written for.
+`last()` on a captor that captured nothing
 raises `NothingCaptured`; `all()` answers an empty list. Captured values live
 exactly as long as the call log: `reset()` and a closing `Understudy::scope()`
 drop them, and the captor object is then simply empty again.
@@ -410,6 +435,21 @@ when(fn () => $breaker->call($operation))
 ```
 
 One link per call, and the last link keeps answering once the chain runs out.
+
+`throwsWith()` is `throws()` for an exception that has to carry what the call
+was made with — `throws()` takes an instance, which cannot know:
+
+```php
+when(fn () => $publisher->publish(Arg::any()))
+    ->throwsWith(fn (Invocation $call) => new PublishException(
+        message: 'Publish failed',
+        outboxMessage: $call->arg('message'),
+    ));
+```
+
+One exception per call, where `throws()` is one instance for all of them. A
+throwing `answers()` closure does the same thing and keeps working; this reads
+as what it is at the call site.
 
 ### Verifying
 
@@ -568,13 +608,18 @@ use Rasuvaeff\Understudy\Arg;
 $calls = Understudy::calls(fn () => $repository->find(Arg::any()));
 
 $calls[0]->args;          // [123]
+$calls[0]->arg('id');     // 123 — by the contract's own parameter name
 $calls[0]->didReturn();   // true
 $calls[0]->returned();    // the value it answered with
 $calls[1]->thrown();      // the throwable, if it threw
 ```
 
 `null` is a valid return value, which is why the outcome is asked about
-(`didReturn()`) rather than inferred from the value.
+(`didReturn()`) rather than inferred from the value. `arg()` takes a position
+or the contract's parameter name and refuses a name the method does not
+declare, rather than answering `null` — which is a value an argument can
+legitimately have. An argument the caller omitted reads as the contract's
+default, exactly as it does in `args`.
 
 ```php
 $last = Understudy::lastCall(fn () => $repository->find(Arg::any()));
@@ -607,7 +652,17 @@ One-way, like every other form of forgetting here.
 |---|---|
 | Loose (default) | a type-safe default: `null`, `0`, `''`, `[]`, an empty generator … |
 | Strict (`Understudy::strict($double)`) | an immediate failure naming the method, the call, and what did not accept it |
+
 | Forwarding (`Understudy::forwarding($double, $real)`) | whatever the real instance answers, recorded like any other call |
+
+`Understudy::strict()` and `Understudy::label()` answer with the double they
+configured, so the mode can be chosen where the double is handed over:
+
+```php
+$definitions = [
+    ClientInterface::class => Understudy::strict(Understudy::for(ClientInterface::class)),
+];
+```
 
 A loose double never invents a value by running someone else's constructor, and
 never hands back an unconstructed instance of a real class. What it can hand

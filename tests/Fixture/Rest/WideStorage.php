@@ -22,5 +22,8 @@ interface WideStorage
 
     public function tag(string $name, int $weight = 1): void;
 
+    /** The default differs from the position it sits at, so one cannot stand in for the other. */
+    public function note(string $text, int $level = 7): void;
+
     public function emit(string $channel, string ...$payloads): int;
 }

@@ -27,6 +27,7 @@ when(fn () => $repository->find(Arg::any()))->answers(
 | `returns($value, …)` | the value; with several, one per call, and the last one repeats |
 | `throws($exception)` | the exception, thrown at the call site |
 | `answers(fn (Invocation $call) => …)` | whatever the callback computes from the actual call |
+| `throwsWith(fn (Invocation $call) => …)` | an exception built from the call, one per call |
 
 ```php
 // One value per call, then the last one repeats.
@@ -35,6 +36,20 @@ when(fn () => $repository->mode())->returns('fast', 'slow');
 
 For a different answer per call in a longer sequence, see
 [Chaining behaviour](/guide/stubbing/chaining).
+
+`throws()` takes an instance, which cannot know what the call carried.
+`throwsWith()` is for the exception that has to:
+
+```php
+when(fn () => $publisher->publish(Arg::any()))
+    ->throwsWith(fn (Invocation $call) => new PublishException(
+        message: 'Publish failed',
+        outboxMessage: $call->arg('message'),
+    ));
+```
+
+`Invocation::arg()` reads one argument by position or by the contract's own
+parameter name.
 
 ## Which stub wins
 

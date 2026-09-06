@@ -13,6 +13,7 @@ use Rasuvaeff\Understudy\Matcher\AnyRest;
 use Rasuvaeff\Understudy\Matcher\AnyTail;
 use Rasuvaeff\Understudy\Matcher\ArrayContaining;
 use Rasuvaeff\Understudy\Matcher\BooleanValue;
+use Rasuvaeff\Understudy\Matcher\Capturing;
 use Rasuvaeff\Understudy\Matcher\CountBetween;
 use Rasuvaeff\Understudy\Matcher\EmptyTail;
 use Rasuvaeff\Understudy\Matcher\FloatInRange;
@@ -114,6 +115,8 @@ final class Arg
      */
     public static function not(mixed $value): mixed
     {
+        self::rejectCaptor('not', $value);
+
         return new Negated($value);
     }
 
@@ -208,6 +211,13 @@ final class Arg
      */
     public static function containing(array $entries): mixed
     {
+        // Nested, because `containing(['user' => ['id' => $ids->capture()]])`
+        // reads like it would record and does not.
+        array_walk_recursive(
+            $entries,
+            static fn(mixed $entry): null => self::rejectCaptor('containing', $entry),
+        );
+
         return new ArrayContaining($entries);
     }
 
@@ -325,9 +335,33 @@ final class Arg
             if ($operand instanceof TailMatcher) {
                 throw InvalidCallSpecification::tailMatcherInCombinator($matcher, $operand->describe());
             }
+
+            self::rejectCaptor($matcher, $operand);
         }
 
         return $operands;
+    }
+
+    /**
+     * A captor inside a combinator is refused rather than accepted silently.
+     *
+     * It would match — a combinator asks its operands and a captor accepts —
+     * and it would never record: recording happens once the whole
+     * specification matched, and only for the captors the specification holds
+     * in a position of their own. The middle ground the engine used to offer
+     * (matching, not recording, not complaining) is the worst of the three,
+     * because the specification then behaves correctly in every observable way
+     * except the one it was written for.
+     *
+     * @param non-empty-string $matcher
+     */
+    private static function rejectCaptor(string $matcher, mixed $operand): null
+    {
+        if ($operand instanceof Capturing) {
+            throw InvalidCallSpecification::captorInCombinator($matcher);
+        }
+
+        return null;
     }
 
     /**

@@ -9,7 +9,7 @@ demonstrate changes.
 
 | Script | Shows | Needs server? |
 |---|---|---|
-| `basic-usage.php` | stubbing with `when()`, argument matchers — `Arg::rest()` and a typed `Arg::captor()` included — verifying counts, reading the call log with outcomes, strict mode and labels | no |
+| `basic-usage.php` | stubbing with `when()` and `throwsWith()`, argument matchers — `Arg::rest()`, an unspelled optional parameter and a typed `Arg::captor()` included — verifying counts, reading the call log by name with `arg()`, strict mode and labels | no |
 | `property-hooks.php` | doubling a contract that declares properties (PHP 8.4+): default reads, `{ get; set; }` round-trip, the get-only write refusal — self-skipping on 8.3 | no |
 | `modes.php` | the three modes a double can be in: loose defaults, `strict()`, and `forwarding()` to a real object — including the partial double (`delegate()` + a stub on top) and `lean()`, the call log that does not retain returned values | no |
 | `wiring.php` | `Understudy::wire()`: doubles keyed by constructor parameter name, overriding one dependency, and the refusal that happens before the constructor runs | no |
