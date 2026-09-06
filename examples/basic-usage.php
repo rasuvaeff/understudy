@@ -37,6 +37,8 @@ interface BookRepository
     public function count(): int;
 
     public function tag(string $name, int $weight, bool $pinned): string;
+
+    public function archive(int $id, ?string $reason = null): void;
 }
 
 $repository = Understudy::for(BookRepository::class);
@@ -102,6 +104,42 @@ when(fn() => $catalogue->tag('sale', Arg::rest()))->returns('tagged');
 
 check($catalogue->tag('sale', 3, true) === 'tagged', 'Arg::rest() matches whatever follows the prefix');
 check($catalogue->tag('fresh', 1, false) === '', 'a different prefix falls through to the loose default');
+
+// --- An optional parameter needs no matcher ---------------------------------
+
+// The contract lets a caller omit `$reason`, so a specification that omits it
+// says nothing about it and matches whatever the subject passed there.
+$catalogue->archive(7, 'duplicate');
+
+verify(fn() => $catalogue->archive(7), times: 1);
+check(
+    Understudy::lastCall(fn() => $catalogue->archive(Arg::any(), Arg::any()))?->arg('reason') === 'duplicate',
+    'arg() reads one argument by the contract\'s own parameter name',
+);
+
+$catalogue->archive(8);
+check(
+    Understudy::lastCall(fn() => $catalogue->archive(Arg::any(), Arg::any()))?->args === [8, null],
+    'an omitted argument is logged as the value the contract gives it',
+);
+
+// --- throwsWith(): an exception built from the call it answers ---------------
+
+when(fn() => $catalogue->save(Arg::any()))->throwsWith(
+    static fn(Invocation $call): \Throwable => new \RuntimeException(
+        'cannot save ' . $call->arg('book')->title,
+    ),
+);
+
+try {
+    $catalogue->save(new Book('Neuromancer'));
+    check(false, 'throwsWith() throws');
+} catch (\RuntimeException $e) {
+    check($e->getMessage() === 'cannot save Neuromancer', 'throwsWith() builds the exception from the call');
+}
+
+Understudy::reset();
+$catalogue = Understudy::for(BookRepository::class);
 
 // --- Arg::captor(): typed reading of what the subject passed ----------------
 

@@ -1070,7 +1070,7 @@ final class Runtime
         $args = array_replace($args, array_combine(
             $omitted,
             array_map(
-                static fn(int $position): mixed => $signature->defaultAt($position),
+                $signature->defaultAt(...),
                 $omitted,
             ),
         ));

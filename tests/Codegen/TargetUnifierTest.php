@@ -1150,7 +1150,6 @@ final class TargetUnifierTest
         $signature = $this->unify(...$contracts)['tag'] ?? null;
 
         Assert::instanceOf($signature, MethodSignature::class);
-        \assert($signature instanceof MethodSignature);
 
         return $signature;
     }

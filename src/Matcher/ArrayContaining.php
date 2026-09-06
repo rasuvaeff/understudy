@@ -35,7 +35,7 @@ final readonly class ArrayContaining implements ArgumentMatcher
         if (array_is_list($this->expected)) {
             /** @var mixed $value */
             foreach ($this->expected as $value) {
-                if (!self::containsAMatch($argument, $value)) {
+                if (!$this->containsAMatch($argument, $value)) {
                     return false;
                 }
             }
@@ -62,7 +62,7 @@ final readonly class ArrayContaining implements ArgumentMatcher
     /**
      * @param array<array-key, mixed> $argument
      */
-    private static function containsAMatch(array $argument, mixed $expected): bool
+    private function containsAMatch(array $argument, mixed $expected): bool
     {
         /** @var mixed $value */
         foreach ($argument as $value) {

@@ -97,7 +97,7 @@ final class InvocationSignal extends \Exception
                 throw InvalidCallSpecification::omittedBeforeSpecified(
                     $this->method,
                     $position,
-                    self::nextSpelled($args, $position),
+                    $this->nextSpelled($args, $position),
                 );
             }
 
@@ -171,7 +171,7 @@ final class InvocationSignal extends \Exception
      *
      * @return int<0, max>
      */
-    private static function nextSpelled(array $args, int $from): int
+    private function nextSpelled(array $args, int $from): int
     {
         /** @var mixed $argument */
         foreach ($args as $position => $argument) {
