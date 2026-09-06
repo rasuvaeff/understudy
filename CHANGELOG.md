@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.10.0 — 2026-09-06
+
+The wave the 1.0 candidate turned out to still need: nine defects found by
+migrating the monorepo onto the library and by probing the engine against its
+own documentation. Two of them change what a specification means, which is why
+this is a minor and not the tag after 0.9.0.
 
 ### A specification is read the way the contract reads a call
 
