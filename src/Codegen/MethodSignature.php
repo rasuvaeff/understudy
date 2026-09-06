@@ -25,6 +25,13 @@ final readonly class MethodSignature
      *                                       Resolved here, with the rest of the reflection, because a
      *                                       failure message is rendered on the hot path of a failing
      *                                       test and PHP redacts these in its own traces
+     * @param array<int, non-empty-string> $parameterNames the contract's own name for each fixed
+     *                                       parameter, so a call can be read by name
+     * @param array<int, \ReflectionParameter|null> $optionalParameters the positions the contract
+     *                                       lets a caller omit, each with the parameter that declared
+     *                                       the default — null where the position is optional only
+     *                                       because another target does not declare it at all. A
+     *                                       position missing from this map is required
      */
     public function __construct(
         public string $name,
@@ -38,5 +45,28 @@ final readonly class MethodSignature
         public bool $static = false,
         public string $visibility = 'public',
         public array $sensitiveParameters = [],
+        public array $parameterNames = [],
+        public array $optionalParameters = [],
     ) {}
+
+    /**
+     * The value the contract gives a parameter the caller omitted.
+     *
+     * Evaluated per call, which is what PHP does for a default that builds an
+     * object. `null` is also the answer for a position that is optional only
+     * because a second target does not declare it — there is no contract
+     * default to reproduce there, and null is what the parameter used to
+     * carry when the double rendered defaults itself.
+     */
+    public function defaultAt(int $position): mixed
+    {
+        $parameter = $this->optionalParameters[$position] ?? null;
+
+        return $parameter?->getDefaultValue();
+    }
+
+    public function isOptional(int $position): bool
+    {
+        return \array_key_exists($position, $this->optionalParameters);
+    }
 }

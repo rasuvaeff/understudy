@@ -24,6 +24,22 @@ namespace Rasuvaeff\Understudy\Exception;
 final class InvalidSpecificationArgument extends \InvalidArgumentException implements UnderstudyError
 {
     /**
+     * `Invocation::arg()` asked for a parameter the method does not declare.
+     *
+     * @param non-empty-string             $method
+     * @param array<int, non-empty-string> $known
+     */
+    public static function unknownArgument(string $method, int|string $parameter, array $known): self
+    {
+        return new self(sprintf(
+            '`%s()` has no argument %s. It takes: %s',
+            $method,
+            \is_int($parameter) ? '#' . ($parameter + 1) : sprintf('named `$%s`', $parameter),
+            $known === [] ? 'none' : '$' . implode(', $', $known),
+        ));
+    }
+
+    /**
      * A cardinality whose upper bound is below its lower one: no number of
      * calls satisfies both.
      *

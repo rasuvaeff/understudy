@@ -8,6 +8,7 @@ use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
 use Rasuvaeff\Understudy\Expectation\ComputeAnswer;
 use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Expectation\ReturnValue;
+use Rasuvaeff\Understudy\Expectation\ThrowComputed;
 use Rasuvaeff\Understudy\Expectation\ThrowError;
 
 /**
@@ -82,6 +83,31 @@ class WhenBuilder
     public function throws(\Throwable $error): static
     {
         $this->expectation->setAction(new ThrowError($error), $this->slot);
+
+        return $this;
+    }
+
+    /**
+     * Throws an exception built from the call itself, one per call.
+     *
+     * The shape `throws()` cannot express: an exception that carries what the
+     * call was made with — `new PublishException($message, outboxMessage:
+     * $call->args[0])`. A throwing `answers()` closure does the same thing and
+     * stays supported; this reads as what it is at the call site.
+     *
+     * ```php
+     * when(fn () => $publisher->publish(Arg::any()))
+     *     ->throwsWith(fn (Invocation $call) => new PublishException(
+     *         message: 'Publish failed',
+     *         outboxMessage: $call->arg('message'),
+     *     ));
+     * ```
+     *
+     * @param callable(Invocation): \Throwable $build
+     */
+    public function throwsWith(callable $build): static
+    {
+        $this->expectation->setAction(new ThrowComputed($build), $this->slot);
 
         return $this;
     }

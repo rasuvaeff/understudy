@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy;
 
+use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
 use Rasuvaeff\Understudy\Exception\OutcomeUnavailable;
 use Rasuvaeff\Understudy\Runtime\Runtime;
@@ -41,6 +42,8 @@ final class Invocation
      * @param list<mixed>      $liveArgs the arguments as the caller still holds them,
      *                                   references included — what delegation needs,
      *                                   where {@see $args} is a reading of them
+     * @param array<int, non-empty-string> $parameterNames the contract's own name for each fixed
+     *                                   parameter, so a call can be read by name
      * @param list<int>        $sensitiveArguments positions the contract marked
      *                                   `#[\SensitiveParameter]`; carried on the call so a
      *                                   failure message and a transcript can redact the value
@@ -55,7 +58,32 @@ final class Invocation
         private readonly ?object $double = null,
         private readonly array $liveArgs = [],
         public readonly array $sensitiveArguments = [],
+        private readonly array $parameterNames = [],
     ) {}
+
+    /**
+     * One argument, by position or by the contract's own parameter name.
+     *
+     * `$call->args[0]` is opaque in a longer specification, and a library
+     * whose specifications are real calls should let a call be read the way it
+     * was written. A name that is not a fixed parameter of the method — a
+     * value the variadic tail absorbed, or a typo — is refused rather than
+     * answered with null, which is a value an argument can legitimately have.
+     */
+    public function arg(int|string $parameter): mixed
+    {
+        $position = \is_int($parameter) ? $parameter : array_search($parameter, $this->parameterNames, strict: true);
+
+        if ($position === false || !\array_key_exists($position, $this->args)) {
+            throw InvalidSpecificationArgument::unknownArgument(
+                $this->method,
+                $parameter,
+                array_values($this->parameterNames),
+            );
+        }
+
+        return $this->args[$position];
+    }
 
     /**
      * What the arguments were once the call had been answered.

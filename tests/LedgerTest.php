@@ -298,6 +298,29 @@ final class LedgerTest
         Understudy::verifyAll();
     }
 
+    /**
+     * A protocol spanning two doubles renders every step by its call alone, so
+     * a step due on one double and a call arriving on the other read as
+     * identical text: `num()` expected, `num()` received, out of turn. What
+     * differs is the receiver, and the report has to say so.
+     */
+    public function aProtocolStepDueOnAnotherDoubleSaysSo(): void
+    {
+        $first = Understudy::for(BookRepository::class);
+        $second = Understudy::for(BookRepository::class);
+
+        Understudy::expectSequence(
+            fn() => $first->count(),
+            fn() => $second->count(),
+        );
+
+        Expect::exception(VerificationFailed::class)
+            ->withMessageContaining('was expected to be `count()` on another understudy')
+            ->withMessageContaining('1. count()   (on another understudy)   <- due here');
+
+        $second->count();
+    }
+
     public function anArmedProtocolFailsOnTheCallThatBrokeTheOrder(): void
     {
         // The whole point: the subject's own frame is on top of the stack,

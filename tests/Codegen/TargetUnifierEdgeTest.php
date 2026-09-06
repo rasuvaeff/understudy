@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests\Codegen;
 
+use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\MixedNullDefault;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\NarrowThenWideReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\NullableObjectParam;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentParameterChild;
@@ -126,6 +128,31 @@ final class TargetUnifierEdgeTest
         Assert::same(count(Understudy::calls(static fn() => $double->accept(null))), 1);
     }
 
+    /**
+     * `mixed $v = null` used to render as `mixed|null`, which PHP refuses at
+     * compile time — a fatal out of `eval()`, uncatchable, killing the whole
+     * run for a signature that is neither exotic nor rare. The widening
+     * belongs to the branch where the union is real, and the default belongs
+     * to dispatch.
+     */
+    public function aMixedParameterWithANullDefaultIsDoublable(): void
+    {
+        $double = Understudy::for(MixedNullDefault::class);
+
+        $double->accept();
+        $double->accept('given');
+
+        Assert::same(
+            array_map(
+                static fn(\Rasuvaeff\Understudy\Invocation $call): mixed => $call->args[0],
+                Understudy::calls(static function () use ($double): void {
+                    $double->accept(Arg::any());
+                }),
+            ),
+            [null, 'given'],
+        );
+    }
+
     public function aDefaultComputedFromSelfIsReproducedByValue(): void
     {
         // `self::STEP * 2` is an expression, not a constant name, so
@@ -136,10 +163,12 @@ final class TargetUnifierEdgeTest
 
         Assert::same($double->step(), 0);
 
-        $parameter = (new \ReflectionMethod($double, 'step'))->getParameters()[0];
+        // The generated parameter carries the sentinel — what the contract
+        // computed is put back by dispatch, and the call log is where that is
+        // visible.
+        $double->step();
 
-        Assert::true($parameter->isDefaultValueAvailable());
-        Assert::same($parameter->getDefaultValue(), 6);
+        Assert::same(Understudy::lastCall(static fn(): int => $double->step(Arg::any()))?->args, [6]);
     }
 
     public function aReturnThatAlreadySatisfiesAnotherDoesNotWidenTheIntersection(): void

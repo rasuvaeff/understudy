@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Expectation\ComputeAnswer;
 use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Expectation\ReturnValue;
+use Rasuvaeff\Understudy\Expectation\ThrowComputed;
 use Rasuvaeff\Understudy\Expectation\ThrowError;
 use Rasuvaeff\Understudy\ExpectBuilder;
 use Rasuvaeff\Understudy\FailureReport;
@@ -38,10 +40,12 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Expectation::class)]
 #[Covers(ReturnValue::class)]
 #[Covers(ThrowError::class)]
+#[Covers(ThrowComputed::class)]
 #[Covers(ComputeAnswer::class)]
 #[Covers(Invocation::class)]
 #[Covers(FailureReport::class)]
 #[Covers(NeverMethodCalled::class)]
+#[Covers(InvalidSpecificationArgument::class)]
 #[Covers(VerificationFailed::class)]
 final class ExpectationsTest
 {
@@ -368,5 +372,126 @@ final class ExpectationsTest
             ],
             [1, 2, 3, 4, 5],
         );
+    }
+
+    // --- Throwing something built from the call itself ----------------------
+
+    /**
+     * `throws()` takes an instance, which cannot know what the call carried.
+     * An exception built FROM the argument of the call it answers is the
+     * shape a hand-written fake had, and re-deriving the throwing-`answers()`
+     * idiom was left to every reader.
+     */
+    public function throwsWithBuildsTheExceptionFromTheCall(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->tag(Arg::any(), Arg::rest()))->throwsWith(
+            static fn(Invocation $call) => new \DomainException('cannot tag ' . $call->arg('name')),
+        );
+
+        Expect::exception(\DomainException::class)->withMessage('cannot tag alpha');
+
+        $repository->tag('alpha');
+    }
+
+    /**
+     * One exception per call, where `throws()` is one instance for all of
+     * them: an exception carrying the call's own arguments cannot be shared.
+     */
+    public function throwsWithBuildsANewExceptionEachTime(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->tag(Arg::any(), Arg::rest()))->throwsWith(
+            static fn(Invocation $call): \Throwable => new \DomainException((string) $call->arg(0)),
+        );
+
+        $thrown = [];
+
+        foreach (['alpha', 'beta'] as $name) {
+            try {
+                $repository->tag($name);
+            } catch (\DomainException $error) {
+                $thrown[] = $error;
+            }
+        }
+
+        Assert::same(array_map(static fn(\Throwable $e): string => $e->getMessage(), $thrown), ['alpha', 'beta']);
+        Assert::false($thrown[0] === ($thrown[1] ?? $thrown[0]));
+    }
+
+    public function throwsWithTakesItsPlaceInAChain(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        when(fn() => $repository->count())
+            ->returns(1)
+            ->then()->throwsWith(static fn(Invocation $call) => new \DomainException('call ' . $call->sequence));
+
+        Assert::same($repository->count(), 1);
+
+        Expect::exception(\DomainException::class)->withMessageContaining('call ');
+
+        $repository->count();
+    }
+
+    // --- Reading a call by parameter name -----------------------------------
+
+    public function anInvocationReadsItsArgumentsByNameAndPosition(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $repository->tag('alpha', 3);
+
+        $call = Understudy::lastCall(fn() => $repository->tag(Arg::any(), Arg::any()));
+
+        Assert::same($call?->arg('name'), 'alpha');
+        Assert::same($call?->arg('weight'), 3);
+        Assert::same($call?->arg(1), 3);
+    }
+
+    /**
+     * An omitted optional argument reads as the contract's default, like it
+     * does in `args` — the call log is one reading, not two.
+     */
+    public function anOmittedArgumentReadsAsTheContractsDefault(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $repository->tag('alpha');
+
+        Assert::same(
+            Understudy::lastCall(fn() => $repository->tag(Arg::any(), Arg::any()))?->arg('weight'),
+            1,
+        );
+    }
+
+    /**
+     * Answering `null` for a name the method does not declare would be
+     * indistinguishable from an argument that really is null.
+     */
+    public function anUnknownArgumentNameIsRefused(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $repository->tag('alpha');
+
+        $call = Understudy::lastCall(fn() => $repository->tag(Arg::any(), Arg::any()));
+
+        Expect::exception(InvalidSpecificationArgument::class)
+            ->withMessage('`tag()` has no argument named `$nope`. It takes: $name, $weight');
+
+        $call?->arg('nope');
+    }
+
+    public function anArgumentPositionThatWasNeverPassedIsRefused(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $repository->count();
+
+        $call = Understudy::lastCall(fn() => $repository->count());
+
+        Expect::exception(InvalidSpecificationArgument::class)
+            ->withMessage('`count()` has no argument #1. It takes: none');
+
+        $call?->arg(0);
     }
 }

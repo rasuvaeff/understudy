@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Runtime;
 
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
@@ -464,6 +465,13 @@ final class Runtime
         $signature = $state->blueprint->method($method);
         $tracksReferences = $signature?->hasReferenceParameters ?? false;
 
+        // Whatever the caller left out arrives as the sentinel. A real call
+        // gets the contract's own default put back, so that `tag('alpha')`
+        // and `tag('alpha', 1)` are still the same call in the log; a
+        // position the contract declares required has nothing to put back
+        // and raises the error PHP itself would have raised.
+        self::materializeOmittedArguments($signature, $method, $args);
+
         $invocation = new Invocation(
             method: $method,
             args: $tracksReferences ? self::detached($args) : $args,
@@ -471,6 +479,7 @@ final class Runtime
             double: $double,
             liveArgs: $args,
             sensitiveArguments: $signature?->sensitiveParameters ?? [],
+            parameterNames: $signature?->parameterNames ?? [],
         );
         $state->record($invocation);
 
@@ -539,7 +548,7 @@ final class Runtime
             $verdict = $sequence->offer($double, $invocation);
 
             if ($verdict === SequenceVerdict::OutOfTurn) {
-                throw VerificationFailed::of([self::outOfTurn($state, $sequence, $invocation)]);
+                throw VerificationFailed::of([self::outOfTurn($state, $sequence, $invocation, $double)]);
             }
 
             if ($verdict === SequenceVerdict::Advanced) {
@@ -625,7 +634,7 @@ final class Runtime
         if (!$matched && $verdict === SequenceVerdict::NotAStep) {
             \assert($sequence !== null);
 
-            throw VerificationFailed::of([self::unconfiguredUnderProtocol($state, $sequence, $invocation)]);
+            throw VerificationFailed::of([self::unconfiguredUnderProtocol($state, $sequence, $invocation, $double)]);
         }
 
         // A matched expectation means the call was expected, so strictness has
@@ -662,17 +671,19 @@ final class Runtime
      *
      * @return non-empty-string
      */
-    private static function describeProtocol(ArmedSequence $sequence, Invocation $invocation): string
+    private static function describeProtocol(ArmedSequence $sequence, Invocation $invocation, object $double): string
     {
-        return ArgumentFormatter::scope(static function () use ($sequence, $invocation): string {
+        return ArgumentFormatter::scope(static function () use ($sequence, $invocation, $double): string {
             $call = FailureReport::renderCall($invocation);
+            $elsewhere = $sequence->stepsOwnedElsewhere($double);
             $lines = [];
 
             foreach ($sequence->describe() as $index => $step) {
                 $lines[] = sprintf(
-                    '    %d. %s%s',
+                    '    %d. %s%s%s',
                     $index + 1,
                     $step,
+                    ($elsewhere[$index] ?? false) ? '   (on another understudy)' : '',
                     $index + 1 === $sequence->position() ? '   <- due here' : '',
                 );
             }
@@ -681,17 +692,26 @@ final class Runtime
         });
     }
 
-    private static function outOfTurn(DoubleState $state, ArmedSequence $sequence, Invocation $invocation): VerificationFailure
+    private static function outOfTurn(DoubleState $state, ArmedSequence $sequence, Invocation $invocation, object $double): VerificationFailure
     {
+        // The step due can read exactly like the call that arrived, because a
+        // protocol spanning two doubles renders every step by its call alone.
+        // Saying whose step it was is the difference between a report and a
+        // riddle.
+        $elsewhere = $sequence->pendingOwner() !== null && $sequence->pendingOwner() !== $double
+            ? ' on another understudy'
+            : '';
+
         return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
             kind: FailureKind::OutOfSequence,
             summary: sprintf(
-                "Understudy `%s` received a protocol call out of turn: step %d of %d was expected to be `%s`.\n\n%s",
+                "Understudy `%s` received a protocol call out of turn: step %d of %d was expected to be `%s`%s.\n\n%s",
                 $state->label(),
                 $sequence->position(),
                 $sequence->length(),
                 $sequence->pending()?->describe() ?? 'nothing — the protocol has run out',
-                self::describeProtocol($sequence, $invocation),
+                $elsewhere,
+                self::describeProtocol($sequence, $invocation, $double),
             ),
             double: $state->label(),
             expectation: $sequence->pending()?->describe(),
@@ -700,7 +720,7 @@ final class Runtime
         ));
     }
 
-    private static function unconfiguredUnderProtocol(DoubleState $state, ArmedSequence $sequence, Invocation $invocation): VerificationFailure
+    private static function unconfiguredUnderProtocol(DoubleState $state, ArmedSequence $sequence, Invocation $invocation, object $double): VerificationFailure
     {
         return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
             kind: FailureKind::OutOfSequence,
@@ -708,7 +728,7 @@ final class Runtime
                 "Understudy `%s` is under an armed protocol and received a call that is neither a step nor configured.\n\n%s\n\n"
                 . 'Say it may happen — when(fn () => $double->%s(...))->returns(...) — or make it a step.',
                 $state->label(),
-                self::describeProtocol($sequence, $invocation),
+                self::describeProtocol($sequence, $invocation, $double),
                 $invocation->method,
             ),
             double: $state->label(),
@@ -982,13 +1002,6 @@ final class Runtime
      * arrives during a real call, the specification closure leaked it — say so
      * instead of letting the code under test receive a matcher object.
      *
-     * The arity sentinel is the same kind of artifact: it exists so a
-     * *specification* may stop before the required parameters run out, and a
-     * real call it survives into is a call that omitted a required argument.
-     * That is answered with the `ArgumentCountError` PHP itself would have
-     * raised had the generated parameter kept its required arity — a double
-     * must not be more permissive about arity than the real implementation.
-     *
      * @param non-empty-string $method
      * @param list<mixed>      $args
      */
@@ -999,15 +1012,68 @@ final class Runtime
             if ($argument instanceof ArgumentMatcher) {
                 throw MatcherLeaked::intoRealCall($method, $position, $argument->describe());
             }
+        }
+    }
 
-            if ($argument instanceof Absent) {
+    /**
+     * Puts the contract's declared default back into every parameter the
+     * caller omitted.
+     *
+     * Every generated parameter defaults to the sentinel, optional ones
+     * included, so that a *specification* can leave a parameter unspelled
+     * without the default value standing in for it. A real call wants the
+     * opposite: the log has to show what the method received, so an omitted
+     * argument reads as the value the real implementation would have seen.
+     *
+     * The sentinel surviving on a position the contract declares required is
+     * a call that omitted a required argument, and it is answered with the
+     * `ArgumentCountError` PHP itself would have raised had the generated
+     * parameter kept its arity — a double must not be more permissive about
+     * arity than the real implementation.
+     *
+     * @param non-empty-string $method
+     * @param list<mixed>      $args
+     *
+     * @param-out list<mixed> $args
+     */
+    private static function materializeOmittedArguments(?MethodSignature $signature, string $method, array &$args): void
+    {
+        $omitted = [];
+
+        /** @var mixed $argument */
+        foreach ($args as $position => $argument) {
+            if (!$argument instanceof Absent) {
+                continue;
+            }
+
+            if ($signature === null || !$signature->isOptional($position)) {
                 throw new \ArgumentCountError(sprintf(
                     'Too few arguments to function %s(), argument #%d not passed',
                     $method,
                     $position + 1,
                 ));
             }
+
+            $omitted[] = $position;
         }
+
+        if ($omitted === []) {
+            return;
+        }
+
+        \assert($signature instanceof MethodSignature);
+
+        // `array_replace` rather than a rebuilt list: it keeps the reference
+        // elements a by-reference parameter is collected with — measured, not
+        // assumed — and a forwarded call must still be able to write back to
+        // the caller's variable.
+        $args = array_replace($args, array_combine(
+            $omitted,
+            array_map(
+                static fn(int $position): mixed => $signature->defaultAt($position),
+                $omitted,
+            ),
+        ));
     }
 
     /**

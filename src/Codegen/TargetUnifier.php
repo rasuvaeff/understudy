@@ -287,10 +287,22 @@ final class TargetUnifier
         $parameters = [];
         $arguments = [];
         $byReferenceParameters = false;
+        $parameterNames = [];
+        $optionalParameters = [];
 
         for ($position = 0; $position < $arity; $position++) {
             $parameter = self::unifyParameter($name, $declarations, $position);
             $parameters[] = $parameter['rendered'];
+            $parameterNames[$position] = $parameter['name'];
+
+            // Only the optional positions are listed, and each one carries the
+            // reflection of the parameter that declared the default rather than
+            // the value: `new Foo()` as a default builds one instance per call
+            // in PHP, and evaluating it once at generation time would hand
+            // every caller the same object.
+            if ($parameter['optional']) {
+                $optionalParameters[$position] = $parameter['default'];
+            }
 
             // Collected by name rather than with func_get_args(), which omits
             // parameters the caller left at their default: the call log must
@@ -336,6 +348,8 @@ final class TargetUnifier
             // public declaration makes the whole override public.
             visibility: self::visibilityOf($declarations),
             sensitiveParameters: self::sensitiveParameters($declarations),
+            parameterNames: $parameterNames,
+            optionalParameters: $optionalParameters,
         );
     }
 
@@ -921,7 +935,8 @@ final class TargetUnifier
      * @param non-empty-string              $name
      * @param non-empty-list<\ReflectionMethod> $declarations
      *
-     * @return array{rendered: non-empty-string, name: non-empty-string, byReference: bool}
+     * @return array{rendered: non-empty-string, name: non-empty-string, byReference: bool,
+     *               optional: bool, default: \ReflectionParameter|null}
      */
     private static function unifyParameter(string $name, array $declarations, int $position): array
     {
@@ -941,6 +956,7 @@ final class TargetUnifier
         // `renderDefault()` never returns it.
         $declaredDefault = '';
         $defaultDeclaredBy = null;
+        $defaultParameter = null;
 
         foreach ($declarations as $declaration) {
             $parameter = $declaration->getParameters()[$position] ?? null;
@@ -998,6 +1014,7 @@ final class TargetUnifier
                 if ($defaultDeclaredBy === null) {
                     $declaredDefault = $declared;
                     $defaultDeclaredBy = $declaration;
+                    $defaultParameter = $parameter;
                 } elseif ($declaredDefault !== $declared) {
                     throw UnsupportedTarget::signatureConflict(
                         $name,
@@ -1028,45 +1045,56 @@ final class TargetUnifier
                 // and under the same exemptions: `mixed`, `object` and an
                 // untyped parameter admit the sentinel already, and appending
                 // it to `object` would be the redundant union PHP refuses.
-                if (!$optional) {
-                    $types[self::ABSENT] = true;
-                }
+                //
+                // Every parameter carries it, optional ones included: the
+                // sentinel is how a specification says nothing about a
+                // parameter it did not spell, and a materialized default
+                // in its place would make the omission indistinguishable
+                // from spelling the default value.
+                $types[self::ABSENT] = true;
             }
 
             $type = implode('|', array_keys($types));
+
+            // A position optional only because another target does not
+            // declare it has no contract default to put back, so dispatch
+            // fills it with `null` and the type has to admit one. A parameter
+            // that declares its own default needs nothing here: an implicitly
+            // nullable one is reported nullable by Reflection already, and
+            // this branch is the only place the union is real — `mixed|null`
+            // is not a type PHP accepts at all.
+            if ($optional && $defaultParameter === null && !isset($types['null'])) {
+                $type .= '|null';
+            }
         }
 
-        // Keeping the contract's own default is what makes an omitted argument
-        // observable: `tag('alpha')` must log the same arguments as
-        // `tag('alpha', 1)`, or the two would verify as different calls.
+        // Every parameter defaults to the sentinel, so a specification may
+        // physically pass fewer arguments than the method declares — and, for
+        // an optional parameter, so that leaving it unspelled stays visible as
+        // such instead of arriving as the contract's default value.
         //
-        // Empty only when no target declares one — the parameter is optional
-        // here because another target does not declare it at all, so there is
-        // no contract default to preserve. Conflicting defaults never reach
-        // this line; they reject the target above.
-        $default = $declaredDefault === '' ? 'null' : $declaredDefault;
-
-        if ($optional && $default === 'null' && $type !== '' && !str_contains($type, 'null')) {
-            // `= null` on a non-nullable type is an implicitly nullable
-            // parameter, deprecated since 8.4 — widen the type instead.
-            $type .= '|null';
-        }
-
-        // A required parameter gets the sentinel as its default, so a
-        // specification ending with `Arg::rest()` can stop early without PHP
-        // refusing the call on arity. Dispatch turns a sentinel that survives
-        // a real call back into the `ArgumentCountError` PHP would have
-        // raised, so the double is no more permissive than the contract.
+        // Keeping an omitted argument observable is still the rule for a real
+        // call: `tag('alpha')` must log the same arguments as `tag('alpha', 1)`,
+        // or the two would verify as different calls. Dispatch materializes the
+        // declared default for a sentinel that survives into one, and raises
+        // the `ArgumentCountError` PHP would have raised where the contract
+        // declares no default at all.
         $rendered = trim(sprintf(
             '%s %s$%s = %s',
             $type,
             $byReference === true ? '&' : '',
             $parameterName,
-            $optional ? $default : self::ABSENT_DEFAULT,
+            self::ABSENT_DEFAULT,
         ));
         \assert($rendered !== '');
 
-        return ['rendered' => $rendered, 'name' => $parameterName, 'byReference' => $byReference === true];
+        return [
+            'rendered' => $rendered,
+            'name' => $parameterName,
+            'byReference' => $byReference === true,
+            'optional' => $optional,
+            'default' => $defaultParameter,
+        ];
     }
 
     /**

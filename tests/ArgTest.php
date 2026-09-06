@@ -209,6 +209,26 @@ final class ArgTest
         yield 'containing matches list membership' => [Arg::containing([2]), [1, 2, 3], true];
         yield 'containing rejects an absent element' => [Arg::containing([9]), [1, 2, 3], false];
         yield 'containing rejects a non-array' => [Arg::containing([]), 'nope', false];
+        // An entry may be a matcher: describing part of a payload without
+        // knowing the value is the whole point, and comparing the entry by
+        // identity would make the specification silently unmatchable.
+        yield 'containing reads a matcher in a map entry' => [
+            Arg::containing(['a' => Arg::int(min: 1)]),
+            ['a' => 5, 'b' => 2],
+            true,
+        ];
+        yield 'containing rejects a map entry the matcher refuses' => [
+            Arg::containing(['a' => Arg::int(min: 10)]),
+            ['a' => 5],
+            false,
+        ];
+        yield 'containing reads a matcher in a list entry' => [Arg::containing([Arg::string()]), [1, 'a'], true];
+        yield 'containing rejects a list without a match' => [Arg::containing([Arg::string()]), [1, 2], false];
+        yield 'containing reads a nested matcher' => [
+            Arg::containing(['user' => Arg::containing(['id' => Arg::int()])]),
+            ['user' => ['id' => 7, 'name' => 'a']],
+            true,
+        ];
 
         yield 'count honours minimum' => [Arg::count(minimum: 2), [1], false];
         yield 'count honours maximum' => [Arg::count(maximum: 2), [1, 2, 3], false];
@@ -268,6 +288,52 @@ final class ArgTest
         );
 
         Arg::allOf(Arg::string(), Arg::remaining());
+    }
+
+    /**
+     * A captor inside a combinator matched and recorded nothing: the
+     * specification then behaved correctly in every observable way except the
+     * one it was written for, and the only way to find out was an assertion on
+     * an empty captor further down the test.
+     */
+    public function aCaptorCannotBeAnOperand(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            "A captor records the argument it stands for, and `Arg::allOf()` builds one matcher out "
+            . "of others, so a captor inside it would match without ever recording.\n"
+            . 'Put the captor in the argument position itself, or read the calls with '
+            . 'Understudy::calls().',
+        );
+
+        Arg::allOf(Arg::instanceOf(Book::class), Arg::captor()->capture());
+    }
+
+    public function aCaptorCannotBeADisjunctionOperandEither(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)
+            ->withMessageContaining('`Arg::anyOf()` builds one matcher out of others');
+
+        Arg::anyOf(Arg::captor()->capture(), 5);
+    }
+
+    public function aCaptorCannotBeNegated(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)
+            ->withMessageContaining('`Arg::not()` builds one matcher out of others');
+
+        Arg::not(Arg::captor()->capture());
+    }
+
+    /**
+     * Nested, because `containing(['user' => ['id' => $ids->capture()]])`
+     * reads exactly like something that would record.
+     */
+    public function aCaptorCannotSitInsideContaining(): void
+    {
+        Expect::exception(InvalidCallSpecification::class)
+            ->withMessageContaining('`Arg::containing()` builds one matcher out of others');
+
+        Arg::containing(['user' => ['id' => Arg::captor()->capture()]]);
     }
 
     public function anEmptyTailMatcherCannotBeAnOperandEither(): void

@@ -12,6 +12,7 @@ use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
+use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
@@ -319,6 +320,20 @@ final class UnderstudyTest
         $repository->count();
     }
 
+    /**
+     * The mode reads as "a strict double of this", so it has to be usable as
+     * an expression: a container definition built from
+     * `Understudy::strict(Understudy::for(X::class))` used to store `null` and
+     * fail three steps away from the cause.
+     */
+    public function strictAndLabelAnswerWithTheDoubleTheyConfigured(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        Assert::true(Understudy::strict($repository) === $repository);
+        Assert::true(Understudy::label($repository, 'primary') === $repository);
+    }
+
     public function strictRefusalShowsTheCallAndWhatDidNotAcceptIt(): void
     {
         // Naming only the method sent the reader back to a test that did
@@ -575,6 +590,28 @@ final class UnderstudyTest
         );
 
         Understudy::when(static fn(): bool => true);
+    }
+
+    /**
+     * The library's own refusals are already about the specification — a
+     * matcher built with an impossible range, a captor inside a combinator, a
+     * double the test retired. Wrapping one in "the closure threw before it
+     * reached an understudy" buried the sentence that says what to change.
+     */
+    public function anUnderstudyErrorRaisedInsideTheClosureIsNotRewrapped(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        try {
+            Understudy::when(static fn(): ?Book => $repository->find(Arg::int(min: 5, max: 1)));
+        } catch (InvalidSpecificationArgument $refusal) {
+            Assert::string($refusal->getMessage())->contains('describes an empty range');
+            Assert::false(str_contains($refusal->getMessage(), 'threw before it reached an understudy'));
+
+            return;
+        }
+
+        Assert::fail('the impossible range was not refused');
     }
 
     public function specificationClosureFailureKeepsTheOriginalCause(): void

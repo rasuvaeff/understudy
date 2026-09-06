@@ -136,7 +136,7 @@ final class TargetUnifierTest
 
     private const string ABSENT = '\\' . Absent::class;
 
-    /** The default every required parameter of an override now carries. */
+    /** The default every parameter of an override now carries. */
     private const string OMITTED = ' = ' . self::ABSENT . '::Argument';
 
     // --- Rendered signatures -------------------------------------------------
@@ -161,8 +161,11 @@ final class TargetUnifierTest
         // The matcher goes after the contract's own branches, and `null` is
         // part of the type rather than an implicit nullable default.
         yield 'nullable expands then widens' => ['nullable', "string|null|{$m}|{$absent} \$a{$omitted}"];
-        yield 'a declared default is preserved' => ['withDefault', "int|{$m} \$a = 7"];
-        yield 'a null default renders lowercase' => ['withNullDefault', "int|null|{$m} \$a = null"];
+        // An optional parameter carries the sentinel like every other one:
+        // the contract's default is put back by dispatch, not by the
+        // signature, so that a specification can leave it unspelled.
+        yield 'a declared default gives way to the sentinel' => ['withDefault', "int|{$m}|{$absent} \$a{$omitted}"];
+        yield 'a null default keeps null in the type' => ['withNullDefault', "int|null|{$m}|{$absent} \$a{$omitted}"];
         yield 'variadic carries no default' => ['variadic', "string|{$m} ...\$rest"];
         yield 'variadic follows a fixed parameter' => [
             'scalarThenVariadic',
@@ -339,7 +342,7 @@ final class TargetUnifierTest
         Assert::same(
             $signature->parameters,
             'int|' . self::MATCHER . '|' . self::ABSENT . ' $a' . self::OMITTED
-                . ', int|' . self::MATCHER . '|null $b = null',
+                . ', int|' . self::MATCHER . '|' . self::ABSENT . '|null $b' . self::OMITTED,
         );
     }
 
@@ -485,11 +488,11 @@ final class TargetUnifierTest
      */
     public function aDefaultDeclaredOnlyOnceIsKept(): void
     {
-        Assert::string($this->tagParameters(TaggerFive::class, TaggerRequired::class))
-            ->contains('$weight = 5');
-
-        Assert::string($this->tagParameters(TaggerFive::class, TaggerFive::class))
-            ->contains('$weight = 5');
+        // Kept as the contract's, not as the signature's: the rendered
+        // parameter carries the sentinel now, and the value it stands for is
+        // what dispatch puts back into an omitted argument.
+        Assert::same($this->tagSignature(TaggerFive::class, TaggerRequired::class)->defaultAt(1), 5);
+        Assert::same($this->tagSignature(TaggerFive::class, TaggerFive::class)->defaultAt(1), 5);
     }
 
     /**
@@ -1042,45 +1045,36 @@ final class TargetUnifierTest
         );
     }
 
-    // --- Constant defaults render as their declared form ---------------------
+    // --- Constant defaults are materialized from the declaring class ---------
 
     /**
-     * The value alone cannot tell `= \\Cfg::LIMIT` from `= 5`, so the rendered
-     * SOURCE is asserted: a constant default keeps its name, resolved through
-     * the class that declares it — `SELF`/`PARENT` (case included) never
-     * follow the double into a class that never had the constant.
+     * The value alone cannot tell `= \\Cfg::LIMIT` from `= 5`, and the double
+     * must answer with the contract's own — `SELF`/`PARENT` (case included)
+     * never resolving against the generated class, which never had the
+     * constant. The generated signature carries the sentinel, so what is
+     * asserted is the value dispatch puts back into an omitted argument.
      */
     #[DataProvider('constantDefaultProvider')]
-    public function rendersAConstantDefaultByItsDeclaredName(string $method, string $expected): void
+    public function materializesAConstantDefaultFromTheDeclaringClass(string $method, mixed $expected): void
     {
         $signature = TargetUnifier::unify([new \ReflectionClass(ConstantDefaults::class)])[$method];
 
-        Assert::same($signature->parameters, $expected);
+        Assert::true($signature->isOptional(0));
+        Assert::same($signature->defaultAt(0), $expected);
     }
 
     /**
-     * @return iterable<string, array{string, string}>
+     * @return iterable<string, array{string, mixed}>
      */
     public static function constantDefaultProvider(): iterable
     {
-        $m = self::MATCHER;
-
-        yield "another class's constant" => [
-            'viaClass',
-            "int|{$m} \$a = \\" . KnownConstants::class . '::LIMIT',
-        ];
-        yield 'SELF resolves to the declaring class, whatever the case' => [
-            'viaSelfUpper',
-            "int|{$m} \$a = \\" . ConstantDefaults::class . '::MINE',
-        ];
+        yield "another class's constant" => ['viaClass', KnownConstants::LIMIT];
+        yield 'SELF resolves to the declaring class, whatever the case' => ['viaSelfUpper', ConstantDefaults::MINE];
         yield 'PARENT resolves to the parent class, not the declaring one' => [
             'viaParentUpper',
-            "int|{$m} \$a = \\" . ConstantDefaultBase::class . '::FROM_PARENT',
+            ConstantDefaultBase::FROM_PARENT,
         ];
-        yield 'an interface constant' => [
-            'viaInterfaceConstant',
-            "string|{$m} \$a = \\" . ConstantsInterface::class . '::MODE',
-        ];
+        yield 'an interface constant' => ['viaInterfaceConstant', ConstantsInterface::MODE];
     }
 
     // --- Reference detection -------------------------------------------------
@@ -1151,13 +1145,14 @@ final class TargetUnifierTest
         ));
     }
 
-    private function tagParameters(string ...$contracts): string
+    private function tagSignature(string ...$contracts): MethodSignature
     {
         $signature = $this->unify(...$contracts)['tag'] ?? null;
 
         Assert::instanceOf($signature, MethodSignature::class);
+        \assert($signature instanceof MethodSignature);
 
-        return $signature instanceof MethodSignature ? $signature->parameters : '';
+        return $signature;
     }
 
     private function showcase(string $method): MethodSignature

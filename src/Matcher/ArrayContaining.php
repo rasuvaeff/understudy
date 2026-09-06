@@ -11,7 +11,10 @@ use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
  * carries — the point being to pin the part of a payload a test cares about
  * without restating the rest.
  *
- * A list is matched by value, a map by key and value.
+ * A list is matched by value, a map by key and value. An entry may itself be a
+ * matcher: `containing(['id' => Arg::int(min: 1)])` is the way to say
+ * something about part of a payload without knowing the value, and comparing
+ * it by identity instead would silently never match.
  *
  * @internal
  */
@@ -32,7 +35,7 @@ final readonly class ArrayContaining implements ArgumentMatcher
         if (array_is_list($this->expected)) {
             /** @var mixed $value */
             foreach ($this->expected as $value) {
-                if (!in_array($value, $argument, strict: true)) {
+                if (!self::containsAMatch($argument, $value)) {
                     return false;
                 }
             }
@@ -42,7 +45,7 @@ final readonly class ArrayContaining implements ArgumentMatcher
 
         /** @var mixed $value */
         foreach ($this->expected as $key => $value) {
-            if (!array_key_exists($key, $argument) || $argument[$key] !== $value) {
+            if (!array_key_exists($key, $argument) || !Operand::matches($value, $argument[$key])) {
                 return false;
             }
         }
@@ -54,5 +57,20 @@ final readonly class ArrayContaining implements ArgumentMatcher
     public function describe(): string
     {
         return 'containing(' . ArgumentFormatter::format($this->expected) . ')';
+    }
+
+    /**
+     * @param array<array-key, mixed> $argument
+     */
+    private static function containsAMatch(array $argument, mixed $expected): bool
+    {
+        /** @var mixed $value */
+        foreach ($argument as $value) {
+            if (Operand::matches($expected, $value)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
