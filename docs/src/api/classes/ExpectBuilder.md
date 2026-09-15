@@ -9,7 +9,7 @@ description: "Configures a call the code under test is expected to make."
 
 `Rasuvaeff\Understudy\ExpectBuilder`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/ExpectBuilder.php#L19) — **Version:** v0.9.0-10-g74f1dd3
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/ExpectBuilder.php#L19) — **Version:** v0.10.0-2-g3cdc6e0
 
 **Extends:** [`WhenBuilder`](/api/classes/WhenBuilder)
 

@@ -9,7 +9,7 @@ description: "Entry point registered through `extra.psalm.pluginClass`, so `vend
 
 `Rasuvaeff\Understudy\Psalm\Plugin`
 
-**Class** — **Package:** [rasuvaeff/understudy-psalm](https://github.com/rasuvaeff/understudy-psalm) — [Source](https://github.com/rasuvaeff/understudy-psalm/blob/f4c7afef1f2a8da96ff051008fb1131a0d7739f8/src/Psalm/Plugin.php#L18) — **Version:** v0.8.2
+**Class** — **Package:** [rasuvaeff/understudy-psalm](https://github.com/rasuvaeff/understudy-psalm) — [Source](https://github.com/rasuvaeff/understudy-psalm/blob/adfcb7751dd3bc241d0cee864a6e3c47d19aca1a/src/Psalm/Plugin.php#L18) — **Version:** v0.8.3
 
 **Implements:** `Psalm\Plugin\PluginEntryPointInterface`, `Psalm\Plugin\PluginInterface`
 
