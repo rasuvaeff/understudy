@@ -57,6 +57,16 @@ final class Runtime
     private static ?\WeakMap $forgotten = null;
 
     /**
+     * The forgotten doubles a closing `scope()` dropped, as opposed to a
+     * `reset()`. Only the failure message tells them apart: "created before a
+     * reset()" sends the reader looking for a reset() they never wrote when
+     * what ended the double was the scope it was built in.
+     *
+     * @var \WeakMap<object, true>|null
+     */
+    private static ?\WeakMap $droppedByScope = null;
+
+    /**
      * Doubles retired on purpose through `Understudy::forget()`. The
      * distinction is for the failure message only: both a reset and a
      * deliberate retirement make the double unusable, but telling a reader
@@ -84,6 +94,70 @@ final class Runtime
      * @var array<int, RuntimeContext>
      */
     private static array $live = [];
+
+    /**
+     * The calls a specification closure made while it was re-run in probe
+     * mode, or `null` outside one. See {@see probe()}.
+     *
+     * @var list<array{object, non-empty-string}>|null
+     */
+    private static ?array $probed = null;
+
+    /**
+     * Re-runs a specification closure with every double call answered instead
+     * of signalled, and reports the calls it made.
+     *
+     * The recording proper throws on the FIRST dispatch — that is what lets a
+     * `: ?Book` or a `: never` method hand its name back without producing a
+     * value — but the first dispatch is the innermost call, so a closure like
+     * `fn () => $r->find($r->count())` was abandoned before `find()` was ever
+     * seen and silently specified `count()`. Here the closure runs again, each
+     * call answered with the mode's type-safe default out of a throwaway
+     * context, and the caller refuses the specification when more than one
+     * call turns up.
+     *
+     * Everything about this pass is advisory. A default may not exist (a
+     * `: never` method, a return type nothing can stand in for) and the code
+     * after a call may not survive a default (`->title` on the `null` a
+     * `?Book` answers with): any throwable ends the probe as inconclusive and
+     * the specification the first pass recorded stands, exactly as before.
+     * Nothing the probe creates is registered anywhere that verification,
+     * accounting or `idle()` can see.
+     *
+     * @return list<array{object, non-empty-string}>|null the calls, in the
+     *         order they were made; `null` when the probe could not finish
+     */
+    public static function probe(callable $call): ?array
+    {
+        // Called from inside the recording that the first pass opened, so the
+        // dispatcher already routes every call here; nothing to open or close.
+        \assert(self::current()->isRecording());
+        self::$probed = [];
+
+        try {
+            $call();
+
+            return self::$probed;
+        } catch (\Throwable) {
+            return null;
+        } finally {
+            self::$probed = null;
+        }
+    }
+
+    /**
+     * The probe's answer to one call: recorded, then the type-safe default the
+     * mode would give, built in a context nobody else holds.
+     *
+     * @param non-empty-string $method
+     */
+    private static function probeAnswer(object $double, string $method): mixed
+    {
+        self::$probed[] = [$double, $method];
+        $signature = DoubleFactory::blueprintOfGenerated($double::class)?->method($method);
+
+        return TypeDefaultResolver::forSignature('probe', $signature, $method, new RuntimeContext(), nested: true, double: $double);
+    }
 
     public static function current(): RuntimeContext
     {
@@ -126,7 +200,7 @@ final class Runtime
             $context = array_pop(self::$main);
 
             if ($context instanceof RuntimeContext) {
-                self::retire($context);
+                self::retire($context, byScope: true);
             }
 
             return;
@@ -138,7 +212,7 @@ final class Runtime
         $context = array_pop($stack);
 
         if ($context instanceof RuntimeContext) {
-            self::retire($context);
+            self::retire($context, byScope: true);
         }
 
         $fibers->offsetSet($fiber, $stack);
@@ -325,6 +399,34 @@ final class Runtime
     }
 
     /**
+     * Whether a double was forgotten by the `scope()` it was created in
+     * closing, rather than by a `reset()`.
+     */
+    public static function isDroppedByScope(object $double): bool
+    {
+        return self::$droppedByScope?->offsetExists($double) ?? false;
+    }
+
+    /**
+     * The refusal for a call or a question that reached a forgotten double,
+     * worded by what forgot it: `forget()`, a closing scope, or a reset.
+     *
+     * @param non-empty-string $member
+     */
+    public static function forgottenDouble(object $double, string $member): ForgottenDouble
+    {
+        if (self::isRetiredOnPurpose($double)) {
+            return ForgottenDouble::onPurpose($member);
+        }
+
+        if (self::isDroppedByScope($double)) {
+            return ForgottenDouble::afterScope($member);
+        }
+
+        return ForgottenDouble::afterReset($member);
+    }
+
+    /**
      * Whether a double was retired on purpose through `Understudy::forget()`.
      */
     public static function isRetiredOnPurpose(object $double): bool
@@ -391,6 +493,20 @@ final class Runtime
     /**
      * @return \WeakMap<object, true>
      */
+    private static function droppedByScope(): \WeakMap
+    {
+        if (self::$droppedByScope === null) {
+            /** @var \WeakMap<object, true> $dropped */
+            $dropped = new \WeakMap();
+            self::$droppedByScope = $dropped;
+        }
+
+        return self::$droppedByScope;
+    }
+
+    /**
+     * @return \WeakMap<object, true>
+     */
     private static function forgotten(): \WeakMap
     {
         if (self::$forgotten === null) {
@@ -429,6 +545,10 @@ final class Runtime
         $current = self::current();
 
         if ($current->isRecording()) {
+            if (self::$probed !== null) {
+                return self::probeAnswer($double, $method);
+            }
+
             throw new InvocationSignal($double, $method, $args);
         }
 
@@ -451,11 +571,7 @@ final class Runtime
             // message differs for a double retired through `Understudy::forget()`:
             // sending the reader looking for a stray reset() they never wrote
             // is worse than the plain truth.
-            if (self::isRetiredOnPurpose($double)) {
-                throw ForgottenDouble::onPurpose($method);
-            }
-
-            throw ForgottenDouble::afterReset($method);
+            throw self::forgottenDouble($double, $method);
         }
 
         // A by-reference argument is live: whatever answers the call can write
@@ -866,6 +982,15 @@ final class Runtime
         /** @var mixed $value */
         $value = self::dispatch($double, $method, $args);
 
+        if (self::$probed !== null) {
+            // A probe answers with a throwaway: the per-method slot is state
+            // the test can observe through the reference it already holds.
+            $slot = new ReferenceSlot();
+            $slot->value = $value;
+
+            return $slot;
+        }
+
         $context = self::ownerOf($double) ?? self::current();
         $state = $context->stateOf($double);
 
@@ -1175,7 +1300,7 @@ final class Runtime
      * live until collection and the map they sit in keeps growing. Eager
      * removal here is what keeps that map the size of one test.
      */
-    private static function retire(RuntimeContext $context): void
+    private static function retire(RuntimeContext $context, bool $byScope = false): void
     {
         self::unremember($context);
 
@@ -1193,6 +1318,10 @@ final class Runtime
         foreach ($context->allDoubles() as $double) {
             self::forgotten()[$double] = true;
             unset(self::$owners[$double]);
+
+            if ($byScope) {
+                self::droppedByScope()[$double] = true;
+            }
         }
     }
 }

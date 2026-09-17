@@ -76,6 +76,27 @@ final class InvalidSpecificationArgument extends \InvalidArgumentException imple
     }
 
     /**
+     * A `returns()` value the declared return type cannot hold. Refused where
+     * it was written: left to the engine it surfaced as a `TypeError` naming
+     * the generated class, from wherever in the code under test the call was.
+     *
+     * @param non-empty-string $label
+     * @param non-empty-string $method
+     * @param non-empty-string $declared the return type as the contract declares it
+     * @param non-empty-string $given    the value's type, as `get_debug_type()` reports it
+     */
+    public static function returnValueOfWrongType(string $label, string $method, string $declared, string $given): self
+    {
+        return new self(sprintf(
+            'Understudy `%s`: returns() was given %s, but `%s()` is declared `: %s` and cannot answer with it.',
+            $label,
+            $given,
+            $method,
+            $declared,
+        ));
+    }
+
+    /**
      * `Arg::instanceOf()` naming a class or interface that is not loadable —
      * a matcher nothing can ever satisfy, which would otherwise report itself
      * only as an expectation that was never met.

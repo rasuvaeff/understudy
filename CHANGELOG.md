@@ -1,5 +1,51 @@
 # Changelog
 
+## Unreleased
+
+- **Fixed.** An interface extending `Throwable`, `DateTimeInterface`,
+  `UnitEnum`/`BackedEnum` or `Traversable` (without `Iterator`/
+  `IteratorAggregate`), and an interface declaring `__construct`, are refused
+  with `UnsupportedTarget` before generation. The guard compared the
+  contract's own name, so `Psr\Http\Client\ClientExceptionInterface` and
+  its kin walked past it into `eval()` and died there as a fatal error no
+  test, adapter or `try` can catch — ending the whole suite run. The
+  `Throwable` advice no longer points at doubling an exception class, which
+  is refused too; construct a real exception for `throws()`. (#133)
+- **Fixed.** A specification closure that calls one double method while
+  evaluating the arguments of another — `when(fn () => $r->find($r->count()))`
+  — is refused with `InvalidCallSpecification` naming both calls. The
+  recording ends on the first dispatch, which is the innermost call, so the
+  inner call was specified silently with the outer call's `returns()` and the
+  outer one not at all. The closure is now re-run once with calls answered
+  instead of signalled to see past the first; where that probe cannot finish
+  (a `: never` method, a return type with no default, code after the call that
+  does not survive a default) the specification stands as before. (#134)
+- **Fixed.** `returns()` is checked against the declared return type where it
+  is written: a value on a `: void` method (`returns(null)` stays allowed as
+  the idiom for "answer nothing"), anything on a `: never` method, and a value
+  the type cannot hold — `null` where the type is not nullable, an array or an
+  object where a scalar is declared, an object of the wrong class — raise
+  `InvalidCallSpecification`/`InvalidSpecificationArgument` naming the double,
+  instead of a `TypeError` naming the generated class from inside the code
+  under test. No stricter than the engine: a generated method is not under
+  `strict_types`, so `returns('5')` on `: int` still answers `5`.
+  `WhenBuilder::__construct()` gained an optional trailing parameter. (#135)
+- **Changed.** The second and later unlabelled doubles of one contract in a
+  context get a numbered default label — `Repo`, `Repo#2` — so a report says
+  which one; the first keeps the bare name and an explicit `label()` still
+  wins. (#137)
+- **Changed.** `ForgottenDouble` after a `scope()` closed says so, instead of
+  blaming a `reset()` the test never wrote. (#138)
+- **Documentation.** Written down rather than changed: a catch-all stub
+  registered after a specific one is not diagnosed (unreachable is not
+  uncalled, so `strictStubs` stays quiet — register the broad stub first,
+  #136); the depth-1 default double is a fresh instance per call; a class
+  double is never a partial double of an abstract class; a `readonly`
+  promoted property of a class target stays uninitialized where a plain typed
+  one starts empty; `MatcherLeaked` is raised only by a double, a matcher
+  handed to a real object is out of the engine's sight; `Arg::rest()` is the
+  way to stop spelling a wide signature.
+
 ## 0.10.0 — 2026-09-06
 
 The wave the 1.0 candidate turned out to still need: ten defects found by

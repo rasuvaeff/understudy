@@ -1338,8 +1338,8 @@ final class LedgerTest
 
         Expect::exception(ForgottenDouble::class)->withMessage(
             "This understudy is no longer known to Understudy, but `count()` was called on it.\n"
-            . 'It was created before a reset(); create doubles inside the test that uses them '
-            . 'rather than sharing one across tests.',
+            . 'It was created inside a scope() that has since closed, and a scope drops its doubles when '
+            . 'it ends; build the double in the scope that will use it, or outside the scope altogether.',
         );
 
         $escaped->count();
