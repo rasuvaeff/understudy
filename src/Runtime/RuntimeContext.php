@@ -91,6 +91,28 @@ final class RuntimeContext
     public function register(object $double, DoubleState $state): void
     {
         $this->doubles[$double] = $state;
+        $this->numberDefaultLabel($state);
+    }
+
+    /**
+     * Gives the second and later doubles of one contract a numbered default
+     * label — `Repo#2` — so a report naming one of them can be read without
+     * relabelling. The first keeps the bare name: with one double per contract,
+     * the overwhelmingly common shape, nothing changes.
+     *
+     * @var array<string, int>
+     */
+    private array $labelCounts = [];
+
+    private function numberDefaultLabel(DoubleState $state): void
+    {
+        $name = $state->blueprint->displayName();
+        $count = ($this->labelCounts[$name] ?? 0) + 1;
+        $this->labelCounts[$name] = $count;
+
+        if ($count > 1) {
+            $state->setDefaultLabel($name . '#' . $count);
+        }
     }
 
     public function knows(object $double): bool

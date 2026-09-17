@@ -71,7 +71,7 @@ final class FileWrapperTest
         FileWrapper::install([['namespace' => $namespace, 'class' => 'OpenedNeighbour']]);
         FileWrapper::install([['namespace' => $namespace, 'class' => 'SealedNeighbour']]);
 
-        $read = $this->read(\dirname(__DIR__) . '/Fixture/Bypass/Neighbours.php');
+        $read = $this->read(__DIR__ . '/../Fixture/Bypass/Neighbours.php');
 
         // By declaration, not by the phrase: the file's own docblock says
         // "final classes", and a substring assertion would read that as one.
@@ -90,7 +90,7 @@ final class FileWrapperTest
         FileWrapper::install(null);
         FileWrapper::install([['namespace' => 'Nowhere', 'class' => 'Nothing']]);
 
-        $read = $this->read(\dirname(__DIR__) . '/Fixture/Bypass/Neighbours.php');
+        $read = $this->read(__DIR__ . '/../Fixture/Bypass/Neighbours.php');
 
         Assert::false(str_contains($read, 'final class OpenedNeighbour'));
         Assert::false(str_contains($read, 'final class SealedNeighbour'));
@@ -105,7 +105,7 @@ final class FileWrapperTest
         FileWrapper::install([['namespace' => 'Nowhere', 'class' => 'Nothing']]);
         FileWrapper::install(null);
 
-        $read = $this->read(\dirname(__DIR__) . '/Fixture/Bypass/Neighbours.php');
+        $read = $this->read(__DIR__ . '/../Fixture/Bypass/Neighbours.php');
 
         Assert::false(str_contains($read, 'final class OpenedNeighbour'));
         Assert::false(str_contains($read, 'final class SealedNeighbour'));
@@ -124,7 +124,7 @@ final class FileWrapperTest
     {
         FileWrapper::targetOnly([['namespace' => 'Rasuvaeff\\Understudy\\Tests\\Fixture\\Bypass', 'class' => 'SealedGate']]);
 
-        $read = $this->read(\dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php');
+        $read = $this->read(__DIR__ . '/../Fixture/Bypass/SealedGate.php');
 
         Assert::string($read)->contains('class SealedGate');
         Assert::false(str_contains($read, 'final class SealedGate'));
@@ -134,7 +134,7 @@ final class FileWrapperTest
     {
         FileWrapper::targetOnly([['namespace' => 'Other', 'class' => 'Gate']]);
 
-        $read = $this->read(\dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php');
+        $read = $this->read(__DIR__ . '/../Fixture/Bypass/SealedGate.php');
 
         Assert::string($read)->contains('final class SealedGate');
     }
@@ -170,7 +170,7 @@ final class FileWrapperTest
             ['namespace' => $namespace, 'class' => 'SealedNeighbour'],
         ]);
 
-        $read = $this->read(\dirname(__DIR__) . '/Fixture/Bypass/Neighbours.php');
+        $read = $this->read(__DIR__ . '/../Fixture/Bypass/Neighbours.php');
 
         Assert::false(str_contains($read, 'final class OpenedNeighbour'));
         Assert::false(str_contains($read, 'final class SealedNeighbour'));
@@ -183,7 +183,7 @@ final class FileWrapperTest
      */
     public function aRegisteredWrapperTransformsWhatPhpItselfReads(): void
     {
-        $path = \dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php';
+        $path = __DIR__ . '/../Fixture/Bypass/SealedGate.php';
 
         Assert::string((string) file_get_contents($path))->contains('final class SealedGate');
 
@@ -205,7 +205,7 @@ final class FileWrapperTest
      */
     public function theWrapperIsStillInPlaceAfterADelegatedOperation(): void
     {
-        $path = \dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php';
+        $path = __DIR__ . '/../Fixture/Bypass/SealedGate.php';
 
         FileWrapper::install([[
             'namespace' => 'Rasuvaeff\\Understudy\\Tests\\Fixture\\Bypass',
@@ -223,7 +223,7 @@ final class FileWrapperTest
     {
         FileWrapper::targetOnly(null);
 
-        $read = $this->read(\dirname(__DIR__) . '/Fixture/Bypass/Uppercase.PHP');
+        $read = $this->read(__DIR__ . '/../Fixture/Bypass/Uppercase.PHP');
 
         Assert::false(str_contains($read, 'final class Uppercase'));
         Assert::string($read)->contains('class Uppercase');
@@ -237,7 +237,7 @@ final class FileWrapperTest
     {
         FileWrapper::targetOnly(null);
 
-        Assert::string($this->read(\dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php', 'r+'))
+        Assert::string($this->read(__DIR__ . '/../Fixture/Bypass/SealedGate.php', 'r+'))
             ->contains('final class SealedGate');
     }
 
@@ -273,7 +273,7 @@ final class FileWrapperTest
      */
     public function readingThroughAnUninstalledWrapperDoesNotInstallIt(): void
     {
-        $path = \dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php';
+        $path = __DIR__ . '/../Fixture/Bypass/SealedGate.php';
 
         FileWrapper::targetOnly(null);
         $this->read($path);
@@ -289,7 +289,7 @@ final class FileWrapperTest
         FileWrapper::targetOnly([]);
         $wrapper = new FileWrapper();
         $opened = null;
-        $path = \dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php';
+        $path = __DIR__ . '/../Fixture/Bypass/SealedGate.php';
 
         Assert::true($wrapper->stream_open($path, 'r', STREAM_USE_PATH, $opened));
         Assert::same($opened, $path);
@@ -361,7 +361,7 @@ final class FileWrapperTest
     public function statAnswersForTheRealPath(): void
     {
         $wrapper = new FileWrapper();
-        $path = \dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php';
+        $path = __DIR__ . '/../Fixture/Bypass/SealedGate.php';
 
         $stat = $wrapper->url_stat($path, 0);
 
@@ -377,7 +377,7 @@ final class FileWrapperTest
     public function statFollowsOrDoesNotFollowALinkAsAsked(): void
     {
         $wrapper = new FileWrapper();
-        $target = \dirname(__DIR__) . '/Fixture/Bypass/SealedGate.php';
+        $target = __DIR__ . '/../Fixture/Bypass/SealedGate.php';
         $link = sys_get_temp_dir() . '/understudy-link-' . getmypid() . '.php';
 
         if (file_exists($link)) {
@@ -413,7 +413,7 @@ final class FileWrapperTest
     public function directoriesAreListedThroughTheNativeWrapper(): void
     {
         $wrapper = new FileWrapper();
-        $directory = \dirname(__DIR__) . '/Fixture/Bypass';
+        $directory = __DIR__ . '/../Fixture/Bypass';
 
         Assert::true($wrapper->dir_opendir($directory));
 

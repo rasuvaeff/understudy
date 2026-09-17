@@ -19,6 +19,8 @@ use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Expectation\Expectation;
+use Rasuvaeff\Understudy\Expectation\ReturnContract;
+use Rasuvaeff\Understudy\ExpectBuilder;
 use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Outcome;
@@ -32,6 +34,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
 use Rasuvaeff\Understudy\Tests\Fixture\HashedContract;
 use Rasuvaeff\Understudy\Tests\Fixture\HashedContractToo;
+use Rasuvaeff\Understudy\Tests\Fixture\Librarian;
 use Rasuvaeff\Understudy\Tests\Fixture\Named;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectedPair;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\IntersectionAlpha;
@@ -48,9 +51,11 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterInt;
 use Rasuvaeff\Understudy\Tests\Fixture\VariadicSink;
 use Rasuvaeff\Understudy\Tests\Support\GoldenMessage;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\WhenBuilder;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
 use Testo\Codecov\Covers;
+use Testo\Data\DataProvider;
 use Testo\Expect;
 use Testo\Lifecycle\AfterTest;
 use Testo\Test;
@@ -61,6 +66,9 @@ use function Rasuvaeff\Understudy\when;
 
 #[Test]
 #[Covers(Understudy::class)]
+#[Covers(WhenBuilder::class)]
+#[Covers(ExpectBuilder::class)]
+#[Covers(ReturnContract::class)]
 #[Covers(Runtime::class)]
 #[Covers(RuntimeContext::class)]
 #[Covers(DoubleState::class)]
@@ -581,6 +589,94 @@ final class UnderstudyTest
         Understudy::verify(fn() => $repository->count());
     }
 
+    /**
+     * The arguments of `find()` are evaluated before `find()` is dispatched,
+     * so the recording used to see `count()` alone: the closure was abandoned
+     * on that first signal, `count()` was stubbed with the `returns()` meant
+     * for `find()`, and `find()` was never specified at all.
+     */
+    public function specificationClosureWithANestedDoubleCallIsRejected(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        Expect::exception(InvalidCallSpecification::class)->withMessage(
+            'The specification closure calls `count()` on understudy `BookRepository` while evaluating the '
+            . 'arguments of `find()` on understudy `BookRepository`. A closure must contain exactly one direct '
+            . 'call on a double; the inner call would have been specified silently and the outer one not at all. '
+            . 'Stub the inner call in a when() of its own and pass a literal or a matcher here, for example: '
+            . 'when(fn () => $repository->find(Arg::any()))',
+        );
+
+        Understudy::when(fn() => $repository->find($repository->count()));
+    }
+
+    /**
+     * Across two doubles the inner call belonged to the other one: the stub
+     * landed on the wrong object with a value its return type could not hold.
+     */
+    public function aNestedCallOnAnotherDoubleIsRejectedByBothNames(): void
+    {
+        $repository = Understudy::label(Understudy::for(BookRepository::class), 'outer');
+        $counter = Understudy::label(Understudy::for(BookRepository::class), 'inner');
+
+        Expect::exception(InvalidCallSpecification::class)
+            ->withMessageContaining('calls `count()` on understudy `inner` while evaluating the arguments of `find()` on understudy `outer`');
+
+        Understudy::expect(fn() => $repository->find($counter->count()));
+    }
+
+    /**
+     * The probe that sees past the first call answers every call with the
+     * mode's default and treats any failure as inconclusive. Neither the
+     * nested doubles it builds nor its answers may leave a trace: the context
+     * is as idle afterwards as before, and a `: never` method — which has no
+     * default to answer with — is still specifiable.
+     */
+    public function theNestedCallProbeLeavesNoTraceAndToleratesNever(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        Understudy::when(fn() => $repository->abort('x'))->throws(new \RuntimeException('aborted'));
+        Understudy::when(fn() => $repository->find(1))->returns(new Book('one'));
+
+        Assert::same(count(Understudy::calls(fn() => $repository->find(Arg::any()))), 0);
+        Assert::same(count(Understudy::calls(fn() => $repository->count())), 0);
+        Assert::same($repository->find(1)?->title, 'one');
+        Expect::exception(\RuntimeException::class)->withMessage('aborted');
+        $repository->abort('x');
+    }
+
+    /**
+     * Two doubles of one contract used to be both `BookRepository` in a
+     * report, and "which one?" was the reader's problem. The first keeps the
+     * bare name — one double per contract is the common shape and nothing
+     * changes for it — the second and later are numbered, and an explicit
+     * label still outranks the number.
+     */
+    public function laterDoublesOfTheSameContractGetNumberedDefaultLabels(): void
+    {
+        $first = Understudy::for(BookRepository::class);
+        $second = Understudy::for(BookRepository::class);
+        $third = Understudy::label(Understudy::for(BookRepository::class), 'archive');
+        $other = Understudy::for(Librarian::class);
+
+        expect(fn() => $first->count());
+        expect(fn() => $second->count());
+        expect(fn() => $third->count());
+        expect(fn() => $other->pick());
+
+        try {
+            Understudy::verifyAll();
+            Assert::true(actual: false, message: 'Expected VerificationFailed');
+        } catch (VerificationFailed $failure) {
+            Assert::string($failure->getMessage())
+                ->contains('Understudy `BookRepository` expected `count()`')
+                ->contains('Understudy `BookRepository#2` expected `count()`')
+                ->contains('Understudy `archive` expected `count()`')
+                ->contains('Understudy `Librarian` expected `pick()`');
+        }
+    }
+
     public function specificationClosureWithoutACallIsRejected(): void
     {
         Expect::exception(InvalidCallSpecification::class)->withMessage(
@@ -702,10 +798,12 @@ final class UnderstudyTest
     public function aNeverMethodConfiguredToReturnIsRejected(): void
     {
         // Returning from a `: never` method is a TypeError by language rule;
-        // the message has to name the real mistake instead.
+        // the message has to name the real mistake instead. `returns()` is
+        // refused where it is written; `answers()` can only be judged by what
+        // it produces, at the call.
         $repository = Understudy::for(BookRepository::class);
 
-        when(fn() => $repository->abort('stop'))->returns('nope');
+        when(fn() => $repository->abort('stop'))->answers(static fn(): string => 'nope');
 
         Expect::exception(NeverMethodCalled::class)->withMessage(
             "Understudy `BookRepository` has `abort()` configured to return, but the method is declared `: never` and cannot.\n"
@@ -713,6 +811,88 @@ final class UnderstudyTest
         );
 
         $repository->abort('stop');
+    }
+
+    /**
+     * The signature is known when `returns()` is written, so a value the
+     * declared type cannot hold is refused there — with the label — rather
+     * than surfacing later as a `TypeError` naming the generated class from
+     * inside the code under test. No stricter than the engine: a generated
+     * method is not under `strict_types`, so `returns('5')` on `: int` stays
+     * the coercion it always was, and `returns(null)` on `: void` stays the
+     * idiom for "answer nothing".
+     */
+    #[DataProvider('refusedReturnValueProvider')]
+    public function aReturnValueTheDeclaredTypeCannotHoldIsRefusedAtRegistration(callable $specify, string $exception, string $message): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        Expect::exception($exception)->withMessage($message);
+
+        $specify($repository);
+    }
+
+    public static function refusedReturnValueProvider(): iterable
+    {
+        yield 'value on void' => [
+            static fn(BookRepository $r) => when(fn() => $r->save(Arg::any()))->returns(true),
+            InvalidCallSpecification::class,
+            'Understudy `BookRepository`: `save()` is declared `: void`, so returns() has nothing to answer with — '
+            . 'the value would never be observed. Drop the value (returns(null) is allowed), or use answers()/throws() '
+            . 'if the call should do something.',
+        ];
+        yield 'value on never' => [
+            static fn(BookRepository $r) => when(fn() => $r->abort('x'))->returns('nope'),
+            InvalidCallSpecification::class,
+            'Understudy `BookRepository`: `abort()` is declared `: never` and cannot return. Configure what it '
+            . 'throws: when(fn () => $double->abort(...))->throws(new SomeException())',
+        ];
+        yield 'string on nullable object' => [
+            static fn(BookRepository $r) => when(fn() => $r->find(1))->returns('not a book'),
+            InvalidSpecificationArgument::class,
+            'Understudy `BookRepository`: returns() was given string, but `find()` is declared `: ?\\'
+            . Book::class . '` and cannot answer with it.',
+        ];
+        yield 'null on int' => [
+            static fn(BookRepository $r) => when(fn() => $r->count())->returns(null),
+            InvalidSpecificationArgument::class,
+            'Understudy `BookRepository`: returns() was given null, but `count()` is declared `: int` and cannot '
+            . 'answer with it.',
+        ];
+        yield 'object on array' => [
+            static fn(BookRepository $r) => when(fn() => $r->titles())->returns(new Book('x')),
+            InvalidSpecificationArgument::class,
+            'Understudy `BookRepository`: returns() was given ' . Book::class . ', but `titles()` is declared '
+            . '`: array` and cannot answer with it.',
+        ];
+        yield 'second value of a chain' => [
+            static fn(BookRepository $r) => when(fn() => $r->count())->returns(1, []),
+            InvalidSpecificationArgument::class,
+            'Understudy `BookRepository`: returns() was given array, but `count()` is declared `: int` and cannot '
+            . 'answer with it.',
+        ];
+    }
+
+    #[DataProvider('acceptedReturnValueProvider')]
+    public function aReturnValueTheEngineWouldCoerceOrAcceptIsNotRefused(callable $specify): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        $specify($repository);
+
+        Assert::true(actual: true);
+    }
+
+    public static function acceptedReturnValueProvider(): iterable
+    {
+        yield 'null on void' => [static fn(BookRepository $r) => when(fn() => $r->save(Arg::any()))->returns(null)];
+        yield 'numeric string on int' => [static fn(BookRepository $r) => when(fn() => $r->count())->returns('5')];
+        yield 'bool on int' => [static fn(BookRepository $r) => when(fn() => $r->count())->returns(true)];
+        yield 'null on nullable object' => [static fn(BookRepository $r) => when(fn() => $r->find(1))->returns(null)];
+        yield 'object on nullable object' => [static fn(BookRepository $r) => when(fn() => $r->find(1))->returns(new Book('x'))];
+        yield 'generator on Generator' => [static fn(BookRepository $r) => when(fn() => $r->stream())->returns((static function (): \Generator {
+            yield 1;
+        })())];
     }
 
     public function aDoubleUsedAfterResetSaysSo(): void
@@ -1075,6 +1255,34 @@ final class UnderstudyTest
         Expect::exception(ForgottenDouble::class)
             ->withMessageContaining('no longer known to Understudy, but `label()` was called on it')
             ->withMessageContaining('created before a reset()');
+
+        Understudy::label($repository, 'catalogue');
+    }
+
+    /**
+     * A scope drops its doubles when it closes; the message used to blame a
+     * `reset()` the test never wrote. Both the call and the facade verb say
+     * which it was.
+     */
+    public function aDoubleFromAClosedScopeSaysSo(): void
+    {
+        $repository = Understudy::scope(static fn(): BookRepository => Understudy::for(BookRepository::class));
+
+        try {
+            $repository->count();
+            Assert::true(actual: false, message: 'Expected ForgottenDouble');
+        } catch (ForgottenDouble $failure) {
+            Assert::same(
+                $failure->getMessage(),
+                "This understudy is no longer known to Understudy, but `count()` was called on it.\n"
+                . 'It was created inside a scope() that has since closed, and a scope drops its doubles when '
+                . 'it ends; build the double in the scope that will use it, or outside the scope altogether.',
+            );
+        }
+
+        Expect::exception(ForgottenDouble::class)
+            ->withMessageContaining('`label()` was called on it')
+            ->withMessageContaining('created inside a scope() that has since closed');
 
         Understudy::label($repository, 'catalogue');
     }

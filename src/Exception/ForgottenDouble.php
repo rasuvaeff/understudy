@@ -31,6 +31,22 @@ final class ForgottenDouble extends \LogicException implements UnderstudyError
     }
 
     /**
+     * The double was built inside `Understudy::scope()` and the scope has
+     * closed since. There is no reset() to look for.
+     *
+     * @param non-empty-string $member the method called on the double, or the facade verb it was handed to
+     */
+    public static function afterScope(string $member): self
+    {
+        return new self(sprintf(
+            "This understudy is no longer known to Understudy, but `%s()` was called on it.\n"
+            . 'It was created inside a scope() that has since closed, and a scope drops its doubles when '
+            . 'it ends; build the double in the scope that will use it, or outside the scope altogether.',
+            $member,
+        ));
+    }
+
+    /**
      * Builds the error for calling a deliberately retired double.
      *
      * @param non-empty-string $method

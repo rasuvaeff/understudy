@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy;
 
+use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
 use Rasuvaeff\Understudy\Expectation\ComputeAnswer;
 use Rasuvaeff\Understudy\Expectation\Expectation;
+use Rasuvaeff\Understudy\Expectation\ReturnContract;
 use Rasuvaeff\Understudy\Expectation\ReturnValue;
 use Rasuvaeff\Understudy\Expectation\ThrowComputed;
 use Rasuvaeff\Understudy\Expectation\ThrowError;
@@ -46,7 +48,14 @@ class WhenBuilder
     /**
      * @internal
      */
-    public function __construct(protected readonly Expectation $expectation) {}
+    /**
+     * @param ReturnContract|null $contract what the specified method may
+     *        answer with; `null` only where no signature is known
+     */
+    public function __construct(
+        protected readonly Expectation $expectation,
+        private readonly ?ReturnContract $contract = null,
+    ) {}
 
     /**
      * Returns each value in turn across successive calls, then keeps returning
@@ -60,6 +69,31 @@ class WhenBuilder
 
         if ($list === []) {
             throw InvalidSpecificationArgument::noReturnValues();
+        }
+
+        if ($this->contract !== null) {
+            // `returns(null)` on a void method is the idiom for "answer
+            // nothing", and PHP itself reads a void method as answering null;
+            // only a value that would be silently dropped is refused.
+            if ($this->contract->signature->returnsVoid && $list !== array_fill(0, count($list), null)) {
+                throw InvalidCallSpecification::returnsOnVoid($this->contract->label, $this->contract->method);
+            }
+
+            if ($this->contract->signature->returnsNever) {
+                throw InvalidCallSpecification::returnsOnNever($this->contract->label, $this->contract->method);
+            }
+
+            /** @var mixed $value */
+            foreach ($list as $value) {
+                if (!$this->contract->accepts($value)) {
+                    throw InvalidSpecificationArgument::returnValueOfWrongType(
+                        $this->contract->label,
+                        $this->contract->method,
+                        $this->contract->signature->returnType,
+                        get_debug_type($value),
+                    );
+                }
+            }
         }
 
         // Several values ARE a chain: `returns($a, $b)` is exactly

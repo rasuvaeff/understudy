@@ -29,6 +29,12 @@ use Rasuvaeff\Understudy\Tests\Fixture\Cls\ReadonlyLedger;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\SealedLedger;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Stamp;
 use Rasuvaeff\Understudy\Tests\Fixture\Suit;
+use Rasuvaeff\Understudy\Tests\Fixture\Undoublable\AggregateContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Undoublable\ClockContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Undoublable\CollectionContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Undoublable\ConstructedContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Undoublable\EnumContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Undoublable\ThrowableContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\AbstractStaticFromInterface;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingWiderParameter;
@@ -260,8 +266,8 @@ final class ClassDoubleTest
     {
         yield 'throwable' => [
             \Throwable::class,
-            'PHP forbids a userland class to implement Throwable directly. Double a concrete exception '
-            . 'class instead, or an interface of your own that extends none of it.',
+            'PHP forbids a userland class to implement Throwable. A double cannot be thrown; construct a '
+            . 'real exception and hand it to throws(), or double an interface of your own that extends none of it.',
         ];
         yield 'unit enum' => [
             \UnitEnum::class,
@@ -292,9 +298,77 @@ final class ClassDoubleTest
      */
     public function aLeadingBackslashDoesNotHideTheRefusal(): void
     {
-        Expect::exception(UnsupportedTarget::class)->withMessageContaining('Double a concrete exception class');
+        // The full message: the leading backslash must not read as "extends
+        // Throwable" either — it is the same name, not an ancestor.
+        Expect::exception(UnsupportedTarget::class)->withMessage(
+            'Cannot create an understudy for `\\Throwable`: PHP forbids a userland class to implement Throwable. '
+            . 'A double cannot be thrown; construct a real exception and hand it to throws(), or double an interface '
+            . 'of your own that extends none of it.',
+        );
 
         Understudy::for('\\Throwable');
+    }
+
+    /**
+     * The compiler looks at the whole ancestry, so the guard has to as well.
+     * The first version compared the contract's own name, and an interface
+     * *extending* one of the five — `ClientExceptionInterface extends
+     * Throwable` is the everyday case — walked past it into the same
+     * uncatchable fatal. An interface declaring a constructor is a fourth way
+     * to the fatal: nothing renders one, so the generated class stays abstract.
+     *
+     * @param class-string $contract
+     */
+    #[DataProvider('undoublableByAncestryProvider')]
+    public function anInterfaceExtendingAForbiddenOneIsRefusedBeforeEval(string $contract, string $reason): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessage(sprintf('Cannot create an understudy for `%s`: %s', $contract, $reason));
+
+        Understudy::for($contract);
+    }
+
+    public static function undoublableByAncestryProvider(): iterable
+    {
+        yield 'extends Throwable' => [
+            ThrowableContract::class,
+            'it extends Throwable, and PHP forbids a userland class to implement Throwable. A double cannot be '
+            . 'thrown; construct a real exception and hand it to throws(), or double an interface of your own '
+            . 'that extends none of it.',
+        ];
+        yield 'extends DateTimeInterface' => [
+            ClockContract::class,
+            'it extends DateTimeInterface, and PHP forbids a userland class to implement DateTimeInterface. Pass '
+            . 'a real \\DateTimeImmutable, or put a clock interface of your own in front of it and double that.',
+        ];
+        yield 'extends Traversable without Iterator' => [
+            CollectionContract::class,
+            'it extends Traversable, and PHP requires it to be reached through Iterator or IteratorAggregate. '
+            . 'Double one of those — both work here — or an interface of yours that extends one.',
+        ];
+        yield 'extends BackedEnum' => [
+            EnumContract::class,
+            'it extends BackedEnum, and only an enum may implement it, and an enum cannot be doubled at all — its '
+            . 'cases are the values themselves. Pass the case you need, or double an interface the enum implements.',
+        ];
+        yield 'declares a constructor' => [
+            ConstructedContract::class,
+            'the interface declares a constructor, and a double never runs one — the generated class would be '
+            . 'left abstract. Double an interface that leaves construction to the implementation.',
+        ];
+    }
+
+    /**
+     * The way through Traversable is an interface that extends Iterator or
+     * IteratorAggregate — which also extends Traversable, and a guard that
+     * only asked about the ancestor would refuse the very thing it recommends.
+     */
+    public function anInterfaceExtendingIteratorAggregateStillDoubles(): void
+    {
+        $double = Understudy::for(AggregateContract::class);
+
+        Assert::instanceOf($double, AggregateContract::class);
+        Assert::instanceOf($double, \Traversable::class);
     }
 
     /**

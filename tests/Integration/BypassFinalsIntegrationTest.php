@@ -91,7 +91,7 @@ final class BypassFinalsIntegrationTest
     {
         $ini = [
             'opcache.enable_cli=1',
-            'opcache.preload=' . dirname(__DIR__) . '/Fixture/Bypass/preload.php',
+            'opcache.preload=' . __DIR__ . '/../Fixture/Bypass/preload.php',
         ];
 
         if (\DIRECTORY_SEPARATOR === '\\') {
@@ -195,7 +195,7 @@ final class BypassFinalsIntegrationTest
             '%s %s%s %s 2>&1',
             escapeshellarg(PHP_BINARY),
             $flags,
-            escapeshellarg(dirname(__DIR__) . '/Fixture/Bypass/scenario.php'),
+            escapeshellarg(__DIR__ . '/../Fixture/Bypass/scenario.php'),
             escapeshellarg($scenario),
         );
 

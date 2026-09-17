@@ -173,6 +173,21 @@ that is not the first target. A double that cannot intercept every method would
 run the target's real code against an object whose constructor never ran, which
 is worse than not building it at all.
 
+The same goes for what PHP itself forbids a class to implement, checked on the
+contract and on everything it extends: an interface extending `Throwable`
+(`Psr\Http\Client\ClientExceptionInterface`, `Psr\Cache\CacheException`),
+`DateTimeInterface`, `UnitEnum`, or `Traversable` without `Iterator` or
+`IteratorAggregate` — and an interface declaring a constructor, which a double
+never runs. Each is refused with `UnsupportedTarget` naming the ancestor,
+rather than dying in the compiler as a fatal error no test can catch. A double
+cannot be thrown: construct a real exception and hand it to `throws()`.
+
+A class double is never a partial double. A concrete method of an abstract
+class target is dispatched like every other — its body does not run, so a
+template method returns the mode's default rather than calling the abstract
+step you stubbed. Running real code takes a real instance and
+`Understudy::forwarding()`; `Invocation::callOriginal()` needs the same.
+
 ### Property hooks (PHP 8.4+)
 
 A contract declaring a property is doublable:
@@ -268,9 +283,31 @@ when(fn () => $repository->mode())->returns('fast', 'slow');
 ```
 
 A later stub for the same call wins; earlier ones stay reachable as fallbacks
-when their arguments do not match. An exhausted call-count expectation keeps
-answering the matching call, so use a non-overlapping matcher when a broad
-fallback should handle later calls.
+when their arguments do not match. Register the broad stub first and the
+specific one after it: a catch-all registered *after* a specific stub takes
+every call, and the specific one is not diagnosed — unreachable is not the
+same as uncalled, so not even `strictStubs` reports it. An exhausted
+call-count expectation keeps answering the matching call, so use a
+non-overlapping matcher when a broad fallback should handle later calls.
+
+The closure makes exactly one call on a double. A call nested in the arguments
+of another — `when(fn () => $repo->find($repo->count()))` — is refused with
+`InvalidCallSpecification` naming both: the inner call would have been
+specified silently and the outer one not at all. Stub the inner call in a
+`when()` of its own and pass a literal or a matcher. A required parameter has
+to be spelled; `Arg::rest()` says the ones after it do not matter, so a wide
+signature does not need an `Arg::any()` per position.
+
+`returns()` is checked against the declared return type where it is written:
+a value on a `: void` method (`returns(null)` is allowed — it is the idiom for
+"answer nothing"), anything on a `: never` method, and a value the type cannot
+hold — `null` where the type is not nullable, an array or an object where a
+scalar is declared, an object of the wrong class — are refused with the
+double's label instead of surfacing later as a `TypeError` naming the generated
+class from inside the code under test. The check is no stricter than the
+engine: a generated method is not under `strict_types`, so `returns('5')` on
+`: int` still answers `5`. What `answers()` produces can only be judged at the
+call, and there a wrong type is still PHP's own `TypeError`.
 
 | Matcher | Matches |
 |---|---|
@@ -668,7 +705,10 @@ A loose double never invents a value by running someone else's constructor, and
 never hands back an unconstructed instance of a real class. What it can hand
 back is another understudy: a return type that can itself be doubled becomes
 one, one level deep, which the same test can configure. That double is a
-generated stand-in, not the target with its constructor skipped.
+generated stand-in, not the target with its constructor skipped — and a fresh
+one on every call: `$outer->inner() === $outer->inner()` is false. A test that
+takes one and verifies against it sees only the calls made on that instance;
+stub the method with `returns()` when the collaborator has to be stable.
 
 A built-in interface is the exception: a method declared `: Stringable`,
 `: Countable`, `: JsonSerializable`, `: ArrayAccess` or `: IteratorAggregate`
@@ -826,7 +866,9 @@ The following calls to `tag` were made during this test:
 
 The asterisks mark the argument that differed — borrowed from
 [NSubstitute](https://nsubstitute.github.io). `Understudy::label($double, '…')`
-names a double when several of the same contract are in play.
+names a double when several of the same contract are in play; without a label
+the second and later doubles of one contract are numbered — `BookRepository`,
+`BookRepository#2` — so a report still says which one.
 
 An object argument is matched by identity, so two instances never match however
 equally they read — and the message has to be able to show which of the two

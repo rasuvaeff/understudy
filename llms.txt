@@ -21,7 +21,17 @@ No runtime deps; `ext-mbstring` is not needed.
   contract's default for an argument the caller omitted, so `tag('a')` and
   `tag('a', 1)` are one call.
 - The closure must contain **exactly one** direct call on a double. Anything
-  else raises `InvalidCallSpecification`.
+  else raises `InvalidCallSpecification` — including a call nested in the
+  arguments of another (`fn () => $repo->find($repo->count())`), which is
+  refused naming both calls rather than silently specifying the inner one.
+- `returns()` is checked against the declared return type at registration:
+  a value on `: void` (`returns(null)` is allowed), anything on `: never`, and
+  a value the type cannot hold (`null` on a non-nullable type, an array or an
+  object on a scalar, an object of the wrong class) raise
+  `InvalidCallSpecification`/`InvalidSpecificationArgument` with the double's
+  label. No stricter than the engine: generated methods are not under
+  `strict_types`, so `returns('5')` on `: int` answers `5`. `answers()` is
+  judged only at the call; a wrong type there is PHP's own `TypeError`.
 - A double exposes nothing beyond its contract. All operations are static
   methods on `Understudy`, or the free functions `when()` / `expect()` /
   `expectSequence()` / `verify()`.
@@ -34,7 +44,17 @@ No runtime deps; `ext-mbstring` is not needed.
   `clone` is a double of its own.
 - Refused before generation, each with the reason: a `final` class, a class with
   a non-private `final` instance method, an enum, a trait, an internal class, an
-  anonymous class, a class that is not the first target.
+  anonymous class, a class that is not the first target; and — checked on the
+  contract and every interface it extends — `Throwable`, `DateTimeInterface`,
+  `UnitEnum`/`BackedEnum`, `Traversable` without `Iterator`/`IteratorAggregate`,
+  plus an interface declaring `__construct`. All `UnsupportedTarget`, never a
+  fatal out of `eval()`. A double cannot be thrown: construct a real exception
+  for `throws()`.
+- A class double is never partial: a concrete method of an abstract target is
+  dispatched, its body does not run. Real code needs a real instance and
+  `forwarding()`; `Invocation::callOriginal()` needs the same. A `readonly`
+  promoted property of a class target stays uninitialized (reading it raises
+  PHP's own error); a plain typed one starts at the empty value of its type.
 - An abstract hooked property (PHP 8.4+: an interface property, or an
   `abstract` one on a class) is rendered: the generated class declares it with
   the dispatcher inside the hook. Exactly the declared hooks; a get-only
@@ -84,7 +104,9 @@ No runtime deps; `ext-mbstring` is not needed.
   `null` on a nullable return: `?Book` answers with the registered Book, and
   is `null` only when nothing was registered for it.
 - Without a registration, a doublable return type becomes a double of its own,
-  one level deep, adopted into the context that owns the outer double.
+  one level deep, adopted into the context that owns the outer double — a
+  fresh one per call (`$o->inner() !== $o->inner()`); stub the method when the
+  collaborator must be stable.
 - `Understudy::wire(Sut::class, $overrides)` returns
   `array{sut: object, doubles: array<string, object>}`. It reads the constructor
   only. Object parameters become doubles; a nullable object still does; an
@@ -123,6 +145,8 @@ No runtime deps; `ext-mbstring` is not needed.
   `checkpoint()` span EVERY context still holding doubles, not just the
   caller's. A test body run in a Fiber owns a context the adapter never stands
   in, and skipping it let an unmet `expect()` pass unnoticed.
+- Without `label()`, the second and later doubles of one contract in a context
+  are numbered in reports: `Repo`, `Repo#2`. An explicit label outranks it.
 - A failure message renders an object argument as `App\Book#1 {title: 'Dune'}`.
   The `#N` is an alias numbered within that one message in order of first
   appearance — never an object id, which is reused after a collection — so the
@@ -179,7 +203,9 @@ when(fn () => $repo->find(Arg::any()))->answers(
 Matching: most recently registered wins, earlier stubs remain as fallbacks on
 argument mismatch — a matching call-count expectation keeps answering after
 its count is exhausted. Register the broad stub FIRST and the specific one
-after it. Arguments match by `===`, or by matcher.
+after it: a catch-all registered after a specific stub takes every call and
+the specific one is not diagnosed (unreachable ≠ uncalled, so `strictStubs`
+stays quiet). Arguments match by `===`, or by matcher.
 
 ### Matchers — `Arg`
 
@@ -218,7 +244,9 @@ the test's own code, so an exception in it travels. A matcher that could never
 match is refused at construction with `InvalidSpecificationArgument`: an
 inverted range (`int`/`float`/`count`), a pattern PCRE cannot compile, and
 `instanceOf()` naming a type that is not loadable. A matcher that reaches a
-real call raises `MatcherLeaked`.
+real call on a *double* raises `MatcherLeaked`; one handed to a real object is
+out of the engine's sight and is simply a wrong argument (the PHPStan plugin's
+`understudy.matcherLeak` is the textual guard).
 
 `Arg::captor(?class-string $class = null): Captor` builds a typed argument
 captor — the replacement for reading `args[N]` out of the call log:
@@ -415,7 +443,8 @@ Understudy::forget($replaced);
 
 For a double the test built and then replaced: verification (including
 `strictStubs`), accounting and reset stop seeing it. Any call on it — or any
-question about its calls — raises `ForgottenDouble` naming `forget()`.
+question about its calls — raises `ForgottenDouble` naming `forget()`. The
+same guard after a `scope()` closed names the scope; after `reset()`, the reset.
 One-way; a replacement is a different object.
 
 ### Modes and naming

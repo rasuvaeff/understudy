@@ -486,6 +486,18 @@ Commands: `make docs-install`, `make docs-api`, `make docs-dev`,
 need PHP; the rest are Node, so the site stays buildable without a PHP
 toolchain.
 
+Since the 2026-09-18 review wave: the null-safe reads in
+`Runtime::probeAnswer()` and `Understudy::rejectNestedCalls()` (a generated
+class always has a blueprint, and the signal's double is registered unless
+the specification names a forgotten one — a path the message tolerates with
+`understudy`), the `nested: true` flag of the probe's default (the throwaway
+context observes nothing either way), the value written into the
+`droppedByScope` map (only membership is read), the Fiber branch of
+`popScope()` passing `byScope` (no Fiber scope test exists — add one if the
+branch grows), and the trailing `return true` of the intersection loop in
+`ReturnContract::acceptsType()` (falling through lands on the `match` default,
+which accepts a name `class_exists()` does not know).
+
 ## When you finish
 
 - If the change touches the public API, run `make docs-api` and commit the

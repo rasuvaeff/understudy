@@ -41,6 +41,9 @@ final class DoubleState
     /** @var non-empty-string|null */
     private ?string $label = null;
 
+    /** @var non-empty-string|null */
+    private ?string $defaultLabel = null;
+
     private ?object $forwardingTarget = null;
 
     /** @var array<non-empty-string, ReferenceSlot> */
@@ -102,7 +105,19 @@ final class DoubleState
      */
     public function label(): string
     {
-        return $this->label ?? $this->blueprint->displayName();
+        return $this->label ?? $this->defaultLabel ?? $this->blueprint->displayName();
+    }
+
+    /**
+     * The label a report uses when the test set none: the contract's short
+     * name, numbered by the owning context once it holds more than one double
+     * of that contract. An explicit `setLabel()` still outranks it.
+     *
+     * @param non-empty-string $label
+     */
+    public function setDefaultLabel(string $label): void
+    {
+        $this->defaultLabel = $label;
     }
 
     /**

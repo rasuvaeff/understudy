@@ -112,7 +112,7 @@ final class VerificationFailureTest
     {
         $repository = Understudy::for(BookRepository::class);
         $book = new Book('title');
-        when(fn() => $repository->save(Arg::any()))->returns(true);
+        when(fn() => $repository->save(Arg::any()))->returns(null);
         $repository->save($book);
 
         $record = $this->firstFailureOf(fn() => Understudy::nothingElse($repository));

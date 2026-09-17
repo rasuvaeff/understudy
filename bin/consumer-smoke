@@ -1394,7 +1394,7 @@ PHP
     check_local phpunit phpunit || return 1
     local out
     out="$(run phpunit './vendor/bin/phpunit --no-progress 2>&1' || true)"
-    if printf '%s' "$out" | grep -q 'Tests: 4' && printf '%s' "$out" | grep -q 'Failures: 2' \
+    if printf '%s' "$out" | grep -q 'Tests: 4' && printf '%s' "$out" | grep -qE 'Failures: [23]' \
        && printf '%s' "$out" | grep -q 'open(2)'; then
         printf '  ok    the trait turns an unmet expectation into a runner failure\n'
     else
@@ -1404,13 +1404,26 @@ PHP
     fi
 
     # `open(40)` is the class that composed explicitly: its unmet expectation
-    # is one of the two failures. `open(30)` is the class that overrode
-    # without composing: it must NOT appear, because nothing reported it —
-    # which is the hazard, stated as a fact rather than as a warning.
+    # is one of the failures. `open(30)` is the class that overrode without
+    # composing: its expectation is never verified, so `open(30)` must NOT
+    # appear. What the adapter does about that depends on its version — since
+    # understudy-phpunit 0.5 the `#[After]` hook notices the swallowed
+    # verification and fails the test with the aliasing recipe (the third
+    # failure); before it, the hazard was silent, and both readings are pinned
+    # here because a published adapter behind that release still installs.
     if printf '%s' "$out" | grep -q 'open(40)' && ! printf '%s' "$out" | grep -q 'open(30)'; then
-        printf '  ok    the documented alias recipe verifies, and a bare override loses it silently\n'
+        if printf '%s' "$out" | grep -q 'Failures: 3' \
+           && printf '%s' "$out" | grep -q 'SilentOverrideTest' \
+           && printf '%s' "$out" | grep -q 'expectations were never verified'; then
+            printf '  ok    the documented alias recipe verifies, and a bare override is reported as unverified\n'
 
-        return 0
+            return 0
+        fi
+        if printf '%s' "$out" | grep -q 'Failures: 2'; then
+            printf '  ok    the documented alias recipe verifies, and a bare override loses it silently (adapter predates the guard)\n'
+
+            return 0
+        fi
     fi
     printf '  FAIL  the override composition did not behave as documented:\n%s\n' "$out"
 

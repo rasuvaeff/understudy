@@ -19,15 +19,9 @@ final class DoubleFactory
     /** Where every generated double's class lives, and nothing else does. */
     public const string GENERATED_NAMESPACE = __NAMESPACE__ . '\\Generated\\';
 
-    /**
-     * Whether this object is a double this factory made — asked by the facade
-     * methods, which are handed an object rather than a closure and otherwise
-     * cannot tell "never was a double" from "was one before a reset".
-     */
-    public static function isGenerated(object $double): bool
-    {
-        return str_starts_with($double::class, self::GENERATED_NAMESPACE);
-    }
+    private const string ENUM_REASON = 'only an enum may implement it, and an enum cannot be doubled at all — '
+        . 'its cases are the values themselves. Pass the case you need, or double an interface the enum implements.';
+
 
     /** @var array<string, Blueprint> */
     private static array $blueprints = [];
@@ -38,7 +32,19 @@ final class DoubleFactory
     /** @var array<class-string, \ReflectionClass<object>> */
     private static array $reflections = [];
 
+
+
     private function __construct() {}
+
+    /**
+     * Whether this object is a double this factory made — asked by the facade
+     * methods, which are handed an object rather than a closure and otherwise
+     * cannot tell "never was a double" from "was one before a reset".
+     */
+    public static function isGenerated(object $double): bool
+    {
+        return str_starts_with($double::class, self::GENERATED_NAMESPACE);
+    }
 
     /**
      * One reflection per generated class rather than one per double: building
@@ -130,7 +136,7 @@ final class DoubleFactory
         $reflection = new \ReflectionClass($contract);
 
         if ($reflection->isInterface()) {
-            self::rejectUndoublableInterface($contract);
+            self::rejectUndoublableInterface($reflection, $contract);
         } else {
             self::rejectUndoublableClass($reflection, $contract, $primary);
         }
@@ -139,7 +145,8 @@ final class DoubleFactory
     }
 
     /**
-     * The five interfaces the language forbids a userland class to implement.
+     * The five interfaces the language forbids a userland class to implement,
+     * checked on the contract AND on everything it extends.
      *
      * Every other refusal in this file is a considered `UnsupportedTarget`;
      * these used to walk past all of them and be answered by the compiler
@@ -149,30 +156,79 @@ final class DoubleFactory
      * contracts anybody reaches for, a clock and an error, so the fatal was
      * not a corner.
      *
+     * The first version of this check compared the contract's own name, and
+     * an interface *extending* one of the five walked past it into the same
+     * fatal — `Psr\Http\Client\ClientExceptionInterface`, which is what a
+     * consumer stubs an HTTP client to throw, extends `Throwable`. The
+     * ancestry is what the compiler looks at, so it is what is checked here.
+     *
      * Not a property of being built in: `Iterator`, `IteratorAggregate`,
-     * `Stringable` and `Countable` double perfectly well. It is these five
-     * specifically, and each of them has a way through.
+     * `Stringable` and `Countable` double perfectly well — the first two
+     * extend `Traversable` and are exactly the way through it, so the
+     * `Traversable` arm asks for the presence of one of them rather than the
+     * absence of the ancestor.
+     *
+     * An interface may also declare a constructor. Nothing renders one — the
+     * generated class must never run a constructor — so the class would stay
+     * abstract, which is the same uncatchable fatal one step later.
+     *
+     * @param \ReflectionClass<object> $reflection
+     * @param class-string             $contract
+     */
+    private static function rejectUndoublableInterface(\ReflectionClass $reflection, string $contract): void
+    {
+        $forbidden = [
+            \Throwable::class => 'PHP forbids a userland class to implement Throwable. A double cannot be thrown; '
+                . 'construct a real exception and hand it to throws(), or double an interface of your own that '
+                . 'extends none of it.',
+            // BackedEnum first: it extends UnitEnum, and naming the nearer
+            // ancestor is what the reader wrote.
+            \BackedEnum::class => self::ENUM_REASON,
+            \UnitEnum::class => self::ENUM_REASON,
+            \DateTimeInterface::class => 'PHP forbids a userland class to implement DateTimeInterface. Pass a real '
+                . '\DateTimeImmutable, or put a clock interface of your own in front of it and double that.',
+        ];
+
+        foreach ($forbidden as $ancestor => $reason) {
+            if (is_a($contract, $ancestor, allow_string: true)) {
+                throw UnsupportedTarget::notDoublable($contract, self::viaAncestor($contract, $ancestor) . $reason);
+            }
+        }
+
+        if (
+            is_a($contract, \Traversable::class, allow_string: true)
+            && !is_a($contract, \Iterator::class, allow_string: true)
+            && !is_a($contract, \IteratorAggregate::class, allow_string: true)
+        ) {
+            throw UnsupportedTarget::notDoublable(
+                $contract,
+                self::viaAncestor($contract, \Traversable::class)
+                . 'PHP requires it to be reached through Iterator or IteratorAggregate. Double one of those — '
+                . 'both work here — or an interface of yours that extends one.',
+            );
+        }
+
+        if ($reflection->hasMethod('__construct')) {
+            throw UnsupportedTarget::notDoublable(
+                $contract,
+                'the interface declares a constructor, and a double never runs one — the generated class would '
+                . 'be left abstract. Double an interface that leaves construction to the implementation.',
+            );
+        }
+    }
+
+    /**
+     * Names the ancestor when the refusal comes from one the contract merely
+     * extends: the reader wrote `ClientExceptionInterface`, and "cannot
+     * implement Throwable" alone sends them looking for a word that is not in
+     * their file.
      *
      * @param class-string $contract
+     * @param class-string $ancestor
      */
-    private static function rejectUndoublableInterface(string $contract): void
+    private static function viaAncestor(string $contract, string $ancestor): string
     {
-        $reason = match (ltrim(strtolower($contract), '\\')) {
-            'throwable' => 'PHP forbids a userland class to implement Throwable directly. Double a '
-                . 'concrete exception class instead, or an interface of your own that extends none of it.',
-            'unitenum', 'backedenum' => 'only an enum may implement it, and an enum cannot be doubled at all — '
-                . 'its cases are the values themselves. Pass the case you need, or double an interface the '
-                . 'enum implements.',
-            'datetimeinterface' => 'PHP forbids a userland class to implement DateTimeInterface. Pass a real '
-                . '\DateTimeImmutable, or put a clock interface of your own in front of it and double that.',
-            'traversable' => 'PHP requires it to be reached through Iterator or IteratorAggregate. Double '
-                . 'one of those — both work here — or an interface of yours that extends one.',
-            default => null,
-        };
-
-        if ($reason !== null) {
-            throw UnsupportedTarget::notDoublable($contract, $reason);
-        }
+        return strcasecmp(ltrim($contract, '\\'), $ancestor) === 0 ? '' : sprintf('it extends %s, and ', $ancestor);
     }
 
     /**

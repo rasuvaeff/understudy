@@ -18,6 +18,7 @@ use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
 use Rasuvaeff\Understudy\Expectation\Expectation;
+use Rasuvaeff\Understudy\Expectation\ReturnContract;
 use Rasuvaeff\Understudy\Runtime\ArmedSequence;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
@@ -133,7 +134,7 @@ final class Understudy
 
         $state->addExpectation($expectation);
 
-        return new WhenBuilder($expectation);
+        return new WhenBuilder($expectation, self::returnContract($state, $signal->method));
     }
 
     /**
@@ -155,7 +156,22 @@ final class Understudy
 
         $state->addExpectation($expectation);
 
-        return new ExpectBuilder($expectation);
+        return new ExpectBuilder($expectation, self::returnContract($state, $signal->method));
+    }
+
+    /**
+     * What `returns()` may be given for this call, or `null` for a method the
+     * blueprint does not know — which only a hand-built double can present.
+     *
+     * @param non-empty-string $method
+     */
+    private static function returnContract(DoubleState $state, string $method): ?ReturnContract
+    {
+        $signature = $state->blueprint->method($method);
+
+        return $signature === null
+            ? null
+            : new ReturnContract($state->label(), $method, $signature, $state->blueprint->contracts[0]);
     }
 
     /**
@@ -1312,6 +1328,8 @@ final class Understudy
         try {
             $call();
         } catch (InvocationSignal $signal) {
+            self::rejectNestedCalls($call, $signal);
+
             // A specification that ended with Arg::rest() physically passed
             // fewer arguments than the method declares; the generated
             // parameters answered with their sentinel defaults, and those are
@@ -1332,6 +1350,35 @@ final class Understudy
         }
 
         throw InvalidCallSpecification::noCallRecorded();
+    }
+
+    /**
+     * Refuses a closure that called more than one double method.
+     *
+     * The signal that ended the first pass came from the INNERMOST call: the
+     * arguments of `$r->find($r->count())` are evaluated before `find()` is
+     * dispatched, so `count()` signalled and `find()` was never reached. The
+     * rule says exactly one call; a closure that broke it used to specify the
+     * inner call silently, with the outer one's `returns()` attached to it.
+     * {@see Runtime::probe()} re-runs the closure with calls answered instead
+     * of signalled, which is the only way to see past the first one.
+     */
+    private static function rejectNestedCalls(callable $call, InvocationSignal $signal): void
+    {
+        $calls = Runtime::probe($call);
+
+        if ($calls === null || count($calls) < 2) {
+            return;
+        }
+
+        $outer = $calls[count($calls) - 1];
+
+        throw InvalidCallSpecification::nestedCall(
+            Runtime::stateOf($signal->double)?->label() ?? 'understudy',
+            $signal->method,
+            Runtime::stateOf($outer[0])?->label() ?? 'understudy',
+            $outer[1],
+        );
     }
 
     /**
@@ -1391,7 +1438,7 @@ final class Understudy
             // same problem — and neither used to be named at all, because
             // both were reported as a specification closure gone wrong.
             throw DoubleFactory::isGenerated($double)
-                ? ForgottenDouble::afterReset($facade)
+                ? Runtime::forgottenDouble($double, $facade)
                 : InvalidCallSpecification::notADouble($facade);
         }
 
