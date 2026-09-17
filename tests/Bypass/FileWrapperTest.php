@@ -413,7 +413,7 @@ final class FileWrapperTest
     public function directoriesAreListedThroughTheNativeWrapper(): void
     {
         $wrapper = new FileWrapper();
-        $directory = \dirname(__DIR__) . '/Fixture/Bypass';
+        $directory = __DIR__ . '/../Fixture/Bypass';
 
         Assert::true($wrapper->dir_opendir($directory));
 
