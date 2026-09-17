@@ -42,10 +42,10 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      * another. The inner call is what the recording saw; the outer call is
      * what the test meant, and neither reading is safe to guess.
      *
-     * @param non-empty-string $innerLabel
-     * @param non-empty-string $innerMethod
-     * @param non-empty-string $outerLabel
-     * @param non-empty-string $outerMethod
+     * @param non-empty-string $innerLabel  the double the inner call was made on
+     * @param non-empty-string $innerMethod the inner call, the one the recording saw
+     * @param non-empty-string $outerLabel  the double the outer call was made on
+     * @param non-empty-string $outerMethod the outer call, whose arguments held the inner one
      */
     public static function nestedCall(string $innerLabel, string $innerMethod, string $outerLabel, string $outerMethod): self
     {
@@ -65,8 +65,8 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      * `returns()` on a method declared `: void`: the value would never be
      * observed, and a test that relies on it is checking nothing.
      *
-     * @param non-empty-string $label
-     * @param non-empty-string $method
+     * @param non-empty-string $label  the double, as a refusal names it
+     * @param non-empty-string $method the method declared `: void`
      */
     public static function returnsOnVoid(string $label, string $method): self
     {
@@ -82,8 +82,8 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     /**
      * `returns()` on a method declared `: never`, which cannot return at all.
      *
-     * @param non-empty-string $label
-     * @param non-empty-string $method
+     * @param non-empty-string $label  the double, as a refusal names it
+     * @param non-empty-string $method the method declared `: never`
      */
     public static function returnsOnNever(string $label, string $method): self
     {

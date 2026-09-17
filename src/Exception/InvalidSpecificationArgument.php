@@ -80,8 +80,8 @@ final class InvalidSpecificationArgument extends \InvalidArgumentException imple
      * it was written: left to the engine it surfaced as a `TypeError` naming
      * the generated class, from wherever in the code under test the call was.
      *
-     * @param non-empty-string $label
-     * @param non-empty-string $method
+     * @param non-empty-string $label    the double, as a refusal names it
+     * @param non-empty-string $method   the method whose return type refused the value
      * @param non-empty-string $declared the return type as the contract declares it
      * @param non-empty-string $given    the value's type, as `get_debug_type()` reports it
      */
