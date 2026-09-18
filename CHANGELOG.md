@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.11.0 — 2026-09-18
 
 - **Fixed.** An interface extending `Throwable`, `DateTimeInterface`,
   `UnitEnum`/`BackedEnum` or `Traversable` (without `Iterator`/
