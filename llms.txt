@@ -20,10 +20,12 @@ No runtime deps; `ext-mbstring` is not needed.
   covers it where the contract declares it required. A real call still logs the
   contract's default for an argument the caller omitted, so `tag('a')` and
   `tag('a', 1)` are one call.
-- The closure must contain **exactly one** direct call on a double. Anything
-  else raises `InvalidCallSpecification` — including a call nested in the
-  arguments of another (`fn () => $repo->find($repo->count())`), which is
-  refused naming both calls rather than silently specifying the inner one.
+- The closure must contain **exactly one** direct call on a double, and it
+  runs exactly once. Two calls — nested in the arguments of another
+  (`fn () => $repo->find($repo->count())`) or side by side — raise
+  `InvalidCallSpecification` naming both. The recording answers the call with
+  the type's default and lets the closure finish; code after the call that
+  does not survive the default does not fail the specification.
 - `returns()` is checked against the declared return type at registration:
   a value on `: void` (`returns(null)` is allowed), anything on `: never`, and
   a value the type cannot hold (`null` on a non-nullable type, an array or an

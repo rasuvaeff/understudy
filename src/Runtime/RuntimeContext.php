@@ -25,6 +25,9 @@ final class RuntimeContext
      */
     private int $recordingDepth = 0;
 
+    /** @var list<InvocationSignal> */
+    private array $recordingSignals = [];
+
     /** @var \SplObjectStorage<object, DoubleState> */
     private \SplObjectStorage $doubles;
 
@@ -78,6 +81,10 @@ final class RuntimeContext
 
     public function beginRecording(): void
     {
+        if ($this->recordingDepth === 0) {
+            $this->recordingSignals = [];
+        }
+
         $this->recordingDepth++;
     }
 
@@ -86,6 +93,17 @@ final class RuntimeContext
         if ($this->recordingDepth > 0) {
             $this->recordingDepth--;
         }
+    }
+
+    public function recordSpecificationCall(InvocationSignal $signal): void
+    {
+        $this->recordingSignals[] = $signal;
+    }
+
+    /** @return list<InvocationSignal> */
+    public function recordingSignals(): array
+    {
+        return $this->recordingSignals;
     }
 
     public function register(object $double, DoubleState $state): void

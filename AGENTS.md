@@ -486,12 +486,12 @@ Commands: `make docs-install`, `make docs-api`, `make docs-dev`,
 need PHP; the rest are Node, so the site stays buildable without a PHP
 toolchain.
 
-Since the 2026-09-18 review wave: the null-safe reads in
-`Runtime::probeAnswer()` and `Understudy::rejectNestedCalls()` (a generated
+Since the 2026-09-18 review wave: the null-safe reads in the recording
+branch of `Runtime::dispatch()` and in `Understudy::record()` (a generated
 class always has a blueprint, and the signal's double is registered unless
 the specification names a forgotten one — a path the message tolerates with
-`understudy`), the `nested: true` flag of the probe's default (the throwaway
-context observes nothing either way), the value written into the
+`understudy`), the `nested: true` flag of the recording's default (the
+throwaway context observes nothing either way), the value written into the
 `droppedByScope` map (only membership is read), the Fiber branch of
 `popScope()` passing `byScope` (no Fiber scope test exists — add one if the
 branch grows), and the trailing `return true` of the intersection loop in

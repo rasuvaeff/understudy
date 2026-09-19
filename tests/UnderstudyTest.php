@@ -600,11 +600,11 @@ final class UnderstudyTest
         $repository = Understudy::for(BookRepository::class);
 
         Expect::exception(InvalidCallSpecification::class)->withMessage(
-            'The specification closure calls `count()` on understudy `BookRepository` while evaluating the '
-            . 'arguments of `find()` on understudy `BookRepository`. A closure must contain exactly one direct '
-            . 'call on a double; the inner call would have been specified silently and the outer one not at all. '
-            . 'Stub the inner call in a when() of its own and pass a literal or a matcher here, for example: '
-            . 'when(fn () => $repository->find(Arg::any()))',
+            'The specification closure calls `count()` on understudy `BookRepository` and then `find()` on '
+            . 'understudy `BookRepository`. A closure must contain exactly one direct call on a double; with two, '
+            . 'one of them would be specified silently and the other not at all. Stub each call in a when() of its '
+            . 'own, and where one call feeds the arguments of another pass a literal or a matcher instead, for '
+            . 'example: when(fn () => $repository->find(Arg::any()))',
         );
 
         Understudy::when(fn() => $repository->find($repository->count()));
@@ -620,19 +620,31 @@ final class UnderstudyTest
         $counter = Understudy::label(Understudy::for(BookRepository::class), 'inner');
 
         Expect::exception(InvalidCallSpecification::class)
-            ->withMessageContaining('calls `count()` on understudy `inner` while evaluating the arguments of `find()` on understudy `outer`');
+            ->withMessageContaining('calls `count()` on understudy `inner` and then `find()` on understudy `outer`');
 
         Understudy::expect(fn() => $repository->find($counter->count()));
     }
 
     /**
-     * The probe that sees past the first call answers every call with the
-     * mode's default and treats any failure as inconclusive. Neither the
-     * nested doubles it builds nor its answers may leave a trace: the context
-     * is as idle afterwards as before, and a `: never` method — which has no
-     * default to answer with — is still specifiable.
+     * Two calls side by side are as ambiguous as two nested ones, and the
+     * recording sees them in dispatch order.
      */
-    public function theNestedCallProbeLeavesNoTraceAndToleratesNever(): void
+    public function twoCallsInARowAreRejected(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        Expect::exception(InvalidCallSpecification::class)
+            ->withMessageContaining('calls `count()` on understudy `BookRepository` and then `describe()` on understudy `BookRepository`');
+
+        Understudy::when(fn() => $repository->count() . $repository->describe());
+    }
+
+    /**
+     * A `: never` method has no default to answer with, so its signal ends the
+     * closure — and the specification stands, as does one for a method that
+     * does have a default.
+     */
+    public function recordingToleratesAMethodWithoutADefault(): void
     {
         $repository = Understudy::for(BookRepository::class);
 
@@ -644,6 +656,75 @@ final class UnderstudyTest
         Assert::same($repository->find(1)?->title, 'one');
         Expect::exception(\RuntimeException::class)->withMessage('aborted');
         $repository->abort('x');
+    }
+
+    /**
+     * The closure is user code, and the second pass that used to look past
+     * the first call ran all of it again: a counter went up twice, a factory
+     * built twice. (#142)
+     */
+    public function specificationClosureRunsOnlyOnce(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $runs = 0;
+
+        Understudy::when(function () use ($repository, &$runs): ?Book {
+            ++$runs;
+
+            return $repository->find($runs);
+        })->returns(new Book('one'));
+
+        Assert::same($runs, 1);
+        Assert::same($repository->find(1)?->title, 'one');
+    }
+
+    /**
+     * A double created inside the closure used to be created twice, and the
+     * second one — stubbed by nobody, called by nobody — stayed in the
+     * context, where `strictStubs` reported its stub as never used. (#142)
+     */
+    public function specificationClosureDoesNotRegisterASecondDouble(): void
+    {
+        $created = [];
+
+        Understudy::when(function () use (&$created): int {
+            $repository = Understudy::for(BookRepository::class);
+            $created[] = $repository;
+
+            return $repository->count();
+        })->returns(1);
+
+        Assert::same(count($created), 1);
+        Assert::false(Understudy::idle());
+        Assert::same($created[0]->count(), 1);
+        Understudy::verifyAll(strictStubs: true);
+    }
+
+    /**
+     * Code after the call runs against the default the call was answered
+     * with, and may not survive it — a call on the `null` a `?Book` answers
+     * with, a closure return type the default does not fit. No
+     * recording ever ran that code before, and it is not the specification.
+     */
+    #[DataProvider('codeAfterTheCallProvider')]
+    public function codeAfterTheCallThatFailsOnTheDefaultDoesNotFailTheSpecification(\Closure $specification): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        Understudy::when($specification($repository))->returns(new Book('one'));
+
+        Assert::same($repository->find(1)?->title, 'one');
+    }
+
+    public static function codeAfterTheCallProvider(): iterable
+    {
+        yield 'method call on null' => [fn(BookRepository $r): \Closure => fn() => $r->find(1)->jsonSerialize()];
+        yield 'closure return type' => [fn(BookRepository $r): \Closure => fn(): Book => $r->find(1)];
+        yield 'explicit throw after the call' => [fn(BookRepository $r): \Closure => function () use ($r): void {
+            $r->find(1);
+
+            throw new \LogicException('after the call');
+        }];
     }
 
     /**

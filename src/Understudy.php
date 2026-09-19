@@ -1317,8 +1317,14 @@ final class Understudy
     }
 
     /**
-     * Runs the specification closure with recording on, and catches the signal
-     * the called method throws instead of returning.
+     * Runs the specification closure with recording on, in one pass, and
+     * reads the call it made off the context.
+     *
+     * A call made while recording is retained by the dispatcher and answered
+     * with a default, so the closure runs to its end and every call it makes
+     * is seen; only a method with no safe default (`: never`, an object type)
+     * ends it early on its signal. The closure is user code and runs exactly
+     * once: whatever it counts, creates or writes happens once.
      */
     private static function record(callable $call): InvocationSignal
     {
@@ -1326,59 +1332,58 @@ final class Understudy
         $context->beginRecording();
 
         try {
-            $call();
-        } catch (InvocationSignal $signal) {
-            self::rejectNestedCalls($call, $signal);
+            try {
+                $call();
+            } catch (InvocationSignal) {
+                // Retained before it was thrown; the closure just ended early.
+            } catch (UnderstudyError $failure) {
+                // Our own refusals are already about the specification — a
+                // matcher built with an impossible range, a captor inside a
+                // combinator, a double the test retired. Wrapping one in "the
+                // closure threw before it reached an understudy" would bury
+                // the sentence that says what to change.
+                throw $failure;
+            } catch (\Throwable $failure) {
+                // Before any call: the closure never reached a double, and its
+                // error is the whole story. After one: the code past the call
+                // ran against a default it may not survive (`->title` on the
+                // `null` a `?Book` answers with, a closure return type the
+                // default does not fit) — that code was never run by a
+                // recording before, and is not the specification.
+                if ($context->recordingSignals() === []) {
+                    throw InvalidCallSpecification::closureFailed($failure);
+                }
+            }
+
+            $signals = $context->recordingSignals();
+
+            if ($signals === []) {
+                throw InvalidCallSpecification::noCallRecorded();
+            }
+
+            if (count($signals) > 1) {
+                // Dispatch order: for `find($r->count())` the inner `count()`
+                // is first, and for `a() + b()` the first is simply first.
+                $first = $signals[0];
+                $last = $signals[count($signals) - 1];
+
+                throw InvalidCallSpecification::moreThanOneCall(
+                    Runtime::stateOf($first->double)?->label() ?? 'understudy',
+                    $first->method,
+                    Runtime::stateOf($last->double)?->label() ?? 'understudy',
+                    $last->method,
+                );
+            }
 
             // A specification that ended with Arg::rest() physically passed
             // fewer arguments than the method declares; the generated
             // parameters answered with their sentinel defaults, and those are
             // stripped — or the omission is refused — before anything reads
             // the arguments as a specification.
-            return $signal->asSpecification();
-        } catch (UnderstudyError $failure) {
-            // Our own refusals are already about the specification — a matcher
-            // built with an impossible range, a captor inside a combinator, a
-            // double the test retired. Wrapping one in "the closure threw
-            // before it reached an understudy" would bury the sentence that
-            // says what to change.
-            throw $failure;
-        } catch (\Throwable $failure) {
-            throw InvalidCallSpecification::closureFailed($failure);
+            return $signals[0]->asSpecification();
         } finally {
             $context->endRecording();
         }
-
-        throw InvalidCallSpecification::noCallRecorded();
-    }
-
-    /**
-     * Refuses a closure that called more than one double method.
-     *
-     * The signal that ended the first pass came from the INNERMOST call: the
-     * arguments of `$r->find($r->count())` are evaluated before `find()` is
-     * dispatched, so `count()` signalled and `find()` was never reached. The
-     * rule says exactly one call; a closure that broke it used to specify the
-     * inner call silently, with the outer one's `returns()` attached to it.
-     * {@see Runtime::probe()} re-runs the closure with calls answered instead
-     * of signalled, which is the only way to see past the first one.
-     */
-    private static function rejectNestedCalls(callable $call, InvocationSignal $signal): void
-    {
-        $calls = Runtime::probe($call);
-
-        if ($calls === null || count($calls) < 2) {
-            return;
-        }
-
-        $outer = $calls[count($calls) - 1];
-
-        throw InvalidCallSpecification::nestedCall(
-            Runtime::stateOf($signal->double)?->label() ?? 'understudy',
-            $signal->method,
-            Runtime::stateOf($outer[0])?->label() ?? 'understudy',
-            $outer[1],
-        );
     }
 
     /**

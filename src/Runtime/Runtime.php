@@ -95,70 +95,6 @@ final class Runtime
      */
     private static array $live = [];
 
-    /**
-     * The calls a specification closure made while it was re-run in probe
-     * mode, or `null` outside one. See {@see probe()}.
-     *
-     * @var list<array{object, non-empty-string}>|null
-     */
-    private static ?array $probed = null;
-
-    /**
-     * Re-runs a specification closure with every double call answered instead
-     * of signalled, and reports the calls it made.
-     *
-     * The recording proper throws on the FIRST dispatch — that is what lets a
-     * `: ?Book` or a `: never` method hand its name back without producing a
-     * value — but the first dispatch is the innermost call, so a closure like
-     * `fn () => $r->find($r->count())` was abandoned before `find()` was ever
-     * seen and silently specified `count()`. Here the closure runs again, each
-     * call answered with the mode's type-safe default out of a throwaway
-     * context, and the caller refuses the specification when more than one
-     * call turns up.
-     *
-     * Everything about this pass is advisory. A default may not exist (a
-     * `: never` method, a return type nothing can stand in for) and the code
-     * after a call may not survive a default (`->title` on the `null` a
-     * `?Book` answers with): any throwable ends the probe as inconclusive and
-     * the specification the first pass recorded stands, exactly as before.
-     * Nothing the probe creates is registered anywhere that verification,
-     * accounting or `idle()` can see.
-     *
-     * @return list<array{object, non-empty-string}>|null the calls, in the
-     *         order they were made; `null` when the probe could not finish
-     */
-    public static function probe(callable $call): ?array
-    {
-        // Called from inside the recording that the first pass opened, so the
-        // dispatcher already routes every call here; nothing to open or close.
-        \assert(self::current()->isRecording());
-        self::$probed = [];
-
-        try {
-            $call();
-
-            return self::$probed;
-        } catch (\Throwable) {
-            return null;
-        } finally {
-            self::$probed = null;
-        }
-    }
-
-    /**
-     * The probe's answer to one call: recorded, then the type-safe default the
-     * mode would give, built in a context nobody else holds.
-     *
-     * @param non-empty-string $method
-     */
-    private static function probeAnswer(object $double, string $method): mixed
-    {
-        self::$probed[] = [$double, $method];
-        $signature = DoubleFactory::blueprintOfGenerated($double::class)?->method($method);
-
-        return TypeDefaultResolver::forSignature('probe', $signature, $method, new RuntimeContext(), nested: true, double: $double);
-    }
-
     public static function current(): RuntimeContext
     {
         $stack = self::stack();
@@ -545,11 +481,31 @@ final class Runtime
         $current = self::current();
 
         if ($current->isRecording()) {
-            if (self::$probed !== null) {
-                return self::probeAnswer($double, $method);
-            }
+            // The signal is retained, not thrown: the closure goes on, so a
+            // second call — `fn () => $r->find($r->count())` dispatches
+            // `count()` first — is seen and refused by the recorder instead
+            // of being specified silently. The call is answered with the
+            // mode's type-safe default out of a context nobody else holds,
+            // `nested` so that no collaborator is invented along the way.
+            // Where no default exists (`: never`, an object type) the signal
+            // is thrown after all and the closure ends here, as every
+            // recording used to.
+            $signal = new InvocationSignal($double, $method, $args);
+            $current->recordSpecificationCall($signal);
+            $signature = DoubleFactory::blueprintOfGenerated($double::class)?->method($method);
 
-            throw new InvocationSignal($double, $method, $args);
+            try {
+                return TypeDefaultResolver::forSignature(
+                    self::stateOf($double)?->label() ?? 'understudy',
+                    $signature,
+                    $method,
+                    new RuntimeContext(),
+                    nested: true,
+                    double: $double,
+                );
+            } catch (\Throwable) {
+                throw $signal;
+            }
         }
 
         self::rejectLeakedMatchers($method, $args);
@@ -982,9 +938,10 @@ final class Runtime
         /** @var mixed $value */
         $value = self::dispatch($double, $method, $args);
 
-        if (self::$probed !== null) {
-            // A probe answers with a throwaway: the per-method slot is state
-            // the test can observe through the reference it already holds.
+        if (self::current()->isRecording()) {
+            // A recording answers with a throwaway: the per-method slot is
+            // state the test can observe through the reference it already
+            // holds, and the closure's own value must not land in it.
             $slot = new ReferenceSlot();
             $slot->value = $value;
 

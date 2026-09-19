@@ -38,26 +38,27 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
-     * The closure called one double method while evaluating the arguments of
-     * another. The inner call is what the recording saw; the outer call is
-     * what the test meant, and neither reading is safe to guess.
+     * The closure called more than one double method. Nested in the arguments
+     * of another (`find($r->count())`) or one after the other (`a() + b()`),
+     * the recording cannot tell which one the test meant, and neither reading
+     * is safe to guess.
      *
-     * @param non-empty-string $innerLabel  the double the inner call was made on
-     * @param non-empty-string $innerMethod the inner call, the one the recording saw
-     * @param non-empty-string $outerLabel  the double the outer call was made on
-     * @param non-empty-string $outerMethod the outer call, whose arguments held the inner one
+     * @param non-empty-string $firstLabel  the double the first call was made on
+     * @param non-empty-string $firstMethod the first call dispatched — for a nested pair, the inner one
+     * @param non-empty-string $lastLabel   the double the last call was made on
+     * @param non-empty-string $lastMethod  the last call dispatched — for a nested pair, the outer one
      */
-    public static function nestedCall(string $innerLabel, string $innerMethod, string $outerLabel, string $outerMethod): self
+    public static function moreThanOneCall(string $firstLabel, string $firstMethod, string $lastLabel, string $lastMethod): self
     {
         return new self(sprintf(
-            'The specification closure calls `%s()` on understudy `%s` while evaluating the arguments of `%s()` '
-            . 'on understudy `%s`. A closure must contain exactly one direct call on a double; the inner call would '
-            . 'have been specified silently and the outer one not at all. Stub the inner call in a when() of its own '
-            . 'and pass a literal or a matcher here, for example: when(fn () => $repository->find(Arg::any()))',
-            $innerMethod,
-            $innerLabel,
-            $outerMethod,
-            $outerLabel,
+            'The specification closure calls `%s()` on understudy `%s` and then `%s()` on understudy `%s`. '
+            . 'A closure must contain exactly one direct call on a double; with two, one of them would be specified '
+            . 'silently and the other not at all. Stub each call in a when() of its own, and where one call feeds the '
+            . 'arguments of another pass a literal or a matcher instead, for example: when(fn () => $repository->find(Arg::any()))',
+            $firstMethod,
+            $firstLabel,
+            $lastMethod,
+            $lastLabel,
         ));
     }
 
