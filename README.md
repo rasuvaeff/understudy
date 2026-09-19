@@ -290,13 +290,17 @@ same as uncalled, so not even `strictStubs` reports it. An exhausted
 call-count expectation keeps answering the matching call, so use a
 non-overlapping matcher when a broad fallback should handle later calls.
 
-The closure makes exactly one call on a double. A call nested in the arguments
-of another — `when(fn () => $repo->find($repo->count()))` — is refused with
-`InvalidCallSpecification` naming both: the inner call would have been
-specified silently and the outer one not at all. Stub the inner call in a
-`when()` of its own and pass a literal or a matcher. A required parameter has
-to be spelled; `Arg::rest()` says the ones after it do not matter, so a wide
-signature does not need an `Arg::any()` per position.
+The closure makes exactly one call on a double, and runs exactly once. Two
+calls — nested in the arguments of another, `when(fn () => $repo->find($repo->count()))`,
+or side by side — are refused with `InvalidCallSpecification` naming both:
+with two, one of them would be specified and the other not. Stub each call
+in a `when()` of its own and pass a literal or a matcher where one fed the
+other. A recording answers the call with the type's default (`null` for
+`?Book`, `0` for `int`) and lets the closure finish, so code after the call
+runs against that default; if it does not survive it, the specification
+stands. A required parameter has to be spelled; `Arg::rest()` says the ones
+after it do not matter, so a wide signature does not need an `Arg::any()` per
+position.
 
 `returns()` is checked against the declared return type where it is written:
 a value on a `: void` method (`returns(null)` is allowed — it is the idiom for

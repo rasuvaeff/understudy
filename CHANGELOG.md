@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.12.0 — 2026-09-19
+
+- **Fixed.** A specification closure is run exactly once. Since 0.11.0 the
+  recording, which ended on the first double call, re-ran the closure a second
+  time to see whether another call hid in the arguments of the first — and
+  the closure is user code: a counter in it went up twice, a factory built
+  twice, an `Understudy::for()` inside it created a second double that stayed
+  in the context and failed `verifyAll(strictStubs: true)` as a stub never
+  used. The recording now keeps going past a call instead of ending on it:
+  the dispatcher retains the call and answers it with the mode's type-safe
+  default out of a throwaway context, so every call the closure makes is
+  seen in one pass. A method with no safe default (`: never`, an object
+  type) still ends the closure on its signal, as every recording used to.
+  Code after the call now runs during a recording, against that default; if
+  it does not survive it (a call on the `null` a `?Book` answers with, a
+  closure return type the default does not fit), the specification stands —
+  that code was never run before and is not the specification. (#142)
+- **Changed.** Two calls side by side — `when(fn () => $r->count() .
+  $r->describe())` — are refused like a nested pair, and the refusal reads
+  "calls `count()` … and then `describe()` …" for both shapes; the earlier
+  wording assumed the nested one. `InvalidCallSpecification::nestedCall()` is
+  `moreThanOneCall()`.
+
 ## 0.11.0 — 2026-09-18
 
 - **Fixed.** An interface extending `Throwable`, `DateTimeInterface`,
