@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "059cd190a0914e592e82ce0d6034be72",
+    "content-hash": "582e42eedafa85deb76afbff89a7d61f",
     "packages": [
         {
             "name": "amphp/amp",
@@ -3096,11 +3096,11 @@
         },
         {
             "name": "rasuvaeff/understudy",
-            "version": "0.9.0",
+            "version": "1.0.0",
             "dist": {
                 "type": "path",
                 "url": "../..",
-                "reference": "5d86b82b1a030dcb58cfaf6633a08e09f35a7fe9"
+                "reference": "d044131323553ca7b6ecb639e9bb41d2ba10e1d7"
             },
             "require": {
                 "ext-tokenizer": "*",
@@ -3234,23 +3234,23 @@
         },
         {
             "name": "rasuvaeff/understudy-phpstan",
-            "version": "v0.5.4",
+            "version": "v1.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rasuvaeff/understudy-phpstan.git",
-                "reference": "6972d85231a6d889d25111b43e77873d0d688fc7"
+                "reference": "6d3fb1ca06d092dc613881efd6fe66bafa970914"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpstan/zipball/6972d85231a6d889d25111b43e77873d0d688fc7",
-                "reference": "6972d85231a6d889d25111b43e77873d0d688fc7",
+                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpstan/zipball/6d3fb1ca06d092dc613881efd6fe66bafa970914",
+                "reference": "6d3fb1ca06d092dc613881efd6fe66bafa970914",
                 "shasum": ""
             },
             "require": {
                 "nikic/php-parser": "^5.0",
                 "php": "8.3 - 8.5",
                 "phpstan/phpstan": "^2.2.2",
-                "rasuvaeff/understudy": "^0.9 || ^0.10 || ^0.11 || ^0.12"
+                "rasuvaeff/understudy": "^1.0"
             },
             "require-dev": {
                 "ergebnis/composer-normalize": "^2.51",
@@ -3302,26 +3302,26 @@
                 "issues": "https://github.com/rasuvaeff/understudy-phpstan/issues",
                 "source": "https://github.com/rasuvaeff/understudy-phpstan"
             },
-            "time": "2026-09-19T20:51:37+00:00"
+            "time": "2026-09-27T12:56:43+00:00"
         },
         {
             "name": "rasuvaeff/understudy-phpunit",
-            "version": "v0.5.1",
+            "version": "v1.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rasuvaeff/understudy-phpunit.git",
-                "reference": "36e8b245a647807301e2aeaff76ff89077fd8d30"
+                "reference": "3f415bfa3c0deaeb85f95c7be64ffd7e119bb509"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpunit/zipball/36e8b245a647807301e2aeaff76ff89077fd8d30",
-                "reference": "36e8b245a647807301e2aeaff76ff89077fd8d30",
+                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpunit/zipball/3f415bfa3c0deaeb85f95c7be64ffd7e119bb509",
+                "reference": "3f415bfa3c0deaeb85f95c7be64ffd7e119bb509",
                 "shasum": ""
             },
             "require": {
                 "php": "8.3 - 8.5",
                 "phpunit/phpunit": "^11.5 || ^12.0 || ^13.0",
-                "rasuvaeff/understudy": "^0.9 || ^0.10 || ^0.11 || ^0.12"
+                "rasuvaeff/understudy": "^1.0"
             },
             "require-dev": {
                 "ergebnis/composer-normalize": "^2.51",
@@ -3366,26 +3366,26 @@
                 "issues": "https://github.com/rasuvaeff/understudy-phpunit/issues",
                 "source": "https://github.com/rasuvaeff/understudy-phpunit"
             },
-            "time": "2026-09-19T20:51:30+00:00"
+            "time": "2026-09-27T12:54:59+00:00"
         },
         {
             "name": "rasuvaeff/understudy-psalm",
-            "version": "v0.8.5",
+            "version": "v1.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rasuvaeff/understudy-psalm.git",
-                "reference": "c6ee952ae9b82840be30375d372422f79c723442"
+                "reference": "94a16bb9675d36734e26a394f6aa54a142a2ccfc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy-psalm/zipball/c6ee952ae9b82840be30375d372422f79c723442",
-                "reference": "c6ee952ae9b82840be30375d372422f79c723442",
+                "url": "https://api.github.com/repos/rasuvaeff/understudy-psalm/zipball/94a16bb9675d36734e26a394f6aa54a142a2ccfc",
+                "reference": "94a16bb9675d36734e26a394f6aa54a142a2ccfc",
                 "shasum": ""
             },
             "require": {
                 "nikic/php-parser": "^5.0",
                 "php": "8.3 - 8.5",
-                "rasuvaeff/understudy": "^0.9 || ^0.10 || ^0.11 || ^0.12",
+                "rasuvaeff/understudy": "^1.0",
                 "vimeo/psalm": "^6.16"
             },
             "require-dev": {
@@ -3434,26 +3434,26 @@
                 "issues": "https://github.com/rasuvaeff/understudy-psalm/issues",
                 "source": "https://github.com/rasuvaeff/understudy-psalm"
             },
-            "time": "2026-09-19T20:51:23+00:00"
+            "time": "2026-09-27T12:53:25+00:00"
         },
         {
             "name": "rasuvaeff/understudy-testo",
-            "version": "v0.3.5",
+            "version": "v1.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rasuvaeff/understudy-testo.git",
-                "reference": "de861800cae579e91a901c87089e3a09d57c691d"
+                "reference": "e3d3087d4c68148a752549b8f378ea443cecda26"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy-testo/zipball/de861800cae579e91a901c87089e3a09d57c691d",
-                "reference": "de861800cae579e91a901c87089e3a09d57c691d",
+                "url": "https://api.github.com/repos/rasuvaeff/understudy-testo/zipball/e3d3087d4c68148a752549b8f378ea443cecda26",
+                "reference": "e3d3087d4c68148a752549b8f378ea443cecda26",
                 "shasum": ""
             },
             "require": {
                 "internal/container": "^1.0",
                 "php": "8.3 - 8.5",
-                "rasuvaeff/understudy": "^0.9 || ^0.10 || ^0.11 || ^0.12",
+                "rasuvaeff/understudy": "^1.0",
                 "testo/assert": "^0.1.13",
                 "testo/testo": "^0.10.42"
             },
@@ -3499,7 +3499,7 @@
                 "issues": "https://github.com/rasuvaeff/understudy-testo/issues",
                 "source": "https://github.com/rasuvaeff/understudy-testo"
             },
-            "time": "2026-09-19T20:51:15+00:00"
+            "time": "2026-09-27T12:50:00+00:00"
         },
         {
             "name": "revolt/event-loop",

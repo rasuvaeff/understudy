@@ -9,7 +9,7 @@ description: "`bypassFinals()` cannot do what was asked of it."
 
 `Rasuvaeff\Understudy\Exception\BypassUnavailable`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/BypassUnavailable.php#L12) — **Version:** v0.10.0-2-g3cdc6e0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/BypassUnavailable.php#L12) — **Version:** v1.0.0
 
 **Extends:** `LogicException`
 

@@ -9,7 +9,7 @@ description: "A double outlived the context that created it — almost always a 
 
 `Rasuvaeff\Understudy\Exception\ForgottenDouble`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForgottenDouble.php#L16) — **Version:** v0.10.0-2-g3cdc6e0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForgottenDouble.php#L16) — **Version:** v1.0.0
 
 **Extends:** `LogicException`
 
@@ -30,6 +30,17 @@ static afterReset(non-empty-string $method): Exception\ForgottenDouble
 ```
 
 Builds the error for calling a double after its context was reset.
+
+### afterScope()
+
+```php
+static afterScope(non-empty-string $member): Exception\ForgottenDouble
+```
+
+The double was built inside `Understudy::scope()` and the scope has
+closed since. There is no reset() to look for.
+
+- `$member` — the method called on the double, or the facade verb it was handed to
 
 ### onPurpose()
 

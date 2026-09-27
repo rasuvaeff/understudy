@@ -9,7 +9,7 @@ description: "A specification of the wrong SHAPE: the closure handed to when()/v
 
 `Rasuvaeff\Understudy\Exception\InvalidCallSpecification`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L25) — **Version:** v0.10.0-2-g3cdc6e0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L25) — **Version:** v1.0.0
 
 **Extends:** `LogicException`
 
@@ -40,6 +40,56 @@ static noCallRecorded(): Exception\InvalidCallSpecification
 
 The closure ran to its end without any generated method signalling: it
 called nothing on a double, or only something that is not one.
+
+### moreThanOneCall()
+
+```php
+static moreThanOneCall(
+    non-empty-string $firstLabel,
+    non-empty-string $firstMethod,
+    non-empty-string $lastLabel,
+    non-empty-string $lastMethod,
+): Exception\InvalidCallSpecification
+```
+
+The closure called more than one double method. Nested in the arguments
+of another (`find($r->count())`) or one after the other (`a() + b()`),
+the recording cannot tell which one the test meant, and neither reading
+is safe to guess.
+
+- `$firstLabel` — the double the first call was made on
+- `$firstMethod` — the first call dispatched — for a nested pair, the inner one
+- `$lastLabel` — the double the last call was made on
+- `$lastMethod` — the last call dispatched — for a nested pair, the outer one
+
+### returnsOnVoid()
+
+```php
+static returnsOnVoid(
+    non-empty-string $label,
+    non-empty-string $method,
+): Exception\InvalidCallSpecification
+```
+
+`returns()` on a method declared `: void`: the value would never be
+observed, and a test that relies on it is checking nothing.
+
+- `$label` — the double, as a refusal names it
+- `$method` — the method declared `: void`
+
+### returnsOnNever()
+
+```php
+static returnsOnNever(
+    non-empty-string $label,
+    non-empty-string $method,
+): Exception\InvalidCallSpecification
+```
+
+`returns()` on a method declared `: never`, which cannot return at all.
+
+- `$label` — the double, as a refusal names it
+- `$method` — the method declared `: never`
 
 ### notADouble()
 

@@ -9,7 +9,7 @@ description: "A VALUE inside a specification that no run could act on: a maximum
 
 `Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidSpecificationArgument.php#L24) — **Version:** v0.10.0-2-g3cdc6e0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidSpecificationArgument.php#L24) — **Version:** v1.0.0
 
 **Extends:** `InvalidArgumentException`
 
@@ -80,6 +80,26 @@ static noReturnValues(): Exception\InvalidSpecificationArgument
 
 `returns()` with no arguments: there is nothing for the double to
 return, and the chain would answer the next call with nothing at all.
+
+### returnValueOfWrongType()
+
+```php
+static returnValueOfWrongType(
+    non-empty-string $label,
+    non-empty-string $method,
+    non-empty-string $declared,
+    non-empty-string $given,
+): Exception\InvalidSpecificationArgument
+```
+
+A `returns()` value the declared return type cannot hold. Refused where
+it was written: left to the engine it surfaced as a `TypeError` naming
+the generated class, from wherever in the code under test the call was.
+
+- `$label` — the double, as a refusal names it
+- `$method` — the method whose return type refused the value
+- `$declared` — the return type as the contract declares it
+- `$given` — the value's type, as `get_debug_type()` reports it
 
 ### unknownType()
 
