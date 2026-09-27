@@ -518,6 +518,15 @@ cases are stable: renaming, removing or retyping one is a major-version change.
 A NEW kind, or a field newly populated for an existing kind, may arrive in a
 minor — match on `FailureKind` with a `default` arm, never exhaustively.
 
+## Compatibility
+
+The `1.x` public contract is every `@api` type, member name, signature, and
+readonly field. `@internal` types may change in any release. Constructors only
+gain optional parameters at the end. Failure messages are prose; consume
+`VerificationFailed::failures()` instead. Release order is core first, then
+Testo, Psalm, PHPUnit, and PHPStan satellites. Each satellite `1.x` line
+requires `rasuvaeff/understudy:^1.0`.
+
 ## Not supported
 
 Static method mocking, patching at the point of use, deep stubs, duck doubles,

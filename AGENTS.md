@@ -211,10 +211,11 @@ seconds instead of the full run's minute — and the full run stays the gate.
   tests grow the numerator. Read the reasons before moving the number, and add
   one when you do — a gate whose verdict flips on which PHP built the run is
   measuring the environment, not the suite.
-  For the published `0.x` line, `minMsi: 92` is therefore the explicit release
-  policy: a single local run at 94.1% is evidence, not a new gate. Before the
-  `1.0` release, rerun a reproducible CI-like matrix and raise the threshold
-  only when it has stable headroom above the new value.
+  For the published `0.x` line, `minMsi: 92` was the explicit release policy.
+  The `1.0` release requires a reproducible CI-like matrix run on the candidate
+  and a documented threshold decision; a single local run is evidence, not a
+  new gate. Keep the configured threshold and its rationale together until the
+  escaped-mutant list has enough stable headroom for a measured increase.
 - **The only `&` in the package is in generated code, and that is deliberate.**
   Psalm cannot follow a reference into an object property and says so by name;
   the way out is not a suppression but moving the reference to where Psalm never
@@ -472,7 +473,7 @@ decided lives in this section and in `docs/scripts/check-integrity.mjs`.
 | **A new `@api` free function needs `make docs-api` too**, and a row in `llms.txt` | checks 2b and 7 — the class-only pipeline used to drop functions silently |
 | **A new PHPStan rule needs its row on `/api/rules` in the same PR** | check 9; the analyser packages have no other public contract |
 | **`MIGRATION.md` is generated** from `docs/src/guide/migrating-*.md`. Edit the pages, run `make docs-migration` | check via `docs:check:migration` |
-| **`docs/.api-workspace/composer.lock` is committed and moves with every satellite release.** A caret on 0.x pins a minor, so `^0.2` documented `understudy-psalm` 0.2.0 while 0.8.0 was out; bump the pin, `composer update` in the workspace, `make docs-api`, commit all three | `docs.yml` runs `composer outdated --direct --strict` there and goes red otherwise |
+| **`docs/.api-workspace/composer.lock` is committed and moves with every satellite release.** A caret on 0.x pins a minor; on 1.x it follows the stable major, but the lock still has to move after every satellite release. Bump the constraints, `composer update` in the workspace, `make docs-api`, commit all three | `docs.yml` runs `composer outdated --direct --strict` there and goes red otherwise |
 | **`make perf` means re-reading three files**: `perf/README.md`, `README.md`'s Performance table and `README.ru.md`'s. Keep the `<!-- #region site -->` markers and the `Taken YYYY-MM-DD` line | checks 10 and 11 |
 | **An `@include` that cannot resolve fails silently in VitePress** — the page renders as its heading and nothing else | check 12 |
 | **`{{` in prose needs `<code v-pre>`** | Vue interpolates it otherwise |
