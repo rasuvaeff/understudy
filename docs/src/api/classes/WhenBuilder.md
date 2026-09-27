@@ -9,7 +9,7 @@ description: "Configures what a stubbed call does."
 
 `Rasuvaeff\Understudy\WhenBuilder`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L37) — **Version:** v0.10.0-2-g3cdc6e0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L39) — **Version:** v1.0.0
 
 **Type parameters:**
 
@@ -38,12 +38,14 @@ class would mean duplicating every action verb on `ExpectBuilder` — and a
 ```php
 __construct(
     Expectation\Expectation $expectation,
+    \Expectation\ReturnContract|null $contract = NULL,
 )
 ```
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `$expectation` | `Expectation\Expectation` | *required* |  |
+| `$contract` | `\Expectation\ReturnContract\|null` | `NULL` | what the specified method may answer with; `null` only where no signature is known |
 
 ## Methods
 

@@ -93,9 +93,9 @@ figure, is the only thing worth quoting.
 
 Environment: PHP 8.5.6, Linux x86_64, `composer:2` image, no OPcache, no Xdebug.
 The container is pinned to six cores with a raised CPU share — by the `PERF`
-variable in the root `Makefile`, not by flags typed at a prompt. Understudy at
-`442da10`, Mockery 1.6.15, Prophecy 1.26.1, PHPUnit 12.5.33. Taken 2026-08-27,
-before the 0.2.0 tag.
+variable in the root `Makefile`, not by flags typed at a prompt. Understudy
+`v1.0.0` (`d044131`), Mockery 1.6.15, Prophecy 1.26.1, PHPUnit 12.5.36.
+Taken 2026-09-27.
 
 **Re-verified for the v0.5.0 tag on 2026-09-03**, and left unchanged because
 there was nothing to change. Three runs of the full harness at `442da10` — the
@@ -139,6 +139,16 @@ change. The absolutes on that machine read about 2.3x the figures below, which
 is exactly the reason the ratio is what gets quoted and why the numbers here
 were not replaced with the ones it produced.
 
+**Re-measured for `v1.0.0` on 2026-09-27.** Three full runs at `442da10` and
+three at `v1.0.0`, in one sitting with the same CPU pinning. The candidate's
+filtered medians moved by about +20% on double creation and verified mocks,
++18% on a 20-call stub, and +24% on a one-call stub. Memory per live double is
+571–586 B versus 467–482 B at the baseline. The competitor movement stayed in
+the noise floor, so these are attributable changes and the tables below now
+describe the 1.0.0 candidate. Cold start is nearly tied with Mockery (3.24 ms
+versus 3.10 ms added to the process); the ratio is reported rather than the
+absolute because process startup is noisy.
+
 Every in-process table below was run three times; medians move by 0.2-3.5%
 between runs. Figures are **filtered means** — testo's `Mean*`, after outlier
 rejection — and the relative deviation of that filtered set is under 5%
@@ -158,10 +168,10 @@ worth acting on.
 
 | Contract | understudy | Mockery | Prophecy | PHPUnit `createStub` | PHPUnit `createMock` |
 |---|---|---|---|---|---|
-| 1 method | **2.06µs** | +216% | +683% | +155% | +159% |
-| 8 methods | **2.06µs** | +217% | +641% | +158% | +159% |
+| 1 method | **2.69µs** | +148% | +497% | +102% | +115% |
+| 8 methods | **2.67µs** | +149% | +478% | +104% | +113% |
 
-The cost still does not move with the width of the contract — 2.06µs either way
+The cost still does not move with the width of the contract — 2.69µs either way
 — because the generated class is compiled once and everything after that is
 instantiation. A busy machine will suggest otherwise; it is wrong.
 
@@ -172,9 +182,9 @@ regression described above, not a change since 0.1.2.
 
 | | understudy | Mockery | Prophecy | PHPUnit `createStub` |
 |---|---|---|---|---|
-| 1 call | 10.6µs | +17% | +76% | **−17%** |
-| 20 calls | 27.1µs | +59% | +75% | **−19%** |
-| marginal cost of one call² | 0.86µs | 1.61µs | 1.51µs | **0.69µs** |
+| 1 call | 12.8µs | −8% | +33% | **−34%** |
+| 20 calls | 32.1µs | +33% | +49% | **−32%** |
+| marginal cost of one call² | 1.02µs | 1.62µs | 1.50µs | **0.70µs** |
 
 ¹ Prophecy's twenty-call row was unquotable in the previous set — ±72% after
 filtering. On an idle machine it settles to ±3.7% and is quoted here.
@@ -183,8 +193,8 @@ filtering. On an idle machine it settles to ±3.7% and is quoted here.
 
 **PHPUnit is ahead of understudy on the whole stub scenario, at both ends.** It
 builds the double more slowly and dispatches more cheaply, and in this
-environment the second effect wins from the first call onward: 8.77µs against
-10.6µs at one call, 0.69µs against 0.86µs per call after. There is no crossover
+environment the second effect wins from the first call onward: 8.47µs against
+12.81µs at one call, 0.70µs against 1.02µs per call after. There is no crossover
 at which understudy's stub test becomes the cheaper one.
 
 That is a change of conclusion, not only of numbers. The previous figures had
@@ -198,13 +208,13 @@ PHPUnit from 1.62× to 1.15× — and it moved the build cost too, from 2.08µs 
 
 | | understudy | Mockery | Prophecy | PHPUnit `createMock` |
 |---|---|---|---|---|
-| plain expectation | 12.8µs | +4% | +128% | **−27%** |
-| with an argument matcher | **12.2µs** | +5% | +115% | —³ |
+| plain expectation | 16.0µs | −16% | +89% | **−41%** |
+| with an argument matcher | **15.5µs** | −15% | +76% | —³ |
 
 ³ see "What is deliberately absent" above.
 
 An argument matcher costs understudy nothing measurable over a plain
-expectation — 10.77µs either way.
+expectation — 16.04µs versus 15.48µs in these runs.
 
 ### Cold start
 
@@ -214,24 +224,23 @@ more between runs than testo calls stable, and the ratios hold much better.
 
 | library | added to process start | ×understudy |
 |---|---|---|
-| understudy | 1.59ms | **1.00×** |
-| Mockery | 2.39ms | 1.50× |
-| Prophecy | 7.91ms | 4.96× |
-| PHPUnit | 8.58ms | 5.38× |
+| understudy | 3.24ms | **1.00×** |
+| Mockery | 3.10ms | 0.96× |
+| Prophecy | 8.70ms | 2.69× |
+| PHPUnit | 9.42ms | 2.91× |
 
-Mockery's ratio has been unstable across sets — 1.87×, then 1.30–1.53×, now
-1.50× — across commits that cannot touch Mockery. Recorded as observed, without
-a cause.
+Mockery's ratio has been unstable across sets — it is marginally faster than
+understudy in this release run. That is recorded as observed, without a cause.
 
 ### Memory
 
 500 live doubles per contract, after one warmup double per library so that the
 library''s own autoloading is not billed to the first contract measured.
-Deterministic: two runs, identical to the byte.
+Deterministic: three runs per side, identical to the byte.
 
 | library | first double of a contract | each further double |
 |---|---|---|
-| understudy | 4.5 KB (`Clock`), 13.6 KB (`Ledger`) | **467–482 B** |
+| understudy | 4.7 KB (`Clock`), 17.4 KB (`Ledger`) | **571–586 B** |
 | Mockery | 126.3 KB, 140.8 KB | 513 B |
 | Prophecy | 13.5 KB, 35.5 KB | ~8.5 KB |
 | PHPUnit | 9.5 KB, 134.6 KB | ~1.25 KB |
@@ -247,6 +256,7 @@ the movement is code:
 | after #9–#14 (class doubles, forwarding, defaults, by-ref, bypass) | 418 B | 403 B |
 | after #16 (dispatch) | 450 B | 435 B |
 | at `442da10`, before 0.2.0 | 482 B | 467 B |
+| `v1.0.0` | 586 B | 571 B |
 
 The last row is another 32 bytes, over the same range that carries the #23
 creation regression. It has not been attributed to a single change.

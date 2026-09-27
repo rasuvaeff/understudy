@@ -69,30 +69,29 @@ here. Two rows are traps, marked ⚠.
 
 ## Performance
 
-Against Mockery 1.6.15, Prophecy 1.26.1 and PHPUnit 12.5.33 on PHP 8.5.6.
+Against Mockery 1.6.15, Prophecy 1.26.1 and PHPUnit 12.5.36 on PHP 8.5.6.
 Filtered means, three runs; understudy is the baseline. Full methodology, raw
 tables and the environment in [perf/README.md](perf/README.md).
 
 | | understudy | Mockery | Prophecy | PHPUnit |
 |---|---|---|---|---|
-| build a double (1-method contract) | **2.06µs** | +216% | +683% | +155%¹ |
-| build a double (8-method contract) | **2.06µs** | +217% | +641% | +158%¹ |
-| stub: build, stub, one call, tear down | 10.6µs | +17% | +76% | **−17%**¹ |
-| mock: build, expect, call, verify | 12.8µs | +4% | +128% | **−27%**² |
-| marginal cost of one call to a stub | 0.86µs | 1.61µs | 1.51µs | **0.69µs**¹ |
-| added to process start (cold) | **1.00×** | 1.50× | 4.96× | 5.38³ |
-| retained per live double | **467–482 B** | 513 B | ~8.5 KB | ~1.25 KB |
+| build a double (1-method contract) | **2.69µs** | +148% | +497% | +102%¹ |
+| build a double (8-method contract) | **2.67µs** | +149% | +478% | +104%¹ |
+| stub: build, stub, one call, tear down | 12.8µs | −8% | +33% | **−34%**¹ |
+| mock: build, expect, call, verify | 16.0µs | −16% | +89% | **−41%**² |
+| marginal cost of one call to a stub | 1.02µs | 1.62µs | 1.50µs | **0.70µs**¹ |
+| added to process start (cold) | **1.00×** | 0.96× | 2.69× | 2.91³ |
+| retained per live double | **571–586 B** | 513 B | ~8.5 KB | ~1.25 KB |
 
 ¹ `createStub()` ² `createMock()` ³ a ratio rather than milliseconds: cold start
 moves far more between runs than its ratios do.
 
 Understudy builds doubles about two and a half times cheaper than the next
-fastest, and starts a process in a fifth of the added time. It does **not** win
-everywhere: PHPUnit is ahead on both stub and mock scenarios end to end — it
-dispatches a call in 0.69µs against understudy's 0.86µs and no longer pays
-enough at build time to make up for it.
+fastest. It does **not** win everywhere: PHPUnit is ahead on both stub and mock
+scenarios end to end — it dispatches a call in 0.70µs against understudy's
+1.02µs, and Mockery is marginally faster on cold start in this release run.
 
-**Building a double costs more than it did**, 2.06µs against 1.28µs in the
+**Building a double costs more than it did**, 2.69µs against 1.28µs in the
 figures published with 0.1.x. Those figures were taken at a commit *before*
 0.1.0 and described no released version: a regression landed between them and
 the first tag, and has been shipping since. It is bisected and documented in

@@ -295,6 +295,68 @@ jobs:
       - name: Install the engine from a dist archive and use it
         run: bin/consumer-smoke --only=core
 
+  adapters:
+    name: Adapter contract suite (${{ matrix.adapter }})
+    # Keep this matrix unconditional. A matrix job skipped by its own `if:`
+    # reports one raw check name instead of the expanded names that branch
+    # protection requires, leaving each adapter context pending on docs-only
+    # changes. The four adapter suites are cheap compared with mutation.
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter:
+          - testo
+          - psalm
+          - phpunit
+          - phpstan
+
+    steps:
+      - name: Checkout core
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          path: core
+
+      - name: Checkout adapter
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: rasuvaeff/understudy-${{ matrix.adapter }}
+          persist-credentials: false
+          path: adapter
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: json, mbstring
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Point the adapter at this checkout of core
+        working-directory: adapter
+        run: |
+          composer config repositories.core '{"type":"path","url":"../core","options":{"versions":{"rasuvaeff/understudy":"1.0.0"}}}'
+          composer update --no-interaction --no-progress
+
+      - name: Verify core resolved to the path repository
+        working-directory: adapter
+        run: |
+          composer show rasuvaeff/understudy | tee /tmp/core-source.txt
+          grep -qE '^path +: +' /tmp/core-source.txt
+
+      - name: Adapter test suite
+        working-directory: adapter
+        run: composer test
+
   coverage:
     name: Coverage & Mutation
     needs: changes
