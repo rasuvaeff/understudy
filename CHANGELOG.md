@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.0 — 2026-09-27
+
+The stability release. The public `@api` surface is the same as `0.12.0`:
+there are no renamed, removed, or retyped public members. A project on
+`^0.12` upgrades by widening the constraint to `^1.0`. The compatibility
+policy in `README.md` and `README.ru.md` defines what is frozen from here on.
+
+- The four family satellites release their own `1.0.0` versions after this
+  engine release and require `rasuvaeff/understudy` `^1.0`.
+- Existing `VerificationFailure` fields and `FailureKind` cases are stable.
+  A new failure kind may be added in a minor release; consumers must keep a
+  default branch when matching the enum.
+- The family release order is engine first, then the satellites. The core CI
+  contract suite installs each satellite against this checkout through a path
+  repository claiming version `1.0.0`.
+
 ## 0.12.0 — 2026-09-19
 
 - **Fixed.** A specification closure is run exactly once. Since 0.11.0 the

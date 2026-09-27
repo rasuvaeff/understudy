@@ -983,6 +983,28 @@ in your test file already.
 
 It is a development dependency. Do not install it in production.
 
+## Compatibility policy
+
+The public contract is every class, interface, enum, exception, and free
+function marked `@api`. Types marked `@internal` are implementation details and
+may change in any release. The `1.x` line keeps the names, signatures, and
+readonly fields of the public API stable; constructors only gain optional
+parameters at the end. Removing, renaming, or retyping an existing public
+member is a major-version change.
+
+`VerificationFailure` fields and existing `FailureKind` cases are stable. A
+minor release may add a new failure kind or populate a new field, so code that
+matches `FailureKind` must include a default branch. Failure messages are prose
+and may be reworded in a minor release; consumers should use
+`VerificationFailed::failures()` for structured handling.
+
+The family releases in this order: `rasuvaeff/understudy` first, then
+`understudy-testo`, `understudy-psalm`, `understudy-phpunit`, and
+`understudy-phpstan`. Each satellite's 1.x line requires the core with a caret
+on the current major (`^1.0`). Supporting a newer PHP minor widens the PHP
+constraint in a patch release; dropping a supported PHP version is a major
+release.
+
 ## Examples
 
 Runnable scripts live in [examples/](examples/) — one per concept: the three
