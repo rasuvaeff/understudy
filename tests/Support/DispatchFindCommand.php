@@ -56,7 +56,7 @@ final readonly class DispatchFindCommand implements Command
         }
 
         return [
-            $answer === null ? null : $answer->title,
+            $answer?->title,
             count(Understudy::calls(fn() => $system->double->find(Arg::any()))),
         ];
     }

@@ -1,8 +1,8 @@
 {
     "phpstan": {
-        "version": "v1.0.0",
-        "reference": "6d3fb1ca06d092dc613881efd6fe66bafa970914",
-        "repoBlob": "https://github.com/rasuvaeff/understudy-phpstan/blob/6d3fb1ca06d092dc613881efd6fe66bafa970914/",
+        "version": "v1.0.1",
+        "reference": "b002d987101830bf69bc35d74a64b63ea3627063",
+        "repoBlob": "https://github.com/rasuvaeff/understudy-phpstan/blob/b002d987101830bf69bc35d74a64b63ea3627063/",
         "registeredRules": [
             "Rasuvaeff\\Understudy\\PhpStan\\Rule\\SpecificationCallRule",
             "Rasuvaeff\\Understudy\\PhpStan\\Rule\\SpecificationStaticCallRule",

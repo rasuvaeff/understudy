@@ -3100,7 +3100,7 @@
             "dist": {
                 "type": "path",
                 "url": "../..",
-                "reference": "d044131323553ca7b6ecb639e9bb41d2ba10e1d7"
+                "reference": "789f7756b3c9bb01b1c8e0a7e382f96baeba30de"
             },
             "require": {
                 "ext-tokenizer": "*",
@@ -3234,16 +3234,16 @@
         },
         {
             "name": "rasuvaeff/understudy-phpstan",
-            "version": "v1.0.0",
+            "version": "v1.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rasuvaeff/understudy-phpstan.git",
-                "reference": "6d3fb1ca06d092dc613881efd6fe66bafa970914"
+                "reference": "b002d987101830bf69bc35d74a64b63ea3627063"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpstan/zipball/6d3fb1ca06d092dc613881efd6fe66bafa970914",
-                "reference": "6d3fb1ca06d092dc613881efd6fe66bafa970914",
+                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpstan/zipball/b002d987101830bf69bc35d74a64b63ea3627063",
+                "reference": "b002d987101830bf69bc35d74a64b63ea3627063",
                 "shasum": ""
             },
             "require": {
@@ -3264,7 +3264,7 @@
                 "testo/testo": "^0.10.39",
                 "vimeo/psalm": "^6.16"
             },
-            "type": "library",
+            "type": "phpstan-extension",
             "extra": {
                 "phpstan": {
                     "includes": [
@@ -3302,7 +3302,7 @@
                 "issues": "https://github.com/rasuvaeff/understudy-phpstan/issues",
                 "source": "https://github.com/rasuvaeff/understudy-phpstan"
             },
-            "time": "2026-09-27T12:56:43+00:00"
+            "time": "2026-09-27T19:06:33+00:00"
         },
         {
             "name": "rasuvaeff/understudy-phpunit",
