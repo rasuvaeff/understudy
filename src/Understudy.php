@@ -733,8 +733,8 @@ final class Understudy
      */
     public static function bypassFinals(?string $class = null): void
     {
-        if (!FileWrapper::isInstalled() && self::foreignSourceTransform()) {
-            throw BypassUnavailable::foreignWrapper('the source it read back was not the source on disk');
+        if (!FileWrapper::isInstalled() && self::foreignFileWrapper()) {
+            throw BypassUnavailable::foreignWrapper('a user-space wrapper already owns `file://`');
         }
 
         if ($class === null) {
@@ -769,20 +769,12 @@ final class Understudy
     }
 
     /**
-     * Whether something already transforms PHP source read through `file://`.
+     * Whether a user-space wrapper already owns `file://`.
      *
-     * PHP exposes no owner for a protocol — `stream_get_wrappers()` lists
-     * `file` whoever handles it, and every register/restore call answers `true`
-     * either way — so the question is asked of behaviour instead. The stripper's
-     * own file declares `final class FinalStripper`, and a wrapper that strips
-     * `final` from class declarations, which is precisely the incompatible one,
-     * will have removed it by the time the bytes arrive here.
-     *
-     * What it catches: another source transformer. What it does not: a wrapper
-     * that leaves PHP source alone, which by definition composes with this one
-     * anyway. Not a guarantee dressed up as one.
+     * Any existing user-space wrapper may have behaviour that replacing it
+     * would silently disable, so bypass refuses before installing its wrapper.
      */
-    private static function foreignSourceTransform(): bool
+    private static function foreignFileWrapper(): bool
     {
         $file = (new \ReflectionClass(FinalStripper::class))->getFileName();
 
@@ -790,15 +782,19 @@ final class Understudy
             return false;
         }
 
-        $source = @file_get_contents($file);
+        $stream = @fopen($file, 'r');
 
-        if ($source === false) {
-            // Nothing readable to compare against; refusing here would fail a
+        if ($stream === false) {
+            // Nothing readable to inspect; refusing here would fail a
             // bypass for a reason that has nothing to do with wrappers.
             return false;
         }
 
-        return !str_contains($source, 'final class FinalStripper');
+        try {
+            return (stream_get_meta_data($stream)['wrapper_type'] ?? null) === 'user-space';
+        } finally {
+            fclose($stream);
+        }
     }
 
     /**

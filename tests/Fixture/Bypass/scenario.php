@@ -272,7 +272,7 @@ echo match ($scenario) {
 
             return 'installed over another stripper';
         } catch (BypassUnavailable $refused) {
-            return str_contains($refused->getMessage(), 'the source it read back was not the source on disk')
+            return str_contains($refused->getMessage(), 'a user-space wrapper already owns `file://`')
                 ? 'refused'
                 : 'refused with: ' . $refused->getMessage();
         } finally {
@@ -287,9 +287,11 @@ echo match ($scenario) {
         try {
             Understudy::bypassFinals(SealedGate::class);
 
-            return 'accepted';
+            return 'installed over another wrapper';
         } catch (BypassUnavailable $refused) {
-            return 'refused: ' . $refused->getMessage();
+            return str_contains($refused->getMessage(), 'a user-space wrapper already owns `file://`')
+                ? 'refused'
+                : 'refused with: ' . $refused->getMessage();
         } finally {
             stream_wrapper_restore('file');
         }
