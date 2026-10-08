@@ -43,15 +43,15 @@ final class BypassUnavailable extends \LogicException implements UnderstudyError
     }
 
     /**
-     * Builds the error for an already-installed foreign source wrapper.
+     * Builds the error for an already-installed user-space file wrapper.
      *
-     * Something else already transforms PHP source on `file://`; replacing it
-     * would silently disable whatever it does.
+     * Something else owns `file://`; replacing it would silently disable
+     * whatever it does, whether or not it transforms PHP source.
      */
     public static function foreignWrapper(string $owner): self
     {
         return new self(sprintf(
-            "Something else is already transforming PHP source read through `file://` (%s).\n"
+            "Something else is already serving `file://` through a user-space wrapper (%s).\n"
             . "Replacing that wrapper would silently disable whatever it does, so understudy will not.\n"
             . "- Call Understudy::bypassFinals() before the other wrapper is installed.\n"
             . '- Or double an interface, which needs no wrapper at all.',

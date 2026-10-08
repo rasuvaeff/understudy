@@ -36,5 +36,5 @@ Do not install it in production. `composer require --dev`.
 
 [`bypassFinals()`](/guide/doubles/final-classes) rewrites source as it is read,
 so a class really is not final any more for the rest of the process. It is
-opt-in for exactly that reason, and it refuses to act rather than to compete
-when another source transformer is already installed.
+opt-in for exactly that reason, and it refuses to act rather than replace any
+user-space wrapper that already owns `file://`.

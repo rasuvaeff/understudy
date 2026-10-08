@@ -7,10 +7,9 @@ namespace Rasuvaeff\Understudy\Tests\Fixture\Bypass;
 /**
  * Somebody else owning `file://` without touching PHP source.
  *
- * The refusal is deliberately narrow — it asks whether the source read back is
- * the source on disk, not whether anyone else is present — so this one has to
- * be *accepted*. Pinning that is what keeps the narrowness a decision rather
- * than a gap nobody noticed.
+ * Understudy still refuses it: it cannot establish that replacing an existing
+ * user-space wrapper would be safe just because this fixture leaves source
+ * text alone.
  */
 final class PassiveWrapper
 {

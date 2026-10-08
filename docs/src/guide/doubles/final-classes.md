@@ -26,7 +26,7 @@ than discovered.
 | `final` methods stay | a final method cannot be overridden either way, so a class carrying one is still refused |
 | PHAR and preloaded classes | their source arrives as `phar://`, or before any bootstrap ran, so it never passes through the `file://` wrapper |
 | The opcode cache is not a way back | however warm the cache is, and whether or not it holds the bypassed file — Linux keeps it out, Windows does not — the class stays open. Not being cached is a cost where it happens, not a guarantee to rely on |
-| Another source transformer | if something else is already rewriting PHP source, understudy refuses rather than replacing it silently; a wrapper that leaves source alone composes and is accepted |
+| Another `file://` wrapper | if a user-space wrapper already owns `file://`, understudy refuses rather than replacing it silently, whether or not that wrapper transforms PHP source |
 
 ## The refusal tells you which one it was
 

@@ -58,10 +58,7 @@ final class BypassFinalsIntegrationTest
             'opened, line 19',
         ];
         yield 'a second final-stripper on file:// is refused' => ['foreign-stripper', 'refused'];
-        // Deliberately the other way round: the refusal asks whether the
-        // source read back is the source on disk, not whether anyone else is
-        // there. A wrapper that leaves PHP source alone composes.
-        yield 'a wrapper that leaves source alone is accepted' => ['passive-wrapper', 'accepted'];
+        yield 'a wrapper that leaves source alone is also refused' => ['passive-wrapper', 'refused'];
         yield 'a class nobody named stays final, and the refusal says so' => [
             'bypass-for-another-class',
             'refused, naming the omission',
