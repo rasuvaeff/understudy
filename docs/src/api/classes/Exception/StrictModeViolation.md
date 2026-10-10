@@ -9,7 +9,7 @@ description: "A strict understudy received a call no expectation matched."
 
 `Rasuvaeff\Understudy\Exception\StrictModeViolation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/StrictModeViolation.php#L12) — **Version:** v1.0.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/StrictModeViolation.php#L12) — **Version:** v1.0.0-3-gb1f9107
 
 **Extends:** `RuntimeException`
 

@@ -450,6 +450,19 @@ open range. Write the second argument for that.
 one. `verifyAll(strictStubs: true)` additionally fails a stub that was never
 used.
 
+`verifyAll()` returns how many checks it verified, so a runner adapter counts
+real assertions instead of a flat one per test. One check is: an expectation
+carrying a claim (`expect()`, or `times()` on a stub); a plain stub under
+`strictStubs`, where its use is what is checked; an ordering constraint over
+expectations that declared one; an armed protocol, whose completeness is
+checked here. A failed check throws rather than returns, so the number only
+ever counts checks that passed — and checks `verify()` made earlier are not
+part of it: those answered at their own call sites.
+
+```php
+$checks = Understudy::verifyAll();   // int: claims + strict stubs + order + protocol
+```
+
 An expectation needs no `returns()`: counting and answering are separate
 concerns, so the mode's type-safe default supplies the value, and a matched
 expectation satisfies a strict double because the call was expected.
@@ -988,8 +1001,15 @@ The public contract is every class, interface, enum, exception, and free
 function marked `@api`. Types marked `@internal` are implementation details and
 may change in any release. The `1.x` line keeps the names, signatures, and
 readonly fields of the public API stable; constructors only gain optional
-parameters at the end. Removing, renaming, or retyping an existing public
+parameters at the end. Removing, renaming, or narrowing an existing public
 member is a major-version change.
+
+A return type may be **widened** in a minor release where no caller can
+observe the change: `verifyAll()` went from `void` to `int` in a minor,
+because a method that answered nothing cannot have had a caller reading the
+answer, and `Understudy` is `final`, so no override shadows it. The same
+reasoning admits a parameter widened to a supertype every existing argument
+already satisfies. Narrowing is never minor.
 
 `VerificationFailure` fields and existing `FailureKind` cases are stable. A
 minor release may add a new failure kind or populate a new field, so code that

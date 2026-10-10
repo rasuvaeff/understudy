@@ -9,7 +9,7 @@ description: "`wire()` cannot build the subject, or cannot decide what to pass i
 
 `Rasuvaeff\Understudy\Exception\CannotWire`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/CannotWire.php#L12) — **Version:** v1.0.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/CannotWire.php#L12) — **Version:** v1.0.0-3-gb1f9107
 
 **Extends:** `InvalidArgumentException`
 
