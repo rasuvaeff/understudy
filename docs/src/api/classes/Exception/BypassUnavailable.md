@@ -9,7 +9,7 @@ description: "`bypassFinals()` cannot do what was asked of it."
 
 `Rasuvaeff\Understudy\Exception\BypassUnavailable`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/BypassUnavailable.php#L12) — **Version:** v1.0.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/BypassUnavailable.php#L12) — **Version:** v1.0.0-3-gb1f9107
 
 **Extends:** `LogicException`
 
@@ -41,8 +41,8 @@ Builds the error for a target that is not a class.
 static foreignWrapper(string $owner): Exception\BypassUnavailable
 ```
 
-Builds the error for an already-installed foreign source wrapper.
+Builds the error for an already-installed user-space file wrapper.
 
-Something else already transforms PHP source on `file://`; replacing it
-would silently disable whatever it does.
+Something else owns `file://`; replacing it would silently disable
+whatever it does, whether or not it transforms PHP source.
 

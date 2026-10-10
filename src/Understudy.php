@@ -180,53 +180,84 @@ final class Understudy
      *
      * With `strictStubs`, a stub that was never called fails too — the
      * Mockito reading of "why did you configure it, then?".
+     *
+     * Returns how many checks that came to, so a runner adapter can count
+     * real assertions instead of a flat one. One check is: an expectation
+     * that carries a claim (`expect()`, or `times()` on a stub); a plain
+     * stub under `strictStubs`, where its use is what is checked; an
+     * ordering constraint over expectations that declared one; an armed
+     * protocol, whose completeness is checked here. A failed check throws,
+     * so the number only ever counts checks that passed — and checks
+     * `verify()` made earlier are not part of it: those answered at their
+     * own call sites, and this call does not re-decide them.
+     *
+     * @return int<0, max> checks verified by this call
      */
-    public static function verifyAll(bool $strictStubs = false): void
+    public static function verifyAll(bool $strictStubs = false): int
     {
         // Every context the test put understudies in, not only the one this
         // call happens to stand in: a body run in a Fiber owns a context of
         // its own, and skipping it let an unmet `expect()` pass unnoticed.
-        self::report(Runtime::liveContexts(), $strictStubs);
+        return self::report(Runtime::liveContexts(), $strictStubs);
     }
 
     /**
-     * Raises one report over the given contexts, or returns quietly.
+     * Raises one report over the given contexts, or returns how many checks
+     * they had verified.
      *
      * @param list<RuntimeContext> $contexts
+     * @return int<0, max>
      */
-    private static function report(array $contexts, bool $strictStubs): void
+    private static function report(array $contexts, bool $strictStubs): int
     {
+        $checks = 0;
+
         // One alias table for the whole report, not one per failure:
         // `VerificationFailed` joins the summaries into a single message, and
         // an object numbered in the first summary has to keep that number in
         // the third — otherwise two `Book#1` on one screen mean two objects.
-        $failures = ArgumentFormatter::scope(static function () use ($contexts, $strictStubs): array {
-            $failures = [];
+        $failures = ArgumentFormatter::scope(
+            static function () use ($contexts, $strictStubs, &$checks): array {
+                $failures = [];
 
-            foreach ($contexts as $context) {
-                $failures = [...$failures, ...self::failuresIn($context, $strictStubs)];
-            }
+                foreach ($contexts as $context) {
+                    [$contextFailures, $contextChecks] = self::failuresIn($context, $strictStubs);
 
-            return $failures;
-        });
+                    $checks += $contextChecks;
+                    $failures = [...$failures, ...$contextFailures];
+                }
+
+                return $failures;
+            },
+        );
 
         if ($failures !== []) {
             throw VerificationFailed::of($failures);
         }
+
+        return $checks;
     }
 
     /**
-     * Everything one context has to answer for: its expectations, its
-     * ordering and its armed protocol.
+     * Everything one context has to answer for — its expectations, its
+     * ordering and its armed protocol — and how many checks that came to.
      *
-     * @return list<VerificationFailure>
+     * @return array{list<VerificationFailure>, int<0, max>}
      */
     private static function failuresIn(RuntimeContext $context, bool $strictStubs): array
     {
         $contextFailures = [];
+        $checks = 0;
 
         foreach ($context->allStates() as $state) {
             foreach ($state->expectations() as $expectation) {
+                // Counted by what is checked, not by what passed: a claim is
+                // one check whether it is met or (below) produced the
+                // failure, because the number describes the size of the
+                // verification — and a failed one throws before the number
+                // is returned anyway.
+                $checks += $expectation->cardinality() !== null || $strictStubs ? 1 : 0;
+
                 $failure = self::checkExpectation($state, $expectation, $strictStubs);
 
                 if ($failure !== null) {
@@ -240,7 +271,10 @@ final class Understudy
         // Ordering is read from the sequence counter, which is per context.
         // Comparing across contexts would compare two unrelated countings, so
         // each context answers for its own order.
-        $outOfOrder = self::checkOrdering(context: $context);
+        $ordered = self::orderedExpectations(context: $context);
+        $checks += $ordered === [] ? 0 : 1;
+
+        $outOfOrder = self::orderingFailure($ordered);
 
         if ($outOfOrder !== null) {
             $failures[] = $outOfOrder;
@@ -249,22 +283,33 @@ final class Understudy
         // An armed protocol guards the order *and* claims the calls. Without
         // this half, arming one and never exercising it — the subject stopped
         // after step two, or a `catch` inside it swallowed the refusal —
-        // would pass in silence.
+        // would pass in silence. Whether one is armed is the check; a
+        // complete protocol is a check that passed, an unfinished one the
+        // failure below.
+        if ($context->armed !== null) {
+            $checks++;
+        }
+
         $unfinished = self::checkArmedSequence($context);
 
         if ($unfinished !== null) {
             $failures[] = $unfinished;
         }
 
-        return $failures;
+        return [$failures, $checks];
     }
 
     /**
-     * Ordered expectations must be satisfied in the order they were declared,
-     * relative to each other. Calls in between are none of their business —
-     * `verifySequence()` is the tool for an exact protocol.
+     * The expectations that declared an order, grouped by double and then
+     * sorted back into the order they were actually written: interleaving two
+     * doubles is exactly when ordering claims are worth making.
+     *
+     * @param DoubleState|null     $only    one understudy's ordering, or null for every live one
+     * @param RuntimeContext|null  $context the context to read, or null for the current one
+     *
+     * @return list<array{DoubleState, Expectation}>
      */
-    private static function checkOrdering(?DoubleState $only = null, ?RuntimeContext $context = null): ?VerificationFailure
+    private static function orderedExpectations(?DoubleState $only = null, ?RuntimeContext $context = null): array
     {
         /** @var list<array{DoubleState, Expectation}> $ordered */
         $ordered = [];
@@ -281,9 +326,6 @@ final class Understudy
             }
         }
 
-        // Grouped by double above, so sort back into the order the
-        // expectations were actually written: interleaving two doubles is
-        // exactly when ordering claims are worth making.
         usort(
             $ordered,
             /**
@@ -294,6 +336,18 @@ final class Understudy
                 => $left[1]->declarationOrder() <=> $right[1]->declarationOrder(),
         );
 
+        return $ordered;
+    }
+
+    /**
+     * Ordered expectations must be satisfied in the order they were declared,
+     * relative to each other. Calls in between are none of their business —
+     * `verifySequence()` is the tool for an exact protocol.
+     *
+     * @param list<array{DoubleState, Expectation}> $ordered
+     */
+    private static function orderingFailure(array $ordered): ?VerificationFailure
+    {
         // The previous expectation is described a loop turn before the message
         // that quotes it, so the whole walk shares one alias table: described
         // in a scope of its own, an object in `$previousLabel` would start
@@ -961,7 +1015,7 @@ final class Understudy
                 }
             }
 
-            $outOfOrder = self::checkOrdering($state);
+            $outOfOrder = self::orderingFailure(self::orderedExpectations($state));
 
             if ($outOfOrder !== null) {
                 $failures[] = $outOfOrder;

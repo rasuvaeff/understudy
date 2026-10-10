@@ -9,7 +9,7 @@ description: "The whole public surface, as static methods so that an understudy 
 
 `Rasuvaeff\Understudy\Understudy`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L41) — **Version:** v1.0.0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L41) — **Version:** v1.0.0-3-gb1f9107
 
 The whole public surface, as static methods so that an understudy itself can
 stay free of service members: every one of them would be a name the doubled
@@ -57,7 +57,7 @@ unless `times()` says otherwise, and checked by `verifyAll()`.
 ### verifyAll()
 
 ```php
-static verifyAll(bool $strictStubs = false): void
+static verifyAll(bool $strictStubs = false): int
 ```
 
 Checks every expectation of the current context: the ones `expect()`
@@ -65,6 +65,16 @@ declared, and the stubs that opted in through `times()`.
 
 With `strictStubs`, a stub that was never called fails too — the
 Mockito reading of "why did you configure it, then?".
+
+Returns how many checks that came to, so a runner adapter can count
+real assertions instead of a flat one. One check is: an expectation
+that carries a claim (`expect()`, or `times()` on a stub); a plain
+stub under `strictStubs`, where its use is what is checked; an
+ordering constraint over expectations that declared one; an armed
+protocol, whose completeness is checked here. A failed check throws,
+so the number only ever counts checks that passed — and checks
+`verify()` made earlier are not part of it: those answered at their
+own call sites, and this call does not re-decide them.
 
 ### verify()
 

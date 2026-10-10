@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.0 — Unreleased
+
+- **Added.** `Understudy::verifyAll()` returns `int<0, max>` — how many checks
+  it verified — instead of `void`, so runner adapters count real assertions
+  instead of a flat one per test. One check is: an expectation carrying a
+  claim (`expect()`, or `times()` on a stub); a plain stub under
+  `strictStubs`, where its use is what is checked; an ordering constraint
+  over expectations that declared one; an armed protocol, whose completeness
+  is checked here. Checks `verify()` made earlier answered at their own call
+  sites and are not recounted. Source-compatible for every existing caller:
+  the method answered nothing before, and `Understudy` is final. The
+  compatibility policy now says a return type may be widened in a minor
+  release where no caller can observe the change. (#153)
+
 ## 1.0.0 — 2026-09-27
 
 The stability release. The public `@api` surface is the same as `0.12.0`:

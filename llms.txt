@@ -291,7 +291,11 @@ Understudy::verifyAll(strictStubs: true);            // and unused stubs
 
 `expect()` is a claim about how often a call happens, checked by
 `verifyAll()`. A plain `when()` stub is permission rather than a claim, and
-becomes checkable only through `times()`.
+becomes checkable only through `times()`. `verifyAll()` returns
+`int<0, max>` — how many checks it verified: one per claim, one per plain
+stub under `strictStubs`, one per ordering constraint, one per armed
+protocol. It throws on any failed check, so the number counts passed checks
+only; `verify()` checks made earlier are not recounted.
 
 A stub and an expectation for the exact same call do not stack: both orders
 are refused at registration with `ConflictingExpectation`. Combine behaviour
