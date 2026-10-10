@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 — Unreleased
 
 - **Added.** `Understudy::verifyAll()` returns `int<0, max>` — how many checks
   it verified — instead of `void`, so runner adapters count real assertions
