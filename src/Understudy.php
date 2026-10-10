@@ -305,7 +305,7 @@ final class Understudy
      * doubles is exactly when ordering claims are worth making.
      *
      * @param DoubleState|null     $only    one understudy's ordering, or null for every live one
-     * @param RuntimeContext|null  $context
+     * @param RuntimeContext|null  $context the context to read, or null for the current one
      *
      * @return list<array{DoubleState, Expectation}>
      */
