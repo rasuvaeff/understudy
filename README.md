@@ -282,12 +282,17 @@ when(fn () => $repository->find(Arg::any()))->answers(
 when(fn () => $repository->mode())->returns('fast', 'slow');
 ```
 
-A later stub for the same call wins; earlier ones stay reachable as fallbacks
-when their arguments do not match. Register the broad stub first and the
-specific one after it: a catch-all registered *after* a specific stub takes
-every call, and the specific one is not diagnosed — unreachable is not the
-same as uncalled, so not even `strictStubs` reports it. An exhausted
-call-count expectation keeps answering the matching call, so use a
+Two tiers, whichever order they were declared in: a specification that pins
+at least one argument to something narrower than "anything" — a literal, any
+matcher except `Arg::any()`, or a tail pinned empty by `Arg::none()` — is
+tried before one that says nothing about any argument (`Arg::any()` in every
+position, an unspelled optional, `Arg::rest()`/`remaining()` standing for
+"the rest does not matter"). A catch-all registered *after* a specific stub
+therefore steals nothing: the specific one answers its own calls, and the
+catch-all takes the rest — the ordering mistake cannot be written. Within a
+tier, the layering below stands. Two specifics are never compared against
+each other for narrowness; registration order decides between them. An
+exhausted call-count expectation keeps answering the matching call, so use a
 non-overlapping matcher when a broad fallback should handle later calls.
 
 The closure makes exactly one call on a double, and runs exactly once. Two

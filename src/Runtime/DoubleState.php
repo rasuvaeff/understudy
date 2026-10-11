@@ -202,14 +202,17 @@ final class DoubleState
     public function hasActionFor(string $method, array $args): bool
     {
         // The same walk the dispatcher makes, in the same order, stopping at
-        // the same place. Scanning declaration order and answering "some
-        // matching expectation has an action" would disagree with it exactly
-        // when a newer, narrower `expect(...)->times(1)` shadows an older
-        // broad stub for the same call — and the slot would then be replaced
-        // by a value dispatch never returned. (An identical specification
-        // cannot layer like that any more — assertComposes() refuses it — but
-        // an overlapping one still does.)
-        foreach ($this->expectationsFor($method) as $expectation) {
+        // the same place — tier order included, which is why the args are
+        // passed rather than walking every expectation of the method: the
+        // tier a call's candidates come in is part of what "the same order"
+        // means. Scanning declaration order and answering "some matching
+        // expectation has an action" would disagree with it exactly when a
+        // newer generic stub shadows an older specific one for the same
+        // call — and the slot would then be replaced by a value dispatch
+        // never returned. (An identical specification cannot layer like
+        // that any more — assertComposes() refuses it — but an overlapping
+        // one still does.)
+        foreach ($this->expectationsFor($method, $args) as $expectation) {
             if ($expectation->matchesArguments($args)) {
                 return $expectation->hasAction();
             }
@@ -304,6 +307,16 @@ final class DoubleState
      * that has one expectation would tax every call in every suite to speed up
      * the rare one.
      *
+     * Two tiers, whichever order they were declared in: an expectation that
+     * pins at least one argument to something narrower than "anything" is
+     * tried before one that says nothing about any argument, so a catch-all
+     * registered after a specific stub cannot steal the calls the specific
+     * one describes — the specific one is never unreachable, and the trap
+     * needs no diagnosis because it cannot be written. Within a tier the
+     * documented layering stands: most recently registered first, earlier
+     * ones as fallbacks. Two specifics are never compared against each other
+     * for narrowness; registration order decides between them.
+     *
      * @param non-empty-string $method
      * @param list<mixed>|null $args
      * @return list<Expectation>
@@ -330,21 +343,30 @@ final class DoubleState
             : ($this->matchingByMethodWithoutFirstLiteral[$method] ?? []);
 
         if ($fallback === []) {
-            return array_reverse($indexed);
+            $candidates = array_reverse($indexed);
+        } elseif ($indexed === []) {
+            $candidates = array_reverse($fallback);
+        } else {
+            $candidates = [...$indexed, ...$fallback];
         }
 
-        if ($indexed === []) {
-            return array_reverse($fallback);
+        if (count($candidates) < 2) {
+            return $candidates;
         }
 
-        // Both kinds can answer this call, so the declared order decides
-        // between them — the same rule the unindexed walk followed.
-        $candidates = [...$indexed, ...$fallback];
-
+        // The same tier order both lists answer in — a tier crossing inside
+        // the index (a literal against a catch-all) and one inside the walked
+        // list (a range matcher against a catch-all) are the same rule, so
+        // they get the same sort.
         usort(
             $candidates,
-            static fn(Expectation $left, Expectation $right): int
-                => $right->declarationOrder() <=> $left->declarationOrder(),
+            static function (Expectation $left, Expectation $right): int {
+                $tier = $left->isGeneric() <=> $right->isGeneric();
+
+                return $tier !== 0
+                    ? $tier
+                    : $right->declarationOrder() <=> $left->declarationOrder();
+            },
         );
 
         return $candidates;

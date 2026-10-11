@@ -2,6 +2,20 @@
 
 ## 1.1.0 — Unreleased
 
+- **Changed.** Dispatch between overlapping specifications now runs in two
+  tiers: one that pins at least one argument to something narrower than
+  "anything" — a literal, any matcher except `Arg::any()`, or a tail pinned
+  empty by `Arg::none()` — is tried before one that says nothing about any
+  argument (`Arg::any()` in every position, an unspelled optional parameter,
+  `Arg::rest()`/`remaining()`), whichever order the two were declared in.
+  Within a tier, most-recently-registered still wins, and two specifics are
+  never compared for narrowness. The trap this removes (#136): a catch-all
+  registered after a specific stub used to take every call, leaving the
+  specific one unreachable and undiagnosed — that ordering mistake can no
+  longer be written. This is a behaviour change to the documented layering
+  semantics: a suite that relied on a catch-all overriding a narrower stub
+  declared earlier now sees the narrow one answer. No name, signature or
+  readonly field of the public API changed. (#152)
 - **Added.** `where()`: a predicate over the whole argument list, narrowing a
   specification by a constraint no positional matcher can express —
   `when(fn () => $ledger->transfer(Arg::any(), Arg::any()))->where(fn ($from,

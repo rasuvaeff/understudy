@@ -104,4 +104,16 @@ final class EngineGenerators
             default => true,
         };
     }
+
+    /**
+     * The dispatch tier: a catch-all says nothing about the argument, a
+     * literal and a range pin it. Decided from the spec's own shape, the way
+     * the engine decides it from the arguments.
+     *
+     * @param array{string, int, int} $spec
+     */
+    public static function specIsGeneric(array $spec): bool
+    {
+        return $spec[0] === 'any';
+    }
 }

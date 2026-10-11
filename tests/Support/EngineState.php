@@ -12,8 +12,9 @@ namespace Rasuvaeff\Understudy\Tests\Support;
  * Immutable by construction — every transition returns a fresh instance — so
  * the state machine runner can replay a shrunk sequence deterministically.
  *
- * The oracle walks the specifications backwards (most recently registered
- * first) without using any matcher implementation of the engine's.
+ * The oracle walks the specifications by tier (specific ones first, then
+ * catch-alls), most recently registered first within a tier, without using
+ * any matcher implementation of the engine's.
  */
 final readonly class EngineState
 {
@@ -30,28 +31,48 @@ final readonly class EngineState
 
     /**
      * The specification that would answer `find($id)`: the last registered
-     * one whose predicate accepts the call.
+     * pinning one whose predicate accepts the call — and, only when no
+     * pinning one does, the last registered catch-all.
      */
     public function answerFor(int $id): ?EngineSpec
     {
-        foreach (array_reverse($this->specs) as $spec) {
-            if ($spec->accepts($id)) {
-                return $spec;
+        $index = $this->answeringIndex($id);
+
+        return $index === null ? null : $this->specs[$index];
+    }
+
+    /**
+     * The registration index of the specification the tiered walk hands the
+     * call to, or null when nothing accepts it.
+     */
+    private function answeringIndex(int $id): ?int
+    {
+        $fallback = null;
+
+        for ($index = count($this->specs) - 1; $index >= 0; --$index) {
+            $spec = $this->specs[$index];
+
+            if (!$spec->accepts($id)) {
+                continue;
             }
+
+            // A literal pins the argument — the specific tier, whichever
+            // order the two were declared in, most recent first inside the
+            // tier. A catch-all is the fallback tier: remembered, and
+            // answered only if nothing pins.
+            if (!$spec->anyArgument) {
+                return $index;
+            }
+
+            $fallback ??= $index;
         }
 
-        return null;
+        return $fallback;
     }
 
     public function afterDispatch(int $id): self
     {
-        $answering = null;
-
-        foreach ($this->specs as $index => $spec) {
-            if ($spec->accepts($id)) {
-                $answering = $index;
-            }
-        }
+        $answering = $this->answeringIndex($id);
 
         $specs = $this->specs;
 
