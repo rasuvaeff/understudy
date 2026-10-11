@@ -9,7 +9,7 @@ description: "A specification of the wrong SHAPE: the closure handed to when()/v
 
 `Rasuvaeff\Understudy\Exception\InvalidCallSpecification`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L25) — **Version:** v1.0.0-3-gb1f9107
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L25) — **Version:** v1.0.1-1-g9f93626
 
 **Extends:** `LogicException`
 
@@ -142,6 +142,21 @@ static emptyCombinator(non-empty-string $matcher): Exception\InvalidCallSpecific
 ```
 
 Builds the error for an empty matcher combinator.
+
+### guardAlreadyNarrowed()
+
+```php
+static guardAlreadyNarrowed(
+    non-empty-string $method,
+    non-empty-string|null $description,
+): Exception\InvalidCallSpecification
+```
+
+Builds the error for a second `where()` on one expectation. Replacing
+the first guard silently would narrow the call by the last sentence
+anyone wrote, which is not what a fluent chain reads like.
+
+- `$description` — how the first guard reads
 
 ### tailMatcherInCombinator()
 

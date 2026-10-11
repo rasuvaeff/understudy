@@ -73,11 +73,15 @@ function expectSequence(callable ...$calls): void
  * verify(fn () => $repository->recordView($book), times: 2);
  * ```
  *
+ * A `where:` predicate narrows the claim to calls whose whole argument list
+ * the closure accepts — the `verify()` counterpart of `->where()`.
+ *
  * @param callable(): mixed $call
  * @param int<0, max>|null  $times
  * @param int<0, max>|null  $minimum
  * @param int<0, max>|null  $maximum
  * @param bool              $never   the call must not have happened at all; refused beside a count
+ * @param callable(mixed...): bool|null $where a guard over the whole argument list
  *
  * @api
  */
@@ -87,6 +91,7 @@ function verify(
     ?int $minimum = null,
     ?int $maximum = null,
     bool $never = false,
+    ?callable $where = null,
 ): void {
-    Understudy::verify($call, $times, $minimum, $maximum, $never);
+    Understudy::verify($call, $times, $minimum, $maximum, $never, $where);
 }

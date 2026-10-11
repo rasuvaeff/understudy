@@ -64,10 +64,10 @@ expectSequence(
 
 ## verify()
 
-`Rasuvaeff\Understudy\verify()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L84)
+`Rasuvaeff\Understudy\verify()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L88)
 
 ```php
-verify(callable $call, int<0, max>|null $times = NULL, int<0, max>|null $minimum = NULL, int<0, max>|null $maximum = NULL, bool $never = false): void
+verify(callable $call, int<0, max>|null $times = NULL, int<0, max>|null $minimum = NULL, int<0, max>|null $maximum = NULL, bool $never = false, callable|null $where = NULL): void
 ```
 
 Asserts, after the fact, how many times a call was made.
@@ -76,6 +76,9 @@ Asserts, after the fact, how many times a call was made.
 verify(fn () => $repository->recordView($book), times: 2);
 ```
 
+A `where:` predicate narrows the claim to calls whose whole argument list
+the closure accepts — the `verify()` counterpart of `->where()`.
+
 | Parameter | Type | Description |
 |---|---|---|
 | `$call` | `callable` |  |
@@ -83,6 +86,7 @@ verify(fn () => $repository->recordView($book), times: 2);
 | `$minimum = NULL` | `int<0, max>\|null` |  |
 | `$maximum = NULL` | `int<0, max>\|null` |  |
 | `$never = false` | `bool` | the call must not have happened at all; refused beside a count |
+| `$where = NULL` | `callable\|null` | a guard over the whole argument list |
 
 ## when()
 

@@ -209,6 +209,26 @@ after it: a catch-all registered after a specific stub takes every call and
 the specific one is not diagnosed (unreachable ≠ uncalled, so `strictStubs`
 stays quiet). Arguments match by `===`, or by matcher.
 
+### Joint constraints — `where()`
+
+```php
+when(fn () => $ledger->transfer(Arg::any(), Arg::any()))
+    ->where(fn ($from, $to) => $from <= $to)
+    ->returns(true);
+
+verify(fn () => $ledger->transfer(Arg::any(), Arg::any()),
+    times: 1, where: fn ($from, $to) => $from <= $to);
+```
+
+`->where($guard, $description = 'where(…)')` narrows a specification by a
+predicate over the WHOLE argument list, positionally — the Mockery
+`withArgs(closure)` row. Asked only after every position matched; a refused
+call falls through to broader expectations. `expect()` takes one too. One
+guard per expectation (a second is refused); the guard runs inside the code
+under test and its exceptions are the test's own. When positions matched but
+the guard refused, the failure marks the guard: `transfer(any(), any())
+*where(…)*`.
+
 ### Matchers — `Arg`
 
 | Matcher | Matches |

@@ -9,7 +9,7 @@ description: "The instance offered as a forwarding target does not satisfy what 
 
 `Rasuvaeff\Understudy\Exception\ForwardingTargetMismatch`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForwardingTargetMismatch.php#L13) — **Version:** v1.0.0-3-gb1f9107
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForwardingTargetMismatch.php#L13) — **Version:** v1.0.1-1-g9f93626
 
 **Extends:** `InvalidArgumentException`
 

@@ -481,10 +481,16 @@ final class Understudy
     /**
      * Asserts, after the fact, how many times a call was made.
      *
+     * A `where:` predicate narrows the claim the same way `->where()` narrows
+     * a specification: only calls whose whole argument list the closure
+     * accepts are counted.
+     *
      * @param callable(): mixed $call
      * @param int<0, max>|null  $times   exact count; defaults to at least one
      * @param int<0, max>|null  $minimum
      * @param int<0, max>|null  $maximum
+     * @param bool              $never   the call must not have happened at all; refused beside a count
+     * @param callable(mixed...): bool|null $where a guard over the whole argument list
      */
     public static function verify(
         callable $call,
@@ -492,10 +498,15 @@ final class Understudy
         ?int $minimum = null,
         ?int $maximum = null,
         bool $never = false,
+        ?callable $where = null,
     ): void {
         $signal = self::record($call);
         $state = self::stateOf($signal->double, 'verify');
         $probe = new Expectation($signal->method, $signal->args);
+
+        if ($where !== null) {
+            $probe->setGuard($where, 'where(…)');
+        }
 
         $matches = 0;
         $matched = [];
