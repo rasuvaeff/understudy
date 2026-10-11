@@ -202,12 +202,16 @@ when(fn () => $repo->find(Arg::any()))->answers(
 );
 ```
 
-Matching: most recently registered wins, earlier stubs remain as fallbacks on
-argument mismatch — a matching call-count expectation keeps answering after
-its count is exhausted. Register the broad stub FIRST and the specific one
-after it: a catch-all registered after a specific stub takes every call and
-the specific one is not diagnosed (unreachable ≠ uncalled, so `strictStubs`
-stays quiet). Arguments match by `===`, or by matcher.
+Matching: two tiers, whichever order they were declared in — a specification
+that pins at least one argument (a literal, any matcher except `Arg::any()`,
+or a tail pinned empty by `Arg::none()`) is tried before one that says
+nothing about any argument (`Arg::any()` everywhere, an unspelled optional,
+`Arg::rest()`/`remaining()`); within a tier most recently registered wins and
+earlier stubs remain as fallbacks on argument mismatch — a catch-all
+registered after a specific stub steals nothing. A matching call-count
+expectation keeps answering after its count is exhausted. Two specifics are
+never compared for narrowness; registration order decides. Arguments match
+by `===`, or by matcher.
 
 ### Joint constraints — `where()`
 

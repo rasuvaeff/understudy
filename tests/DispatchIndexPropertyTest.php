@@ -27,8 +27,8 @@ use function Rasuvaeff\Understudy\when;
  *
  * That is an optimisation, and an optimisation of a lookup is exactly where a
  * subtle ordering bug hides — the wrong stub answering is silent, and a suite
- * built on it stays green. So the property is stated against the thing the
- * index replaced: whatever a plain most-recent-first walk would have
+ * built on it stays green. So the property is stated against the walk the
+ * index replaced: whatever a plain tiered most-recent-first walk would have
  * answered, the index answers too.
  *
  * @internal
@@ -52,7 +52,7 @@ final class DispatchIndexPropertyTest
      * @param list<int> $encoded
      */
     #[Property(runs: 300, timeoutMs: 10_000)]
-    public function theIndexAnswersWhatALinearWalkWouldHave(array $encoded, int $call): void
+    public function theIndexAnswersWhatATieredWalkWouldHave(array $encoded, int $call): void
     {
         Classify::cover($encoded === [], 'no expectations', 3.0);
         Classify::cover(count($encoded) > 5, 'many expectations', 15.0);
@@ -67,6 +67,7 @@ final class DispatchIndexPropertyTest
             30.0,
         );
         Classify::cover($this->modelAnswer($encoded, $call) === null, 'nothing matched', 5.0);
+        Classify::cover($this->modelAnswerIsGeneric($encoded, $call), 'the catch-all answered', 10.0);
 
         $double = Understudy::for(Tally::class);
 
@@ -81,21 +82,22 @@ final class DispatchIndexPropertyTest
 
     /**
      * Cases the random phase would reach only by luck, and each of which
-     * ordering bugs actually produce: a literal shadowed by a later catch-all,
-     * a catch-all shadowed by a later literal, and the same literal twice.
+     * ordering bugs actually produce: the tier crossing in both directions,
+     * the same literal twice, and the misses.
      */
-    public static function theIndexAnswersWhatALinearWalkWouldHaveExamples(): iterable
+    public static function theIndexAnswersWhatATieredWalkWouldHaveExamples(): iterable
     {
-        yield 'a later catch-all shadows an earlier literal' => [[2, 12], 2];
-        yield 'a later literal shadows an earlier catch-all' => [[12, 2], 2];
+        yield 'a literal beats a later catch-all' => [[2, 12], 2];
+        yield 'a literal beats an earlier catch-all' => [[12, 2], 2];
         yield 'the same literal twice, the later one answers' => [[2, 2], 2];
         yield 'a range shadowed by a literal outside it' => [[5, 3], 6];
+        yield 'only the catch-all accepts the call' => [[0, 11], 4];
         yield 'nothing matches the call' => [[0, 1], 4];
         yield 'no expectations at all' => [[], 3];
     }
 
     /** @return array<string, ArbitraryInterface> */
-    public static function theIndexAnswersWhatALinearWalkWouldHaveGenerators(): array
+    public static function theIndexAnswersWhatATieredWalkWouldHaveGenerators(): array
     {
         return [
             'encoded' => Gen::arrayOf(Gen::intBetween(0, 12), 0, 8),
@@ -204,13 +206,20 @@ final class DispatchIndexPropertyTest
     }
 
     /**
-     * What the dispatcher did before the index existed: the most recently
-     * registered expectation that matches, and no other.
+     * The tiered walk: the most recently registered expectation that pins the
+     * argument and matches, and — only when no pinning one does — the most
+     * recent catch-all. Literals and ranges pin; a catch-all says nothing.
      *
      * @param list<int> $encoded
      */
     private function modelAnswer(array $encoded, int $call): ?int
     {
+        for ($position = count($encoded) - 1; $position >= 0; --$position) {
+            if ($encoded[$position] <= self::RANGE_MAX && $this->codeMatches($encoded[$position], $call)) {
+                return $position;
+            }
+        }
+
         for ($position = count($encoded) - 1; $position >= 0; --$position) {
             if ($this->codeMatches($encoded[$position], $call)) {
                 return $position;
@@ -218,6 +227,19 @@ final class DispatchIndexPropertyTest
         }
 
         return null;
+    }
+
+    /**
+     * Whether the model's answer came from a catch-all rather than a pinning
+     * expectation — the branch the tier exists to make last.
+     *
+     * @param list<int> $encoded
+     */
+    private function modelAnswerIsGeneric(array $encoded, int $call): bool
+    {
+        $answer = $this->modelAnswer($encoded, $call);
+
+        return $answer !== null && $encoded[$answer] > self::RANGE_MAX;
     }
 
     private function codeMatches(int $code, int $call): bool

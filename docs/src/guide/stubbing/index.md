@@ -53,8 +53,17 @@ parameter name.
 
 ## Which stub wins
 
-A later stub for the same call wins. Earlier ones stay reachable as fallbacks
-for calls whose arguments the later one does not match.
+Two tiers, whichever order they were declared in: a specification that pins at
+least one argument to something narrower than "anything" — a literal, any
+matcher except `Arg::any()`, or a tail pinned empty by `Arg::none()` — is
+tried before one that says nothing about any argument. A catch-all registered
+after a specific stub therefore steals nothing: the specific one answers its
+own calls, and the catch-all takes the rest. Within a tier, a later stub for
+the same call wins; earlier ones stay reachable as fallbacks for calls whose
+arguments the later one does not match.
+
+Two specifics are never compared against each other for narrowness —
+registration order decides between them.
 
 Two consequences worth holding on to:
 

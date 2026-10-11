@@ -54,9 +54,10 @@ when(fn () => $repo->find(2))->returns($b);
 when(fn () => $repo->find(Arg::any()))->returns(null);   // the fallback
 ```
 
-A later stub wins, and earlier ones remain reachable for arguments the later
-one does not match — so declare the broad fallback **first** or give it a
-non-overlapping matcher. See [Stubbing](/guide/stubbing/index#which-stub-wins).
+A specification that pins an argument beats a catch-all whichever order the
+two were declared in, and within a tier a later stub wins — so the fallback
+above answers everything but `find(1)` and `find(2)` however it is ordered.
+See [Stubbing](/guide/stubbing/index#which-stub-wins).
 
 Where the mapping is genuinely tabular, one `answers()` with a `match` is
 closer to the original.

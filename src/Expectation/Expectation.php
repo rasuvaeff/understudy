@@ -8,9 +8,12 @@ use Rasuvaeff\Understudy\Captor;
 use Rasuvaeff\Understudy\Cardinality;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Matcher\AnyArgument;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
 use Rasuvaeff\Understudy\Matcher\Capturing;
+use Rasuvaeff\Understudy\Matcher\EmptyTail;
 use Rasuvaeff\Understudy\Matcher\TailMatcher;
+use Rasuvaeff\Understudy\Matcher\Unspelled;
 
 /**
  * One configured call: which method with which arguments, and what happens
@@ -54,6 +57,14 @@ final class Expectation
     private readonly bool $capturing;
 
     /**
+     * Whether this expectation says nothing about any argument: every
+     * position is `Arg::any()`, an unspelled optional, or a tail that stands
+     * for "the rest does not matter". Precomputed, because dispatch reads it
+     * per candidate to order specific expectations before such catch-alls.
+     */
+    private readonly bool $generic;
+
+    /**
      * A constraint over the whole argument list, from `where()`. Null for
      * every expectation the test did not narrow this way.
      *
@@ -79,6 +90,7 @@ final class Expectation
         $this->argumentCount = count($args);
         $tailMatcher = null;
         $capturing = false;
+        $generic = true;
         $last = count($args) - 1;
 
         /** @var mixed $argument */
@@ -101,10 +113,36 @@ final class Expectation
             if ($argument instanceof Capturing) {
                 $capturing = true;
             }
+
+            // Specificity, decided here once rather than per dispatch: an
+            // argument that says something — a literal, any narrowing
+            // matcher, or a tail pinned empty by Arg::none() — makes the
+            // whole expectation specific. The ones that say nothing:
+            // Arg::any(), an unspelled optional, and rest()/remaining(),
+            // which stand for "the rest of the arity does not matter".
+            if ($argument instanceof AnyArgument || $argument instanceof Unspelled) {
+                continue;
+            }
+
+            if ($argument instanceof EmptyTail || !$argument instanceof TailMatcher) {
+                $generic = false;
+            }
         }
 
         $this->tailMatcher = $tailMatcher;
         $this->capturing = $capturing;
+        $this->generic = $generic;
+    }
+
+    /**
+     * Whether no position of this expectation narrows the call — the tier it
+     * dispatches in. A generic expectation is tried only after every
+     * specific one for the same method refused the call, whichever order
+     * the two were declared in.
+     */
+    public function isGeneric(): bool
+    {
+        return $this->generic;
     }
 
     public function hasCaptors(): bool

@@ -136,7 +136,7 @@ final class EnginePropertyTest
      * and earlier matching ones stay reachable underneath.
      */
     #[Property(runs: 300)]
-    public function theAnsweringStubIsTheLastMatchingOne(array $specs, int $id): void
+    public function theMostSpecificMatchingStubAnswers(array $specs, int $id): void
     {
         $repository = Understudy::for(BookRepository::class);
 
@@ -144,20 +144,36 @@ final class EnginePropertyTest
             EngineGenerators::registerSpec($repository, $spec, new Book('spec-' . $index));
         }
 
-        // The oracle walks the specifications backwards, deciding acceptance
-        // without the matcher implementation under test.
+        // The oracle decides acceptance and tier without the matcher
+        // implementation under test: a literal and a range pin the argument,
+        // a catch-all says nothing. Among the specifications that accept the
+        // call, the most recently registered pinning one answers; only when
+        // none does, the most recent catch-all.
         $expected = null;
+        $answeredByACatchAll = false;
 
         foreach (array_reverse($specs, preserve_keys: true) as $index => $spec) {
-            if (EngineGenerators::specAccepts($spec, $id)) {
+            if (EngineGenerators::specAccepts($spec, $id) && !EngineGenerators::specIsGeneric($spec)) {
                 $expected = 'spec-' . $index;
 
                 break;
             }
         }
 
+        if ($expected === null) {
+            foreach (array_reverse($specs, preserve_keys: true) as $index => $spec) {
+                if (EngineGenerators::specAccepts($spec, $id)) {
+                    $expected = 'spec-' . $index;
+                    $answeredByACatchAll = true;
+
+                    break;
+                }
+            }
+        }
+
         Classify::cover($expected !== null, 'a specification answered', 30);
         Classify::cover($expected === null, 'no specification matched', 5);
+        Classify::cover($answeredByACatchAll, 'the catch-all answered', 10);
 
         Assert::same($repository->find($id)?->title, $expected);
     }
@@ -165,7 +181,7 @@ final class EnginePropertyTest
     /**
      * @return array<string, ArbitraryInterface>
      */
-    public static function theAnsweringStubIsTheLastMatchingOneGenerators(): array
+    public static function theMostSpecificMatchingStubAnswersGenerators(): array
     {
         return [
             'specs' => Gen::nonEmptyArrayOf(EngineGenerators::specification(), 5),
@@ -178,10 +194,12 @@ final class EnginePropertyTest
      *
      * @return iterable<string, array{list<array{string, int, int}>, int}>
      */
-    public static function theAnsweringStubIsTheLastMatchingOneExamples(): iterable
+    public static function theMostSpecificMatchingStubAnswersExamples(): iterable
     {
         yield 'a literal over a catch-all' => [[['any', 0, 0], ['literal', 3, 3]], 3];
-        yield 'a catch-all over a literal' => [[['literal', 3, 3], ['any', 0, 0]], 3];
+        yield 'a literal under a later catch-all' => [[['literal', 3, 3], ['any', 0, 0]], 3];
+        yield 'a range under a later catch-all' => [[['range', 2, 5], ['any', 0, 0]], 3];
+        yield 'a catch-all under a later range' => [[['any', 0, 0], ['range', 2, 5]], 3];
         yield 'a literal that misses' => [[['literal', 3, 3]], 4];
         yield 'a range that contains the id' => [[['range', 2, 5]], 3];
         yield 'a range that misses the id' => [[['range', 2, 5]], 9];
