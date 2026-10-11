@@ -124,11 +124,9 @@ final class Expectation
                 continue;
             }
 
-            if ($argument instanceof TailMatcher && !$argument instanceof EmptyTail) {
-                continue;
+            if ($argument instanceof EmptyTail || !$argument instanceof TailMatcher) {
+                $generic = false;
             }
-
-            $generic = false;
         }
 
         $this->tailMatcher = $tailMatcher;

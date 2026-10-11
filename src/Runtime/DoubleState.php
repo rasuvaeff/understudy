@@ -342,22 +342,12 @@ final class DoubleState
             ? []
             : ($this->matchingByMethodWithoutFirstLiteral[$method] ?? []);
 
-        if ($fallback === []) {
-            $candidates = array_reverse($indexed);
-        } elseif ($indexed === []) {
-            $candidates = array_reverse($fallback);
-        } else {
-            $candidates = [...$indexed, ...$fallback];
-        }
-
-        if (count($candidates) < 2) {
-            return $candidates;
-        }
-
         // The same tier order both lists answer in — a tier crossing inside
         // the index (a literal against a catch-all) and one inside the walked
         // list (a range matcher against a catch-all) are the same rule, so
         // they get the same sort.
+        $candidates = [...$indexed, ...$fallback];
+
         usort(
             $candidates,
             static function (Expectation $left, Expectation $right): int {
