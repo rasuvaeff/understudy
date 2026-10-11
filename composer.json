@@ -92,7 +92,8 @@
             "@php examples/wiring.php",
             "@php examples/protocol.php",
             "@php examples/defaults-registry.php",
-            "@php examples/structured-failures.php"
+            "@php examples/structured-failures.php",
+            "@php examples/where-guard.php"
         ],
         "mutation": "infection --threads=max",
         "psalm": "psalm --no-cache",

@@ -174,6 +174,24 @@ final class InvalidCallSpecification extends \LogicException implements Understu
     }
 
     /**
+     * Builds the error for a second `where()` on one expectation. Replacing
+     * the first guard silently would narrow the call by the last sentence
+     * anyone wrote, which is not what a fluent chain reads like.
+     *
+     * @param non-empty-string      $method
+     * @param non-empty-string|null $description how the first guard reads
+     */
+    public static function guardAlreadyNarrowed(string $method, ?string $description): self
+    {
+        return new self(sprintf(
+            "`%s` already carries a `where()` guard%s. One call, one guard: put both "
+            . 'conditions in the one closure.',
+            $method,
+            $description === null ? '' : " (`$description`)",
+        ));
+    }
+
+    /**
      * Builds the error for putting a tail matcher inside a combinator.
      *
      * @param non-empty-string $matcher

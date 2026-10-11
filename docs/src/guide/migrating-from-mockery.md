@@ -28,6 +28,7 @@ the site still gets them.
 | `->andReturn($a, $b)` | `->returns($a, $b)` | one per call, last repeats |
 | `->with(123, Mockery::any())` | inside the closure: `find(123, Arg::any())` | |
 | `Mockery::on(fn ($x) => …)` | `Arg::satisfies(fn ($x) => …)` | |
+| `->withArgs(fn ($from, $to) => …)` | `->where(fn ($from, $to) => …)` | a joint constraint over the whole argument list |
 | `Mockery::type(Foo::class)` | `Arg::instanceOf(Foo::class)` | |
 | `->withAnyArgs()` | inside the closure: `method(Arg::rest())` | also the escape from spelling a wide signature: `method('svc', Arg::rest())` |
 | `Mockery::capture($x)` | `Arg::captor(X::class)` + `$captor->capture()` | `last()` / `all()` are typed through the class-string — no `instanceof` at the read site |

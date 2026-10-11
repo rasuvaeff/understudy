@@ -54,6 +54,21 @@ final class Expectation
     private readonly bool $capturing;
 
     /**
+     * A constraint over the whole argument list, from `where()`. Null for
+     * every expectation the test did not narrow this way.
+     *
+     * @var \Closure(mixed...): bool|null
+     */
+    private ?\Closure $guard = null;
+
+    /**
+     * How the guard reads in a failure message.
+     *
+     * @var non-empty-string|null
+     */
+    private ?string $guardDescription = null;
+
+    /**
      * @param non-empty-string $method
      * @param list<mixed>      $args literal values and/or ArgumentMatcher instances
      */
@@ -95,6 +110,52 @@ final class Expectation
     public function hasCaptors(): bool
     {
         return $this->capturing;
+    }
+
+    /**
+     * Attaches the `where()` guard: a predicate over the whole argument list,
+     * asked after every position already matched.
+     *
+     * Evaluated inside {@see matchesArguments()} on purpose: that is the one
+     * place every walk asks an expectation whether a call is its — dispatch,
+     * the by-reference slot walk (`hasActionFor()`), a `verify()` probe — so
+     * a guard either narrows everywhere or nowhere, and no walk can disagree
+     * with the dispatcher about which expectation answers.
+     *
+     * One guard per expectation; a second `where()` is refused where it is
+     * written rather than silently replacing the first.
+     *
+     * @param callable(mixed...): bool $guard
+     * @param non-empty-string        $description how the guard reads in a failure message
+     */
+    public function setGuard(callable $guard, string $description): void
+    {
+        if ($this->guard !== null) {
+            throw InvalidCallSpecification::guardAlreadyNarrowed($this->method, $this->guardDescription);
+        }
+
+        $this->guard = $guard(...);
+        $this->guardDescription = $description;
+    }
+
+    /**
+     * Whether a call the positions already accepted passes the `where()`
+     * guard, when there is one.
+     *
+     * The guard is the test's own code and runs inside the code under test;
+     * an exception it raises is the test's own error and propagates — unlike
+     * a matcher, which must survive hostile arguments, a predicate that
+     * breaks is a bug in the sentence that names it.
+     *
+     * @param list<mixed> $args
+     */
+    private function acceptsGuard(array $args): bool
+    {
+        if ($this->guard === null) {
+            return true;
+        }
+
+        return ($this->guard)(...$args);
     }
 
     /**
@@ -258,15 +319,20 @@ final class Expectation
                 return false;
             }
 
-            return $this->tailMatcher->matchesTail(array_slice($args, $fixed));
+            if (!$this->tailMatcher->matchesTail(array_slice($args, $fixed))) {
+                return false;
+            }
+
+            return $this->acceptsGuard($args);
         }
 
         if ($this->argumentCount === 0) {
-            return $args === [];
+            return $args === [] && $this->acceptsGuard($args);
         }
 
         return count($args) === $this->argumentCount
-            && $this->matchesPositions($args, $this->argumentCount);
+            && $this->matchesPositions($args, $this->argumentCount)
+            && $this->acceptsGuard($args);
     }
 
     /**
@@ -397,8 +463,51 @@ final class Expectation
                     : '*' . $rendered . '*';
             }
 
-            return $this->method . '(' . implode(', ', $parts) . ')';
+            return $this->method
+                . '(' . implode(', ', $parts) . ')'
+                . $this->describeGuardAgainst($args);
         });
+    }
+
+    /**
+     * The `where()` segment of a rendered line: plain when the guard accepted
+     * the call (or there is none), marked like a rejecting argument when the
+     * positions matched and the guard did not — which is the sentence a
+     * joint constraint refused, not any one position.
+     *
+     * @param list<mixed> $args
+     */
+    private function describeGuardAgainst(array $args): string
+    {
+        if ($this->guard === null) {
+            return '';
+        }
+
+        \assert($this->guardDescription !== null);
+
+        return $this->acceptsGuardDefensively($args)
+            ? ' ' . $this->guardDescription
+            : ' *' . $this->guardDescription . '*';
+    }
+
+    /**
+     * The guard re-asked while a failure message is rendered — defensively,
+     * exactly like a matcher is: this runs during dispatch, inside the code
+     * under test, and a guard that throws on the way to a message would
+     * replace the refusal with its own exception. A guard that breaks counts
+     * as one that did not accept.
+     *
+     * @param list<mixed> $args
+     */
+    private function acceptsGuardDefensively(array $args): bool
+    {
+        \assert($this->guard !== null);
+
+        try {
+            return ($this->guard)(...$args);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**
@@ -443,7 +552,7 @@ final class Expectation
                     ? $arg->describe()
                     : ArgumentFormatter::format($arg),
                 $this->args,
-            )) . ')',
+            )) . ')' . ($this->guardDescription === null ? '' : ' ' . $this->guardDescription),
         );
     }
 }

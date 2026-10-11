@@ -16,6 +16,7 @@ demonstrate changes.
 | `protocol.php` | `expect()->ordered()`, `Understudy::verifySequence()` across two doubles, and `Understudy::nothingElse()` | no |
 | `defaults-registry.php` | what an unconfigured call answers: nested doubles one level deep, `Understudy::defaults()`, the nullable-return rule, and the refusals | no |
 | `structured-failures.php` | reading `VerificationFailed::failures()` as data — the path an adapter or reporter takes instead of parsing the message | no |
+| `where-guard.php` | `->where()`: a joint constraint over several arguments — narrowing a stub, counting in `verify(where:)`, and the failure message that marks the guard | no |
 
 `_check.php` is the shared assertion helper the scripts include; the leading
 underscore is what marks it an include rather than a script of its own.

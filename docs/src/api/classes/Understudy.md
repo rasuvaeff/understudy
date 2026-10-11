@@ -9,7 +9,7 @@ description: "The whole public surface, as static methods so that an understudy 
 
 `Rasuvaeff\Understudy\Understudy`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L41) — **Version:** v1.0.0-3-gb1f9107
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L41) — **Version:** v1.0.1-1-g9f93626
 
 The whole public surface, as static methods so that an understudy itself can
 stay free of service members: every one of them would be a name the doubled
@@ -85,12 +85,19 @@ static verify(
     int<0, max>|null $minimum = NULL,
     int<0, max>|null $maximum = NULL,
     bool $never = false,
+    callable|null $where = NULL,
 ): void
 ```
 
 Asserts, after the fact, how many times a call was made.
 
 - `$times` — exact count; defaults to at least one
+- `$never` — the call must not have happened at all; refused beside a count
+- `$where` — a guard over the whole argument list
+
+A `where:` predicate narrows the claim the same way `->where()` narrows
+a specification: only calls whose whole argument list the closure
+accepts are counted.
 
 ### calls()
 

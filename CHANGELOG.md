@@ -2,6 +2,17 @@
 
 ## 1.1.0 — Unreleased
 
+- **Added.** `where()`: a predicate over the whole argument list, narrowing a
+  specification by a constraint no positional matcher can express —
+  `when(fn () => $ledger->transfer(Arg::any(), Arg::any()))->where(fn ($from,
+  $to) => $from <= $to)->returns(true)`. The closure receives the arguments
+  positionally and is asked only after every position matched; a call it
+  refuses falls through to broader expectations. `expect()` takes one through
+  the same verb, `verify()` through its `where:` parameter. One guard per
+  expectation (a second is refused), `description:` names it in failure
+  messages, and a guard that refused a positionally-matching call is marked
+  as the refusing part. The Mockery migration table gains its
+  `withArgs(closure)` row. (#151)
 - **Added.** `Understudy::verifyAll()` returns `int<0, max>` — how many checks
   it verified — instead of `void`, so runner adapters count real assertions
   instead of a flat one per test. One check is: an expectation carrying a

@@ -58,6 +58,7 @@ here. Two rows are traps, marked ⚠.
 | `->andThrow(new NotFound())` | `->throws(new NotFound())` | |
 | `->with(123, Mockery::any())` | inside the closure: `find(123, Arg::any())` | |
 | `Mockery::on(fn ($x) => ...)` | `Arg::satisfies(fn ($x) => ...)` | |
+| `->withArgs(fn ($from, $to) => ...)` | `->where(fn ($from, $to) => ...)` | a joint constraint over the whole argument list — see Stubbing |
 | `$mock->shouldNotHaveReceived('save')` | `verify(fn () => $mock->save(...), never: true)` | `Understudy::unused($mock)` when the double must not have been touched at all |
 | `$mock->shouldHaveReceived('save')` | `verify(fn () => $mock->save(...))` | after the fact; add `nothingElse()` — see below |
 | `Mockery::close()` | adapter's `reset()`, or your own teardown | |
@@ -393,6 +394,40 @@ goes.
 A getter that throws counts as a mismatch, never as an error — matching runs
 while the code under test is executing, and a matcher must not be the thing
 that breaks it.
+
+A positional matcher sees one argument. A constraint over two or more of them
+together — `transfer($from, $to)` where `$from <= $to` must hold, a resize
+whose aspect ratio matters — is what `where()` is:
+
+```php
+when(fn () => $ledger->transfer(Arg::any(), Arg::any()))
+    ->where(fn ($from, $to) => $from <= $to)
+    ->returns(true);
+
+verify(
+    fn () => $ledger->transfer(Arg::any(), Arg::any()),
+    times: 1,
+    where: fn ($from, $to) => $from <= $to,
+);
+```
+
+The closure receives the arguments the call carried, positionally, so it reads
+like the method's own signature; it is asked only after every position already
+matched, and a call it refuses simply does not match — a broader expectation
+can still answer it. `expect()` takes one through the same `->where()`. The
+guard runs wherever matching runs, which is inside the code under test: it is
+the test's own code, and an exception it raises is the test's own error. One
+guard per expectation — a second `where()` is refused with
+`InvalidCallSpecification` rather than silently replacing the first. In a
+failure message the guard renders as `where(…)`, or as the `description` given:
+
+```php
+->where(fn ($w, $h) => $w / $h === 2, description: 'where(16:9)')
+```
+
+and when the positions accepted a call but the guard refused it, the report
+marks the guard itself — `transfer(any(), any()) *where(…)*` — rather than
+blaming a position that did accept.
 
 ### Capturing an argument
 

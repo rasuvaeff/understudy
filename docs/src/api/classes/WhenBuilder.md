@@ -9,7 +9,7 @@ description: "Configures what a stubbed call does."
 
 `Rasuvaeff\Understudy\WhenBuilder`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L39) — **Version:** v1.0.0-3-gb1f9107
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L39) — **Version:** v1.0.1-1-g9f93626
 
 **Type parameters:**
 
@@ -114,6 +114,43 @@ when(fn () => $breaker->call($operation))
 ```
 
 Once the chain runs out, its last link keeps answering.
+
+### where()
+
+```php
+where(callable $guard, non-empty-string $description = 'where(…)'): static
+```
+
+Narrows the specification by a predicate over the whole argument list —
+the one shape a positional matcher cannot express: a constraint over
+two or more arguments together.
+
+- `$guard` — accepts the argument list the call carried, or refuses it
+- `$description` — how the guard reads in a failure message
+
+```php
+when(fn () => $ledger->transfer($from, Arg::any()))
+    ->where(fn ($from, $to) => $from <= $to)
+    ->returns(true);
+```
+
+The closure receives the arguments the call carried, positionally, so
+it reads like the method's own signature; it runs wherever matching
+runs — dispatch, `verify()`, the by-reference slot decision — and a
+call the positions accept but the guard refuses simply does not match:
+a broader expectation may still answer it. That also means the guard
+runs inside the code under test, and an exception it raises is the
+test's own error.
+
+Works on `expect()` the same way, and `verify()` takes one through its
+`where:` parameter. One guard per expectation; a second `where()` is
+refused. In a failure message the guard renders as `where(…)` —
+or as the `$description` given, which is how a test names what the
+constraint means:
+
+```php
+->where(fn ($w, $h) => $w / $h === 2, description: 'where(16:9)')
+```
 
 ### times()
 
