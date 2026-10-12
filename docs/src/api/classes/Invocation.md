@@ -9,7 +9,7 @@ description: "One recorded call on an understudy."
 
 `Rasuvaeff\Understudy\Invocation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L21) — **Version:** v1.0.1-1-g9f93626
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L21) — **Version:** v1.0.1-3-gc4d60e5
 
 One recorded call on an understudy.
 
@@ -98,17 +98,22 @@ Checks whether this invocation belongs to a given double.
 callOriginal(): mixed
 ```
 
-Delegates this call to the double's real instance and returns what it
-answered — the `answers()` escape hatch for "behave normally, except
-here".
+Runs the real implementation of this call and returns what it answered —
+the `answers()` escape hatch for "behave normally, except here".
 
 **Throws:**
 
 - [`Exception\OriginalCallUnavailable`](/api/classes/Exception/OriginalCallUnavailable)
 
+Where that implementation runs follows the double's own form. A class
+double that forwards runs the real body on itself, over the state
+`forwarding()` copied there; every other double delegates to the real
+instance it remembers, where the body's own self-calls stay inside that
+object.
+
 Without a forwarding target it raises `OriginalCallUnavailable` rather
-than reaching for the parent implementation: the double's constructor
-never ran, so the parent body would work over state that does not exist.
+than reaching for the real body anyway: nothing copied the state, so the
+body would work over properties the skipped constructor never filled.
 
 ### recordOutcome()
 

@@ -74,6 +74,9 @@ final class DoubleState
 
     private bool $lean = false;
 
+    /** @var class-string|null */
+    private ?string $inlineParent = null;
+
     public function mode(): Mode
     {
         return $this->mode;
@@ -98,6 +101,45 @@ final class DoubleState
     public function setMode(Mode $mode): void
     {
         $this->mode = $mode;
+    }
+
+    /**
+     * Whether forwarding runs the real bodies on the double itself.
+     *
+     * True only for a class double whose parent is exactly the donor's class,
+     * and only once its state has been copied over: the inline form reads
+     * `$this->` properties, so turning it on without the copy would run real
+     * code against a double the constructor never touched. Every other
+     * forwarding double — an interface double, a donor that is a subclass of
+     * the doubled class — proxies instead.
+     *
+     * It survives a later `setMode()`: the state copy cannot be undone, and
+     * `callOriginal()` still has to know which form to use.
+     */
+    public function forwardsInline(): bool
+    {
+        return $this->inlineParent !== null;
+    }
+
+    /**
+     * The class whose bodies an inline double runs: the one the generated
+     * class extends, which is also the donor's own class.
+     *
+     * @return class-string|null
+     */
+    public function inlineParent(): ?string
+    {
+        return $this->inlineParent;
+    }
+
+    /**
+     * One-way, and called only after the state copy succeeded.
+     *
+     * @param class-string $parent
+     */
+    public function forwardInline(string $parent): void
+    {
+        $this->inlineParent = $parent;
     }
 
     /**

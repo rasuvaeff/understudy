@@ -35,7 +35,7 @@ the site still gets them.
 | `$mock->shouldNotHaveReceived('save')` | `Understudy::unused($mock)` | or `verify(…, never: true)` for one call |
 | `$mock->shouldHaveReceived('save')` | `verify(fn () => $mock->save(…))` | after the fact |
 | `->ordered()` | `expect(…)->ordered()` | or `verifySequence()` / `expectSequence()` for a whole protocol |
-| `->makePartial()` / `Mockery::spy($real)` | `Understudy::delegate(Contract::class, $real)` + stubs on top | a stub wins, everything else runs for real — and is recorded |
+| `->makePartial()` / `Mockery::spy($real)` | `Understudy::delegate(Contract::class, $real)` + stubs on top | a stub wins, everything else runs for real — and is recorded. Pass the **class** to get what `makePartial()` does with a self-call: the bodies run on the double, so `$this->other()` meets your stub. An interface there proxies instead |
 | `Mockery::close()` | the adapter's `reset()`, or your own teardown | |
 
 ## The traps

@@ -9,7 +9,7 @@ description: "Configures what a stubbed call does."
 
 `Rasuvaeff\Understudy\WhenBuilder`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L39) — **Version:** v1.0.1-1-g9f93626
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L39) — **Version:** v1.0.1-3-gc4d60e5
 
 **Type parameters:**
 

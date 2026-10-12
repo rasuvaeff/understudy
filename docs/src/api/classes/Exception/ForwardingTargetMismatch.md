@@ -9,7 +9,7 @@ description: "The instance offered as a forwarding target does not satisfy what 
 
 `Rasuvaeff\Understudy\Exception\ForwardingTargetMismatch`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForwardingTargetMismatch.php#L13) — **Version:** v1.0.1-1-g9f93626
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForwardingTargetMismatch.php#L13) — **Version:** v1.0.1-3-gc4d60e5
 
 **Extends:** `InvalidArgumentException`
 
@@ -39,4 +39,27 @@ static missingContract(
 ```
 
 Builds the error for a forwarding target missing a contract.
+
+### alreadyInline()
+
+```php
+static alreadyInline(
+    non-empty-string $label,
+    class-string $current,
+    class-string $given,
+): Exception\ForwardingTargetMismatch
+```
+
+Builds the error for re-pointing a double that already forwards inline.
+
+- `$label` — the double's own name in reports
+- `$current` — the class whose bodies the double already runs
+- `$given` — the class of the instance offered instead
+
+The state of the first donor was copied onto the double, and a copy
+cannot be taken twice: a `readonly` property is initialized, and
+whatever the inline calls have written since would be overwritten by a
+second donor's reading. Re-pointing is refused rather than silently
+leaving the double running the first donor's state against the second
+one's instance.
 

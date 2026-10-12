@@ -32,6 +32,29 @@ final class Runtime
     private const int SNAPSHOT_DEPTH = 8;
 
     /**
+     * The doubled classes' own method bodies, by `Class::method`, for inline
+     * forwarding. Class metadata, so it outlives a context: `reset()` drops
+     * doubles, not the shape of the types they stood in for.
+     *
+     * @var array<string, \ReflectionMethod>
+     */
+    private static array $inlineMethods = [];
+
+    /**
+     * The doubles whose real bodies are running right now, innermost last.
+     *
+     * A body that clones `$this` gets a copy of a double, and the generated
+     * `__clone()` cannot tell what it was cloned from — PHP hands it no
+     * reference to the original. Without this frame the copy would be a
+     * default-answering double in the middle of real code that, proxied,
+     * would have gone on working: `withTag()` returning `clone $this`, or a
+     * body computing over an internal copy.
+     *
+     * @var list<object>
+     */
+    private static array $inlineFrames = [];
+
+    /**
      * A stack, not a single context: `scope()` nests one inside another, and
      * the outer one must come back intact when the inner ends.
      *
@@ -270,7 +293,29 @@ final class Runtime
         }
 
         $context = self::current();
-        $context->register($clone, new DoubleState($blueprint));
+        $state = new DoubleState($blueprint);
+
+        // Cloned by real code running inline: the copy carries the original's
+        // forwarding, because PHP already copied the state those bodies read
+        // and the alternative is real code holding a double that answers
+        // defaults. Expectations are still not copied — that part of the rule
+        // above stands, and a clone the TEST makes is untouched by this
+        // because no body is running then.
+        $frame = self::$inlineFrames === [] ? null : self::$inlineFrames[\count(self::$inlineFrames) - 1];
+
+        if ($frame !== null && $frame::class === $clone::class) {
+            $origin = (self::ownerOf($frame) ?? $context)->stateOf($frame);
+            $target = $origin?->forwardingTarget();
+            $parent = $origin?->inlineParent();
+
+            if ($target !== null && $parent !== null) {
+                $state->setForwardingTarget($target);
+                $state->setMode(Mode::Forwarding);
+                $state->forwardInline($parent);
+            }
+        }
+
+        $context->register($clone, $state);
 
         self::owners()->offsetSet($clone, $context);
     }
@@ -684,6 +729,10 @@ final class Runtime
         // `expect(...)->times(1)` with no action — still needs one. Returning a
         // default there would make counting a call change what it answers.
         if ($state->mode() === Mode::Forwarding) {
+            if ($state->forwardsInline()) {
+                return self::runInline($state, $double, $method, $args);
+            }
+
             // The live arguments, not the log's reading of them: a by-reference
             // parameter is the caller's variable, and the whole point of
             // forwarding is that the real method can write to it.
@@ -959,11 +1008,17 @@ final class Runtime
     }
 
     /**
-     * Delegates one recorded call to the real instance, from inside an answer.
+     * Runs the real implementation of one recorded call, from inside an answer.
      *
      * Explicit rather than mode-driven: `answers(fn (Invocation $i) =>
      * $i->callOriginal())` says "this one call goes through", and works whether
      * or not the double is forwarding by default.
+     *
+     * Whichever form the double forwards in: an inline double runs the real
+     * body on itself, because the state that body reads lives on the double
+     * from the moment `forwarding()` copied it — the donor's own copy is
+     * whatever the first inline call left behind. Everything else proxies to
+     * the remembered instance.
      *
      * @param non-empty-string $method
      * @param list<mixed>      $args
@@ -977,16 +1032,94 @@ final class Runtime
             throw ForgottenDouble::afterReset($method);
         }
 
+        if ($state->forwardsInline()) {
+            return self::runInline($state, $double, $method, $args);
+        }
+
         return self::forward($state, $double, $method, $args);
+    }
+
+    /**
+     * Runs the real body on the double itself.
+     *
+     * `ReflectionMethod::invokeArgs()` is what makes this possible without
+     * adding anything to the generated class: a reflection taken on the
+     * *doubled* class enters that class's body even though the double
+     * overrides the method — the same non-virtual entry `parent::` gives —
+     * while `$this` inside the body stays the double, so its self-calls
+     * dispatch virtually and land back in the override. Verified on 8.3, 8.4
+     * and 8.5; `spikes/08-inline-forwarding` is the executable form of the
+     * claim. A generated `__understudyReal_*()` sibling would be the other
+     * way, and it is the way this library does not take: every member added
+     * to a double is a name the doubled type can no longer use.
+     *
+     * The arguments are the live ones — a reference survives the array, so a
+     * by-reference parameter still writes to the caller's variable — and the
+     * body runs inside dispatch, so its outcome is recorded like any other
+     * answer's.
+     *
+     * The one thing the proxy form refused and this form has to refuse too: a
+     * real body that builds another instance of itself and hands it out. Under
+     * the proxy it was an instance of the real class the double could not
+     * stand in for; here it is an instance of the generated class, which
+     * satisfies the override's `: static` and so gets past the language. A
+     * `clone $this` is fine — `adoptClone()` gave the copy this double's
+     * forwarding, so it answers for real — but a `new static` belongs to no
+     * context at all, and the next call on it would fail as a double that was
+     * never registered. That is what is refused, by registration rather than
+     * by return type: an unknown instance is broken for every caller, not only
+     * for one whose signature says `static`.
+     *
+     * @param non-empty-string $method
+     * @param list<mixed>      $args
+     */
+    private static function runInline(DoubleState $state, object $double, string $method, array $args): mixed
+    {
+        $parent = $state->inlineParent();
+        \assert($parent !== null);
+
+        // Cached across the suite: the reflection describes a class, and a
+        // fresh one per call is reflection on the dispatch path. Every contract
+        // of the double is satisfied by the donor's class, which IS this class,
+        // so the method is always there to be found.
+        $real = self::$inlineMethods[$parent . '::' . $method] ??= new \ReflectionMethod($parent, $method);
+
+        self::$inlineFrames[] = $double;
+
+        try {
+            /** @var mixed $value */
+            $value = $real->invokeArgs($double, $args);
+        } finally {
+            array_pop(self::$inlineFrames);
+        }
+
+        if (!\is_object($value)) {
+            // Only an object can be the double, its clone, or a `new static`.
+            return $value;
+        }
+
+        if ($value === $double) {
+            // The body's own `return $this`, which already IS the double.
+            return $value;
+        }
+
+        if ($value instanceof $double && self::ownerOf($value) === null) {
+            throw OriginalReturnTypeViolation::foreignSelf($state->label(), $method);
+        }
+
+        return $value;
     }
 
     /**
      * Delegates a call to the double's real instance and adopts the result.
      *
-     * Only the call at the boundary is recorded. If the real method calls
-     * another method on itself, that happens inside the real object and never
-     * reaches this dispatcher: understudy proxies an object, it does not
-     * instrument one.
+     * The proxy form of forwarding — the one an interface double has no choice
+     * about, and the one a donor that is a subclass of the doubled class keeps.
+     * The call runs on the remembered instance, `$this` inside it is that
+     * instance, and its self-calls stay inside it. A class double standing in
+     * for exactly the donor's class runs the real bodies on itself instead
+     * ({@see runInline()}), where `$this` stays the double and self-calls
+     * re-enter dispatch.
      *
      * @param non-empty-string $method
      * @param list<mixed>      $args
@@ -1046,6 +1179,68 @@ final class Runtime
         }
 
         return $value;
+    }
+
+    /**
+     * Copies the donor instance's initialized state onto the double, so a
+     * parent body run inline works over the values the real object held.
+     *
+     * The double's constructor never ran — beyond the empty scalars
+     * `PropertyDefaults` wrote, nothing on it is initialized — while the
+     * parent bodies inline forwarding runs read `$this->` properties. Every
+     * property the donor has initialized is copied; one the donor left
+     * uninitialized is left (or made) uninitialized on the double, so the
+     * real body sees exactly what it would have seen on the donor — including
+     * PHP's own "must not be accessed before initialization" for a property
+     * nobody set.
+     *
+     * Each property is handled through a reflection against its **declaring**
+     * class: before PHP 8.4 a readonly property can only be initialized from
+     * the scope of the class that declares it, and a reflection reached
+     * through the subclass writes from the subclass's scope.
+     */
+    public static function copyState(object $double, object $donor): void
+    {
+        for ($class = new \ReflectionClass($donor); $class !== false; $class = $class->getParentClass()) {
+            foreach ($class->getProperties() as $property) {
+                if ($property->isStatic() || $property->getDeclaringClass()->getName() !== $class->getName()) {
+                    continue;
+                }
+
+                if (\PHP_VERSION_ID >= 80400 && $property->hasHooks()) {
+                    // A virtual property has no state to copy; a backed one
+                    // has its backing store, reachable without running the
+                    // hooks — reading through them would execute the donor's
+                    // code during what is test setup.
+                    if (!$property->isVirtual() && $property->isInitialized($donor)) {
+                        $property->setRawValue($double, $property->getRawValue($donor));
+                    }
+
+                    continue;
+                }
+
+                if ($property->isInitialized($donor)) {
+                    $property->setValue($double, $property->getValue($donor));
+
+                    continue;
+                }
+
+                if ($property->isInitialized($double)) {
+                    // The donor's truth is "uninitialized"; the double is
+                    // holding one of the empty-scalar property defaults.
+                    // Restore the donor's reading, or the real body would see
+                    // a value the real object never had.
+                    //
+                    // No visibility dance and no `readonly` guard, because
+                    // only one thing writes a property on a double the
+                    // constructor skipped: `PropertyDefaults`, which writes
+                    // public, writable, non-readonly properties and nothing
+                    // else. That is exactly the set `unset()` from out here
+                    // can reach, and the rest cannot be in this position.
+                    unset($double->{$property->getName()});
+                }
+            }
+        }
     }
 
     /**

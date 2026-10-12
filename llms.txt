@@ -82,13 +82,24 @@ No runtime deps; `ext-mbstring` is not needed.
 - `Understudy::delegate(Contract::class, $real)` is `for()` + `forwarding()` in
   one expression and returns the double. The target is validated the same way.
 - `Invocation::callOriginal()` delegates one call from inside `answers()`,
-  whatever the mode. Without a target it raises `OriginalCallUnavailable` — the
-  parent implementation is never reached, because the double's constructor never
-  ran.
-- Forwarding records the boundary call only: a real method calling itself is not
-  visible. A fluent method that returned the real instance comes back as the
-  double; a `static` method returning another instance of the real class raises
-  `OriginalReturnTypeViolation`.
+  whatever the mode. On an inline double it runs the parent body on the double;
+  otherwise on the real instance. Without a target it raises
+  `OriginalCallUnavailable` — nothing copied the state, so the parent
+  implementation would read properties the skipped constructor never filled.
+- A CLASS double forwards inline: the doubled class's bodies run on the double,
+  over state copied from the instance when `forwarding()` was called, so a
+  self-call re-enters the double and meets stubs, protocols and the call log.
+  It needs the instance to be exactly the doubled class — a subclass instance
+  keeps the proxy form — and an inline double cannot be re-pointed at a second
+  instance (`ForwardingTargetMismatch`). `static::class` inside a real body is
+  the generated class; `final` and `private` methods are not intercepted.
+- An INTERFACE double proxies: it records the boundary call only, and a real
+  method calling itself is not visible. A fluent method that returned the real
+  instance comes back as the double; a `: static` method returning another
+  instance of the real class raises `OriginalReturnTypeViolation`. Inline, a
+  `clone $this` is adopted while the body runs and comes back forwarding (no
+  stubs copied); a `new static` raises `OriginalReturnTypeViolation`, because
+  no context knows that object.
 - `Understudy::bypassFinals(FinalX::class)` lifts `final` off one class before
   it loads; `Understudy::bypassFinals()` does it for every class the process
   loads from then on. Opt-in, and order-dependent: it works only for classes not

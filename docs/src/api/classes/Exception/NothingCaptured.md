@@ -9,7 +9,7 @@ description: "`Captor::last()` was read before any matched call carried a value 
 
 `Rasuvaeff\Understudy\Exception\NothingCaptured`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/NothingCaptured.php#L13) — **Version:** v1.0.1-1-g9f93626
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/NothingCaptured.php#L13) — **Version:** v1.0.1-3-gc4d60e5
 
 **Extends:** `LogicException`
 

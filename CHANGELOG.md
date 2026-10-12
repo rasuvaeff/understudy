@@ -2,6 +2,33 @@
 
 ## 1.1.0 — Unreleased
 
+- **Changed.** A forwarding double of a **class** now runs the real bodies on
+  itself instead of proxying them to the instance: the state that instance held
+  is copied onto the double when `forwarding()` is called, and an unmatched
+  call executes the parent implementation with `$this` still the double. A
+  self-call inside real code therefore re-enters the double — it meets stubs,
+  an armed protocol and the call log — which is what `makePartial()` ports
+  needed and what the standing limitation ("understudy proxies an object; it
+  does not instrument one") described. An interface double has no bodies to
+  reach and proxies exactly as before. Five consequences in a suite that
+  already forwards class doubles: a self-call now counts toward
+  `expect(...)->times(n)` and can fill a step of an armed protocol;
+  `callOriginal()` on such a double runs on the double rather than on the
+  instance, over the state the double holds; `static::class` inside a real
+  body names the generated class; a real body that hands out a `new static`
+  is refused with `OriginalReturnTypeViolation` (an object no context knows,
+  where a `clone $this` is adopted while the body runs and comes back
+  working); and the instance stops receiving the calls, so a test asserting
+  on it afterwards sees the state as of the moment `forwarding()` ran. That
+  copy is shallow, which is the same reach the instance had before: an
+  object-valued property is the same object on both, so writes *through* it
+  still land on the donor's collaborators, and a closure the constructor
+  bound to the donor still runs with `$this` on the donor. Inline needs the instance to be exactly
+  the doubled class — a subclass instance keeps the proxy form, so its own
+  overrides answer — and an inline double cannot be re-pointed at a second
+  instance, because a `readonly` property cannot be copied onto it twice
+  (`ForwardingTargetMismatch`). No name, signature or readonly field of the
+  public API changed. (#150)
 - **Changed.** Dispatch between overlapping specifications now runs in two
   tiers: one that pins at least one argument to something narrower than
   "anything" — a literal, any matcher except `Arg::any()`, or a tail pinned

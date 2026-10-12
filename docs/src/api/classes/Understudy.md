@@ -9,7 +9,7 @@ description: "The whole public surface, as static methods so that an understudy 
 
 `Rasuvaeff\Understudy\Understudy`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L41) — **Version:** v1.0.1-1-g9f93626
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L41) — **Version:** v1.0.1-3-gc4d60e5
 
 The whole public surface, as static methods so that an understudy itself can
 stay free of service members: every one of them would be a name the doubled
@@ -164,7 +164,13 @@ lifecycle teardown runs.
 static forwarding(object $double, ?object $real = NULL): void
 ```
 
-Delegates unmatched calls to a real instance, recording each one.
+Delegates unmatched calls to the real implementation, recording each
+one.
+
+**Throws:**
+
+- [`Exception\ForwardingTargetMismatch`](/api/classes/Exception/ForwardingTargetMismatch) — when `$real` is an understudy, misses a
+contract, or re-points an inline double
 
 With `$real`, the double starts standing in front of that object; without
 it, the mode is turned on for a double built from an instance by
@@ -172,9 +178,30 @@ it, the mode is turned on for a double built from an instance by
 double that remembers where it came from, and until you say so it still
 answers with defaults rather than running real code.
 
-Only the call at the boundary is recorded. A real method that calls
-another method on itself does so inside the real object; understudy
-proxies an object, it does not instrument one.
+A double of a **class** runs the real bodies inline, on itself: the
+state the real instance held is copied onto the double, and an unmatched
+call executes the parent implementation with `$this` still the double —
+so a self-call inside the real code re-enters the double, meets stubs,
+an armed protocol and the call log, and is recorded like the boundary
+call. `Invocation::callOriginal()` runs inline there too, over the state
+the double now holds. A double of an **interface** has no bodies to
+reach and proxies to the real instance — only the boundary call is
+recorded, and self-calls happen inside the real object where nothing can
+see them.
+
+Inline needs `$real` to be *exactly* the doubled class: a subclass
+instance carries overrides the doubled class's own bodies do not
+contain, and it keeps the proxy form so that those overrides answer. A `final` or `private` method
+is not overridden either, so a self-call to one of those runs the real
+body directly — it works, over the double's state, but it is not
+intercepted and the log does not show it. And `static::class` inside a
+real body names the generated class, not the doubled one.
+
+Calling this twice with the same instance changes nothing; re-pointing
+an inline double at a *different* instance is refused, because the state
+copy cannot be taken twice — a `readonly` property is already
+initialized, and whatever the real code has written since would be
+discarded.
 
 ### delegate()
 
