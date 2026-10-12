@@ -1207,13 +1207,16 @@ final class Runtime
                     continue;
                 }
 
-                if (\PHP_VERSION_ID >= 80400 && $property->hasHooks()) {
+                if (\PHP_VERSION_ID >= 80400 && self::propertyFlag($property, 'hasHooks')) {
                     // A virtual property has no state to copy; a backed one
                     // has its backing store, reachable without running the
                     // hooks — reading through them would execute the donor's
                     // code during what is test setup.
-                    if (!$property->isVirtual() && $property->isInitialized($donor)) {
-                        $property->setRawValue($double, $property->getRawValue($donor));
+                    if (!self::propertyFlag($property, 'isVirtual') && $property->isInitialized($donor)) {
+                        self::propertyMember($property, 'setRawValue', [
+                            $double,
+                            self::propertyMember($property, 'getRawValue', [$donor]),
+                        ]);
                     }
 
                     continue;
@@ -1241,6 +1244,40 @@ final class Runtime
                 }
             }
         }
+    }
+
+    /**
+     * Asks a `ReflectionProperty` member that exists only from PHP 8.4.
+     *
+     * By name rather than as `$property->hasHooks()`, and the name arrives as
+     * a parameter so that nothing can resolve it: Psalm reflects the real
+     * `ReflectionProperty` of the PHP it runs on, so a direct call is an
+     * `UndefinedMethod` under 8.3 — green on a machine with 8.5 and red in
+     * the 8.3 matrix job, which is how this reached CI once. Same idiom as
+     * `Codegen\PropertyDefaults::isWritableFromOutside()`.
+     *
+     * @param non-empty-string $member
+     */
+    private static function propertyFlag(\ReflectionProperty $property, string $member): bool
+    {
+        /** @var mixed $answer */
+        $answer = $property->{$member}();
+
+        return $answer === true;
+    }
+
+    /**
+     * Calls an 8.4-only `ReflectionProperty` member, for the same reason.
+     *
+     * @param non-empty-string $member
+     * @param list<mixed>      $args
+     */
+    private static function propertyMember(\ReflectionProperty $property, string $member, array $args): mixed
+    {
+        /** @var mixed $value */
+        $value = $property->{$member}(...$args);
+
+        return $value;
     }
 
     /**
