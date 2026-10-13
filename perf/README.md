@@ -97,6 +97,19 @@ variable in the root `Makefile`, not by flags typed at a prompt. Understudy
 `v1.0.0` (`d044131`), Mockery 1.6.15, Prophecy 1.26.1, PHPUnit 12.5.36.
 Taken 2026-09-27.
 
+**Re-verified for the v1.1.0 tag on 2026-10-13**, and left unchanged. Inline
+forwarding (#150) rewrote dispatch's forwarding branch and put two integer
+writes and a `try`/`finally` on every matched-with-action call, so the figures
+had to be re-taken rather than trusted. Six runs of the full harness in one
+sitting, alternating the commit before the change with the candidate, medians
+of three a side: understudy moved −2.6%, +1.6%, −18.3%, −18.5%, 0.0%, 0.0%
+across the six tables while Mockery, Prophecy and PHPUnit moved −18.4% to
++3.0% in the same runs. The two −18% tables moved for every library, so the
+machine moved and not the code; the two per-call dispatch tables are 0.0% for
+us against ±3.0% for them. `RStDev` ran 6.5–20% in that sitting, so the ratios
+are the reading and the microsecond figures below — taken on a quiet machine —
+are the ones that stand. `memory.php` is identical to the byte.
+
 **Re-verified for the v0.5.0 tag on 2026-09-03**, and left unchanged because
 there was nothing to change. Three runs of the full harness at `442da10` — the
 commit above — and three on the release candidate, same machine, same pinning,
