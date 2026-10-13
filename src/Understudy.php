@@ -664,7 +664,8 @@ final class Understudy
     }
 
     /**
-     * Delegates unmatched calls to a real instance, recording each one.
+     * Delegates unmatched calls to the real implementation, recording each
+     * one.
      *
      * With `$real`, the double starts standing in front of that object; without
      * it, the mode is turned on for a double built from an instance by
@@ -672,9 +673,33 @@ final class Understudy
      * double that remembers where it came from, and until you say so it still
      * answers with defaults rather than running real code.
      *
-     * Only the call at the boundary is recorded. A real method that calls
-     * another method on itself does so inside the real object; understudy
-     * proxies an object, it does not instrument one.
+     * A double of a **class** runs the real bodies inline, on itself: the
+     * state the real instance held is copied onto the double, and an unmatched
+     * call executes the parent implementation with `$this` still the double —
+     * so a self-call inside the real code re-enters the double, meets stubs,
+     * an armed protocol and the call log, and is recorded like the boundary
+     * call. `Invocation::callOriginal()` runs inline there too, over the state
+     * the double now holds. A double of an **interface** has no bodies to
+     * reach and proxies to the real instance — only the boundary call is
+     * recorded, and self-calls happen inside the real object where nothing can
+     * see them.
+     *
+     * Inline needs `$real` to be *exactly* the doubled class: a subclass
+     * instance carries overrides the doubled class's own bodies do not
+     * contain, and it keeps the proxy form so that those overrides answer. A `final` or `private` method
+     * is not overridden either, so a self-call to one of those runs the real
+     * body directly — it works, over the double's state, but it is not
+     * intercepted and the log does not show it. And `static::class` inside a
+     * real body names the generated class, not the doubled one.
+     *
+     * Calling this twice with the same instance changes nothing; re-pointing
+     * an inline double at a *different* instance is refused, because the state
+     * copy cannot be taken twice — a `readonly` property is already
+     * initialized, and whatever the real code has written since would be
+     * discarded.
+     *
+     * @throws ForwardingTargetMismatch when `$real` is an understudy, misses a
+     *                                  contract, or re-points an inline double
      */
     public static function forwarding(object $double, ?object $real = null): void
     {
@@ -693,12 +718,42 @@ final class Understudy
                 }
             }
 
+            $current = $state->forwardingTarget();
+
+            if ($state->forwardsInline() && $current !== $real) {
+                \assert($current !== null);
+
+                throw ForwardingTargetMismatch::alreadyInline($state->label(), $current::class, $real::class);
+            }
+
             $state->setForwardingTarget($real);
         } elseif ($state->forwardingTarget() === null) {
             throw OriginalCallUnavailable::forMode($state->label());
         }
 
         $state->setMode(Mode::Forwarding);
+
+        $target = $state->forwardingTarget();
+        \assert($target !== null);
+
+        // Inline only when the bodies the double would run are the bodies this
+        // instance would have run — the generated class extends exactly the
+        // donor's class. An interface double has no parent class at all, and a
+        // donor that is a *subclass* of the doubled class carries overrides
+        // that are not in the doubled class's bodies; running those bodies
+        // instead would change which code executes, so it keeps the proxy
+        // form, where its own overrides answer.
+        //
+        // The real bodies an inline double runs read `$this->` properties, and
+        // the double's own state is empty by construction: whatever the donor
+        // initialized has to be on the double before the first inline call,
+        // not lazily at some later point the test would have to know about.
+        $parent = get_parent_class($double);
+
+        if (!$state->forwardsInline() && $parent === $target::class) {
+            Runtime::copyState($double, $target);
+            $state->forwardInline($parent);
+        }
     }
 
     /**

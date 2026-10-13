@@ -42,7 +42,7 @@ const COMPLETENESS_BUDGET = {
     'method without a summary': 0,
     'parameter without a description': 154,
     'constructor parameter without a description': 10,
-    'throwing method without @throws': 8,
+    'throwing method without @throws': 7,
 }
 
 const errors = []

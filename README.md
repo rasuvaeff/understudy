@@ -891,11 +891,33 @@ when(fn () => $spy->get('key'))
     ->answers(fn (Invocation $call) => strtoupper((string) $call->callOriginal()));
 ```
 
-Five things are worth knowing before relying on it:
+Eight things are worth knowing before relying on it:
 
-- **Only the call at the boundary is recorded.** If the real method calls
-  another method on itself, that happens inside the real object. Understudy
-  proxies an object; it does not instrument one.
+- **A class double runs the real bodies on itself.** The state the real
+  instance held is copied onto the double when `forwarding()` is called, and an
+  unmatched call executes the parent implementation with `$this` still the
+  double — so a self-call inside the real code re-enters the double: it meets
+  stubs, an armed protocol and the call log, and every call is recorded, the
+  boundary one and the self-calls alike. Two consequences to hold on to:
+  `static::class` inside a real body names the generated class rather than
+  yours, and a `final` or `private` method is not overridden, so a self-call to
+  one of those runs the real body directly — it works, but nothing intercepts
+  or records it. The instance itself stops receiving the calls: after
+  `forwarding()` it holds the state it had at that moment, and assertions
+  belong on the double. The copy is shallow, which is the reach the instance
+  already had — an object-valued property is the same object on both sides, so
+  writes *through* one still land on the donor's collaborators.
+- **An interface double proxies instead.** It has no bodies to reach: the call
+  runs on the real instance, only the call at the boundary is recorded, and
+  self-calls happen inside the real object where nothing can see them.
+- **Running inline needs the instance to be exactly the doubled class.** A
+  donor that is a *subclass* carries overrides the doubled class's own bodies
+  do not contain, and running those bodies in their place would change which
+  code executes — such a double keeps the proxy form, where the overrides answer.
+  An inline double also cannot be re-pointed at a second instance: its state
+  was copied from the first, a `readonly` property cannot be written twice, and
+  a second copy would discard everything the real code has written since. Build
+  a second double for the other instance.
 - **A `: never` method reaches the real implementation.** Its throw lives
   there, and a forwarding double has something that can answer for itself.
 - **An understudy is not a valid target.** Forwarding to one — itself included
@@ -904,11 +926,27 @@ Five things are worth knowing before relying on it:
 - **A by-reference argument is the caller's variable.** A forwarded method
   writes to it, and the call log keeps both readings — what was passed and what
   it became — so a verification still sees the value the caller handed over.
-- **A fluent method comes back as the double.** When the real instance returns
-  itself, the double is returned instead, so a chain stays doubled. A `static`
-  method that returns a *different* instance of the real class is refused —
-  that object is not a double, and returning it would break the override's own
-  `: static`.
+- **A fluent method comes back as the double.** When the real code returns
+  `$this`, that already *is* the double — the parent body ran on it — so a
+  chain stays doubled by itself. A `clone $this` works too: the copy is
+  adopted while the body runs and inherits this double's forwarding, so a
+  wither comes back as a working double — carrying none of this one's stubs,
+  the same rule a `clone $double` in the test follows. Adoption asks for a
+  copy of *this* double, holding its state: a body that clones another double
+  it was handed gets a fresh double of the right class instead, and so does a
+  `clone $double` written in your own `answers()` closure, even when a real
+  body is what reached it. Two doubles of one class in the same state cannot
+  be told apart — `__clone()` is given no reference to what it copied — so a
+  copy of one of those is adopted and answers for real; it does so over the
+  state it already holds, which is the other double's. What is refused, with
+  `OriginalReturnTypeViolation`, is a real body handing out a `new static`:
+  that object is of the generated class, so the return type accepts it, but no
+  context knows it and every call on it would fail as an unregistered
+  double — under the proxy the same shape was refused as a foreign instance.
+- **`callOriginal()` follows the double's own form.** On an inline double it
+  runs the parent body on the double, over the state the double holds — the
+  donor's copy stopped being the current one at the first inline call. On every
+  other double it runs on the real instance, where self-calls stay inside it.
 
 ### Failure messages
 

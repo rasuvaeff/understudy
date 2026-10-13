@@ -85,9 +85,11 @@ final class ForwardingTest
     }
 
     /**
-     * Understudy proxies an object; it does not instrument one. `describe()`
-     * calls `label()` on the real instance, and that call happens inside the
-     * real object, where no dispatcher can see it.
+     * An interface double proxies: there is no body for it to run, so
+     * `describe()` executes on the real instance and the `label()` it calls
+     * there happens inside that object, where no dispatcher can see it. A
+     * class double runs the bodies on itself instead and does see it — see
+     * InlineForwardingTest.
      */
     public function onlyTheCallAtTheBoundaryIsRecorded(): void
     {

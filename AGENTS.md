@@ -273,6 +273,81 @@ seconds instead of the full run's minute — and the full run stays the gate.
   other class failed with "there is no such class"; the same mistake reached
   review once already with `Fixture\Cls\Stamp`.
 
+- **Inline forwarding enters a real body by reflection, not by `parent::`.**
+  `Runtime::runInline()` calls `ReflectionMethod::invokeArgs()` on a
+  reflection of the *doubled* class, which enters that class's body even
+  though the double overrides the method, while `$this` stays the double so
+  the body's self-calls dispatch virtually and come back through the
+  override. The alternative — a generated `__understudyReal_*()` sibling
+  calling `parent::`, which is what jasonmccreary/double does — is closed to
+  us by golden rule 3, and a per-call `fn () => parent::m(...)` closure
+  handed to the dispatcher was built, measured and reverted: it cost **+10%
+  per call on every class double**, forwarding or not, because the argument
+  is evaluated before dispatch can decide it is not needed (`perf/` doubles
+  only interfaces, so `make perf` cannot see this — the measurement was a
+  loop over a loose class double). The language claim is pinned by
+  `spikes/08-inline-forwarding` on 8.3/8.4/8.5. The reflections are cached in
+  a static keyed by `Class::method`, and `reset()` does not clear it: it is
+  metadata about a type, not state of a double.
+- **Inline forwarding needs the instance to be exactly the doubled class, and
+  the state copy decides when it is on.** `get_parent_class($double) ===
+  $real::class` is the whole test: an interface double has no parent, and a
+  donor that is a *subclass* carries overrides the doubled class's bodies do
+  not contain — running those instead would silently change which code
+  executes, so it keeps the proxy form. `DoubleState::$inlineParent` is set
+  only after `Runtime::copyState()` succeeded, because a body that runs
+  inline reads `$this->` properties the skipped constructor never filled.
+  Re-pointing an inline double at another instance is refused rather than
+  copied twice: a `readonly` property cannot be written again, and a second
+  copy would discard what the real code has written since.
+- **A state copy reflects each property against its DECLARING class.** Before
+  PHP 8.4 a `readonly` property can only be initialized from the scope of the
+  class that declares it, and a `ReflectionProperty` reached through the
+  subclass writes from the subclass's scope. The loop therefore walks the
+  donor's hierarchy and skips what the current class did not declare. A
+  hooked property is copied through `setRawValue()`/`getRawValue()` (reading
+  through the hooks would execute the donor's code during setup, writing
+  through them would re-run a `set` the real object already ran), a virtual
+  one has no state to copy, and a property the donor left uninitialized is
+  `unset()` on the double — which is enough from outside, because the only
+  thing that writes a property on a constructor-less double is
+  `PropertyDefaults`, and it writes public writable ones and nothing else.
+- **A clone made while a real body runs inherits that double's forwarding;
+  an object no context knows is refused.** Both shapes satisfy the override's
+  `: static` — they are of the generated class — so the language stops
+  refusing what the proxy path refused as a foreign instance, and the two
+  need opposite answers. `clone $this` is adopted in `Runtime::adoptClone()`
+  from `Runtime::$inlineFrames`, the stack of doubles whose bodies are
+  running: PHP already copied the state those bodies read, and without the
+  frame a `: self` wither — or a body merely computing over an internal copy,
+  which proxied worked — would hold a double answering defaults in the middle
+  of real code. Expectations are still not copied, and a `clone $double` the
+  test makes is untouched — whether no body is running at all, or the test's
+  own `answers()` closure was reached from one, which `Runtime::$inlineFloor`
+  hides the frames underneath for exactly the span of. The frame alone is a
+  guess, because one generated class serves every double of a type: a body
+  handed another double of its own class — `merge(Basket $other)` — and cloning
+  THAT would adopt it on the running double's behalf, with bodies to run and
+  no state copy to run them over, which is a bare `must not be accessed before
+  initialization` where the property is typed and a quiet wrong answer where
+  it has a declared default. `Runtime::isCopyOf()` therefore requires the copy
+  to hold the frame's own state, and the comparison is
+  `get_mangled_object_vars()` on both — the object's own property table, which
+  is the only reading that reaches a parent's private properties, answers a
+  hooked property with its backing store rather than running the doubled
+  class's `get` in the middle of `__clone()`, has no entry for a virtual one,
+  and omits a property nobody initialized, so "never set" differs from every
+  value. The copy is property-identical to its source at this moment, because
+  a generated `__clone()` does nothing but call `adoptClone()`. Two doubles in
+  the same state stay indistinguishable — the copy is adopted and runs real
+  bodies where a plain double answered defaults — and that is the residual of
+  PHP's blind spot, not a thing the comparison can close: it runs them over
+  the state the copy already holds, so no reading is of a value the object
+  never had, it is the other double's. `new static` cannot be adopted — its constructor built a new object
+  with its own state — so it is refused by
+  `OriginalReturnTypeViolation::foreignSelf()`, and the check is registration
+  (`ownerOf() === null`), not return type: an unknown instance is broken for
+  every caller, not only for one whose signature says `static`.
 - **Forwarding is not gated on `$matched`, and strictness is.** Strict mode is a
   complaint that a matched expectation answers; forwarding is the mode's own
   answer, and an expectation that only counts the call —

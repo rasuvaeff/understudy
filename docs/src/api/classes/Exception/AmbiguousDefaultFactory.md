@@ -9,7 +9,7 @@ description: "Two registered default factories are equally close to the requeste
 
 `Rasuvaeff\Understudy\Exception\AmbiguousDefaultFactory`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/AmbiguousDefaultFactory.php#L12) — **Version:** v1.0.1-1-g9f93626
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/AmbiguousDefaultFactory.php#L12) — **Version:** v1.0.1-3-gc4d60e5
 
 **Extends:** `LogicException`
 

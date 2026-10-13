@@ -9,7 +9,7 @@ description: "A forwarded call returned an object the double cannot stand in for
 
 `Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OriginalReturnTypeViolation.php#L12) — **Version:** v1.0.1-1-g9f93626
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/OriginalReturnTypeViolation.php#L12) — **Version:** v1.0.1-3-gc4d60e5
 
 **Extends:** `RuntimeException`
 
@@ -30,4 +30,25 @@ static foreignInstance(
 ```
 
 Builds the error for a forwarded fluent call returning another object.
+
+### foreignSelf()
+
+```php
+static foreignSelf(
+    non-empty-string $label,
+    non-empty-string $method,
+): Exception\OriginalReturnTypeViolation
+```
+
+Builds the error for an inline call whose real body built a new instance
+of the double's own class — a `new static`.
+
+- `$label` — the double's own name in reports
+- `$method` — the method whose real body returned it
+
+It is of the generated class, so it satisfies the override's `: static`
+and the language lets it through; no context knows it, so every call on
+it would fail as a double that was never registered. A `clone $this`
+does not reach here: the copy inherits the original's forwarding and
+answers for real.
 

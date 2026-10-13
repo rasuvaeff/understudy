@@ -127,13 +127,18 @@ final class Invocation
     }
 
     /**
-     * Delegates this call to the double's real instance and returns what it
-     * answered — the `answers()` escape hatch for "behave normally, except
-     * here".
+     * Runs the real implementation of this call and returns what it answered —
+     * the `answers()` escape hatch for "behave normally, except here".
+     *
+     * Where that implementation runs follows the double's own form. A class
+     * double that forwards runs the real body on itself, over the state
+     * `forwarding()` copied there; every other double delegates to the real
+     * instance it remembers, where the body's own self-calls stay inside that
+     * object.
      *
      * Without a forwarding target it raises `OriginalCallUnavailable` rather
-     * than reaching for the parent implementation: the double's constructor
-     * never ran, so the parent body would work over state that does not exist.
+     * than reaching for the real body anyway: nothing copied the state, so the
+     * body would work over properties the skipped constructor never filled.
      *
      * @throws OriginalCallUnavailable
      */

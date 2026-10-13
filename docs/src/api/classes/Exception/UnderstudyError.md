@@ -9,7 +9,7 @@ description: "Implemented by every exception this library throws, so a test can 
 
 `Rasuvaeff\Understudy\Exception\UnderstudyError`
 
-**Interface** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/UnderstudyError.php#L14) — **Version:** v1.0.1-1-g9f93626
+**Interface** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/UnderstudyError.php#L14) — **Version:** v1.0.1-3-gc4d60e5
 
 **Implements:** `Throwable`, `Stringable`
 
