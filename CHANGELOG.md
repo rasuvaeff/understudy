@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 — Unreleased
+## 1.1.0 — 2026-10-13
 
 - **Changed.** A forwarding double of a **class** now runs the real bodies on
   itself instead of proxying them to the instance: the state that instance held
