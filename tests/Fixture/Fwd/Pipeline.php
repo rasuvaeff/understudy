@@ -120,6 +120,19 @@ class Pipeline extends BasePipeline
     }
 
     /**
+     * Clones the instance it was handed rather than itself: the copy belongs
+     * to that double, and nothing copied state onto it — `$name` is readonly
+     * and uninitialized there, so a copy adopted on this double's behalf
+     * raises PHP's own "must not be accessed before initialization".
+     */
+    public function mergeWith(self $other): string
+    {
+        $copy = clone $other;
+
+        return $copy->describe();
+    }
+
+    /**
      * What `static` resolves to inside a body running inline: the generated
      * class, not this one.
      */

@@ -27,8 +27,16 @@
   the doubled class — a subclass instance keeps the proxy form, so its own
   overrides answer — and an inline double cannot be re-pointed at a second
   instance, because a `readonly` property cannot be copied onto it twice
-  (`ForwardingTargetMismatch`). No name, signature or readonly field of the
-  public API changed. (#150)
+  (`ForwardingTargetMismatch`). Adopting a clone asks for a copy of the double
+  whose body is running, holding its state: one generated class serves every
+  double of a type, so a body that clones another double it was handed — and a
+  `clone $double` the test writes in its own `answers()` closure, which a real
+  body can reach — gets a fresh double of that class, the documented rule for
+  `clone $double`, rather than real bodies over a state nothing copied. Two
+  doubles of one class in the same state are indistinguishable, because
+  `__clone()` is handed no reference to its source: a copy of one of those is
+  adopted and answers for real, over the state it already holds. No name,
+  signature or readonly field of the public API changed. (#150)
 - **Changed.** Dispatch between overlapping specifications now runs in two
   tiers: one that pins at least one argument to something narrower than
   "anything" — a literal, any matcher except `Arg::any()`, or a tail pinned

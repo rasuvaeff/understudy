@@ -16,6 +16,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Fwd\OtherPipeline;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\Pipeline;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\RealChain;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\SpecialPipeline;
+use Rasuvaeff\Understudy\Tests\Fixture\Fwd\Tally;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Codecov\Covers;
@@ -232,6 +233,121 @@ final class InlineForwardingTest
         Assert::same($double->readPlain(), 'carried');
     }
 
+    /**
+     * The comparison decides on every property, not on the first few: a
+     * hooked one, a virtual one and then a plain one that is the only thing
+     * telling the two doubles apart. Stopping at either of the first two
+     * would adopt a copy of the wrong double and run real bodies on it.
+     *
+     * Built by eval for the reason
+     * {@see aHookedPropertyIsCopiedThroughItsBackingStore()} gives.
+     */
+    public function aPropertyDeclaredAfterAHookedOneStillDecidesTheComparison(): void
+    {
+        if (PHP_VERSION_ID < 80400) {
+            Assert::false(method_exists(\ReflectionProperty::class, 'hasHooks'));
+
+            return;
+        }
+
+        $class = 'HookedOrder_' . PHP_VERSION_ID;
+
+        eval(sprintf(
+            'namespace %s; class %s { '
+            . 'public int $scaled { get => $this->scaled * 2; set { $this->scaled = $value; } } '
+            . 'public string $virtual { get => \'computed\'; } '
+            . 'public string $plain = \'declared\'; '
+            . 'public function __construct(int $scaled, string $plain) '
+            . '{ $this->scaled = $scaled; $this->plain = $plain; } '
+            . 'public function tagline(): string { return \'real\'; } '
+            . 'public function mergeWith(self $other): string '
+            . '{ $copy = clone $other; return $copy->tagline(); } }',
+            __NAMESPACE__,
+            $class,
+        ));
+
+        /** @var class-string $fqcn */
+        $fqcn = __NAMESPACE__ . '\\' . $class;
+
+        // The backing store of the hooked property agrees with what a
+        // constructor-less double holds, so only `$plain` — declared after
+        // both the hooked and the virtual property — separates them.
+        $double = Understudy::delegate($fqcn, new $fqcn(0, 'carried'));
+        $other = Understudy::for($fqcn);
+
+        // A fresh double of that class: `tagline()` answers the empty string
+        // rather than the 'real' its body returns.
+        Assert::same($double->mergeWith($other), '');
+    }
+
+    /**
+     * The floor comes back down even when the test's closure throws. The
+     * stub's exception unwinds through dispatch and out of the real body that
+     * called it, and a floor left raised there would quietly stop adopting
+     * every clone a later body makes of itself.
+     */
+    public function aThrowingStubLeavesCloneAdoptionWorking(): void
+    {
+        $double = Understudy::delegate(Pipeline::class, new Pipeline('prod', ['a']));
+
+        when(fn() => $double->apply(Arg::any()))->throws(new \RuntimeException('from the stub'));
+
+        try {
+            $double->run('x');
+        } catch (\RuntimeException) {
+            // The throw is the point: it leaves dispatch from inside a real
+            // body, which is the path that has to put the floor back.
+        }
+
+        Assert::same($double->preview('b'), 'prod:2');
+    }
+
+    /**
+     * The claim both the state copy and the clone comparison rest on: neither
+     * runs a hook. A `get` hook is the doubled class's own code — reading
+     * through it would execute real code during what is setup, and during a
+     * `__clone()` that has not decided yet whether this copy is a double of
+     * anything. The hook counts its own calls, so a reading taken through it
+     * is visible rather than merely reasoned about.
+     *
+     * Built by eval for the reason
+     * {@see aHookedPropertyIsCopiedThroughItsBackingStore()} gives.
+     */
+    public function neitherTheStateCopyNorTheCloneComparisonRunsAHook(): void
+    {
+        if (PHP_VERSION_ID < 80400) {
+            Assert::false(method_exists(\ReflectionProperty::class, 'hasHooks'));
+
+            return;
+        }
+
+        $class = 'CountingHooks_' . PHP_VERSION_ID;
+
+        eval(sprintf(
+            'namespace %s; class %s { public static int $reads = 0; '
+            . 'public int $scaled { get { self::$reads++; return $this->scaled * 2; } '
+            . 'set { $this->scaled = $value; } } '
+            . 'public function __construct(int $scaled) { $this->scaled = $scaled; } '
+            . 'public function mirror(): int { $copy = clone $this; return 1; } }',
+            __NAMESPACE__,
+            $class,
+        ));
+
+        /** @var class-string $fqcn */
+        $fqcn = __NAMESPACE__ . '\\' . $class;
+        $donor = new $fqcn(5);
+        $fqcn::$reads = 0;
+
+        $double = Understudy::delegate($fqcn, $donor);
+
+        // The copy reached the backing store, not the `get`.
+        Assert::same($fqcn::$reads, 0);
+
+        // And neither did the comparison that adopted the body's own clone.
+        Assert::same($double->mirror(), 1);
+        Assert::same($fqcn::$reads, 0);
+    }
+
     public function aFluentSelfReturnIsTheDoubleItself(): void
     {
         $double = Understudy::delegate(Pipeline::class, new Pipeline('prod'));
@@ -342,6 +458,111 @@ final class InlineForwardingTest
 
         // The original is untouched by what the body did to its copy.
         Assert::same($double->describe(), 'prod:1');
+    }
+
+    /**
+     * The other side of that: a body handed another double of its own class
+     * and cloning THAT one. The class is the same generated class — every
+     * double of a type shares it — so only the state separates the copy from
+     * a `clone $this`, and here nothing copied any state onto the double the
+     * body was given. Adopting it would run `describe()` over a readonly
+     * `$name` the skipped constructor never filled, which is PHP's own fatal
+     * rather than anything a test could read.
+     */
+    public function aCloneOfAnotherDoubleInsideARealBodyIsAFreshDouble(): void
+    {
+        $double = Understudy::delegate(Pipeline::class, new Pipeline('prod', ['a']));
+        $other = Understudy::for(Pipeline::class);
+
+        Assert::same($double->mergeWith($other), '');
+
+        // Handed its own double, the same body clones the frame itself, and
+        // that copy is adopted as before.
+        Assert::same($double->mergeWith($double), 'prod:1');
+    }
+
+    /**
+     * The same mistake where nothing raises: a class whose every property has
+     * a declared default leaves a constructor-less double readable, so an
+     * adopted copy of it would quietly compute from the declaration's value
+     * instead of the donor's — 70 where the test set up 42.
+     */
+    public function aCloneOfAnotherDoubleWithDeclaredDefaultsIsAFreshDouble(): void
+    {
+        $double = Understudy::delegate(Tally::class, new Tally(42));
+        $other = Understudy::for(Tally::class);
+
+        // A fresh double of `Tally`: `total()` is unconfigured, so it answers
+        // the type's default rather than running the real body at all.
+        Assert::same($double->mergeWith($other), 0);
+        Assert::same($double->mergeWith($double), 420);
+    }
+
+    /**
+     * A clone the test writes in its own `answers()` closure, reached from a
+     * real body. The closure is test code — the rule for `clone $double` is
+     * the test's, not the body's — and the frames underneath it are hidden
+     * for exactly its span.
+     */
+    public function aCloneMadeByATestClosureUnderARealBodyIsAFreshDouble(): void
+    {
+        $double = Understudy::delegate(Pipeline::class, new Pipeline('prod', ['a']));
+
+        when(fn() => $double->apply(Arg::any()))
+            ->answers(fn(): string => (clone $double)->describe());
+
+        // run() is the real body; it calls apply() on itself, the stub
+        // answers, and the clone made there is a fresh double whose
+        // describe() is the empty default rather than 'prod:1'.
+        Assert::same($double->run('ignored'), '');
+
+        // And the floor went back down with the closure: the next body to
+        // clone itself is adopted as before.
+        Assert::same($double->preview('b'), 'prod:2');
+    }
+
+    /**
+     * Comparing a copy against the frame reads a hooked property the way the
+     * state copy writes it — through the backing store. A `get` hook is the
+     * doubled class's own code, and running it to decide whether to adopt a
+     * clone would execute real code in the middle of `__clone()`.
+     *
+     * Built by eval for the reason
+     * {@see aHookedPropertyIsCopiedThroughItsBackingStore()} gives.
+     */
+    public function aHookedPropertyIsComparedThroughItsBackingStore(): void
+    {
+        if (PHP_VERSION_ID < 80400) {
+            Assert::false(method_exists(\ReflectionProperty::class, 'hasHooks'));
+
+            return;
+        }
+
+        $class = 'HookedMerger_' . PHP_VERSION_ID;
+
+        eval(sprintf(
+            'namespace %s; class %s { public int $scaled { get => $this->scaled * 2; '
+            . 'set { $this->scaled = $value; } } public string $virtual { get => \'computed\'; } '
+            . 'public function __construct(int $scaled) { $this->scaled = $scaled; } '
+            . 'public function read(): int { return $this->scaled; } '
+            . 'public function mirror(): int { $copy = clone $this; return $copy->read(); } '
+            . 'public function mergeWith(self $other): int { $copy = clone $other; return $copy->read(); } }',
+            __NAMESPACE__,
+            $class,
+        ));
+
+        /** @var class-string $fqcn */
+        $fqcn = __NAMESPACE__ . '\\' . $class;
+        $double = Understudy::delegate($fqcn, new $fqcn(5));
+        $other = Understudy::for($fqcn);
+
+        // Its own copy: the backing stores match, the copy is adopted, and
+        // the inherited `get` hook doubles the 5 that was copied over.
+        Assert::same($double->mirror(), 10);
+
+        // A copy of the other double: the backing store is not the frame's,
+        // so it stays a fresh double and answers the default.
+        Assert::same($double->mergeWith($other), 0);
     }
 
     /**

@@ -322,10 +322,29 @@ seconds instead of the full run's minute — and the full run stays the gate.
   frame a `: self` wither — or a body merely computing over an internal copy,
   which proxied worked — would hold a double answering defaults in the middle
   of real code. Expectations are still not copied, and a `clone $double` the
-  test makes is untouched because no body is running then; a body cloning a
-  *different* double of the same class would be misattributed, which is the
-  same blind spot `__clone()` has always had. `new static` cannot be adopted —
-  its constructor built a new object with its own state — so it is refused by
+  test makes is untouched — whether no body is running at all, or the test's
+  own `answers()` closure was reached from one, which `Runtime::$inlineFloor`
+  hides the frames underneath for exactly the span of. The frame alone is a
+  guess, because one generated class serves every double of a type: a body
+  handed another double of its own class — `merge(self $other)` — and cloning
+  THAT would adopt it on the running double's behalf, with bodies to run and
+  no state copy to run them over, which is a bare `must not be accessed before
+  initialization` where the property is typed and a quiet wrong answer where
+  it has a declared default. `Runtime::isCopyOf()` therefore requires the copy
+  to hold the frame's own state, and the comparison is
+  `get_mangled_object_vars()` on both — the object's own property table, which
+  is the only reading that reaches a parent's private properties, answers a
+  hooked property with its backing store rather than running the doubled
+  class's `get` in the middle of `__clone()`, has no entry for a virtual one,
+  and omits a property nobody initialized, so "never set" differs from every
+  value. The copy is property-identical to its source at this moment, because
+  a generated `__clone()` does nothing but call `adoptClone()`. Two doubles in
+  the same state stay indistinguishable — the copy is adopted and runs real
+  bodies where a plain double answered defaults — and that is the residual of
+  PHP's blind spot, not a thing the comparison can close: it runs them over
+  the state the copy already holds, so no reading is of a value the object
+  never had, it is the other double's. `new static` cannot be adopted — its constructor built a new object
+  with its own state — so it is refused by
   `OriginalReturnTypeViolation::foreignSelf()`, and the check is registration
   (`ownerOf() === null`), not return type: an unknown instance is broken for
   every caller, not only for one whose signature says `static`.

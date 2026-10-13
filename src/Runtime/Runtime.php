@@ -55,6 +55,19 @@ final class Runtime
     private static array $inlineFrames = [];
 
     /**
+     * How much of {@see $inlineFrames} a `clone` is allowed to see.
+     *
+     * A test's own `answers()`/`returns()` closure runs inside dispatch, which
+     * can be reached from a real body running inline — and a `clone $double`
+     * written there is the test's clone, which the documented rule makes a
+     * fresh double. The frames below the floor are the bodies that happen to
+     * be on the stack underneath; the floor is raised for the span of the
+     * closure, so only what the closure itself enters — `callOriginal()`,
+     * which pushes a frame of its own — is visible to a clone made inside it.
+     */
+    private static int $inlineFloor = 0;
+
+    /**
      * A stack, not a single context: `scope()` nests one inside another, and
      * the outer one must come back intact when the inner ends.
      *
@@ -299,11 +312,23 @@ final class Runtime
         // forwarding, because PHP already copied the state those bodies read
         // and the alternative is real code holding a double that answers
         // defaults. Expectations are still not copied — that part of the rule
-        // above stands, and a clone the TEST makes is untouched by this
-        // because no body is running then.
-        $frame = self::$inlineFrames === [] ? null : self::$inlineFrames[\count(self::$inlineFrames) - 1];
+        // above stands, and a clone the TEST makes is untouched by this,
+        // whether no body is running at all or the test's own closure was
+        // reached from one ({@see $inlineFloor}).
+        $frames = self::$inlineFrames;
+        $frame = $frames === [] || \count($frames) <= self::$inlineFloor
+            ? null
+            : $frames[\count($frames) - 1];
 
-        if ($frame !== null && $frame::class === $clone::class) {
+        // The class is not enough, and the same generated class stands in for
+        // every double of a type: a body handed another double of its own
+        // class — `merge(self $other)` — and cloning THAT would otherwise
+        // adopt it on the running double's behalf, giving it bodies to run and
+        // no state copy to run them over. What PHP leaves to go on is the copy
+        // itself, which at this moment is property-identical to whatever it
+        // was cloned from, because the generated `__clone()` does nothing but
+        // call this method.
+        if ($frame !== null && $frame::class === $clone::class && self::isCopyOf($clone, $frame)) {
             $origin = (self::ownerOf($frame) ?? $context)->stateOf($frame);
             $target = $origin?->forwardingTarget();
             $parent = $origin?->inlineParent();
@@ -705,8 +730,19 @@ final class Runtime
                 break;
             }
 
-            /** @var mixed $answer */
-            $answer = $expectation->performAction($invocation);
+            // The test's own closure, so a `clone $double` inside it is the
+            // test's clone even when a real body is on the stack underneath.
+            // Two integers rather than a saved copy of the stack: this is the
+            // dispatch path, and every stubbed call in a suite pays for it.
+            $floor = self::$inlineFloor;
+            self::$inlineFloor = \count(self::$inlineFrames);
+
+            try {
+                /** @var mixed $answer */
+                $answer = $expectation->performAction($invocation);
+            } finally {
+                self::$inlineFloor = $floor;
+            }
 
             if ($signature !== null && $signature->returnsNever) {
                 // The expectation returned instead of throwing; returning from
@@ -1244,6 +1280,44 @@ final class Runtime
                 }
             }
         }
+    }
+
+    /**
+     * Whether `$clone` is the copy PHP just took of `$frame`.
+     *
+     * Asked because `__clone()` is handed no reference to what it was cloned
+     * from, and the running body's double is a guess: one generated class
+     * serves every double of a type, so a body that was given another double
+     * of its own class and cloned that one looks identical from here. What
+     * separates them is the state, and this runs before anything could have
+     * changed it — a generated `__clone()` only calls {@see adoptClone()},
+     * never the doubled class's own `__clone()` body, so the copy still holds
+     * exactly what it was copied from.
+     *
+     * `get_mangled_object_vars()` is the whole comparison, and it is the
+     * right reading rather than a shortcut: it answers with the object's own
+     * property table — private properties of every parent under their mangled
+     * names, which a reflection of the double's class cannot reach at all —
+     * and it answers without running anything. A hooked property comes back
+     * as its backing store, not through its `get`, which is the doubled
+     * class's code and must not run while `__clone()` is still deciding what
+     * this copy is; a virtual property has no entry, because it has no state;
+     * a static one belongs to the class both objects share; and a property
+     * nobody initialized is absent, so "the donor never set this" differs
+     * from any value at all. Two tables compare `===`: same keys in the same
+     * order — a copy cannot reorder them — and the same values, which for an
+     * object-valued property means the same object, as a copy holds.
+     *
+     * Two doubles in the same state stay indistinguishable, and that is the
+     * residual of PHP's blind spot rather than something this can close: such
+     * a copy is adopted and runs real bodies where a plain double would have
+     * answered defaults. It runs them over the state the copy already holds,
+     * so nothing reads a value the object never had — the readings are real,
+     * they are simply the other double's.
+     */
+    private static function isCopyOf(object $clone, object $frame): bool
+    {
+        return get_mangled_object_vars($clone) === get_mangled_object_vars($frame);
     }
 
     /**

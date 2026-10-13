@@ -931,7 +931,14 @@ Eight things are worth knowing before relying on it:
   chain stays doubled by itself. A `clone $this` works too: the copy is
   adopted while the body runs and inherits this double's forwarding, so a
   wither comes back as a working double — carrying none of this one's stubs,
-  the same rule a `clone $double` in the test follows. What is refused, with
+  the same rule a `clone $double` in the test follows. Adoption asks for a
+  copy of *this* double, holding its state: a body that clones another double
+  it was handed gets a fresh double of the right class instead, and so does a
+  `clone $double` written in your own `answers()` closure, even when a real
+  body is what reached it. Two doubles of one class in the same state cannot
+  be told apart — `__clone()` is given no reference to what it copied — so a
+  copy of one of those is adopted and answers for real; it does so over the
+  state it already holds, which is the other double's. What is refused, with
   `OriginalReturnTypeViolation`, is a real body handing out a `new static`:
   that object is of the generated class, so the return type accepts it, but no
   context knows it and every call on it would fail as an unregistered
