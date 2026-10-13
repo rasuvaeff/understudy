@@ -326,7 +326,7 @@ seconds instead of the full run's minute — and the full run stays the gate.
   own `answers()` closure was reached from one, which `Runtime::$inlineFloor`
   hides the frames underneath for exactly the span of. The frame alone is a
   guess, because one generated class serves every double of a type: a body
-  handed another double of its own class — `merge(self $other)` — and cloning
+  handed another double of its own class — `merge(Basket $other)` — and cloning
   THAT would adopt it on the running double's behalf, with bodies to run and
   no state copy to run them over, which is a bare `must not be accessed before
   initialization` where the property is typed and a quiet wrong answer where

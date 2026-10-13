@@ -125,7 +125,7 @@ class Pipeline extends BasePipeline
      * and uninitialized there, so a copy adopted on this double's behalf
      * raises PHP's own "must not be accessed before initialization".
      */
-    public function mergeWith(self $other): string
+    public function mergeWith(Pipeline $other): string
     {
         $copy = clone $other;
 

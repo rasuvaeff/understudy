@@ -260,7 +260,7 @@ final class InlineForwardingTest
             . 'public function __construct(int $scaled, string $plain) '
             . '{ $this->scaled = $scaled; $this->plain = $plain; } '
             . 'public function tagline(): string { return \'real\'; } '
-            . 'public function mergeWith(self $other): string '
+            . 'public function mergeWith(%2$s $other): string '
             . '{ $copy = clone $other; return $copy->tagline(); } }',
             __NAMESPACE__,
             $class,
@@ -546,7 +546,7 @@ final class InlineForwardingTest
             . 'public function __construct(int $scaled) { $this->scaled = $scaled; } '
             . 'public function read(): int { return $this->scaled; } '
             . 'public function mirror(): int { $copy = clone $this; return $copy->read(); } '
-            . 'public function mergeWith(self $other): int { $copy = clone $other; return $copy->read(); } }',
+            . 'public function mergeWith(%2$s $other): int { $copy = clone $other; return $copy->read(); } }',
             __NAMESPACE__,
             $class,
         ));

@@ -26,7 +26,7 @@ class Tally
     }
 
     /** Clones the double it was handed, not itself. */
-    public function mergeWith(self $other): int
+    public function mergeWith(Tally $other): int
     {
         $copy = clone $other;
 

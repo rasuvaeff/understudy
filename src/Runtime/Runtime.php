@@ -322,7 +322,7 @@ final class Runtime
 
         // The class is not enough, and the same generated class stands in for
         // every double of a type: a body handed another double of its own
-        // class — `merge(self $other)` — and cloning THAT would otherwise
+        // class — `merge(Basket $other)` — and cloning THAT would otherwise
         // adopt it on the running double's behalf, giving it bodies to run and
         // no state copy to run them over. What PHP leaves to go on is the copy
         // itself, which at this moment is property-identical to whatever it
