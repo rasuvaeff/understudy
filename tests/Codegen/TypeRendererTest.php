@@ -7,6 +7,8 @@ namespace Rasuvaeff\Understudy\Tests\Codegen;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderInt;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ReaderStringy;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfParameter;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfParameterTraitUser;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\TypeShowcase;
 use Testo\Assert;
 use Testo\Codecov\Covers;
@@ -140,6 +142,60 @@ final class TypeRendererTest
             TypeRenderer::parameterType($this->typeOf('intersection')),
             '(\\' . ReaderInt::class . '&\\' . ReaderStringy::class . ')',
         );
+    }
+
+    #[DataProvider('selfParameterProvider')]
+    public function aSelfParameterIsRenderedAsTheDeclaringClass(string $class, string $method, string $expected): void
+    {
+        $parameter = (new \ReflectionMethod($class, $method))->getParameters()[0];
+
+        Assert::same(
+            TypeRenderer::parameterType($parameter->getType(), $parameter->getDeclaringClass()),
+            $expected,
+        );
+    }
+
+    /**
+     * @return iterable<string, array{class-string, string, string}>
+     */
+    public static function selfParameterProvider(): iterable
+    {
+        yield 'plain' => [SelfParameter::class, 'mergeWith', '\\' . SelfParameter::class];
+        yield 'nullable' => [SelfParameter::class, 'mergeMaybe', '\\' . SelfParameter::class . '|null'];
+        yield 'from a trait' => [SelfParameterTraitUser::class, 'mergeWith', '\\' . SelfParameterTraitUser::class];
+    }
+
+    public function theSelfKeywordIsMatchedInAnyCase(): void
+    {
+        // Keywords are case-insensitive and Reflection keeps the spelling, so
+        // `SELF` reaches here verbatim — on 8.3 and 8.4 from anywhere, and on
+        // 8.5 from a trait, which is why the method lives in one. Declared
+        // through eval because the code style fixer lowercases it in a file.
+        if (!class_exists('Rasuvaeff\\Understudy\\Tests\\Codegen\\UpperSelfParameter', autoload: false)) {
+            eval('namespace Rasuvaeff\\Understudy\\Tests\\Codegen; trait UpperSelfTrait { public function merge(SELF $other): SELF { return $this; } } class UpperSelfParameter { use UpperSelfTrait; }');
+        }
+
+        $parameter = (new \ReflectionMethod('Rasuvaeff\\Understudy\\Tests\\Codegen\\UpperSelfParameter', 'merge'))->getParameters()[0];
+
+        Assert::same(
+            TypeRenderer::parameterType($parameter->getType(), $parameter->getDeclaringClass()),
+            '\\Rasuvaeff\\Understudy\\Tests\\Codegen\\UpperSelfParameter',
+        );
+        // In a return the keyword stays a keyword where Reflection reports one
+        // (8.3, 8.4) and is the class where it resolves it (8.5) — never
+        // `\\SELF`, a class name PHP refuses outright.
+        $return = TypeRenderer::returnType(
+            (new \ReflectionMethod('Rasuvaeff\\Understudy\\Tests\\Codegen\\UpperSelfParameter', 'merge'))->getReturnType(),
+        );
+
+        Assert::true(\in_array($return, ['SELF', '\\Rasuvaeff\\Understudy\\Tests\\Codegen\\UpperSelfParameter'], strict: true));
+    }
+
+    public function aSelfParameterWithoutADeclaringClassIsLeftAlone(): void
+    {
+        $type = (new \ReflectionMethod(SelfParameterTraitUser::class, 'mergeWith'))->getParameters()[0]->getType();
+
+        Assert::same(TypeRenderer::parameterType($type), 'self');
     }
 
     private function typeOf(string $method): ?\ReflectionType
