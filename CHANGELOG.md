@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.1 — 2026-10-14
 
 - **Fixed.** Doubling a type whose method declares a parameter as `self` no
   longer kills the process with a fatal on PHP 8.3 and 8.4 (#158). The
