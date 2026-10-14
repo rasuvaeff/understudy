@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- **Fixed.** Doubling a type whose method declares a parameter as `self` no
+  longer kills the process with a fatal on PHP 8.3 and 8.4 (#158). The
+  generated override wrote the keyword through, and inside the generated class
+  `self` is the generated class — a subclass of the doubled one — so the
+  parameter accepted less than the contract and PHP rejected the signature.
+  It now renders as the declaring class, the way `parent` already did. A method
+  that comes from a trait was affected on PHP 8.5 too: Reflection leaves a
+  trait's `self` unresolved on every version.
+- **Fixed.** A relative type keyword spelled in another case — `SELF`,
+  `Parent`, `STATIC` — was rendered as a class name with a leading backslash,
+  which PHP 8.3 and 8.4 refuse with a fatal: Reflection keeps the spelling, and
+  the keyword check compared it case-sensitively.
+
 ## 1.1.0 — 2026-10-13
 
 - **Changed.** A forwarding double of a **class** now runs the real bodies on

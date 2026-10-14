@@ -37,7 +37,10 @@ final class TypeRenderer
             return '';
         }
 
-        return self::resolveParent(self::renderParameter($type), $declaringClass);
+        return self::resolveSelf(
+            self::resolveParent(self::renderParameter($type), $declaringClass),
+            $declaringClass,
+        );
     }
 
     /**
@@ -129,6 +132,38 @@ final class TypeRenderer
     }
 
     /**
+     * Replaces the `self` keyword in a parameter type with the class it names.
+     *
+     * Inside the generated class `self` is the generated class — a subclass of
+     * the target — so a parameter written through would accept less than the
+     * contract does, and PHP rejects the override as narrowed. A return keeps
+     * the keyword: there a subclass is a legal narrowing.
+     *
+     * PHP 8.5 resolves `self` in Reflection for a class or an interface; 8.3
+     * and 8.4 do not, and no version does for a method that came from a trait.
+     * The declaring class Reflection reports for a trait method is the class
+     * using the trait, which is what `self` means there.
+     *
+     * @param non-empty-string $rendered
+     *
+     * @return non-empty-string
+     */
+    private static function resolveSelf(string $rendered, ?\ReflectionClass $declaringClass): string
+    {
+        if ($declaringClass === null) {
+            return $rendered;
+        }
+
+        $resolved = preg_replace(
+            '/(?<![\\\\\\w])self(?![\\\\\\w])/i',
+            '\\\\' . $declaringClass->getName(),
+            $rendered,
+        );
+
+        return $resolved === null || $resolved === '' ? $rendered : $resolved;
+    }
+
+    /**
      * @return non-empty-string
      */
     private static function render(\ReflectionType $type): string
@@ -164,7 +199,7 @@ final class TypeRenderer
     {
         $name = $type->getName();
 
-        return $type->isBuiltin() || in_array($name, ['self', 'static', 'parent'], strict: true)
+        return $type->isBuiltin() || in_array(strtolower($name), ['self', 'static', 'parent'], strict: true)
             ? $name
             : '\\' . $name;
     }

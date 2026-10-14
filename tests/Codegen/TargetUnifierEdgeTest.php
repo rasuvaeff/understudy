@@ -15,6 +15,9 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentReturnBase;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentReturnChild;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentReturnConflict;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfConstantExpression;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfParameter;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfParameterContract;
+use Rasuvaeff\Understudy\Tests\Fixture\Unify\SelfParameterTraitUser;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\TraversableReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\TypedReturn;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\UntypedReturn;
@@ -22,12 +25,13 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\WiderObjectParam;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Codecov\Covers;
+use Testo\Data\DataProvider;
 use Testo\Lifecycle\AfterTest;
 use Testo\Test;
 
 /**
  * Declarations the main unifier suite does not reach: an absent return type,
- * the `parent` keyword, a nullable object rendered as `?X`, a default that is
+ * the `parent` and `self` keywords, a nullable object rendered as `?X`, a default that is
  * an expression rather than a constant, and two returns where one subsumes
  * the other.
  *
@@ -113,6 +117,55 @@ final class TargetUnifierEdgeTest
 
         Assert::string($rendered)->contains(ParentReturnBase::class);
         Assert::false(str_contains($rendered, 'parent'));
+    }
+
+    /**
+     * @param class-string $target
+     */
+    #[DataProvider('selfParameterProvider')]
+    public function theSelfKeywordIsResolvedInAParameter(string $target, string $method): void
+    {
+        // Inside the generated class `self` is the generated class, so written
+        // through it narrows the parameter and PHP 8.3/8.4 refuse the class.
+        $double = Understudy::for($target);
+
+        Assert::same($double->{$method}(new SelfParameter()), '');
+
+        $rendered = (string) (new \ReflectionMethod($double, $method))->getParameters()[0]->getType();
+
+        Assert::string($rendered)->contains(SelfParameter::class);
+        Assert::same(preg_match('/(?<![\\\\\\w])self(?![\\\\\\w])/i', $rendered), 0);
+    }
+
+    /**
+     * @return iterable<string, array{class-string, string}>
+     */
+    public static function selfParameterProvider(): iterable
+    {
+        yield 'class' => [SelfParameter::class, 'mergeWith'];
+        yield 'nullable' => [SelfParameter::class, 'mergeMaybe'];
+    }
+
+    public function theSelfKeywordIsResolvedToTheInterfaceItIsDeclaredOn(): void
+    {
+        $double = Understudy::for(SelfParameterContract::class);
+
+        $rendered = (string) (new \ReflectionMethod($double, 'mergeWith'))->getParameters()[0]->getType();
+
+        Assert::string($rendered)->contains(SelfParameterContract::class);
+        Assert::same($double->mergeWith($double), '');
+    }
+
+    public function theSelfKeywordFromATraitIsResolvedToTheUsingClass(): void
+    {
+        // A trait's `self` stays literal in Reflection even on 8.5; the class
+        // Reflection names as declaring it is the one using the trait.
+        $double = Understudy::for(SelfParameterTraitUser::class);
+
+        $rendered = (string) (new \ReflectionMethod($double, 'mergeWith'))->getParameters()[0]->getType();
+
+        Assert::string($rendered)->contains(SelfParameterTraitUser::class);
+        Assert::same($double->mergeWith(new SelfParameterTraitUser()), '');
     }
 
     public function aNullableObjectParameterUnifiesWithAWiderUnion(): void
