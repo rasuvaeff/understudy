@@ -33,7 +33,7 @@ final class TypeRenderer
      */
     public static function parameterType(?\ReflectionType $type, ?\ReflectionClass $declaringClass = null): string
     {
-        if ($type === null) {
+        if (!$type instanceof \ReflectionType) {
             return '';
         }
 
@@ -83,7 +83,7 @@ final class TypeRenderer
      */
     public static function returnType(?\ReflectionType $type, ?\ReflectionClass $declaringClass = null): string
     {
-        return $type === null ? 'mixed' : self::resolveParent(self::render($type), $declaringClass);
+        return $type instanceof \ReflectionType ? self::resolveParent(self::render($type), $declaringClass) : 'mixed';
     }
 
     /**
@@ -150,7 +150,7 @@ final class TypeRenderer
      */
     private static function resolveSelf(string $rendered, ?\ReflectionClass $declaringClass): string
     {
-        if ($declaringClass === null) {
+        if (!$declaringClass instanceof \ReflectionClass) {
             return $rendered;
         }
 

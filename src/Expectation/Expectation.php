@@ -168,7 +168,7 @@ final class Expectation
      */
     public function setGuard(callable $guard, string $description): void
     {
-        if ($this->guard !== null) {
+        if ($this->guard instanceof \Closure) {
             throw InvalidCallSpecification::guardAlreadyNarrowed($this->method, $this->guardDescription);
         }
 
@@ -189,7 +189,7 @@ final class Expectation
      */
     private function acceptsGuard(array $args): bool
     {
-        if ($this->guard === null) {
+        if (!$this->guard instanceof \Closure) {
             return true;
         }
 
@@ -349,7 +349,7 @@ final class Expectation
      */
     public function matchesArguments(array $args): bool
     {
-        if ($this->tailMatcher !== null) {
+        if ($this->tailMatcher instanceof \Rasuvaeff\Understudy\Matcher\TailMatcher) {
             $fixed = $this->argumentCount - 1;
             /** @var int<0, max> $fixed */
 
@@ -517,7 +517,7 @@ final class Expectation
      */
     private function describeGuardAgainst(array $args): string
     {
-        if ($this->guard === null) {
+        if (!$this->guard instanceof \Closure) {
             return '';
         }
 
@@ -539,7 +539,7 @@ final class Expectation
      */
     private function acceptsGuardDefensively(array $args): bool
     {
-        \assert($this->guard !== null);
+        \assert($this->guard instanceof \Closure);
 
         try {
             return ($this->guard)(...$args);

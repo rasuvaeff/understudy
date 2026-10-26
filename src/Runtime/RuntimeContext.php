@@ -191,7 +191,7 @@ final class RuntimeContext
 
     public function rememberCaptor(Captor $captor): void
     {
-        if ($this->captors === null) {
+        if (!$this->captors instanceof \SplObjectStorage) {
             /** @var \SplObjectStorage<Captor, null> $captors */
             $captors = new \SplObjectStorage();
             $this->captors = $captors;
@@ -207,7 +207,7 @@ final class RuntimeContext
      */
     public function captors(): array
     {
-        if ($this->captors === null) {
+        if (!$this->captors instanceof \SplObjectStorage) {
             return [];
         }
 

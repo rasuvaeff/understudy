@@ -168,7 +168,7 @@ final class Runtime
     {
         $fiber = \Fiber::getCurrent();
 
-        if ($fiber === null) {
+        if (!$fiber instanceof \Fiber) {
             $context = array_pop(self::$main);
 
             if ($context instanceof RuntimeContext) {
@@ -197,7 +197,7 @@ final class Runtime
     {
         $fiber = \Fiber::getCurrent();
 
-        if ($fiber === null) {
+        if (!$fiber instanceof \Fiber) {
             return self::$main;
         }
 
@@ -219,7 +219,7 @@ final class Runtime
     {
         $fiber = \Fiber::getCurrent();
 
-        if ($fiber === null) {
+        if (!$fiber instanceof \Fiber) {
             self::$main[] = $context;
 
             return;
@@ -267,7 +267,7 @@ final class Runtime
     public static function liveContexts(): array
     {
         $current = self::currentIfAny();
-        $contexts = $current === null ? [] : [$current];
+        $contexts = $current instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext ? [$current] : [];
 
         foreach (self::$live as $context) {
             if ($context !== $current) {
@@ -299,7 +299,7 @@ final class Runtime
     {
         $blueprint = DoubleFactory::blueprintOfGenerated($clone::class);
 
-        if ($blueprint === null) {
+        if (!$blueprint instanceof \Rasuvaeff\Understudy\Codegen\Blueprint) {
             // Only a generated class reaches this method, and every one of them
             // is registered when it is compiled.
             return;
@@ -453,13 +453,13 @@ final class Runtime
 
         // The facade has already answered for a stranger, a retired double and
         // a foreign context through `stateOf()`; what reaches here is owned.
-        \assert($owner !== null && $owner->stateOf($double) !== null);
+        \assert($owner instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext && $owner->stateOf($double) instanceof \Rasuvaeff\Understudy\Runtime\DoubleState);
 
         $owner->forget($double);
         self::owners()->offsetUnset($double);
         self::forgotten()->offsetSet($double, value: true);
 
-        if (self::$retiredOnPurpose === null) {
+        if (!self::$retiredOnPurpose instanceof \WeakMap) {
             /** @var \WeakMap<object, true> $retired */
             $retired = new \WeakMap();
             self::$retiredOnPurpose = $retired;
@@ -473,7 +473,7 @@ final class Runtime
      */
     private static function fibers(): \WeakMap
     {
-        if (self::$fibers === null) {
+        if (!self::$fibers instanceof \WeakMap) {
             /** @var \WeakMap<\Fiber, list<RuntimeContext>> $fibers */
             $fibers = new \WeakMap();
             self::$fibers = $fibers;
@@ -487,7 +487,7 @@ final class Runtime
      */
     private static function owners(): \WeakMap
     {
-        if (self::$owners === null) {
+        if (!self::$owners instanceof \WeakMap) {
             /** @var \WeakMap<object, RuntimeContext> $owners */
             $owners = new \WeakMap();
             self::$owners = $owners;
@@ -501,7 +501,7 @@ final class Runtime
      */
     private static function droppedByScope(): \WeakMap
     {
-        if (self::$droppedByScope === null) {
+        if (!self::$droppedByScope instanceof \WeakMap) {
             /** @var \WeakMap<object, true> $dropped */
             $dropped = new \WeakMap();
             self::$droppedByScope = $dropped;
@@ -515,7 +515,7 @@ final class Runtime
      */
     private static function forgotten(): \WeakMap
     {
-        if (self::$forgotten === null) {
+        if (!self::$forgotten instanceof \WeakMap) {
             /** @var \WeakMap<object, true> $forgotten */
             $forgotten = new \WeakMap();
             self::$forgotten = $forgotten;
@@ -533,7 +533,7 @@ final class Runtime
     {
         $owner = self::ownerOf($double);
 
-        return $owner !== null && $owner === self::current();
+        return $owner instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext && $owner === self::current();
     }
 
     /**
@@ -586,12 +586,12 @@ final class Runtime
         $context = $current;
         $state = $current->stateOf($double);
 
-        if ($state === null) {
+        if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
             $context = self::ownerOf($double) ?? $current;
             $state = $context->stateOf($double);
         }
 
-        if ($state === null) {
+        if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
             // Returning null here would violate the declared return type of
             // any non-nullable method, so say what actually happened. The
             // message differs for a double retired through `Understudy::forget()`:
@@ -686,7 +686,7 @@ final class Runtime
         $verdict = SequenceVerdict::NotWatched;
         $sequence = $context->armed;
 
-        if ($sequence !== null) {
+        if ($sequence instanceof \Rasuvaeff\Understudy\Runtime\ArmedSequence) {
             $verdict = $sequence->offer($double, $invocation);
 
             if ($verdict === SequenceVerdict::OutOfTurn) {
@@ -744,7 +744,7 @@ final class Runtime
                 self::$inlineFloor = $floor;
             }
 
-            if ($signature !== null && $signature->returnsNever) {
+            if ($signature instanceof \Rasuvaeff\Understudy\Codegen\MethodSignature && $signature->returnsNever) {
                 // The expectation returned instead of throwing; returning from
                 // a `: never` method is a TypeError by language rule, so name
                 // the real mistake rather than leaking that.
@@ -775,7 +775,7 @@ final class Runtime
             return self::forward($state, $double, $method, $args);
         }
 
-        if ($signature !== null && $signature->returnsNever) {
+        if ($signature instanceof \Rasuvaeff\Understudy\Codegen\MethodSignature && $signature->returnsNever) {
             // Which mistake it is depends on whether anything was configured:
             // "you never said what this throws" reads very differently from
             // "nothing expected this call at all".
@@ -788,9 +788,7 @@ final class Runtime
         // configured. Anything else is indistinguishable from a step arriving
         // out of turn — the protocol cannot tell "not part of this" from "you
         // got the order wrong" unless the test says which it is.
-        if (!$matched && $verdict === SequenceVerdict::NotAStep) {
-            \assert($sequence !== null);
-
+        if ($sequence instanceof ArmedSequence && !$matched && $verdict === SequenceVerdict::NotAStep) {
             throw VerificationFailed::of([self::unconfiguredUnderProtocol($state, $sequence, $invocation, $double)]);
         }
 
@@ -975,12 +973,12 @@ final class Runtime
         $state = $current->stateOf($double);
         $context = $current;
 
-        if ($state === null) {
+        if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
             $context = self::ownerOf($double) ?? $current;
             $state = $context->stateOf($double);
         }
 
-        if ($state === null) {
+        if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
             throw ForgottenDouble::propertyAfterReset($property);
         }
 
@@ -1014,7 +1012,7 @@ final class Runtime
         // and the slot would keep the mode's own value instead of the
         // configured one. A recording phase is the exception — the sentinel
         // is what it came for.
-        if ($state !== null && !self::current()->isRecording()) {
+        if ($state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState && !self::current()->isRecording()) {
             self::materializeOmittedArguments($state->blueprint->method($method), $method, $args);
         }
 
@@ -1036,7 +1034,7 @@ final class Runtime
         $context = self::ownerOf($double) ?? self::current();
         $state = $context->stateOf($double);
 
-        if ($state === null) {
+        if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
             throw ForgottenDouble::afterReset($method);
         }
 
@@ -1064,7 +1062,7 @@ final class Runtime
         $context = self::ownerOf($double) ?? self::current();
         $state = $context->stateOf($double);
 
-        if ($state === null) {
+        if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
             throw ForgottenDouble::afterReset($method);
         }
 
@@ -1139,7 +1137,7 @@ final class Runtime
             return $value;
         }
 
-        if ($value instanceof $double && self::ownerOf($value) === null) {
+        if ($value instanceof $double && !self::ownerOf($value) instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext) {
             throw OriginalReturnTypeViolation::foreignSelf($state->label(), $method);
         }
 
@@ -1446,7 +1444,7 @@ final class Runtime
                 continue;
             }
 
-            if ($signature === null || !$signature->isOptional($position)) {
+            if (!$signature instanceof \Rasuvaeff\Understudy\Codegen\MethodSignature || !$signature->isOptional($position)) {
                 throw new \ArgumentCountError(sprintf(
                     'Too few arguments to function %s(), argument #%d not passed',
                     $method,
@@ -1484,7 +1482,7 @@ final class Runtime
     {
         $fiber = \Fiber::getCurrent();
 
-        if ($fiber === null) {
+        if (!$fiber instanceof \Fiber) {
             $stack = self::$main;
         } else {
             $fibers = self::fibers();
@@ -1509,7 +1507,7 @@ final class Runtime
         // plain array because the offset is a variable.
         /** @var list<RuntimeContext> $stack */
 
-        if ($fiber === null) {
+        if (!$fiber instanceof \Fiber) {
             self::$main = $stack;
 
             return;
@@ -1574,7 +1572,7 @@ final class Runtime
             $captor->discard();
         }
 
-        if (self::$owners === null) {
+        if (!self::$owners instanceof \WeakMap) {
             return;
         }
 

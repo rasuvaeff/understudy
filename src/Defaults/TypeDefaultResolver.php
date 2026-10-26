@@ -35,7 +35,7 @@ final class TypeDefaultResolver
         bool $nested = false,
         ?object $double = null,
     ): mixed {
-        if ($signature === null) {
+        if (!$signature instanceof \Rasuvaeff\Understudy\Codegen\MethodSignature) {
             return null;
         }
 
