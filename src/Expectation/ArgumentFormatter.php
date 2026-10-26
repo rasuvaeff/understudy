@@ -59,7 +59,7 @@ final class ArgumentFormatter
      */
     public static function scope(callable $render): mixed
     {
-        if (self::$aliases !== null) {
+        if (self::$aliases instanceof \SplObjectStorage) {
             return $render();
         }
 
@@ -82,7 +82,7 @@ final class ArgumentFormatter
             return '…';
         }
 
-        if (self::$aliases === null) {
+        if (!self::$aliases instanceof \SplObjectStorage) {
             return self::scope(static fn(): string => self::format($value, $depth));
         }
 
@@ -224,7 +224,7 @@ final class ArgumentFormatter
     private static function alias(object $value): int
     {
         $table = self::$aliases;
-        \assert($table !== null);
+        \assert($table instanceof \SplObjectStorage);
 
         // `contains()` is deprecated as of 8.5; `offsetExists()` is the same
         // lookup under the name the language kept.

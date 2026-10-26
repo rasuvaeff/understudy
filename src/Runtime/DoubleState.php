@@ -422,7 +422,7 @@ final class DoubleState
      */
     public function settle(): void
     {
-        $remaining = static fn(Expectation $expectation): bool => $expectation->cardinality() === null;
+        $remaining = static fn(Expectation $expectation): bool => !$expectation->cardinality() instanceof \Rasuvaeff\Understudy\Cardinality;
 
         $this->expectations = array_values(array_filter($this->expectations, $remaining));
         $this->matchingExpectations = array_values(array_filter($this->matchingExpectations, $remaining));

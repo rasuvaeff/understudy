@@ -47,7 +47,7 @@ final readonly class DispatchFindCommand implements Command
 
         $answering = $model->answerFor($this->id);
 
-        if ($answering === null) {
+        if (!$answering instanceof \Rasuvaeff\Understudy\Tests\Support\EngineSpec) {
             ++$system->unmatchedDefaults;
         } elseif ($answering->hasAction()) {
             ++$system->stubAnswers;
@@ -74,7 +74,7 @@ final readonly class DispatchFindCommand implements Command
         }
 
         $answering = $model->answerFor($this->id);
-        $expectedTitle = $answering !== null && $answering->hasAction() ? $answering->answerTitle : null;
+        $expectedTitle = $answering instanceof \Rasuvaeff\Understudy\Tests\Support\EngineSpec && $answering->hasAction() ? $answering->answerTitle : null;
 
         return $title === $expectedTitle;
     }

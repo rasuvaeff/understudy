@@ -169,9 +169,9 @@ final class Understudy
     {
         $signature = $state->blueprint->method($method);
 
-        return $signature === null
-            ? null
-            : new ReturnContract($state->label(), $method, $signature, $state->blueprint->contracts[0]);
+        return $signature instanceof \Rasuvaeff\Understudy\Codegen\MethodSignature
+            ? new ReturnContract($state->label(), $method, $signature, $state->blueprint->contracts[0])
+            : null;
     }
 
     /**
@@ -260,7 +260,7 @@ final class Understudy
 
                 $failure = self::checkExpectation($state, $expectation, $strictStubs);
 
-                if ($failure !== null) {
+                if ($failure instanceof \Rasuvaeff\Understudy\VerificationFailure) {
                     $contextFailures[] = $failure;
                 }
             }
@@ -276,7 +276,7 @@ final class Understudy
 
         $outOfOrder = self::orderingFailure($ordered);
 
-        if ($outOfOrder !== null) {
+        if ($outOfOrder instanceof \Rasuvaeff\Understudy\VerificationFailure) {
             $failures[] = $outOfOrder;
         }
 
@@ -286,13 +286,13 @@ final class Understudy
         // would pass in silence. Whether one is armed is the check; a
         // complete protocol is a check that passed, an unfinished one the
         // failure below.
-        if ($context->armed !== null) {
+        if ($context->armed instanceof \Rasuvaeff\Understudy\Runtime\ArmedSequence) {
             $checks++;
         }
 
         $unfinished = self::checkArmedSequence($context);
 
-        if ($unfinished !== null) {
+        if ($unfinished instanceof \Rasuvaeff\Understudy\VerificationFailure) {
             $failures[] = $unfinished;
         }
 
@@ -315,7 +315,7 @@ final class Understudy
         $ordered = [];
 
         foreach (($context ?? Runtime::current())->allStates() as $state) {
-            if ($only !== null && $state !== $only) {
+            if ($only instanceof \Rasuvaeff\Understudy\Runtime\DoubleState && $state !== $only) {
                 continue;
             }
 
@@ -391,12 +391,12 @@ final class Understudy
     {
         $sequence = $context->armed;
 
-        if ($sequence === null || $sequence->isComplete()) {
+        if (!$sequence instanceof \Rasuvaeff\Understudy\Runtime\ArmedSequence || $sequence->isComplete()) {
             return null;
         }
 
         $pending = $sequence->pending();
-        \assert($pending !== null);
+        \assert($pending instanceof \Rasuvaeff\Understudy\Expectation\Expectation);
 
         return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
             kind: FailureKind::OutOfSequence,
@@ -421,7 +421,7 @@ final class Understudy
         $cardinality = $expectation->cardinality();
         $count = $expectation->matchCount();
 
-        if ($cardinality === null) {
+        if (!$cardinality instanceof \Rasuvaeff\Understudy\Cardinality) {
             // A plain stub is permission, not a claim — unless strict stubs
             // turn "configured but never used" into a failure of its own.
             return $strictStubs && $count === 0
@@ -708,7 +708,7 @@ final class Understudy
         if ($real !== null) {
             // A double delegating to a double — itself included — sends every
             // call back into the dispatcher it came from.
-            if (Runtime::ownerOf($real) !== null) {
+            if (Runtime::ownerOf($real) instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext) {
                 throw ForwardingTargetMismatch::understudyTarget($state->label());
             }
 
@@ -1076,14 +1076,14 @@ final class Understudy
             foreach ($state->expectations() as $expectation) {
                 $failure = self::checkExpectation($state, $expectation, strictStubs: false);
 
-                if ($failure !== null) {
+                if ($failure instanceof \Rasuvaeff\Understudy\VerificationFailure) {
                     $failures[] = $failure;
                 }
             }
 
             $outOfOrder = self::orderingFailure(self::orderedExpectations($state));
 
-            if ($outOfOrder !== null) {
+            if ($outOfOrder instanceof \Rasuvaeff\Understudy\VerificationFailure) {
                 $failures[] = $outOfOrder;
             }
 
@@ -1159,7 +1159,7 @@ final class Understudy
         // Only a concurrent one is refused. A protocol that ran to completion
         // has nothing left to disagree about, and a two-phase test must be
         // able to describe its second phase.
-        if ($armed !== null && !$armed->isComplete()) {
+        if ($armed instanceof \Rasuvaeff\Understudy\Runtime\ArmedSequence && !$armed->isComplete()) {
             throw InvalidCallSpecification::protocolAlreadyArmed($armed->position(), $armed->length());
         }
 
@@ -1200,7 +1200,7 @@ final class Understudy
 
         $mismatch = self::firstSequenceMismatch($probes, $log);
 
-        if ($mismatch !== null) {
+        if ($mismatch instanceof \Rasuvaeff\Understudy\VerificationFailure) {
             throw VerificationFailed::of([$mismatch]);
         }
 
@@ -1548,7 +1548,7 @@ final class Understudy
     {
         $state = Runtime::stateOf($double);
 
-        if ($state === null) {
+        if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
             if (Runtime::isRetiredOnPurpose($double)) {
                 throw ForgottenDouble::retired();
             }

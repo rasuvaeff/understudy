@@ -71,7 +71,7 @@ class WhenBuilder
             throw InvalidSpecificationArgument::noReturnValues();
         }
 
-        if ($this->contract !== null) {
+        if ($this->contract instanceof \Rasuvaeff\Understudy\Expectation\ReturnContract) {
             // `returns(null)` on a void method is the idiom for "answer
             // nothing", and PHP itself reads a void method as answering null;
             // only a value that would be silently dropped is refused.
