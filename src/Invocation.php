@@ -181,7 +181,7 @@ final class Invocation
      */
     public function recordReturned(mixed $value): void
     {
-        if ($this->returnedState !== null || $this->outcome !== null) {
+        if ($this->returnedState !== null || $this->outcome instanceof \Rasuvaeff\Understudy\Outcome) {
             return;
         }
 
@@ -201,7 +201,7 @@ final class Invocation
      */
     public function recordDiscardedReturn(): void
     {
-        if ($this->returnedState !== null || $this->outcome !== null) {
+        if ($this->returnedState !== null || $this->outcome instanceof \Rasuvaeff\Understudy\Outcome) {
             return;
         }
 
@@ -226,7 +226,7 @@ final class Invocation
      */
     public function recordThrown(\Throwable $thrown): void
     {
-        if ($this->returnedState !== null || $this->outcome !== null) {
+        if ($this->returnedState !== null || $this->outcome instanceof \Rasuvaeff\Understudy\Outcome) {
             return;
         }
 

@@ -53,7 +53,7 @@ final readonly class Outcome
     public function returned(string $method): mixed
     {
         if (!$this->returned) {
-            \assert($this->thrown !== null);
+            \assert($this->thrown instanceof \Throwable);
 
             throw OutcomeUnavailable::threwInstead($method, $this->thrown);
         }

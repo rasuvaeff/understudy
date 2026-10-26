@@ -66,7 +66,7 @@ final class DefaultFactories
         $owner ??= Runtime::current();
         $factory = $this->factoryFor($requested);
 
-        if ($factory === null) {
+        if (!$factory instanceof \Closure) {
             return null;
         }
 
@@ -79,7 +79,7 @@ final class DefaultFactories
 
         $valueOwner = is_object($value) ? Runtime::ownerOf($value) : null;
 
-        if ($valueOwner !== null && $valueOwner !== $owner) {
+        if ($valueOwner instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext && $valueOwner !== $owner) {
             throw ContextOwnershipViolation::forDouble();
         }
 

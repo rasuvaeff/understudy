@@ -305,7 +305,7 @@ final class Wire
 
     private static function typeName(?\ReflectionType $type): string
     {
-        return $type === null ? 'mixed' : (string) $type;
+        return $type instanceof \ReflectionType ? (string) $type : 'mixed';
     }
 
     /**

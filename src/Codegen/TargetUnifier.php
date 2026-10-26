@@ -671,7 +671,7 @@ final class TargetUnifier
         ?\ReflectionType $type,
         \ReflectionClass $declaringClass,
     ): array {
-        if ($type === null) {
+        if (!$type instanceof \ReflectionType) {
             return [['mixed']];
         }
 
