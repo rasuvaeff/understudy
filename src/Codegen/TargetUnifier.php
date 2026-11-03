@@ -1282,7 +1282,7 @@ final class TargetUnifier
         $declaring = $parameter->getDeclaringClass();
 
         if (\in_array(strtolower($class), ['self', 'static', 'parent'], strict: true)) {
-            if ($declaring === null) {
+            if (!$declaring instanceof \ReflectionClass) {
                 return null;
             }
 

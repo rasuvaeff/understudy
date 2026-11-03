@@ -115,7 +115,7 @@ final class TypeRenderer
 
         $parent = $declaringClass?->getParentClass();
 
-        if ($parent === false || $parent === null) {
+        if ($parent === false || !$parent instanceof \ReflectionClass) {
             return $rendered;
         }
 
