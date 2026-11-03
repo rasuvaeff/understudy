@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests;
 
+use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\DefaultFactories;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\AmbiguousDefaultFactory;
@@ -13,11 +18,15 @@ use Rasuvaeff\Understudy\Exception\InvalidDefaultValue;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Audited;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\AuditedLogger;
+use Rasuvaeff\Understudy\Tests\Fixture\Def\BaseMarker;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Chained;
+use Rasuvaeff\Understudy\Tests\Fixture\Def\Companion;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Concrete;
+use Rasuvaeff\Understudy\Tests\Fixture\Def\Derived;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Logger;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\NullLogger;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Sealed;
+use Rasuvaeff\Understudy\Tests\Fixture\Def\Tagged;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Timestamped;
 use Rasuvaeff\Understudy\Tests\Fixture\Def\Workspace;
 use Rasuvaeff\Understudy\Understudy;
@@ -28,6 +37,11 @@ use Testo\Lifecycle\AfterTest;
 use Testo\Test;
 
 #[Test]
+#[Covers(TargetUnifier::class)]
+#[Covers(DoubleFactory::class)]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(DefaultFactories::class)]
 #[Covers(\Rasuvaeff\Understudy\Runtime\Runtime::class)]
 #[Covers(ForgottenDouble::class)]
@@ -67,6 +81,49 @@ final class DefaultFactoriesTest
 
         Assert::true($answered::class !== AuditedLogger::class);
         Assert::instanceOf($answered, AuditedLogger::class);
+    }
+
+    /**
+     * `Derived` reaches `Tagged` twice: through its parent, and through the
+     * `Marked` it lists itself. The parent is one step away and `Tagged` two,
+     * and the second route to it must not count as a tie with itself.
+     */
+    public function aParentClassIsOneStepAndASharedAncestorIsCountedOnce(): void
+    {
+        $factories = new DefaultFactories();
+        $factories->register(Tagged::class, static fn(): Derived => new Derived());
+
+        Assert::instanceOf($factories->valueFor(Derived::class)[0] ?? null, Derived::class);
+
+        $nearer = new Derived();
+        $factories->register(BaseMarker::class, static fn(): Derived => $nearer);
+
+        Assert::same($factories->valueFor(Derived::class), [$nearer]);
+    }
+
+    /**
+     * `Companion` sits behind `Marked` next to `Tagged`, which the parent route
+     * already reached. Meeting a name twice must not end the walk for the names
+     * listed after it.
+     */
+    public function aNameMetTwiceDoesNotHideTheOnesListedAfterIt(): void
+    {
+        $factories = new DefaultFactories();
+        $companion = new Derived();
+        $factories->register(Companion::class, static fn(): Derived => $companion);
+
+        Assert::same($factories->valueFor(Derived::class), [$companion]);
+    }
+
+    public function aFactoryAnswerOwnedByAnotherContextThanTheAskerIsRefused(): void
+    {
+        $double = Understudy::for(Concrete::class);
+        $factories = new DefaultFactories();
+        $factories->register(Concrete::class, static fn(): Concrete => $double);
+
+        Expect::exception(ContextOwnershipViolation::class)->withMessageContaining('belongs to a different runtime context');
+
+        $factories->valueFor(Concrete::class, new \Rasuvaeff\Understudy\Runtime\RuntimeContext());
     }
 
     public function registrationOrderDoesNotDecide(): void

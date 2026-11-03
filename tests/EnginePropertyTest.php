@@ -10,6 +10,11 @@ use Rasuvaeff\PropertyTesting\Gen;
 use Rasuvaeff\PropertyTesting\Property;
 use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Cardinality;
+use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Expectation\Expectation;
@@ -41,6 +46,11 @@ use function Rasuvaeff\Understudy\when;
  * them.
  */
 #[Test]
+#[Covers(TargetUnifier::class)]
+#[Covers(DoubleFactory::class)]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(Understudy::class)]
 #[Covers(Cardinality::class)]
 #[Covers(Runtime::class)]

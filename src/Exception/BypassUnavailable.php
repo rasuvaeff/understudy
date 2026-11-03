@@ -18,13 +18,12 @@ final class BypassUnavailable extends \LogicException implements UnderstudyError
      */
     public static function alreadyLoaded(string $class): self
     {
-        return new self(sprintf(
-            "`%s` is already loaded, so its `final` cannot be lifted any more.\n"
+        $format = "`%s` is already loaded, so its `final` cannot be lifted any more.\n"
             . "A class is read from disk once per process, and the transform happens as it is read.\n"
             . "- Call Understudy::bypassFinals() from your test bootstrap, before Composer autoloads it.\n"
-            . '- Or double an interface it implements, which needs no bypass at all.',
-            $class,
-        ));
+            . '- Or double an interface it implements, which needs no bypass at all.';
+
+        return new self(sprintf($format, $class));
     }
 
     /**
@@ -34,12 +33,10 @@ final class BypassUnavailable extends \LogicException implements UnderstudyError
      */
     public static function notAClass(string $class, string $kind): self
     {
-        return new self(sprintf(
-            "`%s` is %s, and lifting `final` would not make it extendable.\n"
-            . 'Bypass exists for a final *class* standing between a test and the code under test.',
-            $class,
-            $kind,
-        ));
+        $format = "`%s` is %s, and lifting `final` would not make it extendable.\n"
+            . 'Bypass exists for a final *class* standing between a test and the code under test.';
+
+        return new self(sprintf($format, $class, $kind));
     }
 
     /**
@@ -50,12 +47,11 @@ final class BypassUnavailable extends \LogicException implements UnderstudyError
      */
     public static function foreignWrapper(string $owner): self
     {
-        return new self(sprintf(
-            "Something else is already serving `file://` through a user-space wrapper (%s).\n"
+        $format = "Something else is already serving `file://` through a user-space wrapper (%s).\n"
             . "Replacing that wrapper would silently disable whatever it does, so understudy will not.\n"
             . "- Call Understudy::bypassFinals() before the other wrapper is installed.\n"
-            . '- Or double an interface, which needs no wrapper at all.',
-            $owner,
-        ));
+            . '- Or double an interface, which needs no wrapper at all.';
+
+        return new self(sprintf($format, $owner));
     }
 }

@@ -314,6 +314,28 @@ final class FileWrapperTest
         $wrapper->stream_close();
     }
 
+    /**
+     * PHP closes a stream it never managed to open, and closes one twice when a
+     * destructor and an explicit `fclose()` meet. Neither may reach the native
+     * `fclose()` with nothing to close.
+     */
+    public function closingTwiceOrBeforeOpeningIsHarmless(): void
+    {
+        FileWrapper::targetOnly([]);
+        $wrapper = new FileWrapper();
+        $opened = null;
+
+        $wrapper->stream_close();
+
+        Assert::true($wrapper->stream_open(__FILE__, 'r', 0, $opened));
+        $wrapper->stream_close();
+        $wrapper->stream_close();
+
+        Assert::true($wrapper->stream_open(__FILE__, 'r', 0, $opened));
+        Assert::same($wrapper->stream_tell(), 0);
+        $wrapper->stream_close();
+    }
+
     public function lockingTruncatingAndCastingDelegateToNativeStream(): void
     {
         $path = sys_get_temp_dir() . '/understudy-stream-' . getmypid() . '.txt';

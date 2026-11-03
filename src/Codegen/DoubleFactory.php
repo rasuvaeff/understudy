@@ -277,15 +277,13 @@ final class DoubleFactory
                 $name = $property->getName();
 
                 if (!$primary->isInterface() && $primary->isReadOnly()) {
+                    $format = 'the class is readonly and `%s::$%s` is an abstract property hook. A readonly class '
+                        . 'may only be extended by a readonly class, and a hooked property cannot be readonly '
+                        . '— so no double can implement it. Double an interface of the contract instead.';
+
                     throw UnsupportedTarget::notDoublable(
                         $primary->getName(),
-                        sprintf(
-                            'the class is readonly and `%s::$%s` is an abstract property hook. A readonly class '
-                            . 'may only be extended by a readonly class, and a hooked property cannot be readonly '
-                            . '— so no double can implement it. Double an interface of the contract instead.',
-                            $property->getDeclaringClass()->getName(),
-                            $name,
-                        ),
+                        sprintf($format, $property->getDeclaringClass()->getName(), $name),
                     );
                 }
 
@@ -294,15 +292,13 @@ final class DoubleFactory
                 $get = $hooks['get'] ?? null;
 
                 if ($get !== null && $get->returnsReference()) {
+                    $format = '`%s::$%s` declares a by-reference `&get` hook, and a double dispatches property '
+                        . 'reads by value — the reference it handed back would not be the one the contract '
+                        . 'promises. Expose the value through a method, or pass a real object.';
+
                     throw UnsupportedTarget::notDoublable(
                         $target->getName(),
-                        sprintf(
-                            '`%s::$%s` declares a by-reference `&get` hook, and a double dispatches property '
-                            . 'reads by value — the reference it handed back would not be the one the contract '
-                            . 'promises. Expose the value through a method, or pass a real object.',
-                            $property->getDeclaringClass()->getName(),
-                            $name,
-                        ),
+                        sprintf($format, $property->getDeclaringClass()->getName(), $name),
                     );
                 }
 
@@ -436,7 +432,7 @@ final class DoubleFactory
         $origin = match (true) {
             $file === false => 'it has no source file of its own',
             str_starts_with($file, 'phar://') => 'it was read out of a PHAR, and `phar://` is not `file://`',
-            default => 'it was already loaded, from `' . $file . '`, before the wrapper was installed',
+            default => sprintf('it was already loaded, from `%s`, before the wrapper was installed', $file),
         };
 
         return "the class is final, and bypass was asked for it but could not reach it: {$origin}.\n"

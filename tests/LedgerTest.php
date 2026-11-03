@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
@@ -43,6 +48,11 @@ use function Rasuvaeff\Understudy\when;
  * described?" — so these tests are mostly about what counts as an answer.
  */
 #[Test]
+#[Covers(TargetUnifier::class)]
+#[Covers(DoubleFactory::class)]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(Understudy::class)]
 #[Covers(Runtime::class)]
 #[Covers(RuntimeContext::class)]
@@ -903,6 +913,24 @@ final class LedgerTest
                 Book::class,
             ),
         );
+    }
+
+    public function anOrderedExpectationThatNeverHappenedDoesNotHideAViolationAfterIt(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+        $dune = new Book('Dune');
+        $herbert = new Book('Herbert');
+
+        expect(fn() => $repository->count())->times(0, 1)->ordered();
+        expect(fn() => $repository->save($dune))->ordered();
+        expect(fn() => $repository->save($herbert))->ordered();
+
+        $repository->save($herbert);
+        $repository->save($dune);
+
+        Expect::exception(VerificationFailed::class)->withMessageContaining('to be called after');
+
+        Understudy::verifyAll();
     }
 
     #[ExpectNoAssertions]

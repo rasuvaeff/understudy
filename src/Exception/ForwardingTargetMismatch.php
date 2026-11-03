@@ -19,12 +19,11 @@ final class ForwardingTargetMismatch extends \InvalidArgumentException implement
      */
     public static function understudyTarget(string $label): self
     {
-        return new self(sprintf(
-            "Understudy `%s` cannot forward to an understudy.\n"
+        $format = "Understudy `%s` cannot forward to an understudy.\n"
             . 'Every call would come straight back to a dispatcher, and an unmatched one would keep coming '
-            . 'back until the stack runs out. Forward to the real object instead.',
-            $label,
-        ));
+            . 'back until the stack runs out. Forward to the real object instead.';
+
+        return new self(sprintf($format, $label));
     }
 
     /**
@@ -35,14 +34,11 @@ final class ForwardingTargetMismatch extends \InvalidArgumentException implement
      */
     public static function missingContract(string $label, string $contract, string $given): self
     {
-        return new self(sprintf(
-            "Understudy `%s` stands in for `%s`, and `%s` is not one.\n"
+        $format = "Understudy `%s` stands in for `%s`, and `%s` is not one.\n"
             . 'A forwarding target has to satisfy every contract of the double, or a call the double '
-            . 'accepts would not exist on the instance it delegates to.',
-            $label,
-            $contract,
-            $given,
-        ));
+            . 'accepts would not exist on the instance it delegates to.';
+
+        return new self(sprintf($format, $label, $contract, $given));
     }
 
     /**
@@ -61,14 +57,11 @@ final class ForwardingTargetMismatch extends \InvalidArgumentException implement
      */
     public static function alreadyInline(string $label, string $current, string $given): self
     {
-        return new self(sprintf(
-            "Understudy `%s` already runs the bodies of `%s` on itself, and cannot be re-pointed at `%s`.\n"
+        $format = "Understudy `%s` already runs the bodies of `%s` on itself, and cannot be re-pointed at `%s`.\n"
             . 'The first instance\'s state was copied onto the double when forwarding was turned on; a second '
             . 'copy would overwrite everything the real code has written since, and a `readonly` property '
-            . 'cannot be written twice at all. Build a second double for the other instance.',
-            $label,
-            $current,
-            $given,
-        ));
+            . 'cannot be written twice at all. Build a second double for the other instance.';
+
+        return new self(sprintf($format, $label, $current, $given));
     }
 }

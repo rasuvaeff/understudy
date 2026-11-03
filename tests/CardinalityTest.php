@@ -21,6 +21,16 @@ final class CardinalityTest
         Assert::same($cardinality->allows($count), $expected);
     }
 
+    public function anyIsUnboundedFromZero(): void
+    {
+        $any = Cardinality::any();
+
+        Assert::same($any->minimum, 0);
+        Assert::null($any->maximum);
+        Assert::true($any->allows(0));
+        Assert::true($any->allows(1_000));
+    }
+
     /**
      * @return iterable<string, array{Cardinality, int, bool}>
      */

@@ -8,7 +8,11 @@ use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
+use Rasuvaeff\Understudy\Tests\Fixture\Cls\SealedLedger;
+use Rasuvaeff\Understudy\Tests\Fixture\Def\Audited;
+use Rasuvaeff\Understudy\Tests\Fixture\Def\Timestamped;
 use Rasuvaeff\Understudy\Tests\Fixture\FluentBuilder;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\Repository;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Codecov\Covers;
@@ -220,6 +224,106 @@ final class TypeDefaultResolverTest
     private function resolve(string $returnType): mixed
     {
         return TypeDefaultResolver::forSignature('Contract', $this->signature($returnType), 'method', new RuntimeContext());
+    }
+
+    public function aNullableShorthandStillAnswersAFactoryRegisteredForTheType(): void
+    {
+        $context = new RuntimeContext();
+        $registered = new \ArrayObject();
+        $context->defaultFactories()->register(\ArrayObject::class, static fn(): \ArrayObject => $registered);
+
+        Assert::same(
+            TypeDefaultResolver::forSignature('Contract', $this->signature('?ArrayObject'), 'method', $context),
+            $registered,
+        );
+    }
+
+    public function aBranchThatCannotBeDoubledIsSkippedNotFatal(): void
+    {
+        // `SealedLedger` has a final method: refused by the factory with
+        // `UnsupportedTarget`, which the union treats like any other branch with
+        // no safe default.
+        Assert::same(
+            TypeDefaultResolver::forSignature('Contract', $this->signature('\\' . SealedLedger::class . '|string'), 'method', new RuntimeContext()),
+            '',
+        );
+    }
+
+    public function aUnionOfBranchesWithNoSafeDefaultNamesTheWholeType(): void
+    {
+        Expect::exception(NoDefaultValue::class)->withMessageContaining('\\DateTimeImmutable|\\DateTimeZone');
+
+        TypeDefaultResolver::forSignature('Contract', $this->signature('\\DateTimeImmutable|\\DateTimeZone'), 'method', new RuntimeContext());
+    }
+
+    #[DataProvider('intersectionProvider')]
+    public function anIntersectionIsADoubleOfEveryContractItNames(string $returnType): void
+    {
+        $value = TypeDefaultResolver::forSignature('Contract', $this->signature($returnType), 'method', new RuntimeContext());
+
+        Assert::instanceOf($value, Repository::class);
+        Assert::instanceOf($value, \Countable::class);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function intersectionProvider(): iterable
+    {
+        $repository = Repository::class;
+
+        yield 'plain' => [$repository . '&Countable'];
+        yield 'qualified with a leading backslash' => ['\\' . $repository . '&\\Countable'];
+        yield 'padded with spaces' => ['  ' . $repository . '  &  Countable  '];
+        yield 'with an empty operand' => [$repository . '&Countable&'];
+        yield 'as the only branch of a DNF union' => ['(' . $repository . '&Countable)|(' . Audited::class . '&' . Timestamped::class . ')'];
+    }
+
+    public function aDnfUnionTriesEachIntersectionUntilOneCanBeDoubled(): void
+    {
+        $value = TypeDefaultResolver::forSignature(
+            'Contract',
+            $this->signature('(\\DateTimeImmutable&\\Countable)|(' . Repository::class . '&\\Countable)'),
+            'method',
+            new RuntimeContext(),
+        );
+
+        Assert::instanceOf($value, Repository::class);
+        Assert::instanceOf($value, \Countable::class);
+    }
+
+    public function aDnfUnionWhoseIntersectionsCannotBeDoubledNamesTheType(): void
+    {
+        Expect::exception(NoDefaultValue::class)->withMessageContaining('(\\DateTimeImmutable&\\Countable)|(\\DateTimeZone&\\Countable)');
+
+        TypeDefaultResolver::forSignature(
+            'Contract',
+            $this->signature('(\\DateTimeImmutable&\\Countable)|(\\DateTimeZone&\\Countable)'),
+            'method',
+            new RuntimeContext(),
+        );
+    }
+
+    #[DataProvider('untypedPropertyProvider')]
+    public function anUntypedPropertyAnswersNull(?string $type): void
+    {
+        Assert::null(TypeDefaultResolver::forPropertyType('Contract', $type, 'name', new RuntimeContext()));
+    }
+
+    /**
+     * @return iterable<string, array{string|null}>
+     */
+    public static function untypedPropertyProvider(): iterable
+    {
+        yield 'no type at all' => [null];
+        yield 'an empty type' => [''];
+    }
+
+    public function anIntersectionOfNothingNamesTheType(): void
+    {
+        Expect::exception(NoDefaultValue::class)->withMessageContaining('`&`');
+
+        TypeDefaultResolver::forSignature('Contract', $this->signature('&'), 'method', new RuntimeContext());
     }
 
     private function signature(string $returnType): MethodSignature

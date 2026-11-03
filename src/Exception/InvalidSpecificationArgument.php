@@ -121,10 +121,12 @@ final class InvalidSpecificationArgument extends \InvalidArgumentException imple
      */
     public static function invertedBounds(string $matcher, int|float $minimum, int|float $maximum): self
     {
-        return new self(sprintf(
-            "`Arg::%s()` was given a minimum of %s and a maximum of %s, so it describes an empty "
+        $format = "`Arg::%s()` was given a minimum of %s and a maximum of %s, so it describes an empty "
             . "range and would match no argument at all.\n"
-            . 'Order the bounds the other way, or leave one of them out to keep that side open.',
+            . 'Order the bounds the other way, or leave one of them out to keep that side open.';
+
+        return new self(sprintf(
+            $format,
             $matcher,
             var_export($minimum, return: true),
             var_export($maximum, return: true),
@@ -139,12 +141,10 @@ final class InvalidSpecificationArgument extends \InvalidArgumentException imple
      */
     public static function invalidPattern(string $pattern, ?string $reason): self
     {
-        return new self(sprintf(
-            "`Arg::string()` was given `%s`, which is not a valid PCRE pattern%s\n"
+        $format = "`Arg::string()` was given `%s`, which is not a valid PCRE pattern%s\n"
             . 'It would match no string and would raise a warning inside the code under test on '
-            . 'every call. Check the delimiters and the escaping.',
-            $pattern,
-            $reason === null ? '.' : ': ' . $reason . '.',
-        ));
+            . 'every call. Check the delimiters and the escaping.';
+
+        return new self(sprintf($format, $pattern, $reason === null ? '.' : ': ' . $reason . '.'));
     }
 }

@@ -38,7 +38,7 @@ final class Wire
         $reflection = self::reflectSubject($sut);
         $constructor = $reflection->getConstructor();
 
-        if ($constructor === null) {
+        if (!$constructor instanceof \ReflectionMethod) {
             if ($overrides !== []) {
                 throw CannotWire::unknownOverride(
                     $sut,
@@ -224,7 +224,7 @@ final class Wire
     {
         $type = $parameter->getType();
 
-        if ($type === null || ($type instanceof \ReflectionNamedType && $type->isBuiltin())) {
+        if (!$type instanceof \ReflectionType || ($type instanceof \ReflectionNamedType && $type->isBuiltin())) {
             // Builtin types are left to PHP's own coercion rules, which are
             // the ones the real caller would meet anyway.
             return;
@@ -251,7 +251,7 @@ final class Wire
         $type = $parameter->getType();
 
         foreach ($value as $item) {
-            if ($type !== null && !self::matchesType($type, $item)) {
+            if ($type instanceof \ReflectionType && !self::matchesType($type, $item)) {
                 throw CannotWire::incompatibleOverride($sut, $parameter->getName(), 'list<' . self::typeName($type) . '>', get_debug_type($item));
             }
         }
@@ -318,7 +318,7 @@ final class Wire
     private static function resolve(string $sut, \ReflectionParameter $parameter): ?array
     {
         $type = $parameter->getType();
-        $contracts = $type === null ? [] : self::doublableContracts($type);
+        $contracts = $type instanceof \ReflectionType ? self::doublableContracts($type) : [];
 
         if (count($contracts) === 1) {
             return self::doubleOrDefault($parameter, $contracts);
@@ -341,14 +341,14 @@ final class Wire
             return null;
         }
 
-        if ($type !== null && $type->allowsNull()) {
+        if ($type instanceof \ReflectionType && $type->allowsNull()) {
             return [null, null];
         }
 
         throw CannotWire::undecidableParameter(
             $sut,
             $parameter->getName(),
-            $type === null ? 'no type' : (string) $type,
+            $type instanceof \ReflectionType ? (string) $type : 'no type',
             'it is not an object type and has no default value.',
         );
     }

@@ -1238,17 +1238,14 @@ final class TargetUnifier
     private static function renderSourceDefault(\ReflectionParameter $parameter, string $method, string $source): string
     {
         if (preg_match('/\b(self|static|parent)\s*::/i', self::withoutStringLiterals($source)) === 1) {
+            $format = 'the default of `$%s` in `%s()` is `%s`, which resolves `self`, `static` or `parent` '
+                . 'against the declaring class. The generated double is a different class, so the value '
+                . 'cannot be reproduced. Give the parameter a default the double can build, or double '
+                . 'an interface.';
+
             throw UnsupportedTarget::notDoublable(
                 $parameter->getDeclaringClass()?->getName() ?? $method,
-                sprintf(
-                    'the default of `$%s` in `%s()` is `%s`, which resolves `self`, `static` or `parent` '
-                    . 'against the declaring class. The generated double is a different class, so the value '
-                    . 'cannot be reproduced. Give the parameter a default the double can build, or double '
-                    . 'an interface.',
-                    $parameter->getName(),
-                    $method,
-                    $source,
-                ),
+                sprintf($format, $parameter->getName(), $method, $source),
             );
         }
 
@@ -1285,7 +1282,7 @@ final class TargetUnifier
         $declaring = $parameter->getDeclaringClass();
 
         if (\in_array(strtolower($class), ['self', 'static', 'parent'], strict: true)) {
-            if ($declaring === null) {
+            if (!$declaring instanceof \ReflectionClass) {
                 return null;
             }
 
@@ -1340,14 +1337,12 @@ final class TargetUnifier
         $value = $parameter->getDefaultValue();
 
         if (self::holdsPlainObject($value)) {
+            $format = 'the default of `$%s` in `%s()` holds an object that cannot be written back as source. '
+                . 'Give the parameter a scalar, array or enum default, or double an interface.';
+
             throw UnsupportedTarget::notDoublable(
                 $parameter->getDeclaringClass()?->getName() ?? $method,
-                sprintf(
-                    'the default of `$%s` in `%s()` holds an object that cannot be written back as source. '
-                    . 'Give the parameter a scalar, array or enum default, or double an interface.',
-                    $parameter->getName(),
-                    $method,
-                ),
+                sprintf($format, $parameter->getName(), $method),
             );
         }
 

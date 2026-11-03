@@ -6,7 +6,10 @@ namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Codegen\PropertySignature;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
@@ -31,6 +34,9 @@ use Testo\Test;
  * down there rather than skip a test.
  */
 #[Test]
+#[Covers(TargetUnifier::class)]
+#[Covers(TypeRenderer::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(DoubleFactory::class)]
 #[Covers(Blueprint::class)]
 #[Covers(PropertySignature::class)]

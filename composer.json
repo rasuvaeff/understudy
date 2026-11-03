@@ -95,7 +95,10 @@
             "@php examples/structured-failures.php",
             "@php examples/where-guard.php"
         ],
-        "mutation": "infection --threads=max",
+        "mutation": [
+            "Composer\\Config::disableProcessTimeout",
+            "infection --threads=max --with-uncovered"
+        ],
         "psalm": "psalm --no-cache",
         "rector": "rector process --dry-run",
         "rector:fix": "rector process",

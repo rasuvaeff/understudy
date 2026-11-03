@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests;
 
+use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\ForwardingTargetMismatch;
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
 use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
@@ -29,6 +32,9 @@ use Testo\Test;
 use function Rasuvaeff\Understudy\when;
 
 #[Test]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(Runtime::class)]
 #[Covers(Understudy::class)]
 #[Covers(Invocation::class)]

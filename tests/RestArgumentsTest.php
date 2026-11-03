@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\ConflictingExpectation;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
@@ -33,6 +38,11 @@ use function Rasuvaeff\Understudy\when;
  * required parameters run out.
  */
 #[Test]
+#[Covers(TargetUnifier::class)]
+#[Covers(DoubleFactory::class)]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(Arg::class)]
 #[Covers(Understudy::class)]
 #[Covers(\Rasuvaeff\Understudy\Expectation\Expectation::class)]

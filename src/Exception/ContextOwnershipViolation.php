@@ -21,10 +21,10 @@ final class ContextOwnershipViolation extends \LogicException implements Underst
      */
     public static function forDouble(): self
     {
-        return new self(
-            'This understudy belongs to a different runtime context. '
+        $message = 'This understudy belongs to a different runtime context. '
             . 'Configure and verify it in the scope or Fiber that created it; '
-            . 'only normal method calls may cross context boundaries.',
-        );
+            . 'only normal method calls may cross context boundaries.';
+
+        return new self($message);
     }
 }

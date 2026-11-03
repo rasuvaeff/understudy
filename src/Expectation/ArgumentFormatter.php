@@ -76,8 +76,10 @@ final class ArgumentFormatter
     /**
      * @return non-empty-string
      */
-    public static function format(mixed $value, int $depth = 0): string
-    {
+    public static function format(
+        mixed $value,
+        int $depth = 0,
+    ): string {
         if ($depth > self::MAX_DEPTH) {
             return '…';
         }

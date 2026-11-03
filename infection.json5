@@ -38,9 +38,51 @@
     // environment, not the suite (see AGENTS.md), so the number stays at 92
     // until the escaped list — TargetUnifier 45, FinalStripper 29, Runtime 28
     // — has been hunted down far enough to give 94 real headroom.
+    //
+    // Re-measured 2026-11-03 with `--with-uncovered` (PHP 8.4, pcov, zend.assertions off like CI):
+    // 4016 mutants, 14 ignored by the signature-default rule below, Covered Code MSI 95%, overall MSI
+    // 93.8% (94.1% with the ignored ones out of the denominator) against a gate of 92. Before the
+    // flag the same command showed 3093 mutants and 94.1% (Covered Code MSI). What is left, 173
+    // Escaped and 62 Not Covered:
+    //  - About 20 Not Covered sit inside `\assert()`, which CI compiles out (FileWrapper 9, TargetUnifier 5,
+    //    Runtime 2, the rest one each). Unkillable at zend.assertions=-1.
+    //  - Defensive branches no input reaches: `Arg::reason(null)`, `renderConstantDefault()` with no
+    //    declaring class or no `parent`, `Understudy::foreignFileWrapper()` with no source file, the
+    //    `file_get_contents() === false` return in `FileWrapper::stream_open()`.
+    //  - Equivalents named in AGENTS.md: `DoubleState` literal-key index (an optimisation of a walk that
+    //    still exists), `FinalStripper` fast paths, `?->` on values that are never null, cache keys.
+    // `bypassFinals()`, `BypassUnavailable` and `FileWrapper` are covered in-process by
+    // `BypassFinalsTest`, `FinalReasonTest` and `FileWrapperTest` (wrapper installed and removed inside
+    // each test, as `FileWrapperTest` always did); only load-order claims need the subprocess suite.
+    // Unit only: every package declares a Benchmarks suite (testo.php), and Infection's initial
+    // test run would execute it. A timing-sensitive benchmark fails under host load and aborts
+    // the whole mutation run (result, 2026-11-03). Benchmarks mutate nothing and kill nothing.
+    "testFrameworkOptions": "--suite=Unit",
     "minMsi": 92,
     "mutators": {
         "@default": true,
+        // Constructor/method parameter declarations with a default value
+        // (`private int $x = 100,`, `bool $strict = false,`): the mutant sits on a
+        // signature line with no executable opcode under pcov, so it is reported Not
+        // Covered whatever the tests do. Only a type-prefixed `$name = default,` line
+        // matches; a body line cannot (no type before the variable). Do NOT add ^ or $:
+        // Infection wraps the pattern as ^-\s*REGEX$ over the removed diff line.
+        // Verified 2026-11-01 by diffing the survivor lists with and without it:
+        // bulkhead 6, circuit-breaker 13, json-ld 19 mutants removed, all of them
+        // such signature lines; Escaped and Timed Out unchanged.
+        "global-ignoreSourceCodeByRegex": [
+            "(?:(?:private|protected|public|readonly)\\s+)*\\??[A-Za-z_\\\\][\\w\\\\|]*\\s+\\$\\w+\\s*=\\s*[^,;]+,"
+        ],
+        // Off: with --with-uncovered a PublicVisibility mutant sits on a parameterless
+        // method's signature line, which has no executable opcode under pcov/xdebug,
+        // so it is reported Not Covered and can never be killed, whatever #[Covers]
+        // says. Measured on pinned-http-client 2026-11-01: 4 of 4 such mutants were
+        // Not Covered, none killed.
+        "PublicVisibility": false,
+        // Off for the same reason: a ProtectedVisibility mutant on a protected method's
+        // signature line is Not Covered and cannot be killed. Measured on
+        // understudy-phpunit 2026-11-01: 4 of 4 such mutants were Not Covered.
+        "ProtectedVisibility": false,
         // Raw-I/O passthroughs. Each of these forwards one call to the native
         // filesystem and returns what it answered; a mutant either changes
         // nothing observable or needs a real side effect on disk to see. The

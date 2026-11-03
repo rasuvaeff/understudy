@@ -9,6 +9,11 @@ use Rasuvaeff\PropertyTesting\Classify;
 use Rasuvaeff\PropertyTesting\Gen;
 use Rasuvaeff\PropertyTesting\Property;
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Tests\Fixture\Ledger;
 use Rasuvaeff\Understudy\Tests\Fixture\Tally;
@@ -34,6 +39,11 @@ use function Rasuvaeff\Understudy\when;
  * @internal
  */
 #[Test]
+#[Covers(TargetUnifier::class)]
+#[Covers(DoubleFactory::class)]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(DoubleState::class)]
 final class DispatchIndexPropertyTest
 {

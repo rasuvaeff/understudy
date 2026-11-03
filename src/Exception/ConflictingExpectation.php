@@ -28,14 +28,12 @@ final class ConflictingExpectation extends \LogicException implements Understudy
      */
     public static function claimAfterStub(string $label, string $spec): self
     {
-        return new self(sprintf(
-            'Understudy `%s` already has `%s` stubbed, and a separate expect() for the same call would not '
+        $format = 'Understudy `%s` already has `%s` stubbed, and a separate expect() for the same call would not '
             . 'compose with it: the expectation would take the dispatch and answer the mode default, silently '
             . 'discarding the stub. Declare one expectation — expect(...)->returns(...), or count the stub '
-            . 'with when(...)->times(...).',
-            $label,
-            $spec,
-        ));
+            . 'with when(...)->times(...).';
+
+        return new self(sprintf($format, $label, $spec));
     }
 
     /**
@@ -46,14 +44,12 @@ final class ConflictingExpectation extends \LogicException implements Understudy
      */
     public static function stubAfterCountedExpectation(string $label, string $spec): self
     {
-        return new self(sprintf(
-            'Understudy `%s` already counts `%s`, and a later stub for the same call would not compose with '
+        $format = 'Understudy `%s` already counts `%s`, and a later stub for the same call would not compose with '
             . 'it: the stub would take the dispatch and starve the count, which verifyAll() then reports as '
             . '"called never" about a call that did happen. Give the expectation its behaviour instead: '
-            . 'expect(...)->returns(...).',
-            $label,
-            $spec,
-        ));
+            . 'expect(...)->returns(...).';
+
+        return new self(sprintf($format, $label, $spec));
     }
 
     /**
@@ -64,12 +60,10 @@ final class ConflictingExpectation extends \LogicException implements Understudy
      */
     public static function duplicateCountedExpectation(string $label, string $spec): self
     {
-        return new self(sprintf(
-            'Understudy `%s` already counts `%s`, and a second expectation for the same call would not '
+        $format = 'Understudy `%s` already counts `%s`, and a second expectation for the same call would not '
             . 'compose with it: the newer one would take every match and the older count is starved. Declare '
-            . 'the count once — expect(...)->times(...).',
-            $label,
-            $spec,
-        ));
+            . 'the count once — expect(...)->times(...).';
+
+        return new self(sprintf($format, $label, $spec));
     }
 }
