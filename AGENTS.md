@@ -193,6 +193,13 @@ seconds instead of the full run's minute — and the full run stays the gate.
   scenarios in one process prove only whichever ran first — and coverage cannot
   see into a subprocess, which is why the decisions are unit tested separately
   from the end-to-end claims.
+  What does not need a process is every decision around the claim:
+  `BypassFinalsTest` drives `Understudy::bypassFinals()` (registration,
+  refusals, a foreign `file://` wrapper) and `FinalReasonTest` the four ways a
+  final class is explained, with the wrapper installed and removed inside each
+  test — the global is the same one `FileWrapperTest` has always toggled.
+  `understudy#148` is about installing it in `testo.php` for the whole run,
+  which is a different thing and still kills Infection's mutants.
 - **Assert on declarations, not on phrases.** `str_contains($source, 'final
   class')` matched the words "final classes" in a fixture's own docblock and
   turned three passing tests red for the wrong reason.
@@ -483,6 +490,30 @@ seconds instead of the full run's minute — and the full run stays the gate.
   Infection's mutant-to-test mapping is `#[Covers]`-driven: with one test class
   covering one class, the run reported 56 mutants at 93% MSI while the honest
   figures were 406 and 68%. Check the mutant count, not just the MSI.
+  `composer mutation` runs with `--with-uncovered` since 2026-11-03, and three
+  more things decide the figure there:
+  - A test that builds its doubles in a **data provider** executes nothing under
+    coverage: the provider runs at collection time, so the line is Not Covered
+    however many tests list it. Build inside the test body (the message table
+    in `tests/Exception/ExceptionMessageTest.php` yields closures for that
+    reason).
+  - A message built as `sprintf('a' . 'b', ...)` or a `throw` over several
+    lines puts its operand mutants on a line with no opcode, so they are Not
+    Covered. Assign the literal to a local first (`$format = 'a' . 'b';`) and
+    pass the variable; the text is byte-identical. Rector's
+    `SimplifyUselessVariable` undoes this for a plain `return`, which is fine:
+    there the first operand shares the statement's line already.
+  - Multi-line parameter lists put `int $x = 0,` on a line the template's
+    ignore pattern matches; a one-line signature does not match and keeps its
+    mutants.
+  Known equivalents, so nobody hunts them again: `DoubleState` literal-key
+  index (`serialize(0.0)` constants, `array_reverse`, the index itself is an
+  optimisation of a walk that still runs), `FinalStripper`'s two fast paths and
+  the loop bounds of its token scans (an out-of-range `$tokens[$i]` is `null`
+  and falls through), `Wire`'s `$resolved[0]`/`[1]` (both are the same double),
+  `Runtime`'s `?->` on a state that is never null at that point and its
+  `inlineMethods` cache keys, `ArgumentFormatter`'s `null` and `NAN` match arms
+  (the default arm renders both identically on PHP 8.4).
 - **Rector and Psalm pull in opposite directions here.** `RemoveUselessVarTag`
   and `FlipTypeControlToUseExclusiveType` are skipped in `rector.php` with the
   reasons written down; do not add skips beyond those without the same.

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Mutation testing now counts code the tests do not name in `#[Covers]` (`infection --with-uncovered`), with the signature-default and visibility mutators configured as in the package template. Overall MSI with the flag is about 94% against the unchanged gate of 92.
+- Tests: the wording of every failure message that has a factory is pinned word for word (`ExceptionMessageTest`); `Understudy::bypassFinals()`, `BypassUnavailable` and the explanations for a final class that is still standing are covered in-process (`BypassFinalsTest`, `FinalReasonTest`); defaults, `parent`, intersection overlap, `wire()` edge types, `TypeDefaultResolver` type strings and `DefaultFactories` ancestry have direct cases.
+- No behaviour change. In `src/`, failure messages assembled from several literals are built into a local `$format`/`$reason` before use (same text), and six one-line signatures with a defaulted parameter are split one parameter per line.
+
 ## 1.1.1 — 2026-10-14
 
 - **Fixed.** Doubling a type whose method declares a parameter as `self` no

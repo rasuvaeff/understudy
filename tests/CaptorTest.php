@@ -6,6 +6,11 @@ namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Captor;
+use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NothingCaptured;
 use Rasuvaeff\Understudy\Expectation\Expectation;
@@ -31,6 +36,11 @@ use function Rasuvaeff\Understudy\when;
  * log.
  */
 #[Test]
+#[Covers(TargetUnifier::class)]
+#[Covers(DoubleFactory::class)]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(Captor::class)]
 #[Covers(Understudy::class)]
 #[Covers(Capturing::class)]

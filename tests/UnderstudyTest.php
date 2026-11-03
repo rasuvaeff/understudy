@@ -5,25 +5,43 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Cardinality;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
+use Rasuvaeff\Understudy\Defaults\DefaultFactories;
+use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
+use Rasuvaeff\Understudy\Exception\AmbiguousDefaultFactory;
+use Rasuvaeff\Understudy\Exception\CannotWire;
+use Rasuvaeff\Understudy\Exception\ConflictingExpectation;
+use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
+use Rasuvaeff\Understudy\Exception\ForwardingTargetMismatch;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
+use Rasuvaeff\Understudy\Exception\InvalidDefaultValue;
 use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
+use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
+use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
+use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
 use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Expectation\ReturnContract;
 use Rasuvaeff\Understudy\ExpectBuilder;
 use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Matcher\AnyRest;
+use Rasuvaeff\Understudy\Matcher\AnyTail;
+use Rasuvaeff\Understudy\Matcher\EmptyTail;
+use Rasuvaeff\Understudy\Matcher\InstanceOfType;
+use Rasuvaeff\Understudy\Matcher\Unspelled;
 use Rasuvaeff\Understudy\Outcome;
+use Rasuvaeff\Understudy\Runtime\ArmedSequence;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Mode;
@@ -52,6 +70,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\VariadicSink;
 use Rasuvaeff\Understudy\Tests\Support\GoldenMessage;
 use Rasuvaeff\Understudy\Understudy;
 use Rasuvaeff\Understudy\WhenBuilder;
+use Rasuvaeff\Understudy\Wiring\Wire;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
 use Testo\Codecov\Covers;
@@ -90,6 +109,27 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(VerificationFailed::class)]
 #[Covers(TargetUnifier::class)]
 #[Covers(TypeRenderer::class)]
+#[Covers(Arg::class)]
+#[Covers(Cardinality::class)]
+#[Covers(DefaultFactories::class)]
+#[Covers(TypeDefaultResolver::class)]
+#[Covers(AmbiguousDefaultFactory::class)]
+#[Covers(CannotWire::class)]
+#[Covers(ConflictingExpectation::class)]
+#[Covers(ContextOwnershipViolation::class)]
+#[Covers(ForwardingTargetMismatch::class)]
+#[Covers(InvalidDefaultValue::class)]
+#[Covers(InvalidSpecificationArgument::class)]
+#[Covers(OriginalCallUnavailable::class)]
+#[Covers(OriginalReturnTypeViolation::class)]
+#[Covers(ArgumentFormatter::class)]
+#[Covers(AnyRest::class)]
+#[Covers(AnyTail::class)]
+#[Covers(EmptyTail::class)]
+#[Covers(InstanceOfType::class)]
+#[Covers(Unspelled::class)]
+#[Covers(ArmedSequence::class)]
+#[Covers(Wire::class)]
 final class UnderstudyTest
 {
     #[AfterTest]

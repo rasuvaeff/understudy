@@ -122,9 +122,10 @@ final class TypeRenderer
         // Word boundaries, and not already qualified: a class genuinely named
         // `Parent`, or `\App\Parent`, is somebody's own name and not the
         // keyword.
+        $replacement = '\\\\' . $parent->getName();
         $resolved = preg_replace(
             '/(?<![\\\\\\w])parent(?![\\\\\\w])/i',
-            '\\\\' . $parent->getName(),
+            $replacement,
             $rendered,
         );
 

@@ -230,8 +230,10 @@ final class Expectation
      *
      * @param int<0, max> $slot
      */
-    public function setAction(Action $action, int $slot = 0): void
-    {
+    public function setAction(
+        Action $action,
+        int $slot = 0,
+    ): void {
         // A builder only ever writes to the current slot or opens the next
         // one, so the chain grows by one at a time and never develops holes.
         if ($slot >= count($this->actions)) {
@@ -523,9 +525,10 @@ final class Expectation
 
         \assert($this->guardDescription !== null);
 
-        return $this->acceptsGuardDefensively($args)
-            ? ' ' . $this->guardDescription
-            : ' *' . $this->guardDescription . '*';
+        $plain = ' ' . $this->guardDescription;
+        $marked = ' *' . $this->guardDescription . '*';
+
+        return $this->acceptsGuardDefensively($args) ? $plain : $marked;
     }
 
     /**

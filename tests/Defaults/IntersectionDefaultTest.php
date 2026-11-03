@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests\Defaults;
 
+use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
 use Rasuvaeff\Understudy\Runtime\Runtime;
@@ -31,6 +36,11 @@ use Testo\Test;
  * @internal
  */
 #[Test]
+#[Covers(TargetUnifier::class)]
+#[Covers(DoubleFactory::class)]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(TypeDefaultResolver::class)]
 #[Covers(Runtime::class)]
 #[Covers(NoDefaultValue::class)]

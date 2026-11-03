@@ -147,6 +147,51 @@ final class FinalStripperTest
             '<?php namespace App; class Gate { final public const string KEY = "k"; }',
         ];
 
+        // The braced global namespace: the scan for a namespace name stops at the
+        // brace, or it would read a later `Gate` as the namespace's own name.
+        yield 'a braced global namespace is the empty namespace' => [
+            '<?php namespace { final class Gate {} }',
+            [['namespace' => '', 'class' => 'Gate']],
+            '<?php namespace { class Gate {} }',
+        ];
+
+        yield 'a braced global namespace is not the namespace named after a later class' => [
+            '<?php namespace { final class Gate {} }',
+            [['namespace' => 'Gate', 'class' => 'Gate']],
+            '<?php namespace { final class Gate {} }',
+        ];
+
+        // Tokens that start like a class declaration and never name one.
+        yield 'a braced namespace without a space after the keyword is still the global one' => [
+            '<?php namespace{ final class Gate {} }',
+            [['namespace' => '', 'class' => 'Gate']],
+            '<?php namespace{ class Gate {} }',
+        ];
+
+        yield 'a final method does not open a class declared after it' => [
+            '<?php namespace App; abstract class Base { final public function open(): void {} } class Gate {}',
+            [['namespace' => 'App', 'class' => 'Gate']],
+            '<?php namespace App; abstract class Base { final public function open(): void {} } class Gate {}',
+        ];
+
+        yield 'a keyword after class that is not a name is left alone' => [
+            '<?php final class extends Foo {}',
+            null,
+            '<?php final class extends Foo {}',
+        ];
+
+        yield 'a source that ends after the class keyword is left alone' => [
+            '<?php final class',
+            null,
+            '<?php final class',
+        ];
+
+        yield 'a class keyword followed by something that is not a name is left alone' => [
+            '<?php final class { }',
+            null,
+            '<?php final class { }',
+        ];
+
         yield 'readonly survives between final and class' => [
             '<?php namespace App; final readonly class Money {}',
             [['namespace' => 'App', 'class' => 'Money']],

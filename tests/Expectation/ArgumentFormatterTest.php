@@ -278,6 +278,24 @@ final class ArgumentFormatterTest
         );
     }
 
+    public function aBinaryStringOfExactlyTheLimitIsNotCut(): void
+    {
+        Assert::same(
+            ArgumentFormatter::format(str_repeat("\xFF", 40)),
+            "'" . str_repeat('\\xFF', 40) . "'",
+        );
+    }
+
+    public function aBinaryStringCutKeepsItsOwnBeginning(): void
+    {
+        $value = implode('', array_map(static fn(int $byte): string => \chr(0x80 + $byte), range(0, 49)));
+
+        Assert::same(
+            ArgumentFormatter::format($value),
+            "'" . implode('', array_map(static fn(int $byte): string => sprintf('\\x%02X', 0x80 + $byte), range(0, 39))) . "…'",
+        );
+    }
+
     public function aShortStringThatIsNotUtf8IsEscapedByteByByte(): void
     {
         Assert::same(ArgumentFormatter::format("\xFF\xFE"), "'\\xFF\\xFE'");

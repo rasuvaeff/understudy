@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Ref\RealRegistry;
@@ -20,6 +23,9 @@ use Testo\Test;
 use function Rasuvaeff\Understudy\when;
 
 #[Test]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(Runtime::class)]
 #[Covers(DoubleState::class)]
 #[Covers(TargetUnifier::class)]
@@ -228,6 +234,38 @@ final class ByReferenceTest
         Assert::same($call->args[0]['nested']['deep'], 'before');
         // And the reading is the whole structure, not a truncated one.
         Assert::true(\is_array($call->args[0]['far']['l1']['l2']['l3']));
+    }
+
+    /**
+     * The cap, read where it shows: a reference inside an array is detached when
+     * that array is copied, so the array at depth seven is the last one whose
+     * references the reading no longer shares, and the one at depth eight is kept
+     * as it is.
+     */
+    public function theCapFallsBetweenTheSeventhAndTheEighthLevel(): void
+    {
+        $snapshot = new \ReflectionMethod(Runtime::class, 'detached');
+
+        foreach ([0 => false, 7 => false, 8 => true, 9 => true] as $depth => $shared) {
+            $leaf = 'before';
+            $value = ['reference' => &$leaf];
+
+            for ($level = 0; $level < $depth; $level++) {
+                $value = ['inner' => $value];
+            }
+
+            /** @var list<array<array-key, mixed>> $copy */
+            $copy = $snapshot->invoke(null, [$value]);
+            $leaf = 'after';
+
+            $found = $copy[0];
+
+            for ($level = 0; $level < $depth; $level++) {
+                $found = $found['inner'];
+            }
+
+            Assert::same($found['reference'], $shared ? 'after' : 'before', 'depth ' . $depth);
+        }
     }
 
     /**

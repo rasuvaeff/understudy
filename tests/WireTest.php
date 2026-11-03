@@ -4,7 +4,13 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests;
 
+use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\CannotWire;
+use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\AbstractSubject;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\ArrayVariadic;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\BoolVariadic;
@@ -18,19 +24,24 @@ use Rasuvaeff\Understudy\Tests\Fixture\Wire\FloatVariadicService;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\IntersectionDependency;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\IntVariadic;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\IterableVariadic;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\MissingClassSubject;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\MixedVariadic;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\NeedsSealedCollaborator;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\NoConstructor;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\NullableDependency;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\NullableScalar;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\ObjectDefaultSubject;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\ObjectOrScalarSubject;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\ObjectVariadic;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\PrivateConstructor;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\ReferenceConstructor;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\Reporter;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\Repository;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\ScalarWithoutDefault;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\SealedCollaborator;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\TrueVariadic;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\TwoObjectUnion;
+use Rasuvaeff\Understudy\Tests\Fixture\Wire\UntypedSubject;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\VariadicObjectDefaultSubject;
 use Rasuvaeff\Understudy\Tests\Fixture\Wire\VariadicService;
 use Rasuvaeff\Understudy\Understudy;
@@ -45,8 +56,14 @@ use Testo\Test;
 use function Rasuvaeff\Understudy\when;
 
 #[Test]
+#[Covers(TargetUnifier::class)]
+#[Covers(DoubleFactory::class)]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(Wire::class)]
 #[Covers(CannotWire::class)]
+#[Covers(UnsupportedTarget::class)]
 final class WireTest
 {
     #[AfterTest]
@@ -104,6 +121,56 @@ final class WireTest
 
         Assert::instanceOf($subject->both, Repository::class);
         Assert::instanceOf($subject->both, \Countable::class);
+    }
+
+    public function anOverrideSatisfyingEveryBranchOfAnIntersectionIsAccepted(): void
+    {
+        $both = Understudy::for(Repository::class, \Countable::class);
+
+        ['sut' => $subject] = Understudy::wire(IntersectionDependency::class, ['both' => $both]);
+
+        Assert::same($subject->both, $both);
+    }
+
+    public function anOverrideMissingOneBranchOfAnIntersectionIsRefused(): void
+    {
+        Expect::exception(CannotWire::class)
+            ->withMessageContaining('the override for `$both`')
+            ->withMessageContaining('and the constructor declares `' . Repository::class . '&Countable`');
+
+        Understudy::wire(IntersectionDependency::class, ['both' => Understudy::for(Repository::class)]);
+    }
+
+    public function anUntypedParameterTakesAnyOverrideAsIs(): void
+    {
+        ['sut' => $subject] = Understudy::wire(UntypedSubject::class, ['untyped' => 'whatever', 'anything' => 7]);
+
+        Assert::same($subject->untyped, 'whatever');
+        Assert::same($subject->anything, 7);
+    }
+
+    public function aUnionOfOneObjectTypeAndAScalarIsADoubleOfTheObject(): void
+    {
+        ['sut' => $subject, 'doubles' => $doubles] = Understudy::wire(ObjectOrScalarSubject::class);
+
+        Assert::instanceOf($subject->dependency, Repository::class);
+        Assert::same($doubles['dependency'], $subject->dependency);
+    }
+
+    public function aClassThatCannotBeLoadedIsNotAContractToDouble(): void
+    {
+        ['sut' => $subject, 'doubles' => $doubles] = Understudy::wire(MissingClassSubject::class);
+
+        Assert::null($subject->collaborator);
+        Assert::same($doubles, []);
+    }
+
+    public function anUndoublableCollaboratorWithoutADefaultRefusesTheWholeSubject(): void
+    {
+        Expect::exception(UnsupportedTarget::class)
+            ->withMessageContaining('Cannot create an understudy for `' . SealedCollaborator::class . '`: the class is final');
+
+        Understudy::wire(NeedsSealedCollaborator::class);
     }
 
     /**

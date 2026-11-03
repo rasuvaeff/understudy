@@ -30,11 +30,11 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function noCallRecorded(): self
     {
-        return new self(
-            'The specification closure did not call a method on an understudy. '
+        $message = 'The specification closure did not call a method on an understudy. '
             . 'It must contain exactly one direct call, for example: '
-            . 'when(fn () => $repository->find(123))',
-        );
+            . 'when(fn () => $repository->find(123))';
+
+        return new self($message);
     }
 
     /**
@@ -50,16 +50,12 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function moreThanOneCall(string $firstLabel, string $firstMethod, string $lastLabel, string $lastMethod): self
     {
-        return new self(sprintf(
-            'The specification closure calls `%s()` on understudy `%s` and then `%s()` on understudy `%s`. '
+        $format = 'The specification closure calls `%s()` on understudy `%s` and then `%s()` on understudy `%s`. '
             . 'A closure must contain exactly one direct call on a double; with two, one of them would be specified '
             . 'silently and the other not at all. Stub each call in a when() of its own, and where one call feeds the '
-            . 'arguments of another pass a literal or a matcher instead, for example: when(fn () => $repository->find(Arg::any()))',
-            $firstMethod,
-            $firstLabel,
-            $lastMethod,
-            $lastLabel,
-        ));
+            . 'arguments of another pass a literal or a matcher instead, for example: when(fn () => $repository->find(Arg::any()))';
+
+        return new self(sprintf($format, $firstMethod, $firstLabel, $lastMethod, $lastLabel));
     }
 
     /**
@@ -71,13 +67,11 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function returnsOnVoid(string $label, string $method): self
     {
-        return new self(sprintf(
-            'Understudy `%s`: `%s()` is declared `: void`, so returns() has nothing to answer with — the value '
+        $format = 'Understudy `%s`: `%s()` is declared `: void`, so returns() has nothing to answer with — the value '
             . 'would never be observed. Drop the value (returns(null) is allowed), or use answers()/throws() if the '
-            . 'call should do something.',
-            $label,
-            $method,
-        ));
+            . 'call should do something.';
+
+        return new self(sprintf($format, $label, $method));
     }
 
     /**
@@ -88,13 +82,10 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function returnsOnNever(string $label, string $method): self
     {
-        return new self(sprintf(
-            'Understudy `%s`: `%s()` is declared `: never` and cannot return. Configure what it throws: '
-            . 'when(fn () => $double->%s(...))->throws(new SomeException())',
-            $label,
-            $method,
-            $method,
-        ));
+        $format = 'Understudy `%s`: `%s()` is declared `: never` and cannot return. Configure what it throws: '
+            . 'when(fn () => $double->%s(...))->throws(new SomeException())';
+
+        return new self(sprintf($format, $label, $method, $method));
     }
 
     /**
@@ -105,11 +96,10 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function notADouble(string $facade): self
     {
-        return new self(sprintf(
-            'Understudy::%s() expects an understudy created by Understudy::for(). '
-            . 'This object is not one.',
-            $facade,
-        ));
+        $format = 'Understudy::%s() expects an understudy created by Understudy::for(). '
+            . 'This object is not one.';
+
+        return new self(sprintf($format, $facade));
     }
 
     /**
@@ -121,11 +111,10 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function neverBesideACount(string $bound): self
     {
-        return new self(sprintf(
-            '`never: true` says the call never happened, and `%s` says how often it did. '
-            . 'Keep the one you mean.',
-            $bound,
-        ));
+        $format = '`never: true` says the call never happened, and `%s` says how often it did. '
+            . 'Keep the one you mean.';
+
+        return new self(sprintf($format, $bound));
     }
 
     /**
@@ -134,10 +123,10 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function exactCountBesideABound(): self
     {
-        return new self(
-            '`times` is an exact count, so a `minimum` or `maximum` beside it has nothing left '
-            . 'to constrain. Use one or the other.',
-        );
+        $message = '`times` is an exact count, so a `minimum` or `maximum` beside it has nothing left '
+            . 'to constrain. Use one or the other.';
+
+        return new self($message);
     }
 
     /**
@@ -148,14 +137,11 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function misplacedTailMatcher(string $method, int $position, string $matcher): self
     {
-        return new self(sprintf(
-            "`%s` stands for the whole variadic tail, so it may only be the last argument, "
+        $format = "`%s` stands for the whole variadic tail, so it may only be the last argument, "
             . "but it was given as argument #%d of `%s()`.\n"
-            . 'Move it to the end, or use Arg::any() to match that one argument.',
-            $matcher,
-            $position + 1,
-            $method,
-        ));
+            . 'Move it to the end, or use Arg::any() to match that one argument.';
+
+        return new self(sprintf($format, $matcher, $position + 1, $method));
     }
 
     /**
@@ -165,12 +151,10 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function emptyCombinator(string $matcher): self
     {
-        return new self(sprintf(
-            "`Arg::%s()` was given no operands, so it would match %s.\n"
-            . 'Pass what the argument has to satisfy, or use Arg::any() to accept anything.',
-            $matcher,
-            $matcher === 'allOf' ? 'every argument' : 'no argument at all',
-        ));
+        $format = "`Arg::%s()` was given no operands, so it would match %s.\n"
+            . 'Pass what the argument has to satisfy, or use Arg::any() to accept anything.';
+
+        return new self(sprintf($format, $matcher, $matcher === 'allOf' ? 'every argument' : 'no argument at all'));
     }
 
     /**
@@ -183,12 +167,10 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function guardAlreadyNarrowed(string $method, ?string $description): self
     {
-        return new self(sprintf(
-            "`%s` already carries a `where()` guard%s. One call, one guard: put both "
-            . 'conditions in the one closure.',
-            $method,
-            $description === null ? '' : " (`$description`)",
-        ));
+        $format = "`%s` already carries a `where()` guard%s. One call, one guard: put both "
+            . 'conditions in the one closure.';
+
+        return new self(sprintf($format, $method, $description === null ? '' : " (`$description`)"));
     }
 
     /**
@@ -199,13 +181,11 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function tailMatcherInCombinator(string $matcher, string $operand): self
     {
-        return new self(sprintf(
-            "`%s` stands for the whole variadic tail, and `Arg::%s()` combines matchers for one "
+        $format = "`%s` stands for the whole variadic tail, and `Arg::%s()` combines matchers for one "
             . "argument, so it cannot hold one.\n"
-            . 'Put the tail matcher last on its own, and combine the arguments before it.',
-            $operand,
-            $matcher,
-        ));
+            . 'Put the tail matcher last on its own, and combine the arguments before it.';
+
+        return new self(sprintf($format, $operand, $matcher));
     }
 
     /**
@@ -217,15 +197,12 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function matcherInsideArray(string $method, int $position, string $matcher): self
     {
-        return new self(sprintf(
-            "`%s` sits inside the array given as argument #%d of `%s()`, where it is compared by "
+        $format = "`%s` sits inside the array given as argument #%d of `%s()`, where it is compared by "
             . "identity and can never match.\n"
             . 'Describe the array with Arg::containing([...]), which reads matchers in its entries, '
-            . 'or the whole argument with Arg::satisfies().',
-            $matcher,
-            $position + 1,
-            $method,
-        ));
+            . 'or the whole argument with Arg::satisfies().';
+
+        return new self(sprintf($format, $matcher, $position + 1, $method));
     }
 
     /**
@@ -235,13 +212,12 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function captorInCombinator(string $matcher): self
     {
-        return new self(sprintf(
-            "A captor records the argument it stands for, and `Arg::%s()` builds one matcher out of "
+        $format = "A captor records the argument it stands for, and `Arg::%s()` builds one matcher out of "
             . "others, so a captor inside it would match without ever recording.\n"
             . 'Put the captor in the argument position itself, or read the calls with '
-            . 'Understudy::calls().',
-            $matcher,
-        ));
+            . 'Understudy::calls().';
+
+        return new self(sprintf($format, $matcher));
     }
 
     /**
@@ -250,10 +226,10 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function emptySequence(): self
     {
-        return new self(
-            'Understudy::expectSequence() needs at least one call: an empty protocol claims nothing '
-            . 'and would refuse every call on no double at all',
-        );
+        $message = 'Understudy::expectSequence() needs at least one call: an empty protocol claims nothing '
+            . 'and would refuse every call on no double at all';
+
+        return new self($message);
     }
 
     /**
@@ -264,13 +240,11 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function protocolAlreadyArmed(int $position, int $length): self
     {
-        return new self(sprintf(
-            'A protocol is already armed and is waiting on step %d of %d. Two of them naming the same '
+        $format = 'A protocol is already armed and is waiting on step %d of %d. Two of them naming the same '
             . 'understudy would each judge every call on it and could disagree about the same call — '
-            . 'finish this one, or describe both phases as a single protocol',
-            $position,
-            $length,
-        ));
+            . 'finish this one, or describe both phases as a single protocol';
+
+        return new self(sprintf($format, $position, $length));
     }
 
     /**
@@ -282,14 +256,11 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function incompleteSpecification(string $method, int $given, int $declared): self
     {
-        return new self(sprintf(
-            "The specification for `%s()` passed %d of its %d arguments, and the ones it left out "
+        $format = "The specification for `%s()` passed %d of its %d arguments, and the ones it left out "
             . "are not all optional.\n"
-            . 'Spell every required argument, or say the rest does not matter by ending with Arg::rest().',
-            $method,
-            $given,
-            $declared,
-        ));
+            . 'Spell every required argument, or say the rest does not matter by ending with Arg::rest().';
+
+        return new self(sprintf($format, $method, $given, $declared));
     }
 
     /**
@@ -301,14 +272,11 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function omittedBeforeSpecified(string $method, int $omitted, int $specified): self
     {
-        return new self(sprintf(
-            "The specification for `%s()` omitted argument #%d — which the contract declares required — "
+        $format = "The specification for `%s()` omitted argument #%d — which the contract declares required — "
             . "but specified argument #%d after it.\n"
-            . 'A specification spells its required arguments in order — use Arg::any() for one that does not matter.',
-            $method,
-            $omitted + 1,
-            $specified + 1,
-        ));
+            . 'A specification spells its required arguments in order — use Arg::any() for one that does not matter.';
+
+        return new self(sprintf($format, $method, $omitted + 1, $specified + 1));
     }
 
     /**
@@ -319,13 +287,11 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function omittedTailNeedsRest(string $method, string $matcher): self
     {
-        return new self(sprintf(
-            "`%s` describes a variadic tail, not parameters left unspelled, and the specification "
+        $format = "`%s` describes a variadic tail, not parameters left unspelled, and the specification "
             . "for `%s()` stopped before its parameters ran out.\n"
-            . 'End with Arg::rest() to say the remaining parameters do not matter.',
-            $matcher,
-            $method,
-        ));
+            . 'End with Arg::rest() to say the remaining parameters do not matter.';
+
+        return new self(sprintf($format, $matcher, $method));
     }
 
     /**
@@ -334,9 +300,11 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function closureFailed(\Throwable $previous): self
     {
+        $message = 'The specification closure threw before it reached an understudy: '
+            . $previous->getMessage();
+
         return new self(
-            'The specification closure threw before it reached an understudy: '
-            . $previous->getMessage(),
+            $message,
             previous: $previous,
         );
     }
@@ -348,10 +316,9 @@ final class InvalidCallSpecification extends \LogicException implements Understu
      */
     public static function staticMethodCalled(string $method): self
     {
-        return new self(sprintf(
-            "Static method `%s()` cannot be called on an understudy because static calls have no instance state.\n"
-            . 'Inject an instance dependency and double that contract instead.',
-            $method,
-        ));
+        $format = "Static method `%s()` cannot be called on an understudy because static calls have no instance state.\n"
+            . 'Inject an instance dependency and double that contract instead.';
+
+        return new self(sprintf($format, $method));
     }
 }

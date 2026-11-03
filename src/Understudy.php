@@ -110,12 +110,11 @@ final class Understudy
             return;
         }
 
-        throw UnsupportedTarget::notDoublable(
-            $real::class,
-            'a final class cannot be extended, and an instance of one is already the class it is. Pass an '
+        $reason = 'a final class cannot be extended, and an instance of one is already the class it is. Pass an '
             . 'interface it implements to Understudy::for() and give the instance to '
-            . 'Understudy::forwarding($double, $real).',
-        );
+            . 'Understudy::forwarding($double, $real).';
+
+        throw UnsupportedTarget::notDoublable($real::class, $reason);
     }
 
     /**
@@ -193,8 +192,9 @@ final class Understudy
      *
      * @return int<0, max> checks verified by this call
      */
-    public static function verifyAll(bool $strictStubs = false): int
-    {
+    public static function verifyAll(
+        bool $strictStubs = false,
+    ): int {
         // Every context the test put understudies in, not only the one this
         // call happens to stand in: a body run in a Fiber owns a context of
         // its own, and skipping it let an unmet `expect()` pass unnoticed.
@@ -1349,8 +1349,10 @@ final class Understudy
      *
      * @return T
      */
-    public static function scope(callable $callback, bool $strictStubs = false): mixed
-    {
+    public static function scope(
+        callable $callback,
+        bool $strictStubs = false,
+    ): mixed {
         $context = Runtime::pushScope();
         $succeeded = false;
 
@@ -1382,8 +1384,9 @@ final class Understudy
      * reads it; `reset()`, `scope()` and `lean()` are the ways to let go of
      * everything.
      */
-    public static function checkpoint(bool $strictStubs = false): void
-    {
+    public static function checkpoint(
+        bool $strictStubs = false,
+    ): void {
         self::verifyAll($strictStubs);
 
         foreach (Runtime::liveContexts() as $context) {

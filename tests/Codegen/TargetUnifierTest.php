@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests\Codegen;
 
+use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
@@ -127,6 +129,9 @@ use Testo\Expect;
 use Testo\Test;
 
 #[Test]
+#[Covers(DoubleFactory::class)]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
 #[Covers(TargetUnifier::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(UnsupportedTarget::class)]

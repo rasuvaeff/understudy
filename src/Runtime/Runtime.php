@@ -1561,8 +1561,10 @@ final class Runtime
      * live until collection and the map they sit in keeps growing. Eager
      * removal here is what keeps that map the size of one test.
      */
-    private static function retire(RuntimeContext $context, bool $byScope = false): void
-    {
+    private static function retire(
+        RuntimeContext $context,
+        bool $byScope = false,
+    ): void {
         self::unremember($context);
 
         // Captured values live exactly as long as the call log of the context

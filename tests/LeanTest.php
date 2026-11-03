@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Arg;
+use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\TargetUnifier;
+use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\OutcomeUnavailable;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
@@ -28,6 +33,11 @@ use function Rasuvaeff\Understudy\when;
  * loops where per-call retention is the cost.
  */
 #[Test]
+#[Covers(TargetUnifier::class)]
+#[Covers(DoubleFactory::class)]
+#[Covers(TypeRenderer::class)]
+#[Covers(Blueprint::class)]
+#[Covers(MethodSignature::class)]
 #[Covers(Understudy::class)]
 #[Covers(Runtime::class)]
 #[Covers(DoubleState::class)]

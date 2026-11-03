@@ -18,13 +18,12 @@ final class OriginalCallUnavailable extends \LogicException implements Understud
      */
     public static function forMode(string $label): self
     {
-        return new self(sprintf(
-            "Understudy `%s` was asked to forward, and has no real instance to forward to.\n"
+        $format = "Understudy `%s` was asked to forward, and has no real instance to forward to.\n"
             . 'Pass one: Understudy::forwarding($double, $real). The shorthand '
             . 'Understudy::forwarding($double) only turns the mode on for a double built from an '
-            . 'instance with Understudy::for($real).',
-            $label,
-        ));
+            . 'instance with Understudy::for($real).';
+
+        return new self(sprintf($format, $label));
     }
 
     /**
@@ -35,12 +34,10 @@ final class OriginalCallUnavailable extends \LogicException implements Understud
      */
     public static function withoutTarget(string $label, string $method): self
     {
-        return new self(sprintf(
-            "Understudy `%s` has no real instance to delegate `%s()` to.\n"
+        $format = "Understudy `%s` has no real instance to delegate `%s()` to.\n"
             . 'Give it one: Understudy::forwarding($double, $real) — calling the parent implementation on a '
-            . 'double whose constructor never ran is not a safe substitute.',
-            $label,
-            $method,
-        ));
+            . 'double whose constructor never ran is not a safe substitute.';
+
+        return new self(sprintf($format, $label, $method));
     }
 }

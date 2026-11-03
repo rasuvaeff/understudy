@@ -21,10 +21,12 @@ final class AmbiguousDefaultFactory extends \LogicException implements Understud
     {
         sort($candidates);
 
-        return new self(sprintf(
-            "More than one default factory is equally close to `%s`: %s.\n"
+        $format = "More than one default factory is equally close to `%s`: %s.\n"
             . 'Register one for `%s` itself — resolution by distance is what keeps the answer independent '
-            . 'of the order the factories were registered in, and a tie has no order to fall back on.',
+            . 'of the order the factories were registered in, and a tie has no order to fall back on.';
+
+        return new self(sprintf(
+            $format,
             $requested,
             implode(', ', array_map(static fn(string $c): string => '`' . $c . '`', $candidates)),
             $requested,

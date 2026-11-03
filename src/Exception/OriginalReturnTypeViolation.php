@@ -19,17 +19,13 @@ final class OriginalReturnTypeViolation extends \RuntimeException implements Und
      */
     public static function foreignInstance(string $label, string $method, string $returned): self
     {
-        return new self(sprintf(
-            "Understudy `%s` forwarded `%s()`, which returned a different `%s` instead of the instance it "
+        $format = "Understudy `%s` forwarded `%s()`, which returned a different `%s` instead of the instance it "
             . "was called on.\n"
             . 'The method declares `static`, so the double must return itself, and another object of the '
             . 'real class is not a double. Configure the method instead: '
-            . 'when(fn () => $double->%s(...))->returns($double).',
-            $label,
-            $method,
-            $returned,
-            $method,
-        ));
+            . 'when(fn () => $double->%s(...))->returns($double).';
+
+        return new self(sprintf($format, $label, $method, $returned, $method));
     }
 
     /**
@@ -47,15 +43,12 @@ final class OriginalReturnTypeViolation extends \RuntimeException implements Und
      */
     public static function foreignSelf(string $label, string $method): self
     {
-        return new self(sprintf(
-            "Understudy `%s` ran `%s()` inline, and the real body built a new instance of itself — a "
+        $format = "Understudy `%s` ran `%s()` inline, and the real body built a new instance of itself — a "
             . "`new static` or `new self`.\n"
             . 'It is of the double\'s own class, so the return type accepts it, but no context knows it and '
             . 'every call on it would fail as an unregistered double. Configure the method instead: '
-            . 'when(fn () => $double->%s(...))->returns($double).',
-            $label,
-            $method,
-            $method,
-        ));
+            . 'when(fn () => $double->%s(...))->returns($double).';
+
+        return new self(sprintf($format, $label, $method, $method));
     }
 }
