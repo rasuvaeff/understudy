@@ -49,7 +49,9 @@ final class ExceptionMessageTest
     #[DataProvider('messageProvider')]
     public function eachFactoryWordsItsMessageAsPublished(\Closure $build, string $expected): void
     {
-        Assert::same($build()->getMessage(), $expected);
+        // The expectations are nowdocs: a checkout that converts line endings
+        // turns their newlines into CRLF, while the messages always carry LF.
+        Assert::same($build()->getMessage(), str_replace("\r\n", "\n", $expected));
     }
 
     /**
