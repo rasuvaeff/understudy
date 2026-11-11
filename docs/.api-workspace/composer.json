@@ -8,8 +8,7 @@
         "rasuvaeff/understudy-phpstan": "^1.0",
         "rasuvaeff/understudy-phpunit": "^1.0",
         "rasuvaeff/understudy-psalm": "^1.0",
-        "rasuvaeff/understudy-testo": "^1.0",
-        "vimeo/psalm": "^7.0"
+        "rasuvaeff/understudy-testo": "^1.0"
     },
     "repositories": [
         {

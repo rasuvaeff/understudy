@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7c2bb976715e9efa0ca45e0c3ab8dfc8",
+    "content-hash": "582e42eedafa85deb76afbff89a7d61f",
     "packages": [
         {
             "name": "amphp/amp",
@@ -3415,17 +3415,11 @@
         },
         {
             "name": "rasuvaeff/understudy",
-            "version": "v1.1.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/rasuvaeff/understudy.git",
-                "reference": "f4fa007a45a94826401f26af74894197105618ea"
-            },
+            "version": "1.0.0",
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy/zipball/f4fa007a45a94826401f26af74894197105618ea",
-                "reference": "f4fa007a45a94826401f26af74894197105618ea",
-                "shasum": ""
+                "type": "path",
+                "url": "../..",
+                "reference": "4fea1d48dfeff63e694a1d9ead7d3e18fad84515"
             },
             "require": {
                 "ext-tokenizer": "*",
@@ -3442,7 +3436,7 @@
                 "roave/backward-compatibility-check": "^8.0",
                 "testo/bridge-infection": "^0.1.6",
                 "testo/testo": "^0.10.25",
-                "vimeo/psalm": "^6.16"
+                "vimeo/psalm": "^7.0"
             },
             "type": "library",
             "extra": {
@@ -3451,14 +3445,86 @@
                 }
             },
             "autoload": {
-                "files": [
-                    "src/functions.php"
-                ],
                 "psr-4": {
                     "Rasuvaeff\\Understudy\\": "src/"
+                },
+                "files": [
+                    "src/functions.php"
+                ]
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Rasuvaeff\\Understudy\\Benchmarks\\": "benchmarks/",
+                    "Rasuvaeff\\Understudy\\Tests\\": "tests/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "scripts": {
+                "bc-check": [
+                    "roave-backward-compatibility-check"
+                ],
+                "bench": [
+                    "testo --suite=Benchmarks -vv"
+                ],
+                "build": [
+                    "@composer validate --strict",
+                    "@composer normalize --dry-run",
+                    "@require-checker",
+                    "@cs",
+                    "@psalm",
+                    "@test",
+                    "@test:integration",
+                    "@examples"
+                ],
+                "cs": [
+                    "php-cs-fixer fix --dry-run --diff --config=.php-cs-fixer.php"
+                ],
+                "cs:fix": [
+                    "php-cs-fixer fix --diff --config=.php-cs-fixer.php"
+                ],
+                "examples": [
+                    "@php examples/basic-usage.php",
+                    "@php examples/modes.php",
+                    "@php examples/property-hooks.php",
+                    "@php examples/wiring.php",
+                    "@php examples/protocol.php",
+                    "@php examples/defaults-registry.php",
+                    "@php examples/structured-failures.php",
+                    "@php examples/where-guard.php"
+                ],
+                "mutation": [
+                    "Composer\\Config::disableProcessTimeout",
+                    "infection --threads=max --with-uncovered"
+                ],
+                "psalm": [
+                    "psalm --no-cache"
+                ],
+                "rector": [
+                    "rector process --dry-run"
+                ],
+                "rector:fix": [
+                    "rector process"
+                ],
+                "release-check": [
+                    "@build",
+                    "@rector",
+                    "@bc-check"
+                ],
+                "require-checker": [
+                    "composer-require-checker check composer.json"
+                ],
+                "test": [
+                    "testo --suite=Unit"
+                ],
+                "test:coverage": [
+                    "testo --suite=Unit --coverage --coverage-clover=build/coverage.xml"
+                ],
+                "test:coverage:ci": [
+                    "testo --suite=Unit --coverage-clover=build/coverage.xml"
+                ],
+                "test:integration": [
+                    "testo --suite=Integration"
+                ]
+            },
             "license": [
                 "BSD-3-Clause"
             ],
@@ -3471,7 +3537,7 @@
             "description": "Test double library for PHP with a call-closure API",
             "homepage": "https://github.com/rasuvaeff/understudy",
             "keywords": [
-                "Double",
+                "double",
                 "fake",
                 "mock",
                 "spy",
@@ -3483,7 +3549,9 @@
                 "issues": "https://github.com/rasuvaeff/understudy/issues",
                 "source": "https://github.com/rasuvaeff/understudy"
             },
-            "time": "2026-10-14T15:42:03+00:00"
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "rasuvaeff/understudy-phpstan",
