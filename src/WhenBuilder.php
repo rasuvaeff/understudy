@@ -101,6 +101,7 @@ class WhenBuilder
         // a position of its own would give the expectation two competing
         // notions of "the next call", and `returns($a, $b)->then()->returns($c)`
         // would step over $b without ever answering it.
+        /** @var mixed $value */
         foreach ($list as $offset => $value) {
             $this->expectation->setAction(new ReturnValue($value), $this->slot + $offset);
         }
