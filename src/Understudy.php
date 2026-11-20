@@ -452,25 +452,48 @@ final class Understudy
         // alias table and the argument marks live, and it is the whole reason
         // they exist. The paths also disagreed on wording: this one produced
         // "but it was called never".
+        return self::unmetFailure(
+            state: $state,
+            description: $expectation->describe(),
+            cardinality: $cardinality,
+            count: $count,
+            method: $expectation->method,
+            expectedArgs: $expectation->args,
+        );
+    }
+
+    /**
+     * @param non-empty-string $description
+     * @param int<0, max>      $count
+     * @param non-empty-string $method
+     * @param list<mixed>      $expectedArgs
+     */
+    private static function unmetFailure(
+        DoubleState $state,
+        string $description,
+        Cardinality $cardinality,
+        int $count,
+        string $method,
+        array $expectedArgs,
+    ): VerificationFailure {
         $sameMethod = array_values(array_filter(
             $state->callLog(),
-            static fn(Invocation $invocation): bool => $invocation->method === $expectation->method,
+            static fn(Invocation $invocation): bool => $invocation->method === $method,
         ));
 
         return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
             kind: FailureKind::UnmetExpectation,
             summary: FailureReport::render(
                 label: $state->label(),
-                expectation: $expectation->describe(),
-                expectedLow: $cardinality->minimum,
-                expectedHigh: $cardinality->maximum,
+                expectation: $description,
+                cardinality: $cardinality,
                 actual: $count,
                 callLog: $state->callLog(),
-                method: $expectation->method,
-                expectedArgs: $expectation->args,
+                method: $method,
+                expectedArgs: $expectedArgs,
             ),
             double: $state->label(),
-            expectation: $expectation->describe(),
+            expectation: $description,
             expectedMinimum: $cardinality->minimum,
             expectedMaximum: $cardinality->maximum,
             actualCount: $count,
@@ -508,21 +531,11 @@ final class Understudy
             $probe->setGuard($where, 'where(…)');
         }
 
-        $matches = 0;
-        $matched = [];
-
-        foreach ($state->callLog() as $invocation) {
-            if ($probe->matches($invocation->method, $invocation->args)) {
-                $matches++;
-                $matched[] = $invocation;
-            }
-        }
-
+        $matched = self::matching($state, $probe);
+        $matches = count($matched);
         $bounds = self::verifyBounds($never, $times, $minimum, $maximum);
-        $low = $bounds->minimum;
-        $high = $bounds->maximum;
 
-        if ($matches >= $low && ($high === null || $matches <= $high)) {
+        if ($bounds->allows($matches)) {
             // Counting the whole log each time and marking idempotently is
             // what keeps the order of verify() calls from changing anything.
             foreach ($matched as $invocation) {
@@ -546,32 +559,58 @@ final class Understudy
             return;
         }
 
-        $sameMethod = array_values(array_filter(
+        throw VerificationFailed::of([
+            self::unmetFailure(
+                state: $state,
+                description: $probe->describe(),
+                cardinality: $bounds,
+                count: $matches,
+                method: $signal->method,
+                expectedArgs: $signal->args,
+            ),
+        ]);
+    }
+
+    /**
+     * The calls nothing claimed, as one failure — or null when every call was
+     * accounted for. Built inside the caller's alias scope.
+     */
+    private static function unaccountedFailure(DoubleState $state): ?VerificationFailure
+    {
+        $unaccounted = array_values(array_filter(
             $state->callLog(),
-            static fn(Invocation $invocation): bool => $invocation->method === $signal->method,
+            static fn(Invocation $invocation): bool => !$invocation->isAccounted(),
         ));
 
-        throw VerificationFailed::of([
-            ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
-                kind: FailureKind::UnmetExpectation,
-                summary: FailureReport::render(
-                    label: $state->label(),
-                    expectation: $probe->describe(),
-                    expectedLow: $low,
-                    expectedHigh: $high,
-                    actual: $matches,
-                    callLog: $state->callLog(),
-                    method: $signal->method,
-                    expectedArgs: $signal->args,
-                ),
-                double: $state->label(),
-                expectation: $probe->describe(),
-                expectedMinimum: $low,
-                expectedMaximum: $high,
-                actualCount: $matches,
-                observedCalls: $sameMethod,
-            )),
-        ]);
+        if ($unaccounted === []) {
+            return null;
+        }
+
+        return new VerificationFailure(
+            kind: FailureKind::UnaccountedCalls,
+            summary: sprintf(
+                "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
+                $state->label(),
+                count($unaccounted),
+                FailureReport::renderCallLog($unaccounted),
+            ),
+            double: $state->label(),
+            actualCount: count($unaccounted),
+            observedCalls: $unaccounted,
+        );
+    }
+
+    /**
+     * Every logged call the probe matches, in order.
+     *
+     * @return list<Invocation>
+     */
+    private static function matching(DoubleState $state, Expectation $probe): array
+    {
+        return array_values(array_filter(
+            $state->callLog(),
+            static fn(Invocation $invocation): bool => $probe->matches($invocation->method, $invocation->args),
+        ));
     }
 
     /**
@@ -584,12 +623,11 @@ final class Understudy
     public static function calls(callable $call): array
     {
         $signal = self::record($call);
-        $probe = new Expectation($signal->method, $signal->args);
 
-        return array_values(array_filter(
-            self::stateOf($signal->double, 'calls')->callLog(),
-            static fn(Invocation $i): bool => $probe->matches($i->method, $i->args),
-        ));
+        return self::matching(
+            self::stateOf($signal->double, 'calls'),
+            new Expectation($signal->method, $signal->args),
+        );
     }
 
     /**
@@ -606,16 +644,12 @@ final class Understudy
     public static function lastCall(callable $call): ?Invocation
     {
         $signal = self::record($call);
-        $probe = new Expectation($signal->method, $signal->args);
-        $last = null;
+        $matched = self::matching(
+            self::stateOf($signal->double, 'lastCall'),
+            new Expectation($signal->method, $signal->args),
+        );
 
-        foreach (self::stateOf($signal->double, 'lastCall')->callLog() as $invocation) {
-            if ($probe->matches($invocation->method, $invocation->args)) {
-                $last = $invocation;
-            }
-        }
-
-        return $last;
+        return $matched === [] ? null : $matched[array_key_last($matched)];
     }
 
     /**
@@ -1031,24 +1065,10 @@ final class Understudy
             foreach ([$double, ...array_values($more)] as $one) {
                 $state = self::stateOf($one, 'nothingElse');
 
-                $unaccounted = array_values(array_filter(
-                    $state->callLog(),
-                    static fn(Invocation $invocation): bool => !$invocation->isAccounted(),
-                ));
+                $unaccounted = self::unaccountedFailure($state);
 
-                if ($unaccounted !== []) {
-                    $failures[] = new VerificationFailure(
-                        kind: FailureKind::UnaccountedCalls,
-                        summary: sprintf(
-                            "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
-                            $state->label(),
-                            count($unaccounted),
-                            FailureReport::renderCallLog($unaccounted),
-                        ),
-                        double: $state->label(),
-                        actualCount: count($unaccounted),
-                        observedCalls: $unaccounted,
-                    );
+                if ($unaccounted instanceof VerificationFailure) {
+                    $failures[] = $unaccounted;
                 }
             }
 
@@ -1087,24 +1107,10 @@ final class Understudy
                 $failures[] = $outOfOrder;
             }
 
-            $unaccounted = array_values(array_filter(
-                $state->callLog(),
-                static fn(Invocation $invocation): bool => !$invocation->isAccounted(),
-            ));
+            $unaccounted = self::unaccountedFailure($state);
 
-            if ($unaccounted !== []) {
-                $failures[] = new VerificationFailure(
-                    kind: FailureKind::UnaccountedCalls,
-                    summary: sprintf(
-                        "Understudy `%s` received %d call(s) nothing accounted for:\n%s",
-                        $state->label(),
-                        count($unaccounted),
-                        FailureReport::renderCallLog($unaccounted),
-                    ),
-                    double: $state->label(),
-                    actualCount: count($unaccounted),
-                    observedCalls: $unaccounted,
-                );
+            if ($unaccounted instanceof VerificationFailure) {
+                $failures[] = $unaccounted;
             }
 
             return $failures;

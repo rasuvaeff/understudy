@@ -25,8 +25,6 @@ final class FailureReport
     /**
      * @param non-empty-string  $label
      * @param non-empty-string  $expectation
-     * @param int<0, max>       $expectedLow
-     * @param int<0, max>|null  $expectedHigh
      * @param int<0, max>       $actual
      * @param list<Invocation>  $callLog
      * @param non-empty-string  $method
@@ -37,8 +35,7 @@ final class FailureReport
     public static function render(
         string $label,
         string $expectation,
-        int $expectedLow,
-        ?int $expectedHigh,
+        Cardinality $cardinality,
         int $actual,
         array $callLog,
         string $method,
@@ -48,7 +45,7 @@ final class FailureReport
             "Understudy `%s` expected `%s` to be called %s, but %s.",
             $label,
             $expectation,
-            self::describeCardinality($expectedLow, $expectedHigh),
+            $cardinality->describe(),
             $actual === 0 ? 'it was never called' : sprintf('it was called %s', self::times($actual)),
         );
 
@@ -200,22 +197,6 @@ final class FailureReport
         } catch (\Throwable) {
             return true;
         }
-    }
-
-    /**
-     * @param int<0, max>      $low
-     * @param int<0, max>|null $high
-     *
-     * @return non-empty-string
-     */
-    private static function describeCardinality(int $low, ?int $high): string
-    {
-        return match (true) {
-            $low === 0 && $high === 0 => 'never',
-            $high === null => sprintf('at least %s', self::times($low)),
-            $low === $high => sprintf('exactly %s', self::times($low)),
-            default => sprintf('between %d and %s', $low, self::times($high)),
-        };
     }
 
     /**
