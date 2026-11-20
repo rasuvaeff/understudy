@@ -8,6 +8,7 @@ use Rasuvaeff\PropertyTesting\ArbitraryInterface;
 use Rasuvaeff\PropertyTesting\Classify;
 use Rasuvaeff\PropertyTesting\Gen;
 use Rasuvaeff\PropertyTesting\Property;
+use Rasuvaeff\Understudy\Codegen\DnfType;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
@@ -27,6 +28,7 @@ use Testo\Test;
 #[Test]
 #[Covers(TypeDefaultResolver::class)]
 #[Covers(NoDefaultValue::class)]
+#[Covers(DnfType::class)]
 final class TypeDefaultPropertyTest
 {
     /**

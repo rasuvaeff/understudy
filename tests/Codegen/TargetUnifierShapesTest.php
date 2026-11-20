@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests\Codegen;
 
 use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DnfType;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Understudy;
@@ -20,6 +21,7 @@ use Testo\Test;
  */
 #[Test]
 #[Covers(TargetUnifier::class)]
+#[Covers(DnfType::class)]
 #[Covers(DoubleFactory::class)]
 #[Covers(Blueprint::class)]
 final class TargetUnifierShapesTest
@@ -64,7 +66,7 @@ final class TargetUnifierShapesTest
     #[DataProvider('unionProvider')]
     public function aRenderedUnionIsSplitKeepingGroupsIntact(string $rendered, array $expected): void
     {
-        Assert::same((new \ReflectionMethod(TargetUnifier::class, 'splitUnion'))->invoke(null, $rendered), $expected);
+        Assert::same(DnfType::parse($rendered)->renderedBranches(), $expected);
     }
 
     /**

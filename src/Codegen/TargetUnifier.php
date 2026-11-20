@@ -22,9 +22,6 @@ use Rasuvaeff\Understudy\Runtime\Absent;
  */
 final class TargetUnifier
 {
-    private const string TARGET_SELF_RETURN_PREFIX = '@target-self:';
-    private const string GENERATED_STATIC_RETURN = '@generated-static';
-
     /** Used when a target declares a variadic without a usable name. */
     private const string DEFAULT_TAIL_NAME = 'rest';
 
@@ -207,8 +204,8 @@ final class TargetUnifier
         \ReflectionClass $implementationClass,
         \ReflectionClass $requiredClass,
     ): bool {
-        $implementationBranches = self::returnTypeBranches($implementation, $implementationClass);
-        $requiredBranches = self::returnTypeBranches($required, $requiredClass);
+        $implementationBranches = DnfType::fromReflection($implementation, $implementationClass)->branches;
+        $requiredBranches = DnfType::fromReflection($required, $requiredClass)->branches;
 
         foreach ($requiredBranches as $requiredBranch) {
             $accepted = false;
@@ -239,7 +236,7 @@ final class TargetUnifier
             $accepted = false;
 
             foreach ($required as $requiredAtom) {
-                if (self::returnAtomSatisfies($requiredAtom, $implementationAtom)) {
+                if (DnfType::atomSatisfies($requiredAtom, $implementationAtom)) {
                     $accepted = true;
 
                     break;
@@ -484,13 +481,13 @@ final class TargetUnifier
     private static function intersectReturnTypes(array $declarations): ?string
     {
         $first = $declarations[0];
-        $branches = self::returnTypeBranches(self::declaredReturnType($first), $first->getDeclaringClass());
+        $branches = DnfType::fromReflection(self::declaredReturnType($first), $first->getDeclaringClass())->branches;
 
         foreach (array_slice($declarations, 1) as $declaration) {
-            $requiredBranches = self::returnTypeBranches(
+            $requiredBranches = DnfType::fromReflection(
                 self::declaredReturnType($declaration),
                 $declaration->getDeclaringClass(),
-            );
+            )->branches;
             $intersections = [];
 
             foreach ($branches as $candidateBranch) {
@@ -510,7 +507,7 @@ final class TargetUnifier
             $branches = $intersections;
         }
 
-        return self::renderReturnBranches($branches);
+        return DnfType::of($branches)->render();
     }
 
     /**
@@ -521,18 +518,18 @@ final class TargetUnifier
      */
     private static function intersectReturnBranches(array $left, array $right): ?array
     {
-        if (self::returnBranchSatisfies($left, $right)) {
+        if (DnfType::branchSatisfies($left, $right)) {
             return $left;
         }
 
-        if (self::returnBranchSatisfies($right, $left)) {
+        if (DnfType::branchSatisfies($right, $left)) {
             return $right;
         }
 
         $atoms = [...$left, ...$right];
 
         foreach ($atoms as $atom) {
-            if (!self::returnAtomIsInterface($atom)) {
+            if (!DnfType::atomIsInterface($atom)) {
                 return null;
             }
         }
@@ -543,12 +540,12 @@ final class TargetUnifier
             $redundant = false;
 
             foreach ($intersection as $position => $existing) {
-                if (self::returnAtomSatisfies($atom, $existing)) {
+                if (DnfType::atomSatisfies($atom, $existing)) {
                     unset($intersection[$position]);
                     continue;
                 }
 
-                if (self::returnAtomSatisfies($existing, $atom)) {
+                if (DnfType::atomSatisfies($existing, $atom)) {
                     $redundant = true;
                     break;
                 }
@@ -570,11 +567,11 @@ final class TargetUnifier
     private static function addReturnBranch(array &$branches, array $candidate): void
     {
         foreach ($branches as $position => $existing) {
-            if (self::returnBranchSatisfies($candidate, $existing)) {
+            if (DnfType::branchSatisfies($candidate, $existing)) {
                 return;
             }
 
-            if (self::returnBranchSatisfies($existing, $candidate)) {
+            if (DnfType::branchSatisfies($existing, $candidate)) {
                 unset($branches[$position]);
             }
         }
@@ -583,37 +580,7 @@ final class TargetUnifier
         $branches = array_values($branches);
     }
 
-    /**
-     * @param non-empty-list<non-empty-list<non-empty-string>> $branches
-     *
-     * @return non-empty-string
-     */
-    private static function renderReturnBranches(array $branches): string
-    {
-        $union = [];
-        $dnf = count($branches) > 1;
 
-        foreach ($branches as $branch) {
-            $intersection = implode('&', array_map(self::renderReturnAtom(...), $branch));
-            $union[] = $dnf && count($branch) > 1 ? '(' . $intersection . ')' : $intersection;
-        }
-
-        return implode('|', $union);
-    }
-
-    /**
-     * @param non-empty-string $atom
-     *
-     * @return non-empty-string
-     */
-    private static function renderReturnAtom(string $atom): string
-    {
-        if (str_starts_with($atom, self::TARGET_SELF_RETURN_PREFIX)) {
-            return '\\' . substr($atom, strlen(self::TARGET_SELF_RETURN_PREFIX));
-        }
-
-        return $atom === self::GENERATED_STATIC_RETURN ? 'static' : $atom;
-    }
 
     /**
      * Reports an actually incompatible pair instead of always blaming the
@@ -642,196 +609,15 @@ final class TargetUnifier
 
     private static function returnTypeSatisfies(\ReflectionMethod $candidate, \ReflectionMethod $required): bool
     {
-        $candidateBranches = self::returnTypeBranches(self::declaredReturnType($candidate), $candidate->getDeclaringClass());
-        $requiredBranches = self::returnTypeBranches(self::declaredReturnType($required), $required->getDeclaringClass());
-
-        foreach ($candidateBranches as $candidateBranch) {
-            $accepted = false;
-
-            foreach ($requiredBranches as $requiredBranch) {
-                if (self::returnBranchSatisfies($candidateBranch, $requiredBranch)) {
-                    $accepted = true;
-
-                    break;
-                }
-            }
-
-            if (!$accepted) {
-                return false;
-            }
-        }
-
-        return true;
+        return DnfType::fromReflection(self::declaredReturnType($candidate), $candidate->getDeclaringClass())
+            ->satisfies(DnfType::fromReflection(self::declaredReturnType($required), $required->getDeclaringClass()));
     }
 
-    /**
-     * @return non-empty-list<non-empty-list<non-empty-string>>
-     */
-    private static function returnTypeBranches(
-        ?\ReflectionType $type,
-        \ReflectionClass $declaringClass,
-    ): array {
-        if (!$type instanceof \ReflectionType) {
-            return [['mixed']];
-        }
 
-        if ($type instanceof \ReflectionUnionType) {
-            $branches = [];
 
-            foreach ($type->getTypes() as $part) {
-                $branches = [...$branches, ...self::returnTypeBranches($part, $declaringClass)];
-            }
 
-            return $branches;
-        }
 
-        if ($type instanceof \ReflectionIntersectionType) {
-            $branch = [];
 
-            foreach ($type->getTypes() as $part) {
-                $branch[] = self::returnTypeAtom($part, $declaringClass);
-            }
-
-            return [$branch];
-        }
-
-        \assert($type instanceof \ReflectionNamedType);
-        $branches = [[self::returnTypeAtom($type, $declaringClass)]];
-
-        if ($type->allowsNull() && !in_array($type->getName(), ['mixed', 'null'], strict: true)) {
-            $branches[] = ['null'];
-        }
-
-        return $branches;
-    }
-
-    /**
-     * @return non-empty-string
-     */
-    private static function returnTypeAtom(
-        \ReflectionNamedType $type,
-        \ReflectionClass $declaringClass,
-    ): string {
-        $name = $type->getName();
-
-        // Reflection resolves `self` in an interface to that interface's FQCN.
-        // Keep its origin so generated `static` can satisfy it without making
-        // two different target interfaces look like the same return type.
-        if ($name === 'self' || (!$type->isBuiltin() && $name === $declaringClass->getName())) {
-            return self::TARGET_SELF_RETURN_PREFIX . $declaringClass->getName();
-        }
-
-        if ($name === 'static') {
-            return self::GENERATED_STATIC_RETURN;
-        }
-
-        if ($name === 'parent') {
-            $parent = $declaringClass->getParentClass();
-
-            return $parent === false ? 'parent' : '\\' . $parent->getName();
-        }
-
-        return $type->isBuiltin() ? $name : '\\' . $name;
-    }
-
-    /**
-     * @param non-empty-list<non-empty-string> $candidate
-     * @param non-empty-list<non-empty-string> $required
-     */
-    private static function returnBranchSatisfies(array $candidate, array $required): bool
-    {
-        foreach ($required as $requiredAtom) {
-            $satisfied = false;
-
-            foreach ($candidate as $candidateAtom) {
-                if (self::returnAtomSatisfies($candidateAtom, $requiredAtom)) {
-                    $satisfied = true;
-
-                    break;
-                }
-            }
-
-            if (!$satisfied) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static function returnAtomSatisfies(string $candidate, string $required): bool
-    {
-        if ($candidate === 'never' || $required === 'mixed' || $candidate === $required) {
-            return true;
-        }
-
-        // The emitted class implements every target interface. Its `static`
-        // return is therefore covariant with each target's own interface type.
-        if ($candidate === self::GENERATED_STATIC_RETURN
-            && str_starts_with($required, self::TARGET_SELF_RETURN_PREFIX)
-        ) {
-            return true;
-        }
-
-        if ($required === 'object') {
-            return $candidate === 'object'
-                || str_starts_with($candidate, '\\')
-                || str_starts_with($candidate, self::TARGET_SELF_RETURN_PREFIX)
-                || $candidate === self::GENERATED_STATIC_RETURN;
-        }
-
-        if ($required === 'bool' && in_array($candidate, ['true', 'false'], strict: true)) {
-            return true;
-        }
-
-        if ($required === 'iterable') {
-            return in_array($candidate, ['array', 'iterable'], strict: true)
-                || (str_starts_with($candidate, '\\') && is_a(ltrim($candidate, '\\'), \Traversable::class, allow_string: true));
-        }
-
-        if ($required === 'callable' && $candidate === '\\Closure') {
-            return true;
-        }
-
-        $candidate = self::returnAtomClass($candidate);
-        $required = self::returnAtomClass($required);
-
-        if ($candidate === null || $required === null) {
-            return false;
-        }
-
-        /** @var class-string $candidateClass */
-        $candidateClass = $candidate;
-        /** @var class-string $requiredClass */
-        $requiredClass = $required;
-
-        return is_a($candidateClass, $requiredClass, allow_string: true);
-    }
-
-    private static function returnAtomIsInterface(string $atom): bool
-    {
-        $class = self::returnAtomClass($atom);
-
-        return $class !== null && interface_exists($class);
-    }
-
-    /**
-     * @return class-string|null
-     */
-    private static function returnAtomClass(string $atom): ?string
-    {
-        if (str_starts_with($atom, self::TARGET_SELF_RETURN_PREFIX)) {
-            /** @var class-string */
-            return substr($atom, strlen(self::TARGET_SELF_RETURN_PREFIX));
-        }
-
-        if (!str_starts_with($atom, '\\')) {
-            return null;
-        }
-
-        /** @var class-string */
-        return ltrim($atom, '\\');
-    }
 
     /**
      * The earliest position at which any target declares a variadic, or null
@@ -885,7 +671,7 @@ final class TargetUnifier
                 if ($rendered === '') {
                     $untyped = true;
                 } else {
-                    foreach (self::splitUnion($rendered) as $part) {
+                    foreach (DnfType::parse($rendered)->renderedBranches() as $part) {
                         $types[$part] = true;
                     }
                 }
@@ -972,7 +758,7 @@ final class TargetUnifier
             if ($rendered === '') {
                 $untyped = true;
             } else {
-                foreach (self::splitUnion($rendered) as $part) {
+                foreach (DnfType::parse($rendered)->renderedBranches() as $part) {
                     $types[$part] = true;
                 }
             }
@@ -1097,45 +883,6 @@ final class TargetUnifier
         ];
     }
 
-    /**
-     * Splits a rendered union while keeping DNF parentheses intact, so
-     * `(A&B)|null` yields `(A&B)` and `null` rather than four fragments.
-     *
-     * @return list<string>
-     */
-    private static function splitUnion(string $rendered): array
-    {
-        if (str_starts_with($rendered, '?')) {
-            return [substr($rendered, 1), 'null'];
-        }
-
-        $parts = [];
-        $depth = 0;
-        $buffer = '';
-
-        foreach (str_split($rendered) as $character) {
-            if ($character === '(') {
-                $depth++;
-            }
-
-            if ($character === ')') {
-                $depth--;
-            }
-
-            if ($character === '|' && $depth === 0) {
-                $parts[] = $buffer;
-                $buffer = '';
-
-                continue;
-            }
-
-            $buffer .= $character;
-        }
-
-        $parts[] = $buffer;
-
-        return array_values(array_filter($parts, static fn(string $part): bool => $part !== ''));
-    }
 
     /**
      * Renders a parameter's default as source the generated class can carry.

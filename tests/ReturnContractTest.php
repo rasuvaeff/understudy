@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests;
 
+use Rasuvaeff\Understudy\Codegen\DnfType;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Expectation\ReturnContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
@@ -25,6 +26,7 @@ use Testo\Test;
  */
 #[Test]
 #[Covers(ReturnContract::class)]
+#[Covers(DnfType::class)]
 final class ReturnContractTest
 {
     #[DataProvider('verdictProvider')]
