@@ -735,12 +735,6 @@ final class TargetUnifier
         $parameterName = 'p' . $position;
         $untyped = false;
         $acceptsMatcher = false;
-        // Two scalars rather than a set keyed by the rendered default:
-        // PHP turns a numeric-string key into an int, so `'5'` and `'5'`
-        // would compare `!==` after a round trip through an array. The
-        // empty string is the "nobody declared one" sentinel —
-        // `renderDefault()` never returns it.
-        $declaredDefault = '';
         $defaultDeclaredBy = null;
         $defaultParameter = null;
 
@@ -784,29 +778,36 @@ final class TargetUnifier
             $requiredEverywhere = $requiredEverywhere && !$parameter->isOptional();
 
             if ($parameter->isDefaultValueAvailable()) {
-                $declared = self::renderDefault($parameter, $name);
-
                 // Two targets disagreeing about the default is the one case
-                // the unifier cannot render faithfully. Keeping either would
+                // the unifier cannot answer faithfully. Keeping either would
                 // make the other's omitted argument log a value it never
-                // received, and `null` — which is what this used to do —
-                // makes both wrong at once while widening the type to hide
-                // it. A double that answers with a different default than the
-                // real thing is a test that passes for the wrong reason.
+                // received. A double that answers with a different default
+                // than the real thing is a test that passes for the wrong
+                // reason.
+                //
+                // The default itself is never carried by the generated class
+                // — dispatch reads it from the declaring parameter — so a
+                // single declaration needs no rendering at all, and the
+                // comparison key is computed only when a second one arrives.
                 //
                 // The FIRST target to declare one is the one named against
                 // the disagreeing target, so a conflict among three reads as
                 // one pair and not as whichever two happened to be adjacent.
-                if ($defaultDeclaredBy === null) {
-                    $declaredDefault = $declared;
+                if (!$defaultParameter instanceof \ReflectionParameter) {
                     $defaultDeclaredBy = $declaration;
                     $defaultParameter = $parameter;
-                } elseif ($declaredDefault !== $declared) {
-                    throw UnsupportedTarget::signatureConflict(
-                        $name,
-                        self::describe($defaultDeclaredBy) . ' defaults parameter #' . ($position + 1) . ' to ' . $declaredDefault,
-                        self::describe($declaration) . ' defaults it to ' . $declared,
-                    );
+                } else {
+                    \assert($defaultDeclaredBy instanceof \ReflectionMethod);
+                    $declaredDefault = self::renderDefault($defaultParameter, $name);
+                    $declared = self::renderDefault($parameter, $name);
+
+                    if ($declaredDefault !== $declared) {
+                        throw UnsupportedTarget::signatureConflict(
+                            $name,
+                            self::describe($defaultDeclaredBy) . ' defaults parameter #' . ($position + 1) . ' to ' . $declaredDefault,
+                            self::describe($declaration) . ' defaults it to ' . $declared,
+                        );
+                    }
                 }
             }
         }
@@ -885,14 +886,17 @@ final class TargetUnifier
 
 
     /**
-     * Renders a parameter's default as source the generated class can carry.
+     * A parameter's default as a comparison key between two targets that
+     * declare the same position — and as the text a conflict names.
      *
-     * Faithfulness is the point: an omitted argument has to be logged as the
-     * value the target would have received, or `tag('a')` and `tag('a', 1)`
-     * stop verifying as the same call. Anything that cannot be reproduced
-     * exactly rejects the target instead of quietly becoming `null` — a double
-     * that answers with a different default than the real thing is a test that
-     * passes for the wrong reason.
+     * Not source the generated class carries: since #123 every generated
+     * parameter defaults to the arity sentinel, and dispatch reads the real
+     * default from the declaring parameter, where `self::` still means the
+     * declaring class. A value that `var_export()` renders is compared by
+     * value, so `= 5` and `= 0x5` agree; anything else — an object, an
+     * expression over `self::` — is compared by its source with the class
+     * keywords qualified, which may call two equal defaults different (a
+     * refusal) but never two different ones equal.
      *
      * The source expression comes from `ReflectionParameter::__toString()`,
      * which renders it fully qualified and without reading the declaring file,
@@ -909,7 +913,7 @@ final class TargetUnifier
         $source = self::defaultSource($parameter);
 
         if ($source !== null && self::buildsAnObject($source)) {
-            return self::renderSourceDefault($parameter, $method, $source);
+            return self::renderSourceDefault($parameter, $source);
         }
 
         if ($parameter->isDefaultValueConstant()) {
@@ -971,34 +975,36 @@ final class TargetUnifier
     }
 
     /**
-     * Renders the default from its own source, which Reflection has already
-     * qualified — and which is the only form reproducible without evaluating it.
-     *
-     * What Reflection does not qualify is `self`, `static` and `parent`: they
-     * would resolve against the generated class, a different class with
-     * different constants, so a target using them is rejected by name.
-     *
-     * @param non-empty-string $method
+     * The default's own source, which Reflection has already qualified —
+     * except for `self`, `static` and `parent`, which are qualified here by
+     * the declaring class: two targets writing `self::LIMIT` name two
+     * different constants.
      *
      * @return non-empty-string
      */
-    private static function renderSourceDefault(\ReflectionParameter $parameter, string $method, string $source): string
+    private static function renderSourceDefault(\ReflectionParameter $parameter, string $source): string
     {
-        if (preg_match('/\b(self|static|parent)\s*::/i', self::withoutStringLiterals($source)) === 1) {
-            $format = 'the default of `$%s` in `%s()` is `%s`, which resolves `self`, `static` or `parent` '
-                . 'against the declaring class. The generated double is a different class, so the value '
-                . 'cannot be reproduced. Give the parameter a default the double can build, or double '
-                . 'an interface.';
+        $declaring = $parameter->getDeclaringClass();
+        $blanked = self::withoutStringLiterals($source);
+        $qualified = '';
+        $offset = 0;
 
-            throw UnsupportedTarget::notDoublable(
-                $parameter->getDeclaringClass()?->getName() ?? $method,
-                sprintf($format, $parameter->getName(), $method, $source),
-            );
+        preg_match_all('/\b(self|static|parent)(?=\s*::)/i', $blanked, $keywords, PREG_OFFSET_CAPTURE);
+
+        foreach ($keywords[1] as [$keyword, $at]) {
+            $class = match (true) {
+                !$declaring instanceof \ReflectionClass => $keyword,
+                strtolower($keyword) === 'parent' => ($parent = $declaring->getParentClass()) === false ? $keyword : '\\' . $parent->getName(),
+                default => '\\' . $declaring->getName(),
+            };
+            $qualified .= substr($source, $offset, $at - $offset) . $class;
+            $offset = $at + \strlen($keyword);
         }
 
-        \assert($source !== '');
+        $qualified .= substr($source, $offset);
+        \assert($qualified !== '');
 
-        return $source;
+        return $qualified;
     }
 
     /**
@@ -1084,6 +1090,12 @@ final class TargetUnifier
         $value = $parameter->getDefaultValue();
 
         if (self::holdsPlainObject($value)) {
+            $source = self::defaultSource($parameter);
+
+            if ($source !== null && $source !== '') {
+                return self::renderSourceDefault($parameter, $source);
+            }
+
             $format = 'the default of `$%s` in `%s()` holds an object that cannot be written back as source. '
                 . 'Give the parameter a scalar, array or enum default, or double an interface.';
 
