@@ -315,8 +315,13 @@ scalar is declared, an object of the wrong class — are refused with the
 double's label instead of surfacing later as a `TypeError` naming the generated
 class from inside the code under test. The check is no stricter than the
 engine: a generated method is not under `strict_types`, so `returns('5')` on
-`: int` still answers `5`. What `answers()` produces can only be judged at the
-call, and there a wrong type is still PHP's own `TypeError`.
+`: int` still answers `5`. Nor is it as strict as the engine: for `int`,
+`float`, `bool`, `true` and `false` it only asks for a scalar, so
+`returns('abc')` on `: int` or `returns(true)` on `: false` is accepted where it
+is written and fails as a `TypeError` from the generated class when the stubbed
+call is made — a stub that is never called stays green. What `answers()`
+produces can only be judged at the call, and there a wrong type is still PHP's
+own `TypeError`.
 
 | Matcher | Matches |
 |---|---|

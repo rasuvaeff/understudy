@@ -190,9 +190,16 @@ final class FailureReport
         /** @var mixed $expected */
         $expected = $expectedArgs[$position];
 
-        return $expected instanceof ArgumentMatcher
-            ? !$expected->matches($actual)
-            : $expected !== $actual;
+        // Guarded as `Expectation::accepts()` is: a predicate the dispatcher
+        // never ran on this call (the first-literal index skipped it) must not
+        // replace the failure being rendered with its own exception.
+        try {
+            return $expected instanceof ArgumentMatcher
+                ? !$expected->matches($actual)
+                : $expected !== $actual;
+        } catch (\Throwable) {
+            return true;
+        }
     }
 
     /**

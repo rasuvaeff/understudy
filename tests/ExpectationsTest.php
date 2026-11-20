@@ -195,6 +195,26 @@ final class ExpectationsTest
         Understudy::verifyAll();
     }
 
+    public function aThrowingPredicateDoesNotReplaceTheVerificationFailure(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->tag(
+            'alpha',
+            Arg::satisfies(static fn(int $weight): bool => $weight === 1 ?: throw new \RuntimeException('predicate blew up')),
+        ));
+
+        // The first-literal index skips the predicate here, so the first time
+        // it sees `7` is while the call log is rendered.
+        $repository->tag('beta', 7);
+
+        Expect::exception(VerificationFailed::class)
+            ->withMessageContaining('never')
+            ->withMessageContaining("tag(*'beta'*, *7*)");
+
+        Understudy::verifyAll();
+    }
+
     public function expectFailsWhenTheCallNeverHappens(): void
     {
         $repository = Understudy::for(BookRepository::class);

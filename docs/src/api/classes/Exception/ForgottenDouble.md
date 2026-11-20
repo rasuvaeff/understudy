@@ -9,7 +9,7 @@ description: "A double outlived the context that created it — almost always a 
 
 `Rasuvaeff\Understudy\Exception\ForgottenDouble`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForgottenDouble.php#L16) — **Version:** v1.0.1-3-gc4d60e5
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ForgottenDouble.php#L16) — **Version:** v1.1.1-9-g056fa15
 
 **Extends:** `LogicException`
 
@@ -57,6 +57,27 @@ static propertyAfterReset(non-empty-string $property): Exception\ForgottenDouble
 ```
 
 Builds the error for reading a property after reset.
+
+### propertyAfterScope()
+
+```php
+static propertyAfterScope(non-empty-string $property): Exception\ForgottenDouble
+```
+
+Builds the error for touching a property of a double built inside a
+`Understudy::scope()` that has closed since.
+
+- `$property` — the property that was read or written
+
+### propertyOnPurpose()
+
+```php
+static propertyOnPurpose(non-empty-string $property): Exception\ForgottenDouble
+```
+
+Builds the error for touching a property of a deliberately retired double.
+
+- `$property` — the property that was read or written
 
 ### retired()
 

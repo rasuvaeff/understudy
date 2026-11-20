@@ -32,7 +32,10 @@ No runtime deps; `ext-mbstring` is not needed.
   object on a scalar, an object of the wrong class) raise
   `InvalidCallSpecification`/`InvalidSpecificationArgument` with the double's
   label. No stricter than the engine: generated methods are not under
-  `strict_types`, so `returns('5')` on `: int` answers `5`. `answers()` is
+  `strict_types`, so `returns('5')` on `: int` answers `5`. Not as strict as
+  the engine either: `int`/`float`/`bool`/`true`/`false` only require a
+  scalar, so `returns('abc')` on `: int` or `returns(true)` on `: false` is
+  accepted and fails as a `TypeError` when the stubbed call is made. `answers()` is
   judged only at the call; a wrong type there is PHP's own `TypeError`.
 - A double exposes nothing beyond its contract. All operations are static
   methods on `Understudy`, or the free functions `when()` / `expect()` /
