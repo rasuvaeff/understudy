@@ -1,0 +1,15 @@
+namespace Rasuvaeff\Understudy\Codegen\Generated;
+
+final class Understudy_GENERATED implements \Rasuvaeff\Understudy\Tests\Fixture\VariadicSink
+{
+    public function write(string|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent $channel = \Rasuvaeff\Understudy\Runtime\Absent::Argument, int|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher ...$values): bool
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'write', [$channel, ...$values]);
+    }
+
+    public function __clone(): void
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::adoptClone($this);
+    }
+
+}

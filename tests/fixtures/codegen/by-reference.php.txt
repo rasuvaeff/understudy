@@ -1,0 +1,53 @@
+namespace Rasuvaeff\Understudy\Codegen\Generated;
+
+final class Understudy_GENERATED implements \Rasuvaeff\Understudy\Tests\Fixture\Ref\Registry
+{
+    public function &values(): array
+    {
+        $slot = \Rasuvaeff\Understudy\Runtime\Runtime::referenceSlot($this, 'values', []);
+
+        return $slot->value;
+    }
+
+    public function &names(): array
+    {
+        $slot = \Rasuvaeff\Understudy\Runtime\Runtime::referenceSlot($this, 'names', []);
+
+        return $slot->value;
+    }
+
+    public function &row(int|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent $id = \Rasuvaeff\Understudy\Runtime\Absent::Argument): array
+    {
+        $slot = \Rasuvaeff\Understudy\Runtime\Runtime::referenceSlot($this, 'row', [$id]);
+
+        return $slot->value;
+    }
+
+    public function &bucket(string|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent $key = \Rasuvaeff\Understudy\Runtime\Absent::Argument, int|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent $size = \Rasuvaeff\Understudy\Runtime\Absent::Argument): array
+    {
+        $slot = \Rasuvaeff\Understudy\Runtime\Runtime::referenceSlot($this, 'bucket', [$key, $size]);
+
+        return $slot->value;
+    }
+
+    public function fill(string|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent &$slot = \Rasuvaeff\Understudy\Runtime\Absent::Argument, string|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent $value = \Rasuvaeff\Understudy\Runtime\Absent::Argument): void
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'fill', [&$slot, $value]);
+    }
+
+    public function absorb(array|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent &$rows = \Rasuvaeff\Understudy\Runtime\Absent::Argument): void
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'absorb', [&$rows]);
+    }
+
+    public function count(): int
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'count', []);
+    }
+
+    public function __clone(): void
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::adoptClone($this);
+    }
+
+}

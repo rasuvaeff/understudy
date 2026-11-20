@@ -1,0 +1,40 @@
+namespace Rasuvaeff\Understudy\Codegen\Generated;
+
+final class Understudy_GENERATED implements \Rasuvaeff\Understudy\Tests\Fixture\Dnf\Shapes
+{
+    public function plain(): \Rasuvaeff\Understudy\Tests\Fixture\Dnf\Alpha&\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Beta
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'plain', []);
+    }
+
+    public function withNull(): (\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Alpha&\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Beta)|null
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'withNull', []);
+    }
+
+    public function withScalar(): (\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Alpha&\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Beta)|string
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'withScalar', []);
+    }
+
+    public function twoIntersections(): (\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Alpha&\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Beta)|(\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Gamma&\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Delta)
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'twoIntersections', []);
+    }
+
+    public function withClassBranch(): (\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Alpha&\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Beta)|\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Gamma
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'withClassBranch', []);
+    }
+
+    public function afterAnUndoublableBranch(): \Rasuvaeff\Understudy\Tests\Fixture\Dnf\Sealed|(\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Alpha&\Rasuvaeff\Understudy\Tests\Fixture\Dnf\Beta)
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'afterAnUndoublableBranch', []);
+    }
+
+    public function __clone(): void
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::adoptClone($this);
+    }
+
+}

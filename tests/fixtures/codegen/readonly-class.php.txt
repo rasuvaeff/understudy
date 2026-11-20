@@ -1,0 +1,19 @@
+namespace Rasuvaeff\Understudy\Codegen\Generated;
+
+readonly final class Understudy_GENERATED extends \Rasuvaeff\Understudy\Tests\Fixture\Cls\ReadonlyLedger
+{
+    public function describe(): string
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'describe', []);
+    }
+
+    public function __clone(): void
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::adoptClone($this);
+    }
+
+    public function __destruct()
+    {
+    }
+
+}
