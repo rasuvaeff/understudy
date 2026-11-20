@@ -25,6 +25,7 @@ use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
+use Rasuvaeff\Understudy\Tests\Support\GoldenMessage;
 use Rasuvaeff\Understudy\Understudy;
 use Rasuvaeff\Understudy\WhenBuilder;
 use Testo\Assert;
@@ -208,9 +209,9 @@ final class ExpectationsTest
         // it sees `7` is while the call log is rendered.
         $repository->tag('beta', 7);
 
-        Expect::exception(VerificationFailed::class)
-            ->withMessageContaining('never')
-            ->withMessageContaining("tag(*'beta'*, *7*)");
+        Expect::exception(VerificationFailed::class)->withMessage(
+            GoldenMessage::read('verify-all-marks-an-argument-whose-predicate-throws'),
+        );
 
         Understudy::verifyAll();
     }
