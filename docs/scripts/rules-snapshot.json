@@ -49,9 +49,9 @@
         ]
     },
     "psalm": {
-        "version": "v1.0.0",
-        "reference": "94a16bb9675d36734e26a394f6aa54a142a2ccfc",
-        "repoBlob": "https://github.com/rasuvaeff/understudy-psalm/blob/94a16bb9675d36734e26a394f6aa54a142a2ccfc/",
+        "version": "v1.1.0",
+        "reference": "55fdda333da5fadc9eb1d5394f95fe737ac8fcfe",
+        "repoBlob": "https://github.com/rasuvaeff/understudy-psalm/blob/55fdda333da5fadc9eb1d5394f95fe737ac8fcfe/",
         "issues": [
             {
                 "issue": "UnderstudyMisuse",

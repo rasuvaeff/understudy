@@ -25,6 +25,7 @@ use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
+use Rasuvaeff\Understudy\Tests\Support\GoldenMessage;
 use Rasuvaeff\Understudy\Understudy;
 use Rasuvaeff\Understudy\WhenBuilder;
 use Testo\Assert;
@@ -191,6 +192,26 @@ final class ExpectationsTest
         Expect::exception(VerificationFailed::class)
             ->withMessageContaining('exactly 1 time')
             ->withMessageContaining('called 2 times');
+
+        Understudy::verifyAll();
+    }
+
+    public function aThrowingPredicateDoesNotReplaceTheVerificationFailure(): void
+    {
+        $repository = Understudy::for(BookRepository::class);
+
+        expect(fn() => $repository->tag(
+            'alpha',
+            Arg::satisfies(static fn(int $weight): bool => $weight === 1 ?: throw new \RuntimeException('predicate blew up')),
+        ));
+
+        // The first-literal index skips the predicate here, so the first time
+        // it sees `7` is while the call log is rendered.
+        $repository->tag('beta', 7);
+
+        Expect::exception(VerificationFailed::class)->withMessage(
+            GoldenMessage::read('verify-all-marks-an-argument-whose-predicate-throws'),
+        );
 
         Understudy::verifyAll();
     }

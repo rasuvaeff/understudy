@@ -72,6 +72,34 @@ final class ForgottenDouble extends \LogicException implements UnderstudyError
     }
 
     /**
+     * Builds the error for touching a property of a double built inside a
+     * `Understudy::scope()` that has closed since.
+     *
+     * @param non-empty-string $property the property that was read or written
+     */
+    public static function propertyAfterScope(string $property): self
+    {
+        $format = "This understudy is no longer known to Understudy, but its property `\$%s` was touched.\n"
+            . 'It was created inside a scope() that has since closed, and a scope drops its doubles when '
+            . 'it ends; build the double in the scope that will use it, or outside the scope altogether.';
+
+        return new self(sprintf($format, $property));
+    }
+
+    /**
+     * Builds the error for touching a property of a deliberately retired double.
+     *
+     * @param non-empty-string $property the property that was read or written
+     */
+    public static function propertyOnPurpose(string $property): self
+    {
+        $format = "This understudy was retired with Understudy::forget(), but its property `\$%s` was touched.\n"
+            . 'A forgotten double is gone for good; build a new one instead of using this one.';
+
+        return new self(sprintf($format, $property));
+    }
+
+    /**
      * Builds the error for asking a retired double through the facade.
      *
      * A facade — `strict()`, `verify()`, `nothingElse()`, `forget()` itself —

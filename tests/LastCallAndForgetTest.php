@@ -18,6 +18,9 @@ use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
+use Rasuvaeff\Understudy\Tests\Fixture\Fwd\Chainable;
+use Rasuvaeff\Understudy\Tests\Fixture\Fwd\RealChain;
+use Rasuvaeff\Understudy\Tests\Fixture\Ref\Registry;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
@@ -201,5 +204,58 @@ final class LastCallAndForgetTest
         );
 
         Understudy::forget($repository);
+    }
+
+    /**
+     * An `Invocation` kept past `forget()` still points at the double; the
+     * refusal names what retired it, not a reset that never happened.
+     */
+    public function callOriginalOnAForgottenDoubleNamesForget(): void
+    {
+        $double = Understudy::for(Chainable::class);
+        Understudy::forwarding($double, new RealChain());
+        $kept = null;
+
+        when(static fn(): string => $double->label())
+            ->answers(static function (Invocation $call) use (&$kept): string {
+                $kept = $call;
+
+                return 'stubbed';
+            });
+
+        $double->label();
+        Understudy::forget($double);
+
+        Assert::instanceOf($kept, Invocation::class);
+
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            "This understudy was retired with Understudy::forget(), but `label()` was called on it.\n"
+            . 'A forgotten double is gone for good; build a new one instead of calling this one.',
+        );
+
+        $kept->callOriginal();
+    }
+
+    /**
+     * A by-reference method looks its slot up after dispatch, and an answer
+     * that forgot the double is what makes that lookup come back empty.
+     */
+    public function aReferenceSlotOnADoubleForgottenByItsAnswerNamesForget(): void
+    {
+        $registry = Understudy::for(Registry::class);
+
+        when(static fn(): array => $registry->values())
+            ->answers(static function () use ($registry): array {
+                Understudy::forget($registry);
+
+                return [];
+            });
+
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            "This understudy was retired with Understudy::forget(), but `values()` was called on it.\n"
+            . 'A forgotten double is gone for good; build a new one instead of calling this one.',
+        );
+
+        $registry->values();
     }
 }

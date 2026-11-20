@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.1.2 — 2026-11-20
 
+- **Fixed.** A throwing `Arg::satisfies()` predicate no longer replaces `VerificationFailed` with its own exception while the call log is rendered (#173). Marking the arguments that differ now guards the matcher the way dispatch already did; a predicate that throws counts as not matching.
+- **Fixed.** Touching a property, calling `Invocation::callOriginal()` or reaching a by-reference method on a double that `Understudy::forget()` retired or whose `scope()` closed no longer blames a `reset()` that never happened (#172). The message now names what forgot the double, as it already did for method calls; `ForgottenDouble::propertyOnPurpose()` and `ForgottenDouble::propertyAfterScope()` are the property wordings.
+- **Docs.** README, README.ru and `llms.txt` say that the registration check of `returns()` is also weaker than the engine for `int`, `float`, `bool`, `true` and `false`: any scalar passes, and `returns('abc')` on `: int` fails as a `TypeError` only when the stubbed call is made (#178). No behaviour change.
 - Mutation testing now counts code the tests do not name in `#[Covers]` (`infection --with-uncovered`), with the signature-default and visibility mutators configured as in the package template. Overall MSI with the flag is about 94% against the unchanged gate of 92.
 - Tests: the wording of every failure message that has a factory is pinned word for word (`ExceptionMessageTest`); `Understudy::bypassFinals()`, `BypassUnavailable` and the explanations for a final class that is still standing are covered in-process (`BypassFinalsTest`, `FinalReasonTest`); defaults, `parent`, intersection overlap, `wire()` edge types, `TypeDefaultResolver` type strings and `DefaultFactories` ancestry have direct cases.
 - No behaviour change. In `src/`, failure messages assembled from several literals are built into a local `$format`/`$reason` before use (same text), and six one-line signatures with a defaulted parameter are split one parameter per line.

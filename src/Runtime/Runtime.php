@@ -433,6 +433,25 @@ final class Runtime
     }
 
     /**
+     * The refusal for a property touched on a forgotten double, worded the
+     * same way as `forgottenDouble()`.
+     *
+     * @param non-empty-string $property
+     */
+    private static function forgottenProperty(object $double, string $property): ForgottenDouble
+    {
+        if (self::isRetiredOnPurpose($double)) {
+            return ForgottenDouble::propertyOnPurpose($property);
+        }
+
+        if (self::isDroppedByScope($double)) {
+            return ForgottenDouble::propertyAfterScope($property);
+        }
+
+        return ForgottenDouble::propertyAfterReset($property);
+    }
+
+    /**
      * Whether a double was retired on purpose through `Understudy::forget()`.
      */
     public static function isRetiredOnPurpose(object $double): bool
@@ -979,7 +998,7 @@ final class Runtime
         }
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            throw ForgottenDouble::propertyAfterReset($property);
+            throw self::forgottenProperty($double, $property);
         }
 
         return [$context, $state];
@@ -1035,7 +1054,7 @@ final class Runtime
         $state = $context->stateOf($double);
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            throw ForgottenDouble::afterReset($method);
+            throw self::forgottenDouble($double, $method);
         }
 
         return $state->referenceSlot($method, $value, replace: $configured);
@@ -1063,7 +1082,7 @@ final class Runtime
         $state = $context->stateOf($double);
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            throw ForgottenDouble::afterReset($method);
+            throw self::forgottenDouble($double, $method);
         }
 
         if ($state->forwardsInline()) {

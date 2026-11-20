@@ -255,6 +255,22 @@ final class ExceptionMessageTest
                 TXT,
         ];
 
+        yield 'ForgottenDouble::propertyAfterScope' => [
+            static fn(): \Throwable => ForgottenDouble::propertyAfterScope('title'),
+            <<<'TXT'
+                This understudy is no longer known to Understudy, but its property `$title` was touched.
+                It was created inside a scope() that has since closed, and a scope drops its doubles when it ends; build the double in the scope that will use it, or outside the scope altogether.
+                TXT,
+        ];
+
+        yield 'ForgottenDouble::propertyOnPurpose' => [
+            static fn(): \Throwable => ForgottenDouble::propertyOnPurpose('title'),
+            <<<'TXT'
+                This understudy was retired with Understudy::forget(), but its property `$title` was touched.
+                A forgotten double is gone for good; build a new one instead of using this one.
+                TXT,
+        ];
+
         yield 'ForgottenDouble::retired' => [
             ForgottenDouble::retired(...),
             <<<'TXT'

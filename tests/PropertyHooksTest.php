@@ -480,4 +480,41 @@ final class PropertyHooksTest
 
         $double->name;
     }
+
+    public function aPropertyTouchAfterForgetNamesForget(): void
+    {
+        if ($this->onOldPhp()) {
+            return;
+        }
+
+        $contract = $this->declare('IfaceForget', 'namespace %s; interface %s { public string $name { get; } }');
+        $double = Understudy::for($contract);
+
+        Understudy::forget($double);
+
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            "This understudy was retired with Understudy::forget(), but its property `\$name` was touched.\n"
+            . 'A forgotten double is gone for good; build a new one instead of using this one.',
+        );
+
+        $double->name;
+    }
+
+    public function aPropertyTouchAfterItsScopeClosedNamesTheScope(): void
+    {
+        if ($this->onOldPhp()) {
+            return;
+        }
+
+        $contract = $this->declare('IfaceScope', 'namespace %s; interface %s { public string $name { get; set; } }');
+        $double = Understudy::scope(static fn(): object => Understudy::for($contract));
+
+        Expect::exception(ForgottenDouble::class)->withMessage(
+            "This understudy is no longer known to Understudy, but its property `\$name` was touched.\n"
+            . 'It was created inside a scope() that has since closed, and a scope drops its doubles when '
+            . 'it ends; build the double in the scope that will use it, or outside the scope altogether.',
+        );
+
+        $double->name = 'late';
+    }
 }

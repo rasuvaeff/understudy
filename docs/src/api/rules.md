@@ -35,11 +35,11 @@ parameters:
 - `Rasuvaeff\Understudy\PhpStan\Rule\VoidReturnsRule`
 - `Rasuvaeff\Understudy\PhpStan\Rule\MatcherLeakRule`
 
-## Psalm · `rasuvaeff/understudy-psalm` v1.0.0
+## Psalm · `rasuvaeff/understudy-psalm` v1.1.0
 
 | Issue type | Summary |
 |---|---|
-| [`UnderstudyMisuse`](https://github.com/rasuvaeff/understudy-psalm/blob/94a16bb9675d36734e26a394f6aa54a142a2ccfc/src/Psalm/Issue/UnderstudyMisuse.php) | A specification that cannot mean what it says. |
+| [`UnderstudyMisuse`](https://github.com/rasuvaeff/understudy-psalm/blob/55fdda333da5fadc9eb1d5394f95fe737ac8fcfe/src/Psalm/Issue/UnderstudyMisuse.php) | A specification that cannot mean what it says. |
 
 The plugin reports its own findings under that one issue type; everything else it
 surfaces is Psalm's own diagnostic, made possible by the types the plugin fills in.

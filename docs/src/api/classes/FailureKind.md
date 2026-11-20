@@ -9,7 +9,7 @@ description: "What kind of verification claim a VerificationFailure reports."
 
 `Rasuvaeff\Understudy\FailureKind`
 
-**Enum** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/FailureKind.php#L12) — **Version:** v1.0.1-3-gc4d60e5
+**Enum** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/FailureKind.php#L12) — **Version:** v1.1.1-9-g056fa15
 
 **Implements:** `UnitEnum`
 
