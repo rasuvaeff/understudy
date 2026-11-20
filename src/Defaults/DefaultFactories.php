@@ -27,6 +27,24 @@ use Rasuvaeff\Understudy\Runtime\RuntimeContext;
  */
 final class DefaultFactories
 {
+    /**
+     * Type names no class can carry, so no factory can be registered for one.
+     * Asked before `class_exists()`, which would autoload each of them.
+     */
+    private const array BUILTIN_TYPES = [
+        'int' => true, 'float' => true, 'string' => true, 'bool' => true, 'true' => true, 'false' => true,
+        'null' => true, 'void' => true, 'never' => true, 'mixed' => true, 'array' => true, 'iterable' => true,
+        'callable' => true, 'object' => true, 'static' => true, 'self' => true, 'parent' => true,
+    ];
+
+    /**
+     * Ancestor levels per type. The type graph does not change during a
+     * process, so the walk is metadata, kept across registries.
+     *
+     * @var array<class-string, list<list<class-string>>>
+     */
+    private static array $ancestors = [];
+
     /** @var array<class-string, \Closure(): mixed> */
     private array $factories = [];
 
@@ -103,6 +121,10 @@ final class DefaultFactories
             return $this->factories[$requested];
         }
 
+        if (isset(self::BUILTIN_TYPES[strtolower($requested)])) {
+            return null;
+        }
+
         // The resolver calls this only when the registry is non-empty. Loading
         // the requested type here is therefore needed to walk its hierarchy;
         // the common no-factory dispatch path never reaches this method.
@@ -163,6 +185,16 @@ final class DefaultFactories
      * @return list<list<class-string>>
      */
     private function ancestorsByDistance(string $type): array
+    {
+        return self::$ancestors[$type] ??= $this->walkAncestors($type);
+    }
+
+    /**
+     * @param class-string $type
+     *
+     * @return list<list<class-string>>
+     */
+    private function walkAncestors(string $type): array
     {
         $levels = [];
         $current = [$type];

@@ -19,6 +19,7 @@ use Rasuvaeff\Understudy\Matcher\UnspelledTail;
 use Rasuvaeff\Understudy\Runtime\Absent;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Runtime;
+use Rasuvaeff\Understudy\Runtime\SpecificationCall;
 use Rasuvaeff\Understudy\Tests\Fixture\Rest\WideStorage;
 use Rasuvaeff\Understudy\Understudy;
 use Testo\Assert;
@@ -51,6 +52,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(UnspelledTail::class)]
 #[Covers(Absent::class)]
 #[Covers(InvocationSignal::class)]
+#[Covers(SpecificationCall::class)]
 #[Covers(InvalidCallSpecification::class)]
 #[Covers(Runtime::class)]
 final class RestArgumentsTest

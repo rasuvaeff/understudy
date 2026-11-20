@@ -25,7 +25,7 @@ final class RuntimeContext
      */
     private int $recordingDepth = 0;
 
-    /** @var list<InvocationSignal> */
+    /** @var list<SpecificationCall> */
     private array $recordingSignals = [];
 
     /** @var \SplObjectStorage<object, DoubleState> */
@@ -95,12 +95,12 @@ final class RuntimeContext
         }
     }
 
-    public function recordSpecificationCall(InvocationSignal $signal): void
+    public function recordSpecificationCall(SpecificationCall $signal): void
     {
         $this->recordingSignals[] = $signal;
     }
 
-    /** @return list<InvocationSignal> */
+    /** @return list<SpecificationCall> */
     public function recordingSignals(): array
     {
         return $this->recordingSignals;

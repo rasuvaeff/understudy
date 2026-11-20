@@ -579,8 +579,8 @@ final class Runtime
             // Where no default exists (`: never`, an object type) the signal
             // is thrown after all and the closure ends here, as every
             // recording used to.
-            $signal = new InvocationSignal($double, $method, $args);
-            $current->recordSpecificationCall($signal);
+            $call = new SpecificationCall($double, $method, $args);
+            $current->recordSpecificationCall($call);
             $signature = DoubleFactory::blueprintOfGenerated($double::class)?->method($method);
 
             try {
@@ -593,7 +593,7 @@ final class Runtime
                     double: $double,
                 );
             } catch (\Throwable) {
-                throw $signal;
+                throw new InvocationSignal($call);
             }
         }
 

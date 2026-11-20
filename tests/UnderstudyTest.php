@@ -47,6 +47,7 @@ use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Mode;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
+use Rasuvaeff\Understudy\Runtime\SpecificationCall;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Clock;
@@ -92,6 +93,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(RuntimeContext::class)]
 #[Covers(DoubleState::class)]
 #[Covers(InvocationSignal::class)]
+#[Covers(SpecificationCall::class)]
 #[Covers(Mode::class)]
 #[Covers(Invocation::class)]
 #[Covers(Outcome::class)]

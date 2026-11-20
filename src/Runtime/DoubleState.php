@@ -35,6 +35,14 @@ final class DoubleState
     /** @var array<non-empty-string, list<Expectation>>|null */
     private ?array $matchingByMethodWithoutFirstLiteral = null;
 
+    /**
+     * `expectationsFor()` answers, already in dispatch order, per method and
+     * first-literal key (`''` where the first argument has none).
+     *
+     * @var array<string, array<string, list<Expectation>>>
+     */
+    private array $sortedCandidates = [];
+
     /** @var list<Invocation> */
     private array $callLog = [];
 
@@ -273,6 +281,7 @@ final class DoubleState
         $method = $expectation->method;
         $this->matchingByMethod[$method] ??= [];
         $this->matchingByMethod[$method][] = $expectation;
+        unset($this->sortedCandidates[$method]);
 
         $count = count($this->matchingByMethod[$method]);
 
@@ -384,6 +393,15 @@ final class DoubleState
             ? []
             : ($this->matchingByMethodWithoutFirstLiteral[$method] ?? []);
 
+        // Sorted once per method and first literal, not once per call: the
+        // lists only change when an expectation is added or a phase settles,
+        // and both of those drop this cache.
+        $cacheKey = $key ?? '';
+
+        if (isset($this->sortedCandidates[$method][$cacheKey])) {
+            return $this->sortedCandidates[$method][$cacheKey];
+        }
+
         // The same tier order both lists answer in — a tier crossing inside
         // the index (a literal against a catch-all) and one inside the walked
         // list (a range matcher against a catch-all) are the same rule, so
@@ -401,7 +419,7 @@ final class DoubleState
             },
         );
 
-        return $candidates;
+        return $this->sortedCandidates[$method][$cacheKey] = $candidates;
     }
 
     /**
@@ -430,6 +448,7 @@ final class DoubleState
         $this->matchingByMethod = [];
         $this->matchingByMethodAndFirstLiteral = null;
         $this->matchingByMethodWithoutFirstLiteral = null;
+        $this->sortedCandidates = [];
 
         foreach ($this->matchingExpectations as $expectation) {
             $method = $expectation->method;

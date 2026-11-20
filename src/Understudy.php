@@ -25,6 +25,7 @@ use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Mode;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
+use Rasuvaeff\Understudy\Runtime\SpecificationCall;
 use Rasuvaeff\Understudy\Wiring\Wire;
 
 /**
@@ -1451,7 +1452,7 @@ final class Understudy
      * ends it early on its signal. The closure is user code and runs exactly
      * once: whatever it counts, creates or writes happens once.
      */
-    private static function record(callable $call): InvocationSignal
+    private static function record(callable $call): SpecificationCall
     {
         $context = Runtime::current();
         $context->beginRecording();
