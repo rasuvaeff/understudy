@@ -104,6 +104,16 @@ while [ $# -gt 0 ]; do
 done
 
 command -v docker >/dev/null || die 'docker is required'
+
+# The image every consumer project is installed and run in. Pinned by digest
+# to Composer 2.10.3 on PHP 8.5.11, because `composer:2` follows the newest
+# PHP: when it moved to 8.6 every leg failed at `composer install`, since the
+# family declares `php 8.3 - 8.5` and no consumer on 8.6 can install it at all.
+# Ignoring the platform requirement instead would smoke an install nobody can
+# make, under analysers that do not run on 8.6 yet. Dependabot does not bump a
+# digest in a shell script: move it by hand when the family widens its PHP
+# range (docs/php-8.6-rollout-status.md in the workspace repository).
+IMAGE="${UNDERSTUDY_SMOKE_IMAGE:-composer@sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac}"
 command -v python3 >/dev/null || die 'python3 is required'
 
 dir='.understudy-consumer-smoke'
@@ -261,7 +271,7 @@ compose() { # leg, json
 }
 
 install() { # leg, extra composer flags
-    if ! docker run --rm -v "$WORK":/work -w "/work/$1" -e COMPOSER_CACHE_DIR=/work/cache composer:2 sh -c \
+    if ! docker run --rm -v "$WORK":/work -w "/work/$1" -e COMPOSER_CACHE_DIR=/work/cache "$IMAGE" sh -c \
         "git config --global --add safe.directory '*'; composer install $2 --no-interaction --no-progress" \
         > "$WORK/$1/install.log" 2>&1; then
         printf 'composer install failed in %s:\n' "$1" >&2
@@ -271,7 +281,7 @@ install() { # leg, extra composer flags
 }
 
 run() { # leg, command
-    docker run --rm -v "$WORK":/work -w "/work/$1" -e COMPOSER_CACHE_DIR=/work/cache composer:2 sh -c "$2"
+    docker run --rm -v "$WORK":/work -w "/work/$1" -e COMPOSER_CACHE_DIR=/work/cache "$IMAGE" sh -c "$2"
 }
 
 selected() { # leg
