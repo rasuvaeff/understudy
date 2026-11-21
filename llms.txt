@@ -71,12 +71,13 @@ No runtime deps; `ext-mbstring` is not needed.
   "exactly one direct call" rule is about calls, and reads are invisible to
   it. Still refused: a readonly class target carrying an abstract hook, and a
   `&get` hook. A concrete hook on a class target stays inherited.
-- Parameter defaults are reproduced, not approximated. An object default is
-  rendered from its own source expression — `new Foo(1)` and `[new Foo(1)]`
-  alike — which is never evaluated during generation. Refusal is narrow: a
-  default whose source names `self`, `static` or `parent` (they would resolve
-  against the generated class), or an object value with no source form to
-  render. A default is never silently replaced with `null`.
+- Parameter defaults are the contract's own: the generated class carries none,
+  and an omitted argument receives the default evaluated from the declaring
+  parameter at the call — `new Foo(self::X)`, `[new Foo(1)]` and a constant
+  holding an object included, one object per call. Nothing is evaluated during
+  generation. Two targets declaring different defaults for one parameter are
+  refused (two `self::` defaults in different classes count as different). A
+  default is never silently replaced with `null`.
 - `Understudy::forwarding($double, $real)` delegates every unmatched call to
   `$real` and records it. `$real` must satisfy every contract of the double.
   `Understudy::forwarding($double)` only turns the mode on for a double built by
@@ -261,10 +262,13 @@ the guard refused, the failure marks the guard: `transfer(any(), any())
 | `allOf(...)` | everything every operand accepts; an operand is a matcher or a literal |
 | `anyOf(...)` | anything at least one operand accepts |
 | `instanceOf($class)` | an instance of the class or interface; a name that is not loadable is refused, not silently never-matching |
+| `instanceOf($class, $where)` | an instance the predicate `callable(T): bool` accepts; asked only of an instance, so it can be typed — another type is a mismatch, never a `TypeError` |
+| `equalTo($value)` | equal by structure: same class and equal properties (private included), arrays by keys and values, `===` on scalars, enums and closures by identity; never `==`, cycles are a mismatch-safe walk |
 | `satisfies($fn, $description)` | whatever the predicate accepts |
 | `containing($entries)` | an array holding these entries and possibly more |
 | `count(minimum:, maximum:)` | an array or `Countable` of that size |
 | `which($method, $value)` | an object whose getter answers this value |
+| `whichProperty($property, $value)` | an object whose public, non-static, initialized property holds this value (`===`) |
 | `none()` | an empty variadic tail; last argument only |
 | `remaining()` | the whole variadic tail, any length; last argument only |
 | `rest()` | declared parameters left unspelled; last argument only — the one matcher that lets a specification stop before a REQUIRED parameter: `when(fn () => $s->recordOutcome('svc', Arg::rest()))`. Stopping before one without it is refused |

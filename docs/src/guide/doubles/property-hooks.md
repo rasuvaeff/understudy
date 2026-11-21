@@ -68,16 +68,17 @@ Both with the reason, rather than silently:
   property cannot be readonly;
 - a by-reference `&get` hook.
 
-## Parameter defaults are reproduced, not approximated
+## Parameter defaults are the contract's own
 
-Worth knowing because it decides what a generated double can carry at all:
+The generated class carries no defaults. A call that omits an argument receives
+the default evaluated from the declaring parameter, in the declaring class, at
+the moment PHP itself would evaluate it:
 
-- a class constant is rendered through its declaring class;
-- an enum case as itself;
-- an object default from its own source expression — `new Stamp(7)` and
-  `[new Stamp(7)]` alike — which is never evaluated while the double is
-  generated.
+- `new Stamp(self::LIMIT)`, `[new Stamp(7)]` and a constant holding an object
+  all work;
+- an object default is built per call, as PHP builds it;
+- nothing is evaluated while the double is generated.
 
-A default whose source names `self`, `static` or `parent` refuses the target:
-those resolve against the generated class and would answer something the
-contract never promised.
+Two targets that declare different defaults for the same parameter are
+refused — answering with either would be a test passing for the wrong reason.
+Two `self::` defaults in different classes count as different.

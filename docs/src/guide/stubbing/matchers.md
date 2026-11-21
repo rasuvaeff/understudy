@@ -25,10 +25,13 @@ when(fn () => $repository->find(Arg::any()))->returns($book);
 | `Arg::allOf(...)` | everything the operands accept; an operand is a matcher or a literal |
 | `Arg::anyOf(...)` | anything at least one operand accepts, so `anyOf('draft', 'review')` reads as a set |
 | `Arg::instanceOf($class)` | an instance of the class or interface |
+| `Arg::instanceOf($class, fn (Foo $f): bool => …)` | an instance the typed predicate accepts; another type is a mismatch, never a `TypeError` |
+| `Arg::equalTo($value)` | equal by structure: same class, equal properties (private ones included), `===` on scalars; cycles are safe |
 | `Arg::satisfies($fn)` | whatever the predicate accepts |
 | `Arg::containing($entries)` | an array holding these entries and possibly more; an entry may itself be a matcher |
 | `Arg::count(minimum:, maximum:)` | an array or `Countable` of that size |
 | `Arg::which($method, $value)` | an object whose getter answers this value |
+| `Arg::whichProperty($property, $value)` | an object whose public property holds this value |
 | `Arg::none()` | an empty variadic tail — last argument only |
 | `Arg::remaining()` | the whole variadic tail, any length — last argument only |
 | `Arg::rest()` | declared parameters left unspelled — last argument only |
@@ -126,9 +129,11 @@ payload goes.
 
 ## `Arg::which()` and a getter that throws
 
-`Arg::which()` calls only a public, non-static method that needs no arguments.
+`Arg::which()` calls only a public, non-static method that needs no arguments,
+and `Arg::whichProperty()` reads only a public, non-static, initialized
+property.
 
-A getter that throws counts as a **mismatch**, never as an error. Matching runs
+A getter (or a `get` hook) that throws counts as a **mismatch**, never as an error. Matching runs
 while the code under test is executing, and a matcher must not be the thing
 that breaks it.
 
