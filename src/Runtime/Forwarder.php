@@ -6,8 +6,6 @@ namespace Rasuvaeff\Understudy\Runtime;
 
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
 use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
-use Rasuvaeff\Understudy\Expectation\Expectation;
-use Rasuvaeff\Understudy\Invocation;
 
 /**
  * Runs a double's real implementation: inline on the double itself, or by
@@ -39,7 +37,7 @@ final class Forwarder
      *
      * @var list<object>
      */
-    private static array $inlineFrames = [];
+    public static array $inlineFrames = [];
 
     /**
      * How much of {@see $inlineFrames} a `clone` is allowed to see.
@@ -51,30 +49,14 @@ final class Forwarder
      * be on the stack underneath; the floor is raised for the span of the
      * closure, so only what the closure itself enters — `callOriginal()`,
      * which pushes a frame of its own — is visible to a clone made inside it.
+     *
+     * Public, like {@see $inlineFrames}, because `Runtime::answer()` raises it
+     * around every stubbed call: a method there would be one more static call
+     * on the hottest path there is.
      */
-    private static int $inlineFloor = 0;
+    public static int $inlineFloor = 0;
 
     private function __construct() {}
-
-    /**
-     * Runs the test's own `returns()`/`answers()` with the frame floor raised.
-     *
-     * The test's own closure, so a `clone $double` inside it is the test's
-     * clone even when a real body is on the stack underneath. Two integers
-     * rather than a saved copy of the stack: this is the dispatch path, and
-     * every stubbed call in a suite pays for it.
-     */
-    public static function performAction(Expectation $expectation, Invocation $invocation): mixed
-    {
-        $floor = self::$inlineFloor;
-        self::$inlineFloor = \count(self::$inlineFrames);
-
-        try {
-            return $expectation->performAction($invocation);
-        } finally {
-            self::$inlineFloor = $floor;
-        }
-    }
 
     /**
      * Gives a fresh clone the forwarding of the double whose real body made

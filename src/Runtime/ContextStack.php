@@ -147,7 +147,15 @@ final class ContextStack
     public static function renewCurrent(): void
     {
         $fiber = \Fiber::getCurrent();
-        $stack = self::stack();
+
+        if (!$fiber instanceof \Fiber) {
+            $stack = self::$main;
+        } else {
+            $fibers = self::fibers();
+            /** @var list<RuntimeContext> $stack */
+            $stack = $fibers->offsetExists($fiber) ? $fibers->offsetGet($fiber) : [];
+        }
+
         $position = count($stack) - 1;
 
         if ($position < 0) {

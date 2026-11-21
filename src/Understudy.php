@@ -20,9 +20,12 @@ use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
 use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Expectation\ReturnContract;
 use Rasuvaeff\Understudy\Runtime\ArmedSequence;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Mode;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\SpecificationCall;
 use Rasuvaeff\Understudy\Wiring\Wire;
@@ -131,7 +134,7 @@ final class Understudy
         $signal = self::record($call);
         $expectation = new Expectation($signal->method, $signal->args);
         $state = self::stateOf($signal->double, 'when');
-        $expectation->setDeclarationOrder(Runtime::current()->nextDeclaration());
+        $expectation->setDeclarationOrder(ContextStack::current()->nextDeclaration());
 
         $state->addExpectation($expectation);
 
@@ -155,7 +158,7 @@ final class Understudy
         $expectation->setCardinality(Cardinality::exactly(1));
         $expectation->declareClaim();
         $state = self::stateOf($signal->double, 'expect');
-        $expectation->setDeclarationOrder(Runtime::current()->nextDeclaration());
+        $expectation->setDeclarationOrder(ContextStack::current()->nextDeclaration());
 
         $state->addExpectation($expectation);
 
@@ -202,7 +205,7 @@ final class Understudy
         // Every context the test put understudies in, not only the one this
         // call happens to stand in: a body run in a Fiber owns a context of
         // its own, and skipping it let an unmet `expect()` pass unnoticed.
-        return Verifier::report(Runtime::liveContexts(), $strictStubs);
+        return Verifier::report(ContextStack::liveContexts(), $strictStubs);
     }
 
     /**
@@ -251,7 +254,7 @@ final class Understudy
             // failed verify() throws, and values captured on the way to a
             // failure would be read by nobody.
             if ($probe->hasCaptors()) {
-                $context = Runtime::current();
+                $context = ContextStack::current();
 
                 foreach ($matched as $invocation) {
                     foreach ($probe->captureFrom($invocation->args) as $captor) {
@@ -404,7 +407,7 @@ final class Understudy
         if ($real !== null) {
             // A double delegating to a double — itself included — sends every
             // call back into the dispatcher it came from.
-            if (Runtime::ownerOf($real) instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext) {
+            if (Ownership::ownerOf($real) instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext) {
                 throw ForwardingTargetMismatch::understudyTarget($state->label());
             }
 
@@ -447,7 +450,7 @@ final class Understudy
         $parent = get_parent_class($double);
 
         if (!$state->forwardsInline() && $parent === $target::class) {
-            Runtime::copyState($double, $target);
+            Forwarder::copyState($double, $target);
             $state->forwardInline($parent);
         }
     }
@@ -634,7 +637,7 @@ final class Understudy
      */
     public static function defaults(string $contract, callable $factory): void
     {
-        Runtime::current()->defaultFactories()->register($contract, $factory(...));
+        ContextStack::current()->defaultFactories()->register($contract, $factory(...));
     }
 
     /**
@@ -710,7 +713,7 @@ final class Understudy
         // owner of a retired double that their object «is not one».
         self::stateOf($double, 'forget');
 
-        Runtime::forget($double);
+        Ownership::forget($double);
     }
 
     /**
@@ -825,7 +828,7 @@ final class Understudy
             throw InvalidCallSpecification::emptySequence();
         }
 
-        $context = Runtime::current();
+        $context = ContextStack::current();
         $armed = $context->armed;
 
         // Only a concurrent one is refused. A protocol that ran to completion
@@ -861,7 +864,7 @@ final class Understudy
      */
     public static function verifySequence(callable ...$calls): void
     {
-        $log = Runtime::current()->globalLog();
+        $log = ContextStack::current()->globalLog();
         $probes = [];
 
         foreach ($calls as $call) {
@@ -974,7 +977,7 @@ final class Understudy
     ): void {
         self::verifyAll($strictStubs);
 
-        foreach (Runtime::liveContexts() as $context) {
+        foreach (ContextStack::liveContexts() as $context) {
             foreach ($context->allStates() as $state) {
                 $state->settle();
             }
@@ -1011,7 +1014,7 @@ final class Understudy
      */
     public static function idle(): bool
     {
-        foreach (Runtime::liveContexts() as $context) {
+        foreach (ContextStack::liveContexts() as $context) {
             if ($context->allStates() !== []) {
                 return false;
             }
@@ -1032,7 +1035,7 @@ final class Understudy
      */
     private static function record(callable $call): SpecificationCall
     {
-        $context = Runtime::current();
+        $context = ContextStack::current();
         $context->beginRecording();
 
         try {
@@ -1137,7 +1140,7 @@ final class Understudy
         $state = Runtime::stateOf($double);
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            if (Runtime::isRetiredOnPurpose($double)) {
+            if (Ownership::isRetiredOnPurpose($double)) {
                 throw ForgottenDouble::retired();
             }
 
@@ -1147,7 +1150,7 @@ final class Understudy
             // same problem — and neither used to be named at all, because
             // both were reported as a specification closure gone wrong.
             throw DoubleFactory::isGenerated($double)
-                ? Runtime::forgottenDouble($double, $facade)
+                ? Ownership::forgottenDouble($double, $facade)
                 : InvalidCallSpecification::notADouble($facade);
         }
 

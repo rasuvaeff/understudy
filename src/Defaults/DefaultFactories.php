@@ -8,7 +8,8 @@ use Rasuvaeff\Understudy\Exception\AmbiguousDefaultFactory;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\InvalidDefaultValue;
-use Rasuvaeff\Understudy\Runtime\Runtime;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 
 /**
@@ -81,7 +82,7 @@ final class DefaultFactories
      */
     public function valueFor(string $requested, ?RuntimeContext $owner = null): ?array
     {
-        $owner ??= Runtime::current();
+        $owner ??= ContextStack::current();
         $factory = $this->factoryFor($requested);
 
         if (!$factory instanceof \Closure) {
@@ -91,11 +92,11 @@ final class DefaultFactories
         /** @var mixed $value */
         $value = $factory();
 
-        if (is_object($value) && Runtime::isForgotten($value)) {
+        if (is_object($value) && Ownership::isForgotten($value)) {
             throw ForgottenDouble::fromDefaultFactory($requested);
         }
 
-        $valueOwner = is_object($value) ? Runtime::ownerOf($value) : null;
+        $valueOwner = is_object($value) ? Ownership::ownerOf($value) : null;
 
         if ($valueOwner instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext && $valueOwner !== $owner) {
             throw ContextOwnershipViolation::forDouble();

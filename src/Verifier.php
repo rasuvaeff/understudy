@@ -7,8 +7,8 @@ namespace Rasuvaeff\Understudy;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
 use Rasuvaeff\Understudy\Expectation\Expectation;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
-use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 
 /**
@@ -135,7 +135,7 @@ final class Verifier
         /** @var list<array{DoubleState, Expectation}> $ordered */
         $ordered = [];
 
-        foreach (($context ?? Runtime::current())->allStates() as $state) {
+        foreach (($context ?? ContextStack::current())->allStates() as $state) {
             if ($only instanceof \Rasuvaeff\Understudy\Runtime\DoubleState && $state !== $only) {
                 continue;
             }

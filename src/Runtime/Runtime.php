@@ -7,7 +7,6 @@ namespace Rasuvaeff\Understudy\Runtime;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
-use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
@@ -27,16 +26,6 @@ final class Runtime
 {
     /** How deep an argument snapshot follows nested arrays. */
     private const int SNAPSHOT_DEPTH = 8;
-
-    public static function current(): RuntimeContext
-    {
-        return ContextStack::current();
-    }
-
-    public static function currentIfAny(): ?RuntimeContext
-    {
-        return ContextStack::currentIfAny();
-    }
 
     /**
      * Opens a nested context, so that everything created inside it is dropped
@@ -61,17 +50,6 @@ final class Runtime
         $context = ContextStack::current();
         $context->register($double, $state);
         Ownership::owners()->offsetSet($double, $context);
-    }
-
-    /**
-     * The current context first, then every other one still holding
-     * understudies — the whole test, in the order a report should read.
-     *
-     * @return list<RuntimeContext>
-     */
-    public static function liveContexts(): array
-    {
-        return ContextStack::liveContexts();
     }
 
     /**
@@ -149,39 +127,6 @@ final class Runtime
         Ownership::owners()->offsetSet($double, $owner);
 
         return $double;
-    }
-
-    public static function ownerOf(object $double): ?RuntimeContext
-    {
-        return Ownership::ownerOf($double);
-    }
-
-    public static function isForgotten(object $double): bool
-    {
-        return Ownership::isForgotten($double);
-    }
-
-    public static function isDroppedByScope(object $double): bool
-    {
-        return Ownership::isDroppedByScope($double);
-    }
-
-    /**
-     * @param non-empty-string $member
-     */
-    public static function forgottenDouble(object $double, string $member): ForgottenDouble
-    {
-        return Ownership::forgottenDouble($double, $member);
-    }
-
-    public static function isRetiredOnPurpose(object $double): bool
-    {
-        return Ownership::isRetiredOnPurpose($double);
-    }
-
-    public static function forget(object $double): void
-    {
-        Ownership::forget($double);
     }
 
     public static function stateOf(object $double): ?DoubleState
@@ -390,8 +335,20 @@ final class Runtime
                 break;
             }
 
-            /** @var mixed $answer */
-            $answer = Forwarder::performAction($expectation, $invocation);
+            // The test's own closure, so a `clone $double` inside it is the
+            // test's clone even when a real body is on the stack underneath.
+            // Two integers rather than a saved copy of the stack, and written
+            // here rather than behind a `Forwarder` method: this is the
+            // dispatch path, and every stubbed call in a suite pays for it.
+            $floor = Forwarder::$inlineFloor;
+            Forwarder::$inlineFloor = \count(Forwarder::$inlineFrames);
+
+            try {
+                /** @var mixed $answer */
+                $answer = $expectation->performAction($invocation);
+            } finally {
+                Forwarder::$inlineFloor = $floor;
+            }
 
             if ($signature instanceof \Rasuvaeff\Understudy\Codegen\MethodSignature && $signature->returnsNever) {
                 // The expectation returned instead of throwing; returning from
@@ -771,15 +728,6 @@ final class Runtime
     }
 
     /**
-     * Copies the donor instance's initialized state onto the double; see
-     * {@see Forwarder::copyState()}.
-     */
-    public static function copyState(object $double, object $donor): void
-    {
-        Forwarder::copyState($double, $donor);
-    }
-
-    /**
      * Drops the current execution context. Adapters call this unconditionally
      * after each test; sibling Fibers must remain untouched.
      */
@@ -788,9 +736,11 @@ final class Runtime
         // The sweep retires every live context, this one included — a context
         // is recorded live where it is created, so there is nothing to retire
         // separately here. It runs before the replacement is opened, because
-        // it would otherwise retire that one too.
+        // it would otherwise retire that one too. Drained, so each one is
+        // already off the live list.
         foreach (ContextStack::drainLive() as $context) {
-            self::retire($context);
+            self::discardCaptors($context);
+            Ownership::retire($context);
         }
 
         ContextStack::renewCurrent();
@@ -801,14 +751,19 @@ final class Runtime
         bool $byScope = false,
     ): void {
         ContextStack::unremember($context);
+        self::discardCaptors($context);
+        Ownership::retire($context, $byScope);
+    }
 
-        // Captured values live exactly as long as the call log of the context
-        // they were captured in. The captor object itself survives — it is a
-        // test-owned reader — but holds nothing from a test that ended.
+    /**
+     * Captured values live exactly as long as the call log of the context
+     * they were captured in. The captor object itself survives — it is a
+     * test-owned reader — but holds nothing from a test that ended.
+     */
+    private static function discardCaptors(RuntimeContext $context): void
+    {
         foreach ($context->captors() as $captor) {
             $captor->discard();
         }
-
-        Ownership::retire($context, $byScope);
     }
 }
