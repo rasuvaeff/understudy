@@ -9,6 +9,8 @@ use Rasuvaeff\Understudy\Cardinality;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
+use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\DefaultFactories;
@@ -110,6 +112,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(UnsupportedTarget::class)]
 #[Covers(VerificationFailed::class)]
 #[Covers(TargetUnifier::class)]
+#[Covers(ParameterUnifier::class)]
+#[Covers(ReturnTypeUnifier::class)]
 #[Covers(TypeRenderer::class)]
 #[Covers(Arg::class)]
 #[Covers(Cardinality::class)]
