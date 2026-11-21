@@ -72,6 +72,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterInt;
 use Rasuvaeff\Understudy\Tests\Fixture\VariadicSink;
 use Rasuvaeff\Understudy\Tests\Support\GoldenMessage;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Rasuvaeff\Understudy\WhenBuilder;
 use Rasuvaeff\Understudy\Wiring\Wire;
 use Testo\Assert;
@@ -88,6 +89,7 @@ use function Rasuvaeff\Understudy\when;
 
 #[Test]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(WhenBuilder::class)]
 #[Covers(ExpectBuilder::class)]
 #[Covers(ReturnContract::class)]

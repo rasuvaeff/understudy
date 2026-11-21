@@ -20,6 +20,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Ref\Registry;
 use Rasuvaeff\Understudy\Tests\Fixture\VariadicSink;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Rasuvaeff\Understudy\WhenBuilder;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
@@ -48,6 +49,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Expectation::class)]
 #[Covers(InvalidCallSpecification::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 final class WhereTest
 {
     #[AfterTest]

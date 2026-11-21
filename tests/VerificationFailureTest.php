@@ -18,6 +18,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Understudy;
 use Rasuvaeff\Understudy\VerificationFailure;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Lifecycle\AfterTest;
@@ -43,6 +44,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(MethodSignature::class)]
 #[Covers(VerificationFailed::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(VerificationFailure::class)]
 #[Covers(FailureKind::class)]
 final class VerificationFailureTest

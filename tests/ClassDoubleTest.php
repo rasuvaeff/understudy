@@ -41,6 +41,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\AbstractStaticFromInterface;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingWiderParameter;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Data\DataProvider;
@@ -53,6 +54,7 @@ use function Rasuvaeff\Understudy\when;
 #[Test]
 #[Covers(DoubleFactory::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(PropertyDefaults::class)]
 #[Covers(TargetUnifier::class)]
 #[Covers(ParameterUnifier::class)]

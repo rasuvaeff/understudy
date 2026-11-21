@@ -49,6 +49,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Credentials;
 use Rasuvaeff\Understudy\Tests\Fixture\Defaults\NullableShapes;
 use Rasuvaeff\Understudy\Tests\Fixture\Librarian;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Rasuvaeff\Understudy\WhenBuilder;
 use Rasuvaeff\Understudy\Wiring\Wire;
 use Testo\Assert;
@@ -74,6 +75,7 @@ use function Rasuvaeff\Understudy\when;
  */
 #[Test]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(Wire::class)]
 #[Covers(CannotWire::class)]
 #[Covers(Invocation::class)]

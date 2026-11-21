@@ -24,6 +24,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Fwd\RealChain;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\SpecialPipeline;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\Tally;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Expect;
@@ -49,6 +50,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(MethodSignature::class)]
 #[Covers(Runtime::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(Invocation::class)]
 #[Covers(DoubleState::class)]
 #[Covers(DoubleFactory::class)]

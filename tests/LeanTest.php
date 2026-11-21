@@ -19,6 +19,7 @@ use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Lean\LeanStore;
 use Rasuvaeff\Understudy\Tests\Fixture\Lean\Payload;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Expect;
@@ -43,6 +44,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Blueprint::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(Runtime::class)]
 #[Covers(DoubleState::class)]
 #[Covers(Invocation::class)]

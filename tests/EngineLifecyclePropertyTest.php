@@ -36,6 +36,7 @@ use Rasuvaeff\Understudy\Tests\Support\SettleCheckpointCommand;
 use Rasuvaeff\Understudy\Tests\Support\VerifyCallsCommand;
 use Rasuvaeff\Understudy\Tests\Support\VerifyEverythingCommand;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Lifecycle\AfterTest;
@@ -64,6 +65,7 @@ use Testo\Test;
 #[Covers(Blueprint::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(Runtime::class)]
 #[Covers(DoubleState::class)]
 #[Covers(Expectation::class)]

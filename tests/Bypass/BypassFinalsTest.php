@@ -11,6 +11,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Bypass\PassiveWrapper;
 use Rasuvaeff\Understudy\Tests\Fixture\Suit;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Lifecycle\AfterTest;
@@ -28,6 +29,7 @@ use Testo\Test;
  */
 #[Test]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(FileWrapper::class)]
 #[Covers(BypassUnavailable::class)]
 final class BypassFinalsTest

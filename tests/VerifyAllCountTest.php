@@ -14,6 +14,7 @@ use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Lifecycle\AfterTest;
@@ -36,6 +37,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Blueprint::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 final class VerifyAllCountTest
 {
     #[AfterTest]

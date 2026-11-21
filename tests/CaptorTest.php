@@ -22,6 +22,7 @@ use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Tests\Fixture\Capt\DeliveryOptions;
 use Rasuvaeff\Understudy\Tests\Fixture\Capt\UrlStore;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Expect;
@@ -47,6 +48,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(MethodSignature::class)]
 #[Covers(Captor::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(Capturing::class)]
 #[Covers(Arg::class)]
 #[Covers(Expectation::class)]

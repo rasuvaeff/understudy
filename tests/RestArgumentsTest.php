@@ -24,6 +24,7 @@ use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\SpecificationCall;
 use Rasuvaeff\Understudy\Tests\Fixture\Rest\WideStorage;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
 use Testo\Codecov\Covers;
@@ -50,6 +51,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(MethodSignature::class)]
 #[Covers(Arg::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(\Rasuvaeff\Understudy\Expectation\Expectation::class)]
 #[Covers(AnyRest::class)]
 #[Covers(Unspelled::class)]

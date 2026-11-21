@@ -24,6 +24,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Fwd\Chainable;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\RealChain;
 use Rasuvaeff\Understudy\Tests\Fixture\Ref\Registry;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
 use Testo\Codecov\Covers;
@@ -47,6 +48,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Blueprint::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(Runtime::class)]
 #[Covers(RuntimeContext::class)]
 #[Covers(Invocation::class)]
