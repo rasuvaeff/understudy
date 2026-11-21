@@ -77,6 +77,19 @@ abstract class ProjectTestCase extends TestCase
 }
 ```
 
+From `understudy-phpunit` 1.1.0 `#[StrictStubs]` on a test class or a test
+method overrides it for that class or test: the method wins over its class, the
+running class over its parents, and either over `understudyStrictStubs()`.
+
+```php
+#[StrictStubs]
+final class CheckoutTest extends ProjectTestCase
+{
+    #[StrictStubs(false)]
+    public function legacyPath(): void {}
+}
+```
+
 See [Strict stubs](/guide/expectations/strict-stubs).
 
 **Verification runs before your teardown here, and after it under

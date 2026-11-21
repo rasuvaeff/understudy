@@ -70,8 +70,8 @@ final class CheckoutTest
 The method wins over its class, the nearest class in the hierarchy over a
 parent, and any attribute over the bridge's own setting above. The engine only
 declares it; a bridge asks `StrictStubs::resolve($class, $method, $default)`
-and hands the answer to `verifyAll()`. A bridge release that reads it is
-needed before the attribute has an effect.
+and hands the answer to `verifyAll()`. The Testo bridge reads it from 1.2.0,
+the PHPUnit bridge from 1.1.0.
 
 ## Strictness per double is a different thing
 

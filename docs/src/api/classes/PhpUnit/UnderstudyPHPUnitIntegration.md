@@ -9,7 +9,7 @@ description: "Ends every PHPUnit test with understudy's own bookkeeping done for
 
 `Rasuvaeff\Understudy\PhpUnit\UnderstudyPHPUnitIntegration`
 
-**Trait** — **Package:** [rasuvaeff/understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit) — [Source](https://github.com/rasuvaeff/understudy-phpunit/blob/3f415bfa3c0deaeb85f95c7be64ffd7e119bb509/src/PhpUnit/UnderstudyPHPUnitIntegration.php#L83) — **Version:** v1.0.0
+**Trait** — **Package:** [rasuvaeff/understudy-phpunit](https://github.com/rasuvaeff/understudy-phpunit) — [Source](https://github.com/rasuvaeff/understudy-phpunit/blob/5233e7aeec87684e919cd1160b1caabeea5ae88c/src/PhpUnit/UnderstudyPHPUnitIntegration.php#L86) — **Version:** v1.1.0
 
 Ends every PHPUnit test with understudy's own bookkeeping done for it.
 
@@ -52,8 +52,10 @@ threw keeps its own exception untouched; verification would only mask the
 error that actually happened. Either way the context is reset, so nothing
 leaks into the next test.
 
-A base class may flip strict stubbing for a whole project by overriding
-`PhpUnit\understudyStrictStubs`().
+Strict stubbing is switched per test by the core `#[StrictStubs]` attribute
+on the test method or class ([`StrictStubs`](/api/classes/StrictStubs)::resolve()); a base class
+may still set the project-wide default by overriding
+`PhpUnit\understudyStrictStubs`(), which applies where no attribute does.
 
 If the class also overrides `assertPostConditions()` itself, PHP resolves
 the conflict silently in favour of the class — the trait's verification
