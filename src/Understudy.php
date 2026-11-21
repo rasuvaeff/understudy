@@ -121,9 +121,11 @@ final class Understudy
     /**
      * Stubs a call: allowed any number of times, including none.
      *
-     * @param callable(): mixed $call
+     * @template T
      *
-     * @return WhenBuilder<mixed>
+     * @param callable(): T $call
+     *
+     * @return WhenBuilder<T>
      */
     public static function when(callable $call): WhenBuilder
     {
@@ -141,9 +143,11 @@ final class Understudy
      * Declares a call the code under test is expected to make: exactly once
      * unless `times()` says otherwise, and checked by `verifyAll()`.
      *
-     * @param callable(): mixed $call
+     * @template T
      *
-     * @return ExpectBuilder<mixed>
+     * @param callable(): T $call
+     *
+     * @return ExpectBuilder<T>
      */
     public static function expect(callable $call): ExpectBuilder
     {
@@ -844,10 +848,12 @@ final class Understudy
      * runs — a half-built subject would show the test a TypeError from inside
      * code it did not write.
      *
-     * @param class-string         $sut
+     * @template T of object
+     *
+     * @param class-string<T>      $sut
      * @param array<string, mixed> $overrides
      *
-     * @return array{sut: object, doubles: array<string, object>}
+     * @return array{sut: T, doubles: array<string, object>}
      */
     public static function wire(string $sut, array $overrides = []): array
     {
@@ -964,8 +970,10 @@ final class Understudy
      * The registry belongs to the current context: sibling Fibers do not see
      * each other's, and `reset()` drops them with the test.
      *
-     * @param class-string    $contract
-     * @param callable(): mixed $factory
+     * @template T of object
+     *
+     * @param class-string<T>   $contract
+     * @param callable(): T     $factory
      */
     public static function defaults(string $contract, callable $factory): void
     {

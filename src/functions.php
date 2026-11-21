@@ -11,9 +11,11 @@ namespace Rasuvaeff\Understudy;
  * when(fn () => $repository->find(123))->returns($book);
  * ```
  *
- * @param callable(): mixed $call
+ * @template T
  *
- * @return WhenBuilder<mixed>
+ * @param callable(): T $call
+ *
+ * @return WhenBuilder<T>
  *
  * @api
  */
@@ -34,9 +36,11 @@ function when(callable $call): WhenBuilder
  * this one under another name — `use function Rasuvaeff\Understudy\expect as
  * expectCall;` — or call `Understudy::expect()`, which cannot collide.
  *
- * @param callable(): mixed $call
+ * @template T
  *
- * @return ExpectBuilder<mixed>
+ * @param callable(): T $call
+ *
+ * @return ExpectBuilder<T>
  *
  * @api
  */

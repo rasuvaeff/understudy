@@ -29,10 +29,12 @@ final class Wire
     private function __construct() {}
 
     /**
-     * @param class-string         $sut
+     * @template T of object
+     *
+     * @param class-string<T>      $sut
      * @param array<string, mixed> $overrides
      *
-     * @return array{sut: object, doubles: array<string, object>}
+     * @return array{sut: T, doubles: array<string, object>}
      */
     public static function build(string $sut, array $overrides): array
     {
@@ -166,22 +168,26 @@ final class Wire
     }
 
     /**
-     * @param class-string $sut
+     * @template T of object
      *
-     * @return \ReflectionClass<object>
+     * @param class-string<T> $sut
+     *
+     * @return \ReflectionClass<T>
      */
     private static function reflectSubject(string $sut): \ReflectionClass
     {
-        /** @var class-string $sut */
-        if (interface_exists($sut)) {
+        // Checked on a copy: narrowing `$sut` itself would lose the template.
+        $name = $sut;
+
+        if (interface_exists($name)) {
             throw CannotWire::notAConcreteClass($sut, 'it is an interface.');
         }
 
-        if (trait_exists($sut)) {
+        if (trait_exists($name)) {
             throw CannotWire::notAConcreteClass($sut, 'it is a trait.');
         }
 
-        if (!class_exists($sut)) {
+        if (!class_exists($name)) {
             throw CannotWire::notAConcreteClass($sut, 'there is no such class.');
         }
 
