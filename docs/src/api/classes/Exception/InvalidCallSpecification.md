@@ -9,7 +9,7 @@ description: "A specification of the wrong SHAPE: the closure handed to when()/v
 
 `Rasuvaeff\Understudy\Exception\InvalidCallSpecification`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L25) — **Version:** v1.1.2-11-g865d5f0
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidCallSpecification.php#L25) — **Version:** v1.2.1
 
 **Extends:** `LogicException`
 

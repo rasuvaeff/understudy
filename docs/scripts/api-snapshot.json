@@ -2,7 +2,7 @@
     "classes": [
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Arg",
             "kind": "class",
@@ -497,7 +497,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Bypass\\FileWrapper",
             "kind": "class",
@@ -1159,7 +1159,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Bypass\\FinalStripper",
             "kind": "class",
@@ -1219,7 +1219,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Captor",
             "kind": "class",
@@ -1347,7 +1347,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Cardinality",
             "kind": "class",
@@ -1540,7 +1540,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\Blueprint",
             "kind": "class",
@@ -1677,7 +1677,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\DefaultRenderer",
             "kind": "class",
@@ -1737,7 +1737,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\DnfType",
             "kind": "class",
@@ -2078,7 +2078,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\DoubleFactory",
             "kind": "class",
@@ -2230,7 +2230,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\MethodSignature",
             "kind": "class",
@@ -2424,7 +2424,134 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
+            "rootReference": null,
+            "class": "Rasuvaeff\\Understudy\\Codegen\\ParameterUnifier",
+            "kind": "class",
+            "isApi": false,
+            "isAbstract": false,
+            "isThrowable": false,
+            "summary": "Unifies one parameter position — or the variadic tail — across the\nsame-named declarations of every target.",
+            "description": "Parameters are contravariant, so the rendered type is the union of what the\ntargets accept; only a by-reference mismatch and two disagreeing defaults\nare conflicts.",
+            "deprecated": null,
+            "see": [],
+            "extensionTags": {
+                "internal": [
+                    ""
+                ]
+            },
+            "extends": null,
+            "implements": [],
+            "attributes": [],
+            "constructorParams": [],
+            "publicProperties": [],
+            "publicMethods": [
+                {
+                    "name": "firstVariadicPosition",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "declarations",
+                            "type": "non-empty-list<\\ReflectionMethod>",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "?int",
+                    "summary": "The earliest position at which any target declares a variadic, or null\nwhen none does.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 38
+                },
+                {
+                    "name": "variadicTail",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "name",
+                            "type": "non-empty-string",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "declarations",
+                            "type": "non-empty-list<\\ReflectionMethod>",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "from",
+                            "type": "int",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "array",
+                    "summary": "Everything from the first variadic position onwards collapses into one\nvariadic tail whose type is the union of every parameter any target\ndeclares there or later.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": true,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 65
+                },
+                {
+                    "name": "unify",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "name",
+                            "type": "non-empty-string",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "declarations",
+                            "type": "non-empty-list<\\ReflectionMethod>",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "position",
+                            "type": "int",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "array",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": true,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 135
+                }
+            ],
+            "constants": [],
+            "enumCases": [],
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Codegen/ParameterUnifier.php#L20",
+            "implementedBy": []
+        },
+        {
+            "root": "core",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\PropertyDefaults",
             "kind": "class",
@@ -2477,7 +2604,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\PropertySignature",
             "kind": "class",
@@ -2567,7 +2694,120 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
+            "rootReference": null,
+            "class": "Rasuvaeff\\Understudy\\Codegen\\ReturnTypeUnifier",
+            "kind": "class",
+            "isApi": false,
+            "isAbstract": false,
+            "isThrowable": false,
+            "summary": "Unifies the return types same-named methods declare across targets.",
+            "description": "Return types are covariant, so the generated override has to satisfy every\ndeclaration at once: the narrowest declared type when one satisfies the\nrest, an intersection of interface branches when none does, and a conflict\nwhen no type can.",
+            "deprecated": null,
+            "see": [],
+            "extensionTags": {
+                "internal": [
+                    ""
+                ]
+            },
+            "extends": null,
+            "implements": [],
+            "attributes": [],
+            "constructorParams": [],
+            "publicProperties": [],
+            "publicMethods": [
+                {
+                    "name": "declaredType",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "method",
+                            "type": "ReflectionMethod",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "?ReflectionType",
+                    "summary": "The return type a method declares, tentative ones included.",
+                    "description": "PHP's own interfaces carry TENTATIVE return types — `Countable::count()`\nis declared `: int`, and `getReturnType()` answers null for it, because\nan implementation is still allowed to omit or widen the type until the\ngrace period ends. Reading only `getReturnType()` therefore made every\nbuilt-in contract look untyped, and the generated override declared\n`mixed`: legal for `ArrayAccess::offsetGet` (tentatively `mixed` too),\nand a deprecation notice for `Countable::count`, on a call as ordinary\nas `Understudy::for(Repo::class, Countable::class)`. A future PHP turns\nthat notice into an error.\n\nDeclaring the tentative type satisfies the contract exactly, so no\n`#[\\ReturnTypeWillChange]` is needed anywhere.",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 39
+                },
+                {
+                    "name": "unify",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "name",
+                            "type": "non-empty-string",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "declarations",
+                            "type": "non-empty-list<\\ReflectionMethod>",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "string",
+                    "summary": "Return types are covariant, so an implementation must satisfy all of\nthem at once. `int` and `string` have no common subtype: no class can\nimplement both, and PHP rejects the attempt at compile time.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": true,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 60
+                },
+                {
+                    "name": "satisfies",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "candidate",
+                            "type": "ReflectionMethod",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "required",
+                            "type": "ReflectionMethod",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "bool",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 231
+                }
+            ],
+            "constants": [],
+            "enumCases": [],
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Codegen/ReturnTypeUnifier.php#L19",
+            "implementedBy": []
+        },
+        {
+            "root": "core",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\TargetUnifier",
             "kind": "class",
@@ -2610,17 +2850,40 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 38
+                    "startLine": 31
+                },
+                {
+                    "name": "describe",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "method",
+                            "type": "ReflectionMethod",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "string",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 396
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Codegen/TargetUnifier.php#L23",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Codegen/TargetUnifier.php#L22",
             "implementedBy": []
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\TypeRenderer",
             "kind": "class",
@@ -2740,7 +3003,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Defaults\\DefaultFactories",
             "kind": "class",
@@ -2775,7 +3038,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 57
+                    "startLine": 58
                 },
                 {
                     "name": "register",
@@ -2805,7 +3068,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 66
+                    "startLine": 67
                 },
                 {
                     "name": "valueFor",
@@ -2835,17 +3098,17 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 82
+                    "startLine": 83
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Defaults/DefaultFactories.php#L28",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Defaults/DefaultFactories.php#L29",
             "implementedBy": []
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Defaults\\TypeDefaultResolver",
             "kind": "class",
@@ -2984,7 +3247,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\AmbiguousDefaultFactory",
             "kind": "class",
@@ -3044,7 +3307,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\BypassUnavailable",
             "kind": "class",
@@ -3150,7 +3413,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\CannotWire",
             "kind": "class",
@@ -3395,7 +3658,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ConflictingExpectation",
             "kind": "class",
@@ -3515,7 +3778,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ContextOwnershipViolation",
             "kind": "class",
@@ -3560,7 +3823,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ForgottenDouble",
             "kind": "class",
@@ -3766,7 +4029,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ForwardingTargetMismatch",
             "kind": "class",
@@ -3893,7 +4156,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\InvalidCallSpecification",
             "kind": "class",
@@ -4478,7 +4741,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\InvalidDefaultValue",
             "kind": "class",
@@ -4538,7 +4801,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\InvalidSpecificationArgument",
             "kind": "class",
@@ -4807,7 +5070,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\MatcherLeaked",
             "kind": "class",
@@ -4874,7 +5137,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\NeverMethodCalled",
             "kind": "class",
@@ -4994,7 +5257,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\NoDefaultValue",
             "kind": "class",
@@ -5061,7 +5324,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\NothingCaptured",
             "kind": "class",
@@ -5114,7 +5377,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\OriginalCallUnavailable",
             "kind": "class",
@@ -5197,7 +5460,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\OriginalReturnTypeViolation",
             "kind": "class",
@@ -5294,7 +5557,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\OutcomeUnavailable",
             "kind": "class",
@@ -5377,7 +5640,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\StrictModeViolation",
             "kind": "class",
@@ -5444,7 +5707,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\UnderstudyError",
             "kind": "interface",
@@ -5493,7 +5756,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\UnsupportedTarget",
             "kind": "class",
@@ -5613,7 +5876,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\VerificationFailed",
             "kind": "class",
@@ -5700,7 +5963,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\ExpectBuilder",
             "kind": "class",
@@ -5748,7 +6011,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\Action",
             "kind": "interface",
@@ -5806,7 +6069,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ArgumentFormatter",
             "kind": "class",
@@ -5889,7 +6152,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ComputeAnswer",
             "kind": "class",
@@ -5956,7 +6219,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\Expectation",
             "kind": "class",
@@ -6459,7 +6722,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ReturnContract",
             "kind": "class",
@@ -6549,7 +6812,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ReturnValue",
             "kind": "class",
@@ -6616,7 +6879,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ThrowComputed",
             "kind": "class",
@@ -6683,7 +6946,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ThrowError",
             "kind": "class",
@@ -6750,7 +7013,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\FailureKind",
             "kind": "enum",
@@ -6839,7 +7102,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\FailureReport",
             "kind": "class",
@@ -6924,7 +7187,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 35
+                    "startLine": 36
                 },
                 {
                     "name": "renderCall",
@@ -6947,7 +7210,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 73
+                    "startLine": 74
                 },
                 {
                     "name": "renderRefusal",
@@ -6977,7 +7240,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 122
+                    "startLine": 123
                 },
                 {
                     "name": "renderCallLog",
@@ -7007,17 +7270,105 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 155
+                    "startLine": 156
+                },
+                {
+                    "name": "outOfTurn",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "label",
+                            "type": "non-empty-string",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "sequence",
+                            "type": "Rasuvaeff\\Understudy\\Runtime\\ArmedSequence",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "invocation",
+                            "type": "Rasuvaeff\\Understudy\\Invocation",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "Rasuvaeff\\Understudy\\VerificationFailure",
+                    "summary": "The refusal for a protocol step that arrived out of turn.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 246
+                },
+                {
+                    "name": "unconfiguredUnderProtocol",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "label",
+                            "type": "non-empty-string",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "sequence",
+                            "type": "Rasuvaeff\\Understudy\\Runtime\\ArmedSequence",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "invocation",
+                            "type": "Rasuvaeff\\Understudy\\Invocation",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "Rasuvaeff\\Understudy\\VerificationFailure",
+                    "summary": "The refusal for a call on a double under protocol that is neither a step\nnor configured.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 280
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/FailureReport.php#L18",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/FailureReport.php#L19",
             "implementedBy": []
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Invocation",
             "kind": "class",
@@ -7410,7 +7761,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AllOf",
             "kind": "class",
@@ -7494,7 +7845,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyArgument",
             "kind": "class",
@@ -7568,7 +7919,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyOf",
             "kind": "class",
@@ -7652,7 +8003,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyRest",
             "kind": "class",
@@ -7752,7 +8103,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyTail",
             "kind": "class",
@@ -7852,7 +8203,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\ArgumentMatcher",
             "kind": "interface",
@@ -7944,7 +8295,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\ArrayContaining",
             "kind": "class",
@@ -8028,7 +8379,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\BooleanValue",
             "kind": "class",
@@ -8102,7 +8453,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Bounds",
             "kind": "class",
@@ -8162,7 +8513,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Capturing",
             "kind": "class",
@@ -8255,7 +8606,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\CountBetween",
             "kind": "class",
@@ -8348,7 +8699,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\EmptyTail",
             "kind": "class",
@@ -8448,7 +8799,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\FloatInRange",
             "kind": "class",
@@ -8541,7 +8892,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\IdenticalTo",
             "kind": "class",
@@ -8625,7 +8976,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\InstanceOfType",
             "kind": "class",
@@ -8721,7 +9072,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\IntInRange",
             "kind": "class",
@@ -8814,7 +9165,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Negated",
             "kind": "class",
@@ -8898,7 +9249,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Operand",
             "kind": "class",
@@ -8981,7 +9332,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\PropertyEquals",
             "kind": "class",
@@ -9074,7 +9425,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\QueryEquals",
             "kind": "class",
@@ -9167,7 +9518,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Satisfying",
             "kind": "class",
@@ -9260,7 +9611,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\StringMatching",
             "kind": "class",
@@ -9344,7 +9695,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\StructurallyEqual",
             "kind": "class",
@@ -9428,7 +9779,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\TailMatcher",
             "kind": "interface",
@@ -9488,7 +9839,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Unspelled",
             "kind": "class",
@@ -9562,7 +9913,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\UnspelledTail",
             "kind": "class",
@@ -9662,7 +10013,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Outcome",
             "kind": "class",
@@ -9834,8 +10185,8 @@
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\ArgReturnType",
             "kind": "class",
             "isApi": false,
@@ -9942,13 +10293,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/ArgReturnType.php#L40",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/ArgReturnType.php#L40",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\BuilderReturnType",
             "kind": "class",
             "isApi": false,
@@ -10038,13 +10389,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/BuilderReturnType.php#L23",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/BuilderReturnType.php#L23",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\CaptorReturnType",
             "kind": "class",
             "isApi": false,
@@ -10151,13 +10502,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/CaptorReturnType.php#L30",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/CaptorReturnType.php#L30",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Collector\\CaptureCallCollector",
             "kind": "class",
             "isApi": false,
@@ -10235,13 +10586,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Collector/CaptureCallCollector.php#L27",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Collector/CaptureCallCollector.php#L27",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Collector\\HoistedMatcherCollector",
             "kind": "class",
             "isApi": false,
@@ -10319,13 +10670,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Collector/HoistedMatcherCollector.php#L29",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Collector/HoistedMatcherCollector.php#L29",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Collector\\MatcherCallCollector",
             "kind": "class",
             "isApi": false,
@@ -10403,13 +10754,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Collector/MatcherCallCollector.php#L20",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Collector/MatcherCallCollector.php#L20",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Collector\\SpecificationRangeCollector",
             "kind": "class",
             "isApi": false,
@@ -10487,13 +10838,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Collector/SpecificationRangeCollector.php#L27",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Collector/SpecificationRangeCollector.php#L27",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\BuilderType",
             "kind": "class",
             "isApi": false,
@@ -10554,13 +10905,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/BuilderType.php#L30",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/BuilderType.php#L30",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\Cardinality",
             "kind": "class",
             "isApi": false,
@@ -10660,13 +11011,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/Cardinality.php#L21",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/Cardinality.php#L21",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\ClosureShape",
             "kind": "class",
             "isApi": false,
@@ -10779,13 +11130,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/ClosureShape.php#L32",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/ClosureShape.php#L32",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\DoubleType",
             "kind": "class",
             "isApi": false,
@@ -10842,13 +11193,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/DoubleType.php#L34",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/DoubleType.php#L34",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\MatcherKind",
             "kind": "class",
             "isApi": false,
@@ -10946,13 +11297,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/MatcherKind.php#L30",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/MatcherKind.php#L30",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\MatcherName",
             "kind": "class",
             "isApi": false,
@@ -10999,13 +11350,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/MatcherName.php#L22",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/MatcherName.php#L22",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\ResolvedName",
             "kind": "class",
             "isApi": false,
@@ -11052,13 +11403,124 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/ResolvedName.php#L20",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/ResolvedName.php#L20",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
+            "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\RestTail",
+            "kind": "class",
+            "isApi": false,
+            "isAbstract": false,
+            "isThrowable": false,
+            "summary": "A run of `Arg::any()` at the end of a specified call, which `Arg::rest()`\nwould say in one word.",
+            "description": "Only where the two are the same specification. The engine collects a\nnon-variadic method's arguments by name, so every call it records carries\nexactly the declared arity; an `Arg::any()` per remaining position and one\n`Arg::rest()` then accept the same calls. A variadic method is the\nexception: its tail has a length, `any()` pins it and `rest()` does not.\nA call that spells fewer arguments than the method requires, or more than\nit declares, is a mistake of its own, and a named or unpacked argument\nputs positions where the written order does not say.\n\nThree in a row, not two. `find(7, Arg::any(), Arg::any())` reads its\narity off the page and `rest()` saves one word; from three on, the run is\nthe noise the suggestion is for — and three is where the review that asked\nfor it started counting.\n\nAnalyser-independent: the caller answers what the matcher is called and\nwhat the method declares; this reads nothing but php-parser nodes.",
+            "deprecated": null,
+            "see": [],
+            "extensionTags": {
+                "internal": [
+                    ""
+                ]
+            },
+            "extends": null,
+            "implements": [],
+            "attributes": [],
+            "constructorParams": [],
+            "publicProperties": [],
+            "publicMethods": [
+                {
+                    "name": "of",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "arguments",
+                            "type": "list<\\PhpParser\\Node\\Arg>",
+                            "description": "the specified call's arguments, as written",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "matcher",
+                            "type": "callable",
+                            "description": "the `Arg::` method name, when the expression is ours",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "required",
+                            "type": "int<0, max>",
+                            "description": "how many parameters the method requires",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "declared",
+                            "type": "int<0, max>",
+                            "description": "how many parameters the method declares",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "variadic",
+                            "type": "bool",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "?array",
+                    "summary": "The position of the first `Arg::any()` of the trailing run and the\nrun's length, or null when there is nothing to suggest.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 54
+                },
+                {
+                    "name": "message",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "length",
+                            "type": "int<3, max>",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "string",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 82
+                }
+            ],
+            "constants": [
+                {
+                    "name": "MINIMUM",
+                    "type": "int",
+                    "summary": "The shortest run worth a suggestion.",
+                    "value": 3
+                }
+            ],
+            "enumCases": [],
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/RestTail.php#L34",
+            "implementedBy": []
+        },
+        {
+            "root": "phpstan",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\SpecificationCheck",
             "kind": "class",
             "isApi": false,
@@ -11121,7 +11583,37 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 55
+                    "startLine": 58
+                },
+                {
+                    "name": "restSuggestions",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "call",
+                            "type": "PhpParser\\Node\\Expr\\FuncCall|PhpParser\\Node\\Expr\\StaticCall",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "scope",
+                            "type": "PHPStan\\Analyser\\Scope",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "array",
+                    "summary": "A tail of `Arg::any()` that `Arg::rest()` would say in one word, in\nevery closure of the specification.",
+                    "description": "Apart from \\Rasuvaeff\\Understudy\\PhpStan\\Internal\\errors() because it is a suggestion rather than a\nmistake, and opt-in for that reason: `Rule\\RestSuggestionRule` is\nregistered only under `understudy.suggestRest: true`.",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 145
                 }
             ],
             "constants": [
@@ -11142,16 +11634,22 @@
                     "type": "string",
                     "summary": "",
                     "value": "understudy.matcher"
+                },
+                {
+                    "name": "REST_IDENTIFIER",
+                    "type": "string",
+                    "summary": "",
+                    "value": "understudy.rest"
                 }
             ],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/SpecificationCheck.php#L40",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/SpecificationCheck.php#L41",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\SpecificationExpr",
             "kind": "class",
             "isApi": false,
@@ -11198,13 +11696,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/SpecificationExpr.php#L22",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/SpecificationExpr.php#L22",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\SpecifiedCall",
             "kind": "class",
             "isApi": false,
@@ -11299,6 +11797,21 @@
                     "startLine": 57
                 },
                 {
+                    "name": "isVariadic",
+                    "static": false,
+                    "params": [],
+                    "returnType": "bool",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 62
+                },
+                {
                     "name": "returnType",
                     "static": false,
                     "params": [],
@@ -11311,18 +11824,18 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 62
+                    "startLine": 67
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/SpecifiedCall.php#L28",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/SpecifiedCall.php#L28",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\VerbNames",
             "kind": "class",
             "isApi": false,
@@ -11429,13 +11942,13 @@
                 }
             ],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/VerbNames.php#L16",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/VerbNames.php#L16",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\WireShape",
             "kind": "class",
             "isApi": false,
@@ -11499,13 +12012,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/WireShape.php#L39",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/WireShape.php#L39",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\RestArity",
             "kind": "class",
             "isApi": false,
@@ -11570,13 +12083,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/RestArity.php#L41",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/RestArity.php#L41",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Rule\\FluentCardinalityRule",
             "kind": "class",
             "isApi": false,
@@ -11654,13 +12167,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Rule/FluentCardinalityRule.php#L28",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Rule/FluentCardinalityRule.php#L28",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Rule\\MatcherLeakRule",
             "kind": "class",
             "isApi": false,
@@ -11745,13 +12258,97 @@
                 }
             ],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Rule/MatcherLeakRule.php#L36",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Rule/MatcherLeakRule.php#L36",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
+            "class": "Rasuvaeff\\Understudy\\PhpStan\\Rule\\RestSuggestionRule",
+            "kind": "class",
+            "isApi": false,
+            "isAbstract": false,
+            "isThrowable": false,
+            "summary": "`understudy.rest`: a tail of `Arg::any()` that `Arg::rest()` would say in\none word, under every verb — the free-function and the static form alike.",
+            "description": "Opt-in. PHPStan has no severity below an error, and a suggestion reported\nas one would turn a green run red on a minor upgrade, so `extension.neon`\nregisters this rule only under `understudy.suggestRest: true`.",
+            "deprecated": null,
+            "see": [],
+            "extensionTags": {
+                "implements": [
+                    "\\PHPStan\\Rules\\Rule<\\PhpParser\\Node\\Expr\\CallLike>"
+                ],
+                "internal": [
+                    ""
+                ]
+            },
+            "extends": null,
+            "implements": [
+                "PHPStan\\Rules\\Rule"
+            ],
+            "attributes": [],
+            "constructorParams": [],
+            "publicProperties": [],
+            "publicMethods": [
+                {
+                    "name": "getNodeType",
+                    "static": false,
+                    "params": [],
+                    "returnType": "string",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [
+                        "Override"
+                    ],
+                    "startLine": 31
+                },
+                {
+                    "name": "processNode",
+                    "static": false,
+                    "params": [
+                        {
+                            "name": "node",
+                            "type": "\\PHPStan\\Rules\\TNodeType",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "scope",
+                            "type": "\\PHPStan\\Analyser\\Scope&\\PHPStan\\Analyser\\NodeCallbackInvoker&\\PHPStan\\Analyser\\CollectedDataEmitter&\\PHPStan\\Analyser\\DependencyTracker",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "array",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": "PHPStan\\Rules\\Rule",
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [
+                        "Override"
+                    ],
+                    "startLine": 37
+                }
+            ],
+            "constants": [],
+            "enumCases": [],
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Rule/RestSuggestionRule.php#L28",
+            "implementedBy": []
+        },
+        {
+            "root": "phpstan",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Rule\\SpecificationCallRule",
             "kind": "class",
             "isApi": false,
@@ -11839,13 +12436,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Rule/SpecificationCallRule.php#L22",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Rule/SpecificationCallRule.php#L22",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Rule\\SpecificationStaticCallRule",
             "kind": "class",
             "isApi": false,
@@ -11933,13 +12530,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Rule/SpecificationStaticCallRule.php#L24",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Rule/SpecificationStaticCallRule.php#L24",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\Rule\\VoidReturnsRule",
             "kind": "class",
             "isApi": false,
@@ -12024,13 +12621,13 @@
                 }
             ],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Rule/VoidReturnsRule.php#L35",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Rule/VoidReturnsRule.php#L35",
             "implementedBy": []
         },
         {
             "root": "phpstan",
-            "rootVersion": "v1.1.0",
-            "rootReference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+            "rootVersion": "v1.2.0",
+            "rootReference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
             "class": "Rasuvaeff\\Understudy\\PhpStan\\StaticBuilderReturnType",
             "kind": "class",
             "isApi": false,
@@ -12156,7 +12753,7 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/StaticBuilderReturnType.php#L31",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/StaticBuilderReturnType.php#L31",
             "implementedBy": []
         },
         {
@@ -12257,8 +12854,8 @@
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\BuilderReturnType",
             "kind": "class",
             "isApi": false,
@@ -12326,13 +12923,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/BuilderReturnType.php#L19",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/BuilderReturnType.php#L19",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\CaptorRecorder",
             "kind": "class",
             "isApi": false,
@@ -12400,13 +12997,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/CaptorRecorder.php#L39",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/CaptorRecorder.php#L39",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\BuilderType",
             "kind": "class",
             "isApi": false,
@@ -12481,13 +13078,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Internal/BuilderType.php#L32",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Internal/BuilderType.php#L32",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\Cardinality",
             "kind": "class",
             "isApi": false,
@@ -12587,13 +13184,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Internal/Cardinality.php#L21",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Internal/Cardinality.php#L21",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\ClosureShape",
             "kind": "class",
             "isApi": false,
@@ -12706,13 +13303,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Internal/ClosureShape.php#L32",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Internal/ClosureShape.php#L32",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\DoubleType",
             "kind": "class",
             "isApi": false,
@@ -12766,13 +13363,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Internal/DoubleType.php#L32",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Internal/DoubleType.php#L32",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\MatcherClass",
             "kind": "class",
             "isApi": false,
@@ -12819,13 +13416,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Internal/MatcherClass.php#L20",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Internal/MatcherClass.php#L20",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\MatcherKind",
             "kind": "class",
             "isApi": false,
@@ -12874,7 +13471,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 110
+                    "startLine": 114
                 },
                 {
                     "name": "instanceProblem",
@@ -12918,18 +13515,18 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 157
+                    "startLine": 161
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Internal/MatcherKind.php#L41",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Internal/MatcherKind.php#L41",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\ReceiverType",
             "kind": "class",
             "isApi": false,
@@ -12990,13 +13587,124 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Internal/ReceiverType.php#L28",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Internal/ReceiverType.php#L28",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
+            "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\RestTail",
+            "kind": "class",
+            "isApi": false,
+            "isAbstract": false,
+            "isThrowable": false,
+            "summary": "A run of `Arg::any()` at the end of a specified call, which `Arg::rest()`\nwould say in one word.",
+            "description": "Only where the two are the same specification. The engine collects a\nnon-variadic method's arguments by name, so every call it records carries\nexactly the declared arity; an `Arg::any()` per remaining position and one\n`Arg::rest()` then accept the same calls. A variadic method is the\nexception: its tail has a length, `any()` pins it and `rest()` does not.\nA call that spells fewer arguments than the method requires, or more than\nit declares, is a mistake of its own, and a named or unpacked argument\nputs positions where the written order does not say.\n\nThree in a row, not two. `find(7, Arg::any(), Arg::any())` reads its\narity off the page and `rest()` saves one word; from three on, the run is\nthe noise the suggestion is for — and three is where the review that asked\nfor it started counting.\n\nAnalyser-independent: the caller answers what the matcher is called and\nwhat the method declares; this reads nothing but php-parser nodes.",
+            "deprecated": null,
+            "see": [],
+            "extensionTags": {
+                "internal": [
+                    ""
+                ]
+            },
+            "extends": null,
+            "implements": [],
+            "attributes": [],
+            "constructorParams": [],
+            "publicProperties": [],
+            "publicMethods": [
+                {
+                    "name": "of",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "arguments",
+                            "type": "list<\\PhpParser\\Node\\Arg>",
+                            "description": "the specified call's arguments, as written",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "matcher",
+                            "type": "callable",
+                            "description": "the `Arg::` method name, when the expression is ours",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "required",
+                            "type": "int<0, max>",
+                            "description": "how many parameters the method requires",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "declared",
+                            "type": "int<0, max>",
+                            "description": "how many parameters the method declares",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "variadic",
+                            "type": "bool",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "?array",
+                    "summary": "The position of the first `Arg::any()` of the trailing run and the\nrun's length, or null when there is nothing to suggest.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 54
+                },
+                {
+                    "name": "message",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "length",
+                            "type": "int<3, max>",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "string",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 82
+                }
+            ],
+            "constants": [
+                {
+                    "name": "MINIMUM",
+                    "type": "int",
+                    "summary": "The shortest run worth a suggestion.",
+                    "value": 3
+                }
+            ],
+            "enumCases": [],
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Internal/RestTail.php#L34",
+            "implementedBy": []
+        },
+        {
+            "root": "psalm",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\ScopeIndex",
             "kind": "class",
             "isApi": false,
@@ -13102,13 +13810,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Internal/ScopeIndex.php#L16",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Internal/ScopeIndex.php#L16",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\VerbNames",
             "kind": "class",
             "isApi": false,
@@ -13215,13 +13923,13 @@
                 }
             ],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Internal/VerbNames.php#L17",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Internal/VerbNames.php#L17",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Internal\\WireShape",
             "kind": "class",
             "isApi": false,
@@ -13282,13 +13990,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Internal/WireShape.php#L42",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Internal/WireShape.php#L42",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Issue\\UnderstudyMisuse",
             "kind": "class",
             "isApi": true,
@@ -13307,13 +14015,38 @@
             "publicMethods": [],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Issue/UnderstudyMisuse.php#L20",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Issue/UnderstudyMisuse.php#L20",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
+            "class": "Rasuvaeff\\Understudy\\Psalm\\Issue\\UnderstudyRestSuggestion",
+            "kind": "class",
+            "isApi": true,
+            "isAbstract": false,
+            "isThrowable": false,
+            "summary": "A trailing run of `Arg::any()` that `Arg::rest()` would say in one word.",
+            "description": "A suggestion, not a mistake: the specification works as written. Its own\ntype rather than `UnderstudyMisuse`, so that the two can be configured\napart, and reported at `info` by default — the plugin sets that level\nunless the project's `psalm.xml` already names this issue, in which case\nthe project's choice stands:\n\n```xml\n<PluginIssue name=\"UnderstudyRestSuggestion\" errorLevel=\"suppress\"/>\n```",
+            "deprecated": null,
+            "see": [],
+            "extensionTags": [],
+            "extends": "Psalm\\Issue\\PluginIssue",
+            "implements": [],
+            "attributes": [],
+            "constructorParams": [],
+            "publicProperties": [],
+            "publicMethods": [],
+            "constants": [],
+            "enumCases": [],
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Issue/UnderstudyRestSuggestion.php#L24",
+            "implementedBy": []
+        },
+        {
+            "root": "psalm",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\MatcherArgument",
             "kind": "class",
             "isApi": false,
@@ -13364,13 +14097,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/MatcherArgument.php#L34",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/MatcherArgument.php#L34",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\Plugin",
             "kind": "class",
             "isApi": true,
@@ -13420,18 +14153,18 @@
                     "attributes": [
                         "Override"
                     ],
-                    "startLine": 24
+                    "startLine": 25
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Plugin.php#L18",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Plugin.php#L19",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\SpecificationRules",
             "kind": "class",
             "isApi": false,
@@ -13477,18 +14210,18 @@
                     "attributes": [
                         "Override"
                     ],
-                    "startLine": 56
+                    "startLine": 59
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/SpecificationRules.php#L53",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/SpecificationRules.php#L56",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\SpecificationScope",
             "kind": "class",
             "isApi": false,
@@ -13599,13 +14332,13 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/SpecificationScope.php#L31",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/SpecificationScope.php#L31",
             "implementedBy": []
         },
         {
             "root": "psalm",
-            "rootVersion": "v1.2.0",
-            "rootReference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+            "rootVersion": "v1.3.0",
+            "rootReference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
             "class": "Rasuvaeff\\Understudy\\Psalm\\StaticBuilderReturnType",
             "kind": "class",
             "isApi": false,
@@ -13673,12 +14406,12 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/StaticBuilderReturnType.php#L25",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/StaticBuilderReturnType.php#L25",
             "implementedBy": []
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\Absent",
             "kind": "enum",
@@ -13721,7 +14454,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\ArmedSequence",
             "kind": "class",
@@ -13927,7 +14660,127 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
+            "rootReference": null,
+            "class": "Rasuvaeff\\Understudy\\Runtime\\ContextStack",
+            "kind": "class",
+            "isApi": false,
+            "isAbstract": false,
+            "isThrowable": false,
+            "summary": "Which context is current — per Fiber, nested by `scope()` — and every\ncontext still holding understudies.",
+            "description": "",
+            "deprecated": null,
+            "see": [],
+            "extensionTags": {
+                "internal": [
+                    ""
+                ]
+            },
+            "extends": null,
+            "implements": [],
+            "attributes": [],
+            "constructorParams": [],
+            "publicProperties": [],
+            "publicMethods": [
+                {
+                    "name": "current",
+                    "static": true,
+                    "params": [],
+                    "returnType": "Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 47
+                },
+                {
+                    "name": "currentIfAny",
+                    "static": true,
+                    "params": [],
+                    "returnType": "?Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 61
+                },
+                {
+                    "name": "pushScope",
+                    "static": true,
+                    "params": [],
+                    "returnType": "Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
+                    "summary": "Opens a nested context, so that everything created inside it is dropped\nwhen it closes and the enclosing context resumes untouched.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 72
+                },
+                {
+                    "name": "popScope",
+                    "static": true,
+                    "params": [],
+                    "returnType": "void",
+                    "summary": "Closes the innermost scope of the caller and retires its context.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 83
+                },
+                {
+                    "name": "liveContexts",
+                    "static": true,
+                    "params": [],
+                    "returnType": "array",
+                    "summary": "The current context first, then every other one still holding\nunderstudies — the whole test, in the order a report should read.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 115
+                },
+                {
+                    "name": "reset",
+                    "static": true,
+                    "params": [],
+                    "returnType": "void",
+                    "summary": "Drops the current execution context. Adapters call this unconditionally\nafter each test; sibling Fibers must remain untouched.",
+                    "description": "The sweep retires every live context, this one included — a context is\nrecorded live where it is created, so there is nothing to retire\nseparately here. It runs before the replacement is opened, because it\nwould otherwise retire that one too.\n\nUnconditional, including when `reset()` is itself called from inside a\nFiber, because that is the shape the runners actually have. Under Testo\na `#[RunInFiber]` test puts the whole pipeline in one Fiber, and the\nassert collector then opens a SECOND one around the body: the adapter's\nteardown runs in the outer Fiber while the test's understudies live in\nthe inner one. A reset that only reached its own Fiber left them behind\nto answer the next test.\n\nOne method on purpose: teardown runs after every test, and each static\ncall split out of it is measurable in `make perf`.",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 149
+                }
+            ],
+            "constants": [],
+            "enumCases": [],
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Runtime/ContextStack.php#L13",
+            "implementedBy": []
+        },
+        {
+            "root": "core",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\DoubleState",
             "kind": "class",
@@ -14484,7 +15337,205 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
+            "rootReference": null,
+            "class": "Rasuvaeff\\Understudy\\Runtime\\Forwarder",
+            "kind": "class",
+            "isApi": false,
+            "isAbstract": false,
+            "isThrowable": false,
+            "summary": "Runs a double's real implementation: inline on the double itself, or by\nproxy to the remembered instance — and keeps the stack of real bodies a\n`clone` made inside one of them is judged against.",
+            "description": "",
+            "deprecated": null,
+            "see": [],
+            "extensionTags": {
+                "internal": [
+                    ""
+                ]
+            },
+            "extends": null,
+            "implements": [],
+            "attributes": [],
+            "constructorParams": [],
+            "publicProperties": [
+                {
+                    "name": "inlineFrames",
+                    "type": "list<object>",
+                    "readonly": false,
+                    "summary": "The doubles whose real bodies are running right now, innermost last."
+                },
+                {
+                    "name": "inlineFloor",
+                    "type": "int",
+                    "readonly": false,
+                    "summary": "How much of $inlineFrames a `clone` is allowed to see."
+                }
+            ],
+            "publicMethods": [
+                {
+                    "name": "inheritForwarding",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "clone",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "state",
+                            "type": "Rasuvaeff\\Understudy\\Runtime\\DoubleState",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "context",
+                            "type": "Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "void",
+                    "summary": "Gives a fresh clone the forwarding of the double whose real body made\nit, when one is running; see Runtime::adoptClone().",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 65
+                },
+                {
+                    "name": "runInline",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "state",
+                            "type": "Rasuvaeff\\Understudy\\Runtime\\DoubleState",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "method",
+                            "type": "non-empty-string",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "args",
+                            "type": "list",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "mixed",
+                    "summary": "Runs the real body on the double itself.",
+                    "description": "`ReflectionMethod::invokeArgs()` is what makes this possible without\nadding anything to the generated class: a reflection taken on the\n*doubled* class enters that class's body even though the double\noverrides the method — the same non-virtual entry `parent::` gives —\nwhile `$this` inside the body stays the double, so its self-calls\ndispatch virtually and land back in the override. Verified on 8.3, 8.4\nand 8.5; `spikes/08-inline-forwarding` is the executable form of the\nclaim. A generated `__understudyReal_*()` sibling would be the other\nway, and it is the way this library does not take: every member added\nto a double is a name the doubled type can no longer use.\n\nThe arguments are the live ones — a reference survives the array, so a\nby-reference parameter still writes to the caller's variable — and the\nbody runs inside dispatch, so its outcome is recorded like any other\nanswer's.\n\nThe one thing the proxy form refused and this form has to refuse too: a\nreal body that builds another instance of itself and hands it out. Under\nthe proxy it was an instance of the real class the double could not\nstand in for; here it is an instance of the generated class, which\nsatisfies the override's `: static` and so gets past the language. A\n`clone $this` is fine — `adoptClone()` gave the copy this double's\nforwarding, so it answers for real — but a `new static` belongs to no\ncontext at all, and the next call on it would fail as a double that was\nnever registered. That is what is refused, by registration rather than\nby return type: an unknown instance is broken for every caller, not only\nfor one whose signature says `static`.",
+                    "throws": [],
+                    "throwsInBody": true,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 134
+                },
+                {
+                    "name": "forward",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "state",
+                            "type": "Rasuvaeff\\Understudy\\Runtime\\DoubleState",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "method",
+                            "type": "non-empty-string",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "args",
+                            "type": "list",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "mixed",
+                    "summary": "Delegates a call to the double's real instance and adopts the result.",
+                    "description": "The proxy form of forwarding — the one an interface double has no choice\nabout, and the one a donor that is a subclass of the doubled class keeps.\nThe call runs on the remembered instance, `$this` inside it is that\ninstance, and its self-calls stay inside it. A class double standing in\nfor exactly the donor's class runs the real bodies on itself instead\n(\\Rasuvaeff\\Understudy\\Runtime\\runInline()), where `$this` stays the double and self-calls\nre-enter dispatch.",
+                    "throws": [],
+                    "throwsInBody": true,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 185
+                },
+                {
+                    "name": "copyState",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "donor",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "void",
+                    "summary": "Copies the donor instance's initialized state onto the double, so a\nparent body run inline works over the values the real object held.",
+                    "description": "The double's constructor never ran — beyond the empty scalars\n`PropertyDefaults` wrote, nothing on it is initialized — while the\nparent bodies inline forwarding runs read `$this->` properties. Every\nproperty the donor has initialized is copied; one the donor left\nuninitialized is left (or made) uninitialized on the double, so the\nreal body sees exactly what it would have seen on the donor — including\nPHP's own \"must not be accessed before initialization\" for a property\nnobody set.\n\nEach property is handled through a reflection against its **declaring**\nclass: before PHP 8.4 a readonly property can only be initialized from\nthe scope of the class that declares it, and a reflection reached\nthrough the subclass writes from the subclass's scope.",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 260
+                }
+            ],
+            "constants": [],
+            "enumCases": [],
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Runtime/Forwarder.php#L17",
+            "implementedBy": []
+        },
+        {
+            "root": "core",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\InvocationSignal",
             "kind": "class",
@@ -14526,7 +15577,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\Mode",
             "kind": "enum",
@@ -14589,7 +15640,257 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
+            "rootReference": null,
+            "class": "Rasuvaeff\\Understudy\\Runtime\\Ownership",
+            "kind": "class",
+            "isApi": false,
+            "isAbstract": false,
+            "isThrowable": false,
+            "summary": "Which context owns each double, and which doubles were forgotten — and by\nwhat: a reset, a closing scope, or `Understudy::forget()`.",
+            "description": "",
+            "deprecated": null,
+            "see": [],
+            "extensionTags": {
+                "internal": [
+                    ""
+                ]
+            },
+            "extends": null,
+            "implements": [],
+            "attributes": [],
+            "constructorParams": [],
+            "publicProperties": [],
+            "publicMethods": [
+                {
+                    "name": "owners",
+                    "static": true,
+                    "params": [],
+                    "returnType": "WeakMap",
+                    "summary": "The owner map itself, so that registering a double costs what it did\nbefore ownership had a class of its own: one call and a write.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 59
+                },
+                {
+                    "name": "ownerOf",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "?Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 70
+                },
+                {
+                    "name": "isForgotten",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "bool",
+                    "summary": "Whether a double's context was torn down under it.",
+                    "description": "A one-way latch on purpose: a double belongs to exactly one context for\nits whole life, and `for()` hands back a new object every time, so\nnothing that was forgotten can become known again.",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 84
+                },
+                {
+                    "name": "isDroppedByScope",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "bool",
+                    "summary": "Whether a double was forgotten by the `scope()` it was created in\nclosing, rather than by a `reset()`.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 93
+                },
+                {
+                    "name": "isRetiredOnPurpose",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "bool",
+                    "summary": "Whether a double was retired on purpose through `Understudy::forget()`.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 101
+                },
+                {
+                    "name": "forgottenDouble",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "member",
+                            "type": "non-empty-string",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "Rasuvaeff\\Understudy\\Exception\\ForgottenDouble",
+                    "summary": "The refusal for a call or a question that reached a forgotten double,\nworded by what forgot it: `forget()`, a closing scope, or a reset.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 112
+                },
+                {
+                    "name": "forgottenProperty",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "property",
+                            "type": "non-empty-string",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "Rasuvaeff\\Understudy\\Exception\\ForgottenDouble",
+                    "summary": "The refusal for a property touched on a forgotten double, worded the\nsame way as `forgottenDouble()`.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 131
+                },
+                {
+                    "name": "forget",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "double",
+                            "type": "object",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "void",
+                    "summary": "Retires a double on purpose: its owner's state is dropped, so\nverification, `nothingElse()` and reset stop seeing it — a replacement\ndouble must not inherit its stubs into a `strictStubs` verdict. A call\non the object afterwards fails with `ForgottenDouble`, the same guard a\nscope close leaves behind.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 151
+                },
+                {
+                    "name": "retire",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "context",
+                            "type": "Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "byScope",
+                            "type": "bool",
+                            "description": "",
+                            "default": "false",
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "void",
+                    "summary": "Stamps every double the context held as forgotten and drops its owner.",
+                    "description": "The loop looks like something to remove — teardown runs after every test\n— and removing it was measured. Marking the context instead and having\n`ownerOf()` read the flag made teardown cheaper in isolation and double\ncreation 13-23% slower in the benchmark, because the owner entries then\nlive until collection and the map they sit in keeps growing. Eager\nremoval here is what keeps that map the size of one test.",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 182
+                }
+            ],
+            "constants": [],
+            "enumCases": [],
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Runtime/Ownership.php#L15",
+            "implementedBy": []
+        },
+        {
+            "root": "core",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\ReferenceSlot",
             "kind": "class",
@@ -14625,7 +15926,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\Runtime",
             "kind": "class",
@@ -14648,66 +15949,6 @@
             "publicProperties": [],
             "publicMethods": [
                 {
-                    "name": "current",
-                    "static": true,
-                    "params": [],
-                    "returnType": "Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
-                    "summary": "",
-                    "description": "",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 134
-                },
-                {
-                    "name": "currentIfAny",
-                    "static": true,
-                    "params": [],
-                    "returnType": "?Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
-                    "summary": "",
-                    "description": "",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 148
-                },
-                {
-                    "name": "pushScope",
-                    "static": true,
-                    "params": [],
-                    "returnType": "Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
-                    "summary": "Opens a nested context, so that everything created inside it is dropped\nwhen it closes and the enclosing context resumes untouched.",
-                    "description": "",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 159
-                },
-                {
-                    "name": "popScope",
-                    "static": true,
-                    "params": [],
-                    "returnType": "void",
-                    "summary": "",
-                    "description": "",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 167
-                },
-                {
                     "name": "adopt",
                     "static": true,
                     "params": [
@@ -14727,7 +15968,7 @@
                         }
                     ],
                     "returnType": "void",
-                    "summary": "",
+                    "summary": "Opens a nested context, so that everything created inside it is dropped\nwhen it closes and the enclosing context resumes untouched.",
                     "description": "",
                     "throws": [],
                     "throwsInBody": false,
@@ -14735,22 +15976,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 233
-                },
-                {
-                    "name": "liveContexts",
-                    "static": true,
-                    "params": [],
-                    "returnType": "array",
-                    "summary": "The current context first, then every other one still holding\nunderstudies — the whole test, in the order a report should read.",
-                    "description": "",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 267
+                    "startLine": 34
                 },
                 {
                     "name": "adoptClone",
@@ -14773,7 +15999,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 298
+                    "startLine": 58
                 },
                 {
                     "name": "adoptInto",
@@ -14803,7 +16029,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 360
+                    "startLine": 90
                 },
                 {
                     "name": "adoptContractsInto",
@@ -14833,152 +16059,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 372
-                },
-                {
-                    "name": "ownerOf",
-                    "static": true,
-                    "params": [
-                        {
-                            "name": "double",
-                            "type": "object",
-                            "description": "",
-                            "default": null,
-                            "variadic": false
-                        }
-                    ],
-                    "returnType": "?Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
-                    "summary": "",
-                    "description": "",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 388
-                },
-                {
-                    "name": "isForgotten",
-                    "static": true,
-                    "params": [
-                        {
-                            "name": "double",
-                            "type": "object",
-                            "description": "",
-                            "default": null,
-                            "variadic": false
-                        }
-                    ],
-                    "returnType": "bool",
-                    "summary": "Whether a double's context was torn down under it.",
-                    "description": "A one-way latch on purpose: a double belongs to exactly one context for\nits whole life, and `for()` hands back a new object every time, so\nnothing that was forgotten can become known again.",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 402
-                },
-                {
-                    "name": "isDroppedByScope",
-                    "static": true,
-                    "params": [
-                        {
-                            "name": "double",
-                            "type": "object",
-                            "description": "",
-                            "default": null,
-                            "variadic": false
-                        }
-                    ],
-                    "returnType": "bool",
-                    "summary": "Whether a double was forgotten by the `scope()` it was created in\nclosing, rather than by a `reset()`.",
-                    "description": "",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 411
-                },
-                {
-                    "name": "forgottenDouble",
-                    "static": true,
-                    "params": [
-                        {
-                            "name": "double",
-                            "type": "object",
-                            "description": "",
-                            "default": null,
-                            "variadic": false
-                        },
-                        {
-                            "name": "member",
-                            "type": "non-empty-string",
-                            "description": "",
-                            "default": null,
-                            "variadic": false
-                        }
-                    ],
-                    "returnType": "Rasuvaeff\\Understudy\\Exception\\ForgottenDouble",
-                    "summary": "The refusal for a call or a question that reached a forgotten double,\nworded by what forgot it: `forget()`, a closing scope, or a reset.",
-                    "description": "",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 422
-                },
-                {
-                    "name": "isRetiredOnPurpose",
-                    "static": true,
-                    "params": [
-                        {
-                            "name": "double",
-                            "type": "object",
-                            "description": "",
-                            "default": null,
-                            "variadic": false
-                        }
-                    ],
-                    "returnType": "bool",
-                    "summary": "Whether a double was retired on purpose through `Understudy::forget()`.",
-                    "description": "",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 457
-                },
-                {
-                    "name": "forget",
-                    "static": true,
-                    "params": [
-                        {
-                            "name": "double",
-                            "type": "object",
-                            "description": "",
-                            "default": null,
-                            "variadic": false
-                        }
-                    ],
-                    "returnType": "void",
-                    "summary": "Retires a double on purpose: its owner's state is dropped, so\nverification, `nothingElse()` and reset stop seeing it — a replacement\ndouble must not inherit its stubs into a `strictStubs` verdict. A call\non the object afterwards fails with `ForgottenDouble`, the same guard a\nscope close leaves behind.",
-                    "description": "",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 469
+                    "startLine": 102
                 },
                 {
                     "name": "stateOf",
@@ -15001,7 +16082,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 546
+                    "startLine": 118
                 },
                 {
                     "name": "isOwnedByCurrentContext",
@@ -15024,7 +16105,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 551
+                    "startLine": 123
                 },
                 {
                     "name": "dispatch",
@@ -15061,7 +16142,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 564
+                    "startLine": 136
                 },
                 {
                     "name": "propertyRead",
@@ -15091,7 +16172,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 929
+                    "startLine": 428
                 },
                 {
                     "name": "propertyWrite",
@@ -15128,7 +16209,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 965
+                    "startLine": 464
                 },
                 {
                     "name": "referenceSlot",
@@ -15165,7 +16246,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1023
+                    "startLine": 522
                 },
                 {
                     "name": "callOriginal",
@@ -15202,62 +16283,17 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1079
-                },
-                {
-                    "name": "copyState",
-                    "static": true,
-                    "params": [
-                        {
-                            "name": "double",
-                            "type": "object",
-                            "description": "",
-                            "default": null,
-                            "variadic": false
-                        },
-                        {
-                            "name": "donor",
-                            "type": "object",
-                            "description": "",
-                            "default": null,
-                            "variadic": false
-                        }
-                    ],
-                    "returnType": "void",
-                    "summary": "Copies the donor instance's initialized state onto the double, so a\nparent body run inline works over the values the real object held.",
-                    "description": "The double's constructor never ran — beyond the empty scalars\n`PropertyDefaults` wrote, nothing on it is initialized — while the\nparent bodies inline forwarding runs read `$this->` properties. Every\nproperty the donor has initialized is copied; one the donor left\nuninitialized is left (or made) uninitialized on the double, so the\nreal body sees exactly what it would have seen on the donor — including\nPHP's own \"must not be accessed before initialization\" for a property\nnobody set.\n\nEach property is handled through a reflection against its **declaring**\nclass: before PHP 8.4 a readonly property can only be initialized from\nthe scope of the class that declares it, and a reflection reached\nthrough the subclass writes from the subclass's scope.",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 1255
-                },
-                {
-                    "name": "reset",
-                    "static": true,
-                    "params": [],
-                    "returnType": "void",
-                    "summary": "Drops the current execution context. Adapters call this unconditionally\nafter each test; sibling Fibers must remain untouched.",
-                    "description": "",
-                    "throws": [],
-                    "throwsInBody": false,
-                    "inheritedFrom": null,
-                    "see": [],
-                    "deprecated": null,
-                    "attributes": [],
-                    "startLine": 1500
+                    "startLine": 578
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Runtime/Runtime.php#L29",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Runtime/Runtime.php#L25",
             "implementedBy": []
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
             "kind": "class",
@@ -15642,7 +16678,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\SequenceVerdict",
             "kind": "enum",
@@ -15715,7 +16751,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\SpecificationCall",
             "kind": "class",
@@ -15788,7 +16824,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\StrictStubs",
             "kind": "class",
@@ -15863,8 +16899,8 @@
         },
         {
             "root": "testo",
-            "rootVersion": "v1.1.0",
-            "rootReference": "cad5406a433772adeb7381461d0886eddbfdf10f",
+            "rootVersion": "v1.2.0",
+            "rootReference": "974f210da791257c268d7636030b6b510847282f",
             "class": "Rasuvaeff\\Understudy\\Testo\\UnderstudyInterceptor",
             "kind": "class",
             "isApi": true,
@@ -15887,7 +16923,7 @@
                 {
                     "name": "strictStubs",
                     "type": "bool",
-                    "description": "",
+                    "description": "the suite's own setting; `#[StrictStubs]` on the\ntest class or method overrides it",
                     "default": "false",
                     "promoted": true,
                     "promotedVisibility": "private",
@@ -15926,25 +16962,25 @@
                     "attributes": [
                         "Override"
                     ],
-                    "startLine": 82
+                    "startLine": 87
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-testo/blob/cad5406a433772adeb7381461d0886eddbfdf10f/src/Testo/UnderstudyInterceptor.php#L51",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-testo/blob/974f210da791257c268d7636030b6b510847282f/src/Testo/UnderstudyInterceptor.php#L52",
             "implementedBy": []
         },
         {
             "root": "testo",
-            "rootVersion": "v1.1.0",
-            "rootReference": "cad5406a433772adeb7381461d0886eddbfdf10f",
+            "rootVersion": "v1.2.0",
+            "rootReference": "974f210da791257c268d7636030b6b510847282f",
             "class": "Rasuvaeff\\Understudy\\Testo\\UnderstudyPlugin",
             "kind": "class",
             "isApi": true,
             "isAbstract": false,
             "isThrowable": false,
             "summary": "Registers UnderstudyInterceptor so every test of the suite ends with\nunderstudy's own bookkeeping done for it: expectations are verified after a\npassing body and the context is dropped either way.",
-            "description": "```php\n// testo.php\nnew SuiteConfig(\n    name: 'Unit',\n    location: ['tests'],\n    plugins: [new UnderstudyPlugin()],\n);\n```\n\nWith `strictStubs: true` a stub that was never called fails its test too.",
+            "description": "```php\n// testo.php\nnew SuiteConfig(\n    name: 'Unit',\n    location: ['tests'],\n    plugins: [new UnderstudyPlugin()],\n);\n```\n\nWith `strictStubs: true` a stub that was never called fails its test too.\n`#[StrictStubs]` / `#[StrictStubs(false)]` from `rasuvaeff/understudy` on a\ntest class or method overrides the suite's setting there: the method wins\nover its class, the class over this setting.",
             "deprecated": null,
             "see": [],
             "extensionTags": [],
@@ -15989,17 +17025,17 @@
                     "attributes": [
                         "Override"
                     ],
-                    "startLine": 39
+                    "startLine": 42
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-testo/blob/cad5406a433772adeb7381461d0886eddbfdf10f/src/Testo/UnderstudyPlugin.php#L29",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-testo/blob/974f210da791257c268d7636030b6b510847282f/src/Testo/UnderstudyPlugin.php#L32",
             "implementedBy": []
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Understudy",
             "kind": "class",
@@ -16045,7 +17081,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 64
+                    "startLine": 66
                 },
                 {
                     "name": "when",
@@ -16068,7 +17104,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 130
+                    "startLine": 132
                 },
                 {
                     "name": "expect",
@@ -16091,7 +17127,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 152
+                    "startLine": 154
                 },
                 {
                     "name": "verifyAll",
@@ -16114,7 +17150,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 200
+                    "startLine": 202
                 },
                 {
                     "name": "verify",
@@ -16172,7 +17208,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 523
+                    "startLine": 225
                 },
                 {
                     "name": "calls",
@@ -16195,7 +17231,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 628
+                    "startLine": 288
                 },
                 {
                     "name": "lastCall",
@@ -16218,7 +17254,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 649
+                    "startLine": 309
                 },
                 {
                     "name": "strict",
@@ -16241,7 +17277,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 675
+                    "startLine": 335
                 },
                 {
                     "name": "lean",
@@ -16264,7 +17300,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 700
+                    "startLine": 360
                 },
                 {
                     "name": "forwarding",
@@ -16299,7 +17335,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 743
+                    "startLine": 403
                 },
                 {
                     "name": "delegate",
@@ -16329,7 +17365,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 824
+                    "startLine": 484
                 },
                 {
                     "name": "wire",
@@ -16359,7 +17395,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 858
+                    "startLine": 518
                 },
                 {
                     "name": "bypassFinals",
@@ -16387,7 +17423,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 895
+                    "startLine": 555
                 },
                 {
                     "name": "defaults",
@@ -16417,7 +17453,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 978
+                    "startLine": 638
                 },
                 {
                     "name": "label",
@@ -16447,7 +17483,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 997
+                    "startLine": 657
                 },
                 {
                     "name": "unused",
@@ -16470,7 +17506,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1007
+                    "startLine": 667
                 },
                 {
                     "name": "forget",
@@ -16493,7 +17529,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1047
+                    "startLine": 707
                 },
                 {
                     "name": "nothingElse",
@@ -16523,7 +17559,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1067
+                    "startLine": 727
                 },
                 {
                     "name": "allVerified",
@@ -16546,7 +17582,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1096
+                    "startLine": 756
                 },
                 {
                     "name": "expectSequence",
@@ -16569,7 +17605,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1165
+                    "startLine": 825
                 },
                 {
                     "name": "verifySequence",
@@ -16592,7 +17628,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1205
+                    "startLine": 865
                 },
                 {
                     "name": "transcript",
@@ -16615,7 +17651,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1231
+                    "startLine": 891
                 },
                 {
                     "name": "scope",
@@ -16645,7 +17681,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1367
+                    "startLine": 940
                 },
                 {
                     "name": "checkpoint",
@@ -16668,7 +17704,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1402
+                    "startLine": 975
                 },
                 {
                     "name": "reset",
@@ -16683,7 +17719,7 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1430
+                    "startLine": 1003
                 },
                 {
                     "name": "idle",
@@ -16698,17 +17734,17 @@
                     "see": [],
                     "deprecated": null,
                     "attributes": [],
-                    "startLine": 1442
+                    "startLine": 1015
                 }
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L42",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L44",
             "implementedBy": []
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\VerificationFailure",
             "kind": "class",
@@ -16815,7 +17851,321 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
+            "rootReference": null,
+            "class": "Rasuvaeff\\Understudy\\Verifier",
+            "kind": "class",
+            "isApi": false,
+            "isAbstract": false,
+            "isThrowable": false,
+            "summary": "Decides what the facade's verification calls report: unmet and unused\nexpectations, ordering, an unfinished armed protocol, unaccounted calls and\nsequence mismatches — each failure built inside its own alias table.",
+            "description": "",
+            "deprecated": null,
+            "see": [],
+            "extensionTags": {
+                "internal": [
+                    ""
+                ]
+            },
+            "extends": null,
+            "implements": [],
+            "attributes": [],
+            "constructorParams": [],
+            "publicProperties": [],
+            "publicMethods": [
+                {
+                    "name": "report",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "contexts",
+                            "type": "list<\\Rasuvaeff\\Understudy\\Runtime\\RuntimeContext>",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "strictStubs",
+                            "type": "bool",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "int",
+                    "summary": "Raises one report over the given contexts, or returns how many checks\nthey had verified.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": true,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 32
+                },
+                {
+                    "name": "orderedExpectations",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "only",
+                            "type": "\\Rasuvaeff\\Understudy\\Runtime\\DoubleState|null",
+                            "description": "one understudy's ordering, or null for every live one",
+                            "default": "NULL",
+                            "variadic": false
+                        },
+                        {
+                            "name": "context",
+                            "type": "\\Rasuvaeff\\Understudy\\Runtime\\RuntimeContext|null",
+                            "description": "the context to read, or null for the current one",
+                            "default": "NULL",
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "array",
+                    "summary": "The expectations that declared an order, grouped by double and then\nsorted back into the order they were actually written: interleaving two\ndoubles is exactly when ordering claims are worth making.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 133
+                },
+                {
+                    "name": "orderingFailure",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "ordered",
+                            "type": "list<array{\\Rasuvaeff\\Understudy\\Runtime\\DoubleState, \\Rasuvaeff\\Understudy\\Expectation\\Expectation}>",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "?Rasuvaeff\\Understudy\\VerificationFailure",
+                    "summary": "Ordered expectations must be satisfied in the order they were declared,\nrelative to each other. Calls in between are none of their business —\n`verifySequence()` is the tool for an exact protocol.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 170
+                },
+                {
+                    "name": "checkExpectation",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "state",
+                            "type": "Rasuvaeff\\Understudy\\Runtime\\DoubleState",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "expectation",
+                            "type": "Rasuvaeff\\Understudy\\Expectation\\Expectation",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "strictStubs",
+                            "type": "bool",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "?Rasuvaeff\\Understudy\\VerificationFailure",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 240
+                },
+                {
+                    "name": "unmetFailure",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "state",
+                            "type": "Rasuvaeff\\Understudy\\Runtime\\DoubleState",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "description",
+                            "type": "non-empty-string",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "cardinality",
+                            "type": "Rasuvaeff\\Understudy\\Cardinality",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "count",
+                            "type": "int<0, max>",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "method",
+                            "type": "non-empty-string",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "expectedArgs",
+                            "type": "list",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "Rasuvaeff\\Understudy\\VerificationFailure",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 292
+                },
+                {
+                    "name": "unaccountedFailure",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "state",
+                            "type": "Rasuvaeff\\Understudy\\Runtime\\DoubleState",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "?Rasuvaeff\\Understudy\\VerificationFailure",
+                    "summary": "The calls nothing claimed, as one failure — or null when every call was\naccounted for. Built inside the caller's alias scope.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 329
+                },
+                {
+                    "name": "matching",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "state",
+                            "type": "Rasuvaeff\\Understudy\\Runtime\\DoubleState",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "probe",
+                            "type": "Rasuvaeff\\Understudy\\Expectation\\Expectation",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "array",
+                    "summary": "Every logged call the probe matches, in order.",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 359
+                },
+                {
+                    "name": "firstSequenceMismatch",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "probes",
+                            "type": "list<array{object, \\Rasuvaeff\\Understudy\\Expectation\\Expectation}>",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        },
+                        {
+                            "name": "log",
+                            "type": "list<\\Rasuvaeff\\Understudy\\Invocation>",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "?Rasuvaeff\\Understudy\\VerificationFailure",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 371
+                },
+                {
+                    "name": "describeOutcome",
+                    "static": true,
+                    "params": [
+                        {
+                            "name": "invocation",
+                            "type": "Rasuvaeff\\Understudy\\Invocation",
+                            "description": "",
+                            "default": null,
+                            "variadic": false
+                        }
+                    ],
+                    "returnType": "string",
+                    "summary": "",
+                    "description": "",
+                    "throws": [],
+                    "throwsInBody": false,
+                    "inheritedFrom": null,
+                    "see": [],
+                    "deprecated": null,
+                    "attributes": [],
+                    "startLine": 438
+                }
+            ],
+            "constants": [],
+            "enumCases": [],
+            "sourceUrl": "https://github.com/rasuvaeff/understudy/blob/master/src/Verifier.php#L21",
+            "implementedBy": []
+        },
+        {
+            "root": "core",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\WhenBuilder",
             "kind": "class",
@@ -17031,7 +18381,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Wiring\\Wire",
             "kind": "class",
@@ -17096,7 +18446,7 @@
     "functions": [
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\expect",
@@ -17120,7 +18470,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\expectSequence",
@@ -17144,7 +18494,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\verify",
@@ -17203,7 +18553,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.1.2-11-g865d5f0",
+            "rootVersion": "v1.2.1",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\when",

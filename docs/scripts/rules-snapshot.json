@@ -1,8 +1,8 @@
 {
     "phpstan": {
-        "version": "v1.1.0",
-        "reference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
-        "repoBlob": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/",
+        "version": "v1.2.0",
+        "reference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
+        "repoBlob": "https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/",
         "registeredRules": [
             "Rasuvaeff\\Understudy\\PhpStan\\Rule\\SpecificationCallRule",
             "Rasuvaeff\\Understudy\\PhpStan\\Rule\\SpecificationStaticCallRule",
@@ -40,6 +40,13 @@
                 "file": "src/PhpStan/Rule/MatcherLeakRule.php"
             },
             {
+                "identifier": "understudy.rest",
+                "class": "Rasuvaeff\\Understudy\\PhpStan\\Internal\\SpecificationCheck",
+                "registered": false,
+                "summary": "Says what the engine would say, before the test runs.",
+                "file": "src/PhpStan/Internal/SpecificationCheck.php"
+            },
+            {
                 "identifier": "understudy.returns",
                 "class": "Rasuvaeff\\Understudy\\PhpStan\\Rule\\VoidReturnsRule",
                 "registered": true,
@@ -49,15 +56,21 @@
         ]
     },
     "psalm": {
-        "version": "v1.2.0",
-        "reference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
-        "repoBlob": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/",
+        "version": "v1.3.0",
+        "reference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
+        "repoBlob": "https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/",
         "issues": [
             {
                 "issue": "UnderstudyMisuse",
                 "class": "Rasuvaeff\\Understudy\\Psalm\\Issue\\UnderstudyMisuse",
                 "summary": "A specification that cannot mean what it says.",
                 "file": "src/Psalm/Issue/UnderstudyMisuse.php"
+            },
+            {
+                "issue": "UnderstudyRestSuggestion",
+                "class": "Rasuvaeff\\Understudy\\Psalm\\Issue\\UnderstudyRestSuggestion",
+                "summary": "A trailing run of `Arg::any()` that `Arg::rest()` would say in one word.",
+                "file": "src/Psalm/Issue/UnderstudyRestSuggestion.php"
             }
         ]
     }

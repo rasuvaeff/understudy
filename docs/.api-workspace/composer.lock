@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6582f14173366caa7cc9a8d41c7993e7",
+    "content-hash": "52b84c24d7e774924900809fff46ba77",
     "packages": [
         {
             "name": "amphp/amp",
@@ -2799,16 +2799,16 @@
         },
         {
             "name": "psalm/plugin-laravel",
-            "version": "v4.23.0",
+            "version": "v4.23.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/psalm/psalm-plugin-laravel.git",
-                "reference": "974ec42d0a689e08b404bd59fc070e88e5801195"
+                "reference": "3349f83c2e6e3ea99f03298e05cc8c1785b53c8e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/psalm/psalm-plugin-laravel/zipball/974ec42d0a689e08b404bd59fc070e88e5801195",
-                "reference": "974ec42d0a689e08b404bd59fc070e88e5801195",
+                "url": "https://api.github.com/repos/psalm/psalm-plugin-laravel/zipball/3349f83c2e6e3ea99f03298e05cc8c1785b53c8e",
+                "reference": "3349f83c2e6e3ea99f03298e05cc8c1785b53c8e",
                 "shasum": ""
             },
             "require": {
@@ -2877,7 +2877,7 @@
             ],
             "support": {
                 "issues": "https://github.com/psalm/psalm-plugin-laravel/issues",
-                "source": "https://github.com/psalm/psalm-plugin-laravel/tree/v4.23.0"
+                "source": "https://github.com/psalm/psalm-plugin-laravel/tree/v4.23.1"
             },
             "funding": [
                 {
@@ -2885,7 +2885,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-11-20T23:04:53+00:00"
+            "time": "2026-11-21T00:24:24+00:00"
         },
         {
             "name": "psalm/plugin-mockery",
@@ -3381,11 +3381,11 @@
         },
         {
             "name": "rasuvaeff/understudy",
-            "version": "1.0.0",
+            "version": "1.2.1",
             "dist": {
                 "type": "path",
                 "url": "../..",
-                "reference": "865d5f0dc50c3b3cf1058360b6d9d130d49f93cf"
+                "reference": "3ac0d98ec9f04cdb7d5608de3eb08fa27940ec31"
             },
             "require": {
                 "ext-tokenizer": "*",
@@ -3521,16 +3521,16 @@
         },
         {
             "name": "rasuvaeff/understudy-phpstan",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rasuvaeff/understudy-phpstan.git",
-                "reference": "9182867c16103b3003dda1c6f4d6dd493467c3b1"
+                "reference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpstan/zipball/9182867c16103b3003dda1c6f4d6dd493467c3b1",
-                "reference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpstan/zipball/2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
+                "reference": "2ca758ad25b385d85d3dd6e8be84a30412bd50d4",
                 "shasum": ""
             },
             "require": {
@@ -3589,7 +3589,7 @@
                 "issues": "https://github.com/rasuvaeff/understudy-phpstan/issues",
                 "source": "https://github.com/rasuvaeff/understudy-phpstan"
             },
-            "time": "2026-11-20T21:34:20+00:00"
+            "time": "2026-11-21T05:02:43+00:00"
         },
         {
             "name": "rasuvaeff/understudy-phpunit",
@@ -3657,16 +3657,16 @@
         },
         {
             "name": "rasuvaeff/understudy-psalm",
-            "version": "v1.2.0",
+            "version": "v1.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rasuvaeff/understudy-psalm.git",
-                "reference": "3816f565cd6297f348c3e806bfc92c28fd41070d"
+                "reference": "4af457009a4e3d9b2039fba0517947d795a76d3e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy-psalm/zipball/3816f565cd6297f348c3e806bfc92c28fd41070d",
-                "reference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+                "url": "https://api.github.com/repos/rasuvaeff/understudy-psalm/zipball/4af457009a4e3d9b2039fba0517947d795a76d3e",
+                "reference": "4af457009a4e3d9b2039fba0517947d795a76d3e",
                 "shasum": ""
             },
             "require": {
@@ -3721,26 +3721,26 @@
                 "issues": "https://github.com/rasuvaeff/understudy-psalm/issues",
                 "source": "https://github.com/rasuvaeff/understudy-psalm"
             },
-            "time": "2026-11-20T21:34:14+00:00"
+            "time": "2026-11-21T04:56:48+00:00"
         },
         {
             "name": "rasuvaeff/understudy-testo",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rasuvaeff/understudy-testo.git",
-                "reference": "cad5406a433772adeb7381461d0886eddbfdf10f"
+                "reference": "974f210da791257c268d7636030b6b510847282f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy-testo/zipball/cad5406a433772adeb7381461d0886eddbfdf10f",
-                "reference": "cad5406a433772adeb7381461d0886eddbfdf10f",
+                "url": "https://api.github.com/repos/rasuvaeff/understudy-testo/zipball/974f210da791257c268d7636030b6b510847282f",
+                "reference": "974f210da791257c268d7636030b6b510847282f",
                 "shasum": ""
             },
             "require": {
                 "internal/container": "^1.0",
                 "php": "8.3 - 8.5",
-                "rasuvaeff/understudy": "^1.0",
+                "rasuvaeff/understudy": "^1.2",
                 "testo/assert": "^0.1.13",
                 "testo/testo": "^0.10.42"
             },
@@ -3786,7 +3786,7 @@
                 "issues": "https://github.com/rasuvaeff/understudy-testo/issues",
                 "source": "https://github.com/rasuvaeff/understudy-testo"
             },
-            "time": "2026-11-20T21:09:09+00:00"
+            "time": "2026-11-21T04:37:45+00:00"
         },
         {
             "name": "revolt/event-loop",
@@ -7057,16 +7057,16 @@
         },
         {
             "name": "vimeo/psalm",
-            "version": "7.13.1",
+            "version": "7.13.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/vimeo/psalm.git",
-                "reference": "a328b905f1b2a8a4b4efc414e005962bc8d0b16d"
+                "reference": "4a0667bf263efe571c414969b09b05a8db87c9f6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vimeo/psalm/zipball/a328b905f1b2a8a4b4efc414e005962bc8d0b16d",
-                "reference": "a328b905f1b2a8a4b4efc414e005962bc8d0b16d",
+                "url": "https://api.github.com/repos/vimeo/psalm/zipball/4a0667bf263efe571c414969b09b05a8db87c9f6",
+                "reference": "4a0667bf263efe571c414969b09b05a8db87c9f6",
                 "shasum": ""
             },
             "require": {
@@ -7174,7 +7174,7 @@
                 "issues": "https://github.com/vimeo/psalm/issues",
                 "source": "https://github.com/vimeo/psalm"
             },
-            "time": "2026-11-20T22:28:15+00:00"
+            "time": "2026-11-21T00:42:37+00:00"
         },
         {
             "name": "webmozart/assert",

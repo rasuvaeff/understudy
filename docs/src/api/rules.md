@@ -9,15 +9,16 @@ description: "Every identifier the PHPStan extension reports and every issue typ
 
 Neither analyser package has an `@api` class, and that is correct rather than a missing annotation: `understudy-phpstan` is registered through `extension.neon` and `understudy-psalm` through `psalm-plugin enable`, so a user never names one of their classes. What a user does write is an **identifier**, in `ignoreErrors` or a suppression. That is the contract, so that is what is reflected here.
 
-## PHPStan · `rasuvaeff/understudy-phpstan` v1.1.0
+## PHPStan · `rasuvaeff/understudy-phpstan` v1.2.0
 
 | Identifier | Reported by | Summary |
 |---|---|---|
-| `understudy.cardinality` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
-| `understudy.closure` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
-| `understudy.matcher` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
-| `understudy.matcherLeak` | [`MatcherLeakRule`](https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Rule/MatcherLeakRule.php) | A matcher written outside a specification. |
-| `understudy.returns` | [`VoidReturnsRule`](https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/src/PhpStan/Rule/VoidReturnsRule.php) | `returns()` on a method that returns nothing. |
+| `understudy.cardinality` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
+| `understudy.closure` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
+| `understudy.matcher` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
+| `understudy.matcherLeak` | [`MatcherLeakRule`](https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Rule/MatcherLeakRule.php) | A matcher written outside a specification. |
+| `understudy.rest` | [`SpecificationCheck`](https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Internal/SpecificationCheck.php) | Says what the engine would say, before the test runs. |
+| `understudy.returns` | [`VoidReturnsRule`](https://github.com/rasuvaeff/understudy-phpstan/blob/2ca758ad25b385d85d3dd6e8be84a30412bd50d4/src/PhpStan/Rule/VoidReturnsRule.php) | `returns()` on a method that returns nothing. |
 
 Silence one by its identifier:
 
@@ -35,11 +36,12 @@ parameters:
 - `Rasuvaeff\Understudy\PhpStan\Rule\VoidReturnsRule`
 - `Rasuvaeff\Understudy\PhpStan\Rule\MatcherLeakRule`
 
-## Psalm · `rasuvaeff/understudy-psalm` v1.2.0
+## Psalm · `rasuvaeff/understudy-psalm` v1.3.0
 
 | Issue type | Summary |
 |---|---|
-| [`UnderstudyMisuse`](https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/src/Psalm/Issue/UnderstudyMisuse.php) | A specification that cannot mean what it says. |
+| [`UnderstudyMisuse`](https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Issue/UnderstudyMisuse.php) | A specification that cannot mean what it says. |
+| [`UnderstudyRestSuggestion`](https://github.com/rasuvaeff/understudy-psalm/blob/4af457009a4e3d9b2039fba0517947d795a76d3e/src/Psalm/Issue/UnderstudyRestSuggestion.php) | A trailing run of `Arg::any()` that `Arg::rest()` would say in one word. |
 
 The plugin reports its own findings under that one issue type; everything else it
 surfaces is Psalm's own diagnostic, made possible by the types the plugin fills in.

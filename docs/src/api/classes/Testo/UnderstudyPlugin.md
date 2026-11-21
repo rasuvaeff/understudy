@@ -9,7 +9,7 @@ description: "Registers UnderstudyInterceptor so every test of the suite ends wi
 
 `Rasuvaeff\Understudy\Testo\UnderstudyPlugin`
 
-**Class** — **Package:** [rasuvaeff/understudy-testo](https://github.com/rasuvaeff/understudy-testo) — [Source](https://github.com/rasuvaeff/understudy-testo/blob/cad5406a433772adeb7381461d0886eddbfdf10f/src/Testo/UnderstudyPlugin.php#L29) — **Version:** v1.1.0
+**Class** — **Package:** [rasuvaeff/understudy-testo](https://github.com/rasuvaeff/understudy-testo) — [Source](https://github.com/rasuvaeff/understudy-testo/blob/974f210da791257c268d7636030b6b510847282f/src/Testo/UnderstudyPlugin.php#L32) — **Version:** v1.2.0
 
 **Implements:** `Testo\Common\PluginConfigurator`
 
@@ -27,6 +27,9 @@ new SuiteConfig(
 ```
 
 With `strictStubs: true` a stub that was never called fails its test too.
+`#[StrictStubs]` / `#[StrictStubs(false)]` from `rasuvaeff/understudy` on a
+test class or method overrides the suite's setting there: the method wins
+over its class, the class over this setting.
 
 ## Constructor
 

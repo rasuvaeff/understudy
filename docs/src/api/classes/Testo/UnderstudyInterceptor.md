@@ -9,7 +9,7 @@ description: "Ends every test with understudy's own bookkeeping done for it."
 
 `Rasuvaeff\Understudy\Testo\UnderstudyInterceptor`
 
-**Class** — **Package:** [rasuvaeff/understudy-testo](https://github.com/rasuvaeff/understudy-testo) — [Source](https://github.com/rasuvaeff/understudy-testo/blob/cad5406a433772adeb7381461d0886eddbfdf10f/src/Testo/UnderstudyInterceptor.php#L51) — **Version:** v1.1.0
+**Class** — **Package:** [rasuvaeff/understudy-testo](https://github.com/rasuvaeff/understudy-testo) — [Source](https://github.com/rasuvaeff/understudy-testo/blob/974f210da791257c268d7636030b6b510847282f/src/Testo/UnderstudyInterceptor.php#L52) — **Version:** v1.2.0
 
 **Implements:** `Testo\Pipeline\Middleware\TestRunInterceptor`, `Testo\Pipeline\Interceptor`
 
@@ -42,7 +42,7 @@ __construct(
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `$strictStubs` | `bool` | `false` |  |
+| `$strictStubs` | `bool` | `false` | the suite's own setting; `#[StrictStubs]` on the test class or method overrides it |
 
 ## Methods
 
