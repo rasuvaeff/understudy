@@ -7,6 +7,7 @@ namespace Rasuvaeff\Understudy;
 use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
 use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
+use Rasuvaeff\Understudy\Runtime\ArmedSequence;
 
 /**
  * Renders why a verification failed: what was expected, what happened, and —
@@ -207,5 +208,90 @@ final class FailureReport
     private static function times(int $count): string
     {
         return $count === 1 ? '1 time' : $count . ' times';
+    }
+
+    /**
+     * One rendering for both refusals: the protocol as a numbered list with
+     * the step due marked, and the call that arrived. One alias table over all
+     * of it, so an object in the step is comparable with the one in the call.
+     *
+     * @return non-empty-string
+     */
+    private static function describeProtocol(ArmedSequence $sequence, Invocation $invocation, object $double): string
+    {
+        return ArgumentFormatter::scope(static function () use ($sequence, $invocation, $double): string {
+            $call = self::renderCall($invocation);
+            $elsewhere = $sequence->stepsOwnedElsewhere($double);
+            $lines = [];
+
+            foreach ($sequence->describe() as $index => $step) {
+                $lines[] = sprintf(
+                    '    %d. %s%s%s',
+                    $index + 1,
+                    $step,
+                    ($elsewhere[$index] ?? false) ? '   (on another understudy)' : '',
+                    $index + 1 === $sequence->position() ? '   <- due here' : '',
+                );
+            }
+
+            return sprintf("The call was:\n    %s\n\nThe protocol is:\n%s", $call, implode("\n", $lines));
+        });
+    }
+
+    /**
+     * The refusal for a protocol step that arrived out of turn.
+     *
+     * @param non-empty-string $label
+     */
+    public static function outOfTurn(string $label, ArmedSequence $sequence, Invocation $invocation, object $double): VerificationFailure
+    {
+        // The step due can read exactly like the call that arrived, because a
+        // protocol spanning two doubles renders every step by its call alone.
+        // Saying whose step it was is the difference between a report and a
+        // riddle.
+        $elsewhere = $sequence->pendingOwner() !== null && $sequence->pendingOwner() !== $double
+            ? ' on another understudy'
+            : '';
+
+        return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
+            kind: FailureKind::OutOfSequence,
+            summary: sprintf(
+                "Understudy `%s` received a protocol call out of turn: step %d of %d was expected to be `%s`%s.\n\n%s",
+                $label,
+                $sequence->position(),
+                $sequence->length(),
+                $sequence->pending()?->describe() ?? 'nothing — the protocol has run out',
+                $elsewhere,
+                self::describeProtocol($sequence, $invocation, $double),
+            ),
+            double: $label,
+            expectation: $sequence->pending()?->describe(),
+            observedCalls: [$invocation],
+            expectedCalls: $sequence->describe(),
+        ));
+    }
+
+    /**
+     * The refusal for a call on a double under protocol that is neither a step
+     * nor configured.
+     *
+     * @param non-empty-string $label
+     */
+    public static function unconfiguredUnderProtocol(string $label, ArmedSequence $sequence, Invocation $invocation, object $double): VerificationFailure
+    {
+        return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
+            kind: FailureKind::OutOfSequence,
+            summary: sprintf(
+                "Understudy `%s` is under an armed protocol and received a call that is neither a step nor configured.\n\n%s\n\n"
+                . 'Say it may happen — when(fn () => $double->%s(...))->returns(...) — or make it a step.',
+                $label,
+                self::describeProtocol($sequence, $invocation, $double),
+                $invocation->method,
+            ),
+            double: $label,
+            expectation: $sequence->pending()?->describe(),
+            observedCalls: [$invocation],
+            expectedCalls: $sequence->describe(),
+        ));
     }
 }
