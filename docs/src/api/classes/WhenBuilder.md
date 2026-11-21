@@ -9,7 +9,7 @@ description: "Configures what a stubbed call does."
 
 `Rasuvaeff\Understudy\WhenBuilder`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L39) — **Version:** v1.1.1-9-g056fa15
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/WhenBuilder.php#L39) — **Version:** v1.1.2-11-g865d5f0
 
 **Type parameters:**
 
@@ -17,11 +17,11 @@ description: "Configures what a stubbed call does."
 
 Configures what a stubbed call does.
 
-`TReturn` is the return type of the specified method. Plain Psalm and
-PHPStan cannot infer it from the closure on their own — `understudy-psalm`
-fills it in, and until then the parameter stays `mixed`, which is why the
-template is declared here rather than added later: a published signature
-cannot grow one without changing its contract.
+`TReturn` is the return type of the specified method. `when()` and
+`expect()` take it from the closure's own return type, which plain Psalm
+and PHPStan both infer for a closure making one call; the analyser plugins
+fill it in where that inference stops. A closure whose type the analyser
+cannot see leaves it `mixed`.
 
 Not `final`, and the one class here that is not: `ExpectBuilder` extends it
 to add the cardinality verbs, and the two are one fluent vocabulary rather

@@ -9,7 +9,7 @@ description: "The whole public surface, as static methods so that an understudy 
 
 `Rasuvaeff\Understudy\Understudy`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L41) — **Version:** v1.1.1-9-g056fa15
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Understudy.php#L42) — **Version:** v1.1.2-11-g865d5f0
 
 The whole public surface, as static methods so that an understudy itself can
 stay free of service members: every one of them would be a name the doubled
@@ -230,7 +230,7 @@ sends every call back into the dispatcher it came from.
 ### wire()
 
 ```php
-static wire(class-string $sut, array<string,mixed> $overrides = []): array
+static wire(class-string<\T> $sut, array<string,mixed> $overrides = []): array
 ```
 
 Builds a real subject with an understudy for every constructor
@@ -291,7 +291,7 @@ final class standing between a test and the code under test.
 ### defaults()
 
 ```php
-static defaults(class-string $contract, callable $factory): void
+static defaults(class-string<\T> $contract, callable $factory): void
 ```
 
 Registers what a loose double should hand back for one contract.

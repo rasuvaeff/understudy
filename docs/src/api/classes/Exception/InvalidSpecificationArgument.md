@@ -9,7 +9,7 @@ description: "A VALUE inside a specification that no run could act on: a maximum
 
 `Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidSpecificationArgument.php#L24) — **Version:** v1.1.1-9-g056fa15
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/InvalidSpecificationArgument.php#L24) — **Version:** v1.1.2-11-g865d5f0
 
 **Extends:** `InvalidArgumentException`
 
