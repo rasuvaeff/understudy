@@ -78,15 +78,20 @@ final class ContextStack
     }
 
     /**
-     * Takes the innermost context off the caller's stack and hands it back
-     * for retirement.
+     * Closes the innermost scope of the caller and retires its context.
      */
-    public static function popScope(): ?RuntimeContext
+    public static function popScope(): void
     {
         $fiber = \Fiber::getCurrent();
 
         if (!$fiber instanceof \Fiber) {
-            return array_pop(self::$main);
+            $context = array_pop(self::$main);
+
+            if ($context instanceof RuntimeContext) {
+                self::retire($context, byScope: true);
+            }
+
+            return;
         }
 
         $fibers = self::fibers();
@@ -94,9 +99,11 @@ final class ContextStack
         $stack = $fibers->offsetExists($fiber) ? $fibers->offsetGet($fiber) : [];
         $context = array_pop($stack);
 
-        $fibers->offsetSet($fiber, $stack);
+        if ($context instanceof RuntimeContext) {
+            self::retire($context, byScope: true);
+        }
 
-        return $context;
+        $fibers->offsetSet($fiber, $stack);
     }
 
     /**
@@ -120,7 +127,13 @@ final class ContextStack
     }
 
     /**
-     * Every live context, and none afterwards: the caller retires them.
+     * Drops the current execution context. Adapters call this unconditionally
+     * after each test; sibling Fibers must remain untouched.
+     *
+     * The sweep retires every live context, this one included — a context is
+     * recorded live where it is created, so there is nothing to retire
+     * separately here. It runs before the replacement is opened, because it
+     * would otherwise retire that one too.
      *
      * Unconditional, including when `reset()` is itself called from inside a
      * Fiber, because that is the shape the runners actually have. Under Testo
@@ -130,22 +143,17 @@ final class ContextStack
      * the inner one. A reset that only reached its own Fiber left them behind
      * to answer the next test.
      *
-     * @return list<RuntimeContext>
+     * One method on purpose: teardown runs after every test, and each static
+     * call split out of it is measurable in `make perf`.
      */
-    public static function drainLive(): array
+    public static function reset(): void
     {
-        $live = array_values(self::$live);
+        foreach (self::$live as $context) {
+            self::retire($context);
+        }
+
         self::$live = [];
 
-        return $live;
-    }
-
-    /**
-     * Replaces the caller's innermost context with a fresh one. Sibling
-     * Fibers are untouched.
-     */
-    public static function renewCurrent(): void
-    {
         $fiber = \Fiber::getCurrent();
 
         if (!$fiber instanceof \Fiber) {
@@ -176,9 +184,22 @@ final class ContextStack
         self::fibers()->offsetSet($fiber, $stack);
     }
 
-    public static function unremember(RuntimeContext $context): void
-    {
+    /**
+     * Captured values live exactly as long as the call log of the context
+     * they were captured in. The captor object itself survives — it is a
+     * test-owned reader — but holds nothing from a test that ended.
+     */
+    private static function retire(
+        RuntimeContext $context,
+        bool $byScope = false,
+    ): void {
         unset(self::$live[spl_object_id($context)]);
+
+        foreach ($context->captors() as $captor) {
+            $captor->discard();
+        }
+
+        Ownership::retire($context, $byScope);
     }
 
     /**

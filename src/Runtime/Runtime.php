@@ -31,20 +31,6 @@ final class Runtime
      * Opens a nested context, so that everything created inside it is dropped
      * when it closes and the enclosing context resumes untouched.
      */
-    public static function pushScope(): RuntimeContext
-    {
-        return ContextStack::pushScope();
-    }
-
-    public static function popScope(): void
-    {
-        $context = ContextStack::popScope();
-
-        if ($context instanceof RuntimeContext) {
-            self::retire($context, byScope: true);
-        }
-    }
-
     public static function adopt(object $double, DoubleState $state): void
     {
         $context = ContextStack::current();
@@ -725,45 +711,5 @@ final class Runtime
                 $omitted,
             ),
         ));
-    }
-
-    /**
-     * Drops the current execution context. Adapters call this unconditionally
-     * after each test; sibling Fibers must remain untouched.
-     */
-    public static function reset(): void
-    {
-        // The sweep retires every live context, this one included — a context
-        // is recorded live where it is created, so there is nothing to retire
-        // separately here. It runs before the replacement is opened, because
-        // it would otherwise retire that one too. Drained, so each one is
-        // already off the live list.
-        foreach (ContextStack::drainLive() as $context) {
-            self::discardCaptors($context);
-            Ownership::retire($context);
-        }
-
-        ContextStack::renewCurrent();
-    }
-
-    private static function retire(
-        RuntimeContext $context,
-        bool $byScope = false,
-    ): void {
-        ContextStack::unremember($context);
-        self::discardCaptors($context);
-        Ownership::retire($context, $byScope);
-    }
-
-    /**
-     * Captured values live exactly as long as the call log of the context
-     * they were captured in. The captor object itself survives — it is a
-     * test-owned reader — but holds nothing from a test that ended.
-     */
-    private static function discardCaptors(RuntimeContext $context): void
-    {
-        foreach ($context->captors() as $captor) {
-            $captor->discard();
-        }
     }
 }

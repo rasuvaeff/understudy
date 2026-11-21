@@ -941,7 +941,7 @@ final class Understudy
         callable $callback,
         bool $strictStubs = false,
     ): mixed {
-        $context = Runtime::pushScope();
+        $context = ContextStack::pushScope();
         $succeeded = false;
 
         try {
@@ -956,7 +956,7 @@ final class Understudy
                     Verifier::report([$context], $strictStubs);
                 }
             } finally {
-                Runtime::popScope();
+                ContextStack::popScope();
             }
         }
 
@@ -1002,7 +1002,7 @@ final class Understudy
      */
     public static function reset(): void
     {
-        Runtime::reset();
+        ContextStack::reset();
     }
 
     /**
