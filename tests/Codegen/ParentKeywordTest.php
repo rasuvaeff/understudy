@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests\Codegen;
 
+use Rasuvaeff\Understudy\Codegen\DefaultRenderer;
 use Rasuvaeff\Understudy\Codegen\DnfType;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
@@ -26,6 +27,7 @@ use Testo\Test;
 #[Test]
 #[Covers(TypeRenderer::class)]
 #[Covers(TargetUnifier::class)]
+#[Covers(DefaultRenderer::class)]
 #[Covers(DnfType::class)]
 final class ParentKeywordTest
 {

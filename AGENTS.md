@@ -397,7 +397,7 @@ seconds instead of the full run's minute — and the full run stays the gate.
 - **A default is never carried by the generated class, so it is never refused
   for being unrenderable.** Dispatch reads it from the declaring parameter,
   where `self::`/`parent::` still mean the declaring class
-  (`spikes/09-default-at-dispatch`). `TargetUnifier::renderDefault()` is only
+  (`spikes/09-default-at-dispatch`). `DefaultRenderer::render()` is only
   a comparison key, computed when a second target declares the same position:
   by value where `var_export()` can render it, otherwise by source with the
   class keywords qualified. Two targets disagreeing is still a refusal —
