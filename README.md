@@ -104,7 +104,7 @@ perf` before quoting them anywhere.
 
 ## Requirements
 
-- PHP 8.3 – 8.5
+- PHP 8.3 – 8.6
 - `ext-tokenizer`
 
 No runtime dependencies beyond that (`ext-mbstring` is not needed — failure
