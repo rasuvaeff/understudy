@@ -77,7 +77,7 @@ abstract class ProjectTestCase extends TestCase
 }
 ```
 
-From understudy-phpunit 1.1.0 `#[StrictStubs]` on a test class or a test
+From `understudy-phpunit` 1.1.0 `#[StrictStubs]` on a test class or a test
 method overrides it for that class or test: the method wins over its class, the
 running class over its parents, and either over `understudyStrictStubs()`.
 
