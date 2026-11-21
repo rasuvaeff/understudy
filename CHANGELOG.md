@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Changed:** PHP 8.6 is supported: the `php` constraint is widened to
+  `8.3 - 8.6` (#190). CI runs PHP 8.6 as a regular matrix entry; the
+  backward-compatibility job runs on PHP 8.5.
+
 ## 1.2.1 — 2026-11-21
 
 - Internal: the three oversized classes are split into `@internal` collaborators (#175). `Runtime` keeps every static entry point generated code and the facade call, and hands the work to `ContextStack` (current context per Fiber, scopes, live contexts), `Ownership` (owner map, forgotten and retired doubles) and `Forwarder` (inline and proxy forwarding, state copy, clone frames); the armed-protocol refusal texts moved to `FailureReport`. The facade's verification checks moved from `Understudy` to `Verifier`. `TargetUnifier` hands return types to `ReturnTypeUnifier` and parameter positions to `ParameterUnifier`. No public signature, message or behaviour changes; `make perf` unchanged within noise.

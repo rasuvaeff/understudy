@@ -24,7 +24,7 @@
         "source": "https://github.com/rasuvaeff/understudy"
     },
     "require": {
-        "php": "8.3 - 8.5",
+        "php": "8.3 - 8.6",
         "ext-tokenizer": "*"
     },
     "require-dev": {
