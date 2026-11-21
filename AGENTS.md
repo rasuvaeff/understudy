@@ -76,6 +76,18 @@ seconds instead of the full run's minute — and the full run stays the gate.
   `Understudy` facade see everything else. A PR pointing a dependency the
   other way — a matcher reaching into `Runtime`, or anything into `Matcher`
   beyond its interface — is restructured, not merged.
+- **`Runtime` is the entry point, not the whole engine.** Generated code calls
+  `Runtime::dispatch()`/`referenceSlot()`/`adoptClone()`, and those stay where
+  they are; the work behind them lives in `@internal` collaborators in the same
+  namespace — `ContextStack` (current context per Fiber, `scope()` nesting,
+  live contexts), `Ownership` (owner map, forgotten/retired doubles,
+  `retire()`), `Forwarder` (inline and proxy forwarding, state copy, the clone
+  frames). Callers reach a collaborator directly, never through a `Runtime`
+  delegator, and `Runtime::answer()` raises `Forwarder::$inlineFloor` itself
+  rather than through a method: every extra static hop on the dispatch path
+  is paid by every call in every suite, and the first cut of this split
+  measured 1-4% slower for exactly that reason. The facade's verification
+  checks live in `Verifier`, the protocol refusal texts in `FailureReport`.
 - **Adding an `Arg::*` matcher is four files and no engine edits.** A class in
   `src/Matcher/` implementing `ArgumentMatcher` (`matches()`, `describe()`),
   a static factory on `Arg` returning `mixed` (the widening union with every
@@ -212,7 +224,8 @@ seconds instead of the full run's minute — and the full run stays the gate.
   nobody reads a commit message while looking at the number. This file and
   both READMEs quote the gate, and they went stale the moment the number moved
   without them: quote it or leave it to `infection.json5`, never both silently.
-  `TargetUnifier` still carries most of the surviving mutants: it is
+  `TargetUnifier` (with `ReturnTypeUnifier` and `ParameterUnifier`, split out
+  of it) still carries most of the surviving mutants: it is
   reflection glue whose branches are combinations of what a signature can be,
   so honest `#[Covers]` attribution grows the denominator about as fast as new
   tests grow the numerator. Read the reasons before moving the number, and add
@@ -281,7 +294,7 @@ seconds instead of the full run's minute — and the full run stays the gate.
   review once already with `Fixture\Cls\Stamp`.
 
 - **Inline forwarding enters a real body by reflection, not by `parent::`.**
-  `Runtime::runInline()` calls `ReflectionMethod::invokeArgs()` on a
+  `Forwarder::runInline()` calls `ReflectionMethod::invokeArgs()` on a
   reflection of the *doubled* class, which enters that class's body even
   though the double overrides the method, while `$this` stays the double so
   the body's self-calls dispatch virtually and come back through the
@@ -302,7 +315,7 @@ seconds instead of the full run's minute — and the full run stays the gate.
   donor that is a *subclass* carries overrides the doubled class's bodies do
   not contain — running those instead would silently change which code
   executes, so it keeps the proxy form. `DoubleState::$inlineParent` is set
-  only after `Runtime::copyState()` succeeded, because a body that runs
+  only after `Forwarder::copyState()` succeeded, because a body that runs
   inline reads `$this->` properties the skipped constructor never filled.
   Re-pointing an inline double at another instance is refused rather than
   copied twice: a `readonly` property cannot be written again, and a second
@@ -324,20 +337,20 @@ seconds instead of the full run's minute — and the full run stays the gate.
   `: static` — they are of the generated class — so the language stops
   refusing what the proxy path refused as a foreign instance, and the two
   need opposite answers. `clone $this` is adopted in `Runtime::adoptClone()`
-  from `Runtime::$inlineFrames`, the stack of doubles whose bodies are
+  from `Forwarder::$inlineFrames`, the stack of doubles whose bodies are
   running: PHP already copied the state those bodies read, and without the
   frame a `: self` wither — or a body merely computing over an internal copy,
   which proxied worked — would hold a double answering defaults in the middle
   of real code. Expectations are still not copied, and a `clone $double` the
   test makes is untouched — whether no body is running at all, or the test's
-  own `answers()` closure was reached from one, which `Runtime::$inlineFloor`
+  own `answers()` closure was reached from one, which `Forwarder::$inlineFloor`
   hides the frames underneath for exactly the span of. The frame alone is a
   guess, because one generated class serves every double of a type: a body
   handed another double of its own class — `merge(Basket $other)` — and cloning
   THAT would adopt it on the running double's behalf, with bodies to run and
   no state copy to run them over, which is a bare `must not be accessed before
   initialization` where the property is typed and a quiet wrong answer where
-  it has a declared default. `Runtime::isCopyOf()` therefore requires the copy
+  it has a declared default. `Forwarder::isCopyOf()` therefore requires the copy
   to hold the frame's own state, and the comparison is
   `get_mangled_object_vars()` on both — the object's own property table, which
   is the only reading that reaches a parent's private properties, answers a
@@ -419,7 +432,7 @@ seconds instead of the full run's minute — and the full run stays the gate.
   `final` properties and asymmetric visibility are a parse error on 8.3 — a file
   carrying them takes the whole suite down there rather than skipping a test.
 
-- **The per-double loop in `Runtime::retire()` is load-bearing, and it looks
+- **The per-double loop in `Ownership::retire()` is load-bearing, and it looks
   like the opposite.** Teardown runs after every test and walks every double the
   context held, stamping it forgotten and dropping its owner — an obvious thing
   to replace with a flag on the context that `ownerOf()` reads. That was built,
@@ -458,7 +471,8 @@ seconds instead of the full run's minute — and the full run stays the gate.
 
 - **State is keyed by the double object, never by `spl_object_id()`.** PHP
   reuses an object id after collection, so an id-keyed store would hand a
-  fresh double the previous one's state. `Runtime` uses `WeakMap`s and
+  fresh double the previous one's state. `Ownership` and `ContextStack` use
+  `WeakMap`s and
   `RuntimeContext` uses `SplObjectStorage`.
 - **Recording is a depth counter, not a boolean.** A nested recording phase
   must not switch the enclosing one off when it unwinds.
@@ -518,8 +532,8 @@ seconds instead of the full run's minute — and the full run stays the gate.
   optimisation of a walk that still runs), `FinalStripper`'s two fast paths and
   the loop bounds of its token scans (an out-of-range `$tokens[$i]` is `null`
   and falls through), `Wire`'s `$resolved[0]`/`[1]` (both are the same double),
-  `Runtime`'s `?->` on a state that is never null at that point and its
-  `inlineMethods` cache keys, `ArgumentFormatter`'s `null` and `NAN` match arms
+  `Runtime`'s `?->` on a state that is never null at that point,
+  `Forwarder`'s `inlineMethods` cache keys, `ArgumentFormatter`'s `null` and `NAN` match arms
   (the default arm renders both identically on PHP 8.4).
 - **Rector and Psalm pull in opposite directions here.** `RemoveUselessVarTag`
   and `FlipTypeControlToUseExclusiveType` are skipped in `rector.php` with the
