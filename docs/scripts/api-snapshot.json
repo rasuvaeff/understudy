@@ -2,7 +2,7 @@
     "classes": [
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Arg",
             "kind": "class",
@@ -497,7 +497,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Bypass\\FileWrapper",
             "kind": "class",
@@ -1159,7 +1159,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Bypass\\FinalStripper",
             "kind": "class",
@@ -1219,7 +1219,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Captor",
             "kind": "class",
@@ -1347,7 +1347,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Cardinality",
             "kind": "class",
@@ -1540,7 +1540,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\Blueprint",
             "kind": "class",
@@ -1677,7 +1677,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\DefaultRenderer",
             "kind": "class",
@@ -1737,7 +1737,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\DnfType",
             "kind": "class",
@@ -2078,7 +2078,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\DoubleFactory",
             "kind": "class",
@@ -2230,7 +2230,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\MethodSignature",
             "kind": "class",
@@ -2424,7 +2424,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\ParameterUnifier",
             "kind": "class",
@@ -2551,7 +2551,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\PropertyDefaults",
             "kind": "class",
@@ -2604,7 +2604,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\PropertySignature",
             "kind": "class",
@@ -2694,7 +2694,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\ReturnTypeUnifier",
             "kind": "class",
@@ -2807,7 +2807,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\TargetUnifier",
             "kind": "class",
@@ -2883,7 +2883,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Codegen\\TypeRenderer",
             "kind": "class",
@@ -3003,7 +3003,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Defaults\\DefaultFactories",
             "kind": "class",
@@ -3108,7 +3108,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Defaults\\TypeDefaultResolver",
             "kind": "class",
@@ -3247,7 +3247,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\AmbiguousDefaultFactory",
             "kind": "class",
@@ -3307,7 +3307,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\BypassUnavailable",
             "kind": "class",
@@ -3413,7 +3413,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\CannotWire",
             "kind": "class",
@@ -3658,7 +3658,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ConflictingExpectation",
             "kind": "class",
@@ -3778,7 +3778,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ContextOwnershipViolation",
             "kind": "class",
@@ -3823,7 +3823,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ForgottenDouble",
             "kind": "class",
@@ -4029,7 +4029,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\ForwardingTargetMismatch",
             "kind": "class",
@@ -4156,7 +4156,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\InvalidCallSpecification",
             "kind": "class",
@@ -4741,7 +4741,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\InvalidDefaultValue",
             "kind": "class",
@@ -4801,7 +4801,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\InvalidSpecificationArgument",
             "kind": "class",
@@ -5070,7 +5070,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\MatcherLeaked",
             "kind": "class",
@@ -5137,7 +5137,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\NeverMethodCalled",
             "kind": "class",
@@ -5257,7 +5257,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\NoDefaultValue",
             "kind": "class",
@@ -5324,7 +5324,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\NothingCaptured",
             "kind": "class",
@@ -5377,7 +5377,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\OriginalCallUnavailable",
             "kind": "class",
@@ -5460,7 +5460,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\OriginalReturnTypeViolation",
             "kind": "class",
@@ -5557,7 +5557,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\OutcomeUnavailable",
             "kind": "class",
@@ -5640,7 +5640,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\StrictModeViolation",
             "kind": "class",
@@ -5707,7 +5707,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\UnderstudyError",
             "kind": "interface",
@@ -5756,7 +5756,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\UnsupportedTarget",
             "kind": "class",
@@ -5876,7 +5876,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Exception\\VerificationFailed",
             "kind": "class",
@@ -5963,7 +5963,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\ExpectBuilder",
             "kind": "class",
@@ -6011,7 +6011,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\Action",
             "kind": "interface",
@@ -6069,7 +6069,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ArgumentFormatter",
             "kind": "class",
@@ -6152,7 +6152,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ComputeAnswer",
             "kind": "class",
@@ -6219,7 +6219,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\Expectation",
             "kind": "class",
@@ -6722,7 +6722,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ReturnContract",
             "kind": "class",
@@ -6812,7 +6812,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ReturnValue",
             "kind": "class",
@@ -6879,7 +6879,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ThrowComputed",
             "kind": "class",
@@ -6946,7 +6946,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Expectation\\ThrowError",
             "kind": "class",
@@ -7013,7 +7013,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\FailureKind",
             "kind": "enum",
@@ -7102,7 +7102,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\FailureReport",
             "kind": "class",
@@ -7368,7 +7368,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Invocation",
             "kind": "class",
@@ -7761,7 +7761,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AllOf",
             "kind": "class",
@@ -7845,7 +7845,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyArgument",
             "kind": "class",
@@ -7919,7 +7919,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyOf",
             "kind": "class",
@@ -8003,7 +8003,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyRest",
             "kind": "class",
@@ -8103,7 +8103,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\AnyTail",
             "kind": "class",
@@ -8203,7 +8203,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\ArgumentMatcher",
             "kind": "interface",
@@ -8295,7 +8295,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\ArrayContaining",
             "kind": "class",
@@ -8379,7 +8379,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\BooleanValue",
             "kind": "class",
@@ -8453,7 +8453,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Bounds",
             "kind": "class",
@@ -8513,7 +8513,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Capturing",
             "kind": "class",
@@ -8606,7 +8606,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\CountBetween",
             "kind": "class",
@@ -8699,7 +8699,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\EmptyTail",
             "kind": "class",
@@ -8799,7 +8799,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\FloatInRange",
             "kind": "class",
@@ -8892,7 +8892,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\IdenticalTo",
             "kind": "class",
@@ -8976,7 +8976,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\InstanceOfType",
             "kind": "class",
@@ -9072,7 +9072,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\IntInRange",
             "kind": "class",
@@ -9165,7 +9165,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Negated",
             "kind": "class",
@@ -9249,7 +9249,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Operand",
             "kind": "class",
@@ -9332,7 +9332,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\PropertyEquals",
             "kind": "class",
@@ -9425,7 +9425,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\QueryEquals",
             "kind": "class",
@@ -9518,7 +9518,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Satisfying",
             "kind": "class",
@@ -9611,7 +9611,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\StringMatching",
             "kind": "class",
@@ -9695,7 +9695,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\StructurallyEqual",
             "kind": "class",
@@ -9779,7 +9779,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\TailMatcher",
             "kind": "interface",
@@ -9839,7 +9839,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\Unspelled",
             "kind": "class",
@@ -9913,7 +9913,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Matcher\\UnspelledTail",
             "kind": "class",
@@ -10013,7 +10013,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Outcome",
             "kind": "class",
@@ -12758,15 +12758,15 @@
         },
         {
             "root": "phpunit",
-            "rootVersion": "v1.0.0",
-            "rootReference": "3f415bfa3c0deaeb85f95c7be64ffd7e119bb509",
+            "rootVersion": "v1.1.0",
+            "rootReference": "5233e7aeec87684e919cd1160b1caabeea5ae88c",
             "class": "Rasuvaeff\\Understudy\\PhpUnit\\UnderstudyPHPUnitIntegration",
             "kind": "trait",
             "isApi": true,
             "isAbstract": false,
             "isThrowable": false,
             "summary": "Ends every PHPUnit test with understudy's own bookkeeping done for it.",
-            "description": "```php\nfinal class CheckoutTest extends TestCase\n{\n    use UnderstudyPHPUnitIntegration;\n\n    public function testChargesForTheCart(): void\n    {\n        $books = Understudy::for(BookRepositoryInterface::class);\n        expect(fn () => $books->find(7))->returns($expected = new Book(7));\n\n        $receipt = (new Checkout($books))->charge([7]);\n\n        self::assertSame($expected->price, $receipt->total);\n    }\n}\n```\n\nOne registration says both things: `find(7)` must be called exactly once,\nand it answers `$expected`. Two rules of the engine decide that shape, and\nthis snippet used to break both:\n\n- **Arm before the run.** An `expect()` counts only the calls that arrive\n  after it is declared. Written below the action it counts zero and fails\n  as \"called never\" about a call that did happen; to claim a call that has\n  already happened, use `verify()`.\n- **One registration per call.** A `when()` stub and an `expect()` naming\n  the same call are two registrations of one call, and the engine answers\n  with `ConflictingExpectation`.\n\nKept in step with the README's Usage section and `examples/readme-usage.php`,\nwhich runs it; `DocumentedUsageTest` fails when the three drift apart.\n\nOn a test that reached \\PHPUnit\\Framework\\TestCase::assertPostConditions() — that is,\npassed its body — the whole context is verified: an `expect()` the code\nnever fulfilled fails the test as an assertion failure. A test whose body\nthrew keeps its own exception untouched; verification would only mask the\nerror that actually happened. Either way the context is reset, so nothing\nleaks into the next test.\n\nA base class may flip strict stubbing for a whole project by overriding\n\\Rasuvaeff\\Understudy\\PhpUnit\\understudyStrictStubs().\n\nIf the class also overrides `assertPostConditions()` itself, PHP resolves\nthe conflict silently in favour of the class — the trait's verification\nwould stop running without any error. Compose explicitly instead:\n\n```php\nuse Rasuvaeff\\Understudy\\PhpUnit\\UnderstudyPHPUnitIntegration {\n    UnderstudyPHPUnitIntegration::assertPostConditions\n        as understudyAssertPostConditions;\n}\n\nprotected function assertPostConditions(): void\n{\n    // your post-conditions ...\n    $this->understudyAssertPostConditions();\n}\n```\n\nThe user's post-conditions run first — the check closer to the test body\nwins, same as the README says.",
+            "description": "```php\nfinal class CheckoutTest extends TestCase\n{\n    use UnderstudyPHPUnitIntegration;\n\n    public function testChargesForTheCart(): void\n    {\n        $books = Understudy::for(BookRepositoryInterface::class);\n        expect(fn () => $books->find(7))->returns($expected = new Book(7));\n\n        $receipt = (new Checkout($books))->charge([7]);\n\n        self::assertSame($expected->price, $receipt->total);\n    }\n}\n```\n\nOne registration says both things: `find(7)` must be called exactly once,\nand it answers `$expected`. Two rules of the engine decide that shape, and\nthis snippet used to break both:\n\n- **Arm before the run.** An `expect()` counts only the calls that arrive\n  after it is declared. Written below the action it counts zero and fails\n  as \"called never\" about a call that did happen; to claim a call that has\n  already happened, use `verify()`.\n- **One registration per call.** A `when()` stub and an `expect()` naming\n  the same call are two registrations of one call, and the engine answers\n  with `ConflictingExpectation`.\n\nKept in step with the README's Usage section and `examples/readme-usage.php`,\nwhich runs it; `DocumentedUsageTest` fails when the three drift apart.\n\nOn a test that reached \\PHPUnit\\Framework\\TestCase::assertPostConditions() — that is,\npassed its body — the whole context is verified: an `expect()` the code\nnever fulfilled fails the test as an assertion failure. A test whose body\nthrew keeps its own exception untouched; verification would only mask the\nerror that actually happened. Either way the context is reset, so nothing\nleaks into the next test.\n\nStrict stubbing is switched per test by the core `#[StrictStubs]` attribute\non the test method or class (\\Rasuvaeff\\Understudy\\StrictStubs::resolve()); a base class\nmay still set the project-wide default by overriding\n\\Rasuvaeff\\Understudy\\PhpUnit\\understudyStrictStubs(), which applies where no attribute does.\n\nIf the class also overrides `assertPostConditions()` itself, PHP resolves\nthe conflict silently in favour of the class — the trait's verification\nwould stop running without any error. Compose explicitly instead:\n\n```php\nuse Rasuvaeff\\Understudy\\PhpUnit\\UnderstudyPHPUnitIntegration {\n    UnderstudyPHPUnitIntegration::assertPostConditions\n        as understudyAssertPostConditions;\n}\n\nprotected function assertPostConditions(): void\n{\n    // your post-conditions ...\n    $this->understudyAssertPostConditions();\n}\n```\n\nThe user's post-conditions run first — the check closer to the test body\nwins, same as the README says.",
             "deprecated": null,
             "see": [],
             "extensionTags": {
@@ -12782,13 +12782,13 @@
             "publicMethods": [],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpunit/blob/3f415bfa3c0deaeb85f95c7be64ffd7e119bb509/src/PhpUnit/UnderstudyPHPUnitIntegration.php#L83",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpunit/blob/5233e7aeec87684e919cd1160b1caabeea5ae88c/src/PhpUnit/UnderstudyPHPUnitIntegration.php#L86",
             "implementedBy": []
         },
         {
             "root": "phpunit",
-            "rootVersion": "v1.0.0",
-            "rootReference": "3f415bfa3c0deaeb85f95c7be64ffd7e119bb509",
+            "rootVersion": "v1.1.0",
+            "rootReference": "5233e7aeec87684e919cd1160b1caabeea5ae88c",
             "class": "Rasuvaeff\\Understudy\\PhpUnit\\UnverifiedRun",
             "kind": "class",
             "isApi": false,
@@ -12849,7 +12849,7 @@
             ],
             "constants": [],
             "enumCases": [],
-            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpunit/blob/3f415bfa3c0deaeb85f95c7be64ffd7e119bb509/src/PhpUnit/UnverifiedRun.php#L21",
+            "sourceUrl": "https://github.com/rasuvaeff/understudy-phpunit/blob/5233e7aeec87684e919cd1160b1caabeea5ae88c/src/PhpUnit/UnverifiedRun.php#L21",
             "implementedBy": []
         },
         {
@@ -14411,7 +14411,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\Absent",
             "kind": "enum",
@@ -14454,7 +14454,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\ArmedSequence",
             "kind": "class",
@@ -14660,7 +14660,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\ContextStack",
             "kind": "class",
@@ -14780,7 +14780,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\DoubleState",
             "kind": "class",
@@ -15337,7 +15337,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\Forwarder",
             "kind": "class",
@@ -15535,7 +15535,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\InvocationSignal",
             "kind": "class",
@@ -15577,7 +15577,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\Mode",
             "kind": "enum",
@@ -15640,7 +15640,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\Ownership",
             "kind": "class",
@@ -15890,7 +15890,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\ReferenceSlot",
             "kind": "class",
@@ -15926,7 +15926,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\Runtime",
             "kind": "class",
@@ -16293,7 +16293,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\RuntimeContext",
             "kind": "class",
@@ -16678,7 +16678,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\SequenceVerdict",
             "kind": "enum",
@@ -16751,7 +16751,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Runtime\\SpecificationCall",
             "kind": "class",
@@ -16824,7 +16824,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\StrictStubs",
             "kind": "class",
@@ -17035,7 +17035,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Understudy",
             "kind": "class",
@@ -17744,7 +17744,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\VerificationFailure",
             "kind": "class",
@@ -17851,7 +17851,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Verifier",
             "kind": "class",
@@ -18165,7 +18165,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\WhenBuilder",
             "kind": "class",
@@ -18381,7 +18381,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "class": "Rasuvaeff\\Understudy\\Wiring\\Wire",
             "kind": "class",
@@ -18446,7 +18446,7 @@
     "functions": [
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\expect",
@@ -18470,7 +18470,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\expectSequence",
@@ -18494,7 +18494,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\verify",
@@ -18553,7 +18553,7 @@
         },
         {
             "root": "core",
-            "rootVersion": "v1.2.1",
+            "rootVersion": "v1.2.1-1-g1380481",
             "rootReference": null,
             "kind": "function",
             "function": "Rasuvaeff\\Understudy\\when",

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "52b84c24d7e774924900809fff46ba77",
+    "content-hash": "12bb6053f6ae6a70b8a8a7774fd577a0",
     "packages": [
         {
             "name": "amphp/amp",
@@ -3385,7 +3385,7 @@
             "dist": {
                 "type": "path",
                 "url": "../..",
-                "reference": "3ac0d98ec9f04cdb7d5608de3eb08fa27940ec31"
+                "reference": "138048109213afcbf6615207d4e33e3edd850974"
             },
             "require": {
                 "ext-tokenizer": "*",
@@ -3593,22 +3593,22 @@
         },
         {
             "name": "rasuvaeff/understudy-phpunit",
-            "version": "v1.0.0",
+            "version": "v1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rasuvaeff/understudy-phpunit.git",
-                "reference": "3f415bfa3c0deaeb85f95c7be64ffd7e119bb509"
+                "reference": "5233e7aeec87684e919cd1160b1caabeea5ae88c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpunit/zipball/3f415bfa3c0deaeb85f95c7be64ffd7e119bb509",
-                "reference": "3f415bfa3c0deaeb85f95c7be64ffd7e119bb509",
+                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpunit/zipball/5233e7aeec87684e919cd1160b1caabeea5ae88c",
+                "reference": "5233e7aeec87684e919cd1160b1caabeea5ae88c",
                 "shasum": ""
             },
             "require": {
                 "php": "8.3 - 8.5",
                 "phpunit/phpunit": "^11.5 || ^12.0 || ^13.0",
-                "rasuvaeff/understudy": "^1.0"
+                "rasuvaeff/understudy": "^1.2"
             },
             "require-dev": {
                 "ergebnis/composer-normalize": "^2.51",
@@ -3620,7 +3620,7 @@
                 "roave/backward-compatibility-check": "^8.0",
                 "testo/bridge-infection": "^0.1.6",
                 "testo/testo": "^0.10.39",
-                "vimeo/psalm": "^6.16"
+                "vimeo/psalm": "^7.0"
             },
             "type": "library",
             "autoload": {
@@ -3653,7 +3653,7 @@
                 "issues": "https://github.com/rasuvaeff/understudy-phpunit/issues",
                 "source": "https://github.com/rasuvaeff/understudy-phpunit"
             },
-            "time": "2026-09-27T12:54:59+00:00"
+            "time": "2026-11-21T11:08:14+00:00"
         },
         {
             "name": "rasuvaeff/understudy-psalm",
