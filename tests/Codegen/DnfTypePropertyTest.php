@@ -172,12 +172,12 @@ final class DnfTypePropertyTest
     #[Property(runs: 500)]
     public function theReturnContractNeverRefusesWhatPhpReturns(string $type, mixed $value): void
     {
-        $returned = self::phpReturns($type, $value);
+        $returned = $this->phpReturns($type, $value);
         Classify::cover($returned, 'php returns it', 20.0);
         Classify::cover(!$returned, 'php refuses it', 20.0);
 
         if ($returned) {
-            Assert::true(self::contract($type)->accepts($value));
+            Assert::true($this->contract($type)->accepts($value));
         }
     }
 
@@ -199,7 +199,7 @@ final class DnfTypePropertyTest
     #[Property(runs: 300)]
     public function withoutScalarsTheContractAgreesWithPhp(string $type, mixed $value): void
     {
-        Assert::same(self::contract($type)->accepts($value), self::phpReturns($type, $value));
+        Assert::same($this->contract($type)->accepts($value), $this->phpReturns($type, $value));
     }
 
     /**
@@ -220,7 +220,7 @@ final class DnfTypePropertyTest
     /**
      * @param non-empty-string $type
      */
-    private static function contract(string $type): ReturnContract
+    private function contract(string $type): ReturnContract
     {
         return new ReturnContract(
             label: 'Probe',
@@ -238,7 +238,7 @@ final class DnfTypePropertyTest
         );
     }
 
-    private static function phpReturns(string $type, mixed $value): bool
+    private function phpReturns(string $type, mixed $value): bool
     {
         /** @var \Closure(mixed): mixed $probe */
         $probe = self::$probes[$type] ??= eval('return static function (mixed $v): ' . $type . ' { return $v; };');

@@ -99,7 +99,7 @@ final readonly class DnfType
     public function accepts(mixed $value, string $selfContract): bool
     {
         foreach ($this->branches as $branch) {
-            if (self::branchAccepts($branch, static fn(string $atom): bool => self::atomAcceptsCoercively($atom, $value, $selfContract))) {
+            if ($this->branchAccepts($branch, static fn(string $atom): bool => self::atomAcceptsCoercively($atom, $value, $selfContract))) {
                 return true;
             }
         }
@@ -114,7 +114,7 @@ final readonly class DnfType
     public function acceptsStrictly(mixed $value): bool
     {
         foreach ($this->branches as $branch) {
-            if (self::branchAccepts($branch, static fn(string $atom): bool => self::atomAcceptsStrictly($atom, $value))) {
+            if ($this->branchAccepts($branch, static fn(string $atom): bool => self::atomAcceptsStrictly($atom, $value))) {
                 return true;
             }
         }
@@ -276,7 +276,7 @@ final readonly class DnfType
      * @param non-empty-list<non-empty-string> $branch
      * @param \Closure(non-empty-string): bool $atomAccepts
      */
-    private static function branchAccepts(array $branch, \Closure $atomAccepts): bool
+    private function branchAccepts(array $branch, \Closure $atomAccepts): bool
     {
         foreach ($branch as $atom) {
             if (!$atomAccepts($atom)) {
@@ -353,7 +353,6 @@ final readonly class DnfType
                 $branches = [...$branches, ...self::reflectedBranches($part, $declaringClass)];
             }
 
-            /** @var non-empty-list<non-empty-list<non-empty-string>> */
             return $branches;
         }
 

@@ -38,7 +38,7 @@ final class GeneratedSourceTest
     #[DataProvider('shapesProvider')]
     public function generatedSourceMatchesItsGoldenFile(string $name, array $contracts): void
     {
-        Assert::same(self::normalize(DoubleFactory::sourceFor($contracts)), self::golden($name));
+        Assert::same($this->normalize(DoubleFactory::sourceFor($contracts)), $this->golden($name));
     }
 
     /**
@@ -72,12 +72,12 @@ final class GeneratedSourceTest
         yield 'dnf returns' => ['dnf', [Shapes::class]];
     }
 
-    private static function normalize(string $source): string
+    private function normalize(string $source): string
     {
         return (string) preg_replace('/\bUnderstudy_[0-9a-f]{16}\b/', 'Understudy_GENERATED', $source);
     }
 
-    private static function golden(string $name): string
+    private function golden(string $name): string
     {
         $path = __DIR__ . '/../fixtures/codegen/' . $name . '.php.txt';
 

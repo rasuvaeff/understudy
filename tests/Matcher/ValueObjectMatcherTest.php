@@ -49,7 +49,7 @@ final class ValueObjectMatcherTest
     public function aTypedPredicateIsAskedOnlyOfAnInstance(): void
     {
         $asked = 0;
-        $matcher = self::matcher(Arg::instanceOf(Email::class, static function (Email $email) use (&$asked): bool {
+        $matcher = $this->matcher(Arg::instanceOf(Email::class, static function (Email $email) use (&$asked): bool {
             $asked++;
 
             return $email->to === 'a@b.c';
@@ -65,7 +65,7 @@ final class ValueObjectMatcherTest
 
     public function withoutAPredicateItIsTheTypeAlone(): void
     {
-        $matcher = self::matcher(Arg::instanceOf(Email::class));
+        $matcher = $this->matcher(Arg::instanceOf(Email::class));
 
         Assert::true($matcher->matches(new Email('a@b.c')));
         Assert::same($matcher->describe(), 'instanceOf(' . Email::class . ')');
@@ -83,7 +83,7 @@ final class ValueObjectMatcherTest
 
     public function equalToComparesValueObjectsByStructure(): void
     {
-        $matcher = self::matcher(Arg::equalTo(new Email('a@b.c', 'hi', 2)));
+        $matcher = $this->matcher(Arg::equalTo(new Email('a@b.c', 'hi', 2)));
 
         Assert::true($matcher->matches(new Email('a@b.c', 'hi', 2)));
         Assert::false($matcher->matches(new Email('a@b.c', 'hi', 3)));
@@ -95,27 +95,27 @@ final class ValueObjectMatcherTest
 
     public function equalToIsStrictOnScalars(): void
     {
-        Assert::false(self::matcher(Arg::equalTo(1))->matches('1'));
-        Assert::false(self::matcher(Arg::equalTo(new Book('1')))->matches(new Book('01')));
-        Assert::true(self::matcher(Arg::equalTo(['a' => 1, 'b' => [2]]))->matches(['b' => [2], 'a' => 1]));
-        Assert::false(self::matcher(Arg::equalTo(['a' => 1]))->matches(['a' => 1, 'b' => 2]));
-        Assert::false(self::matcher(Arg::equalTo(['a' => 1]))->matches(['b' => 1]));
-        Assert::false(self::matcher(Arg::equalTo([1]))->matches(new Book()));
+        Assert::false($this->matcher(Arg::equalTo(1))->matches('1'));
+        Assert::false($this->matcher(Arg::equalTo(new Book('1')))->matches(new Book('01')));
+        Assert::true($this->matcher(Arg::equalTo(['a' => 1, 'b' => [2]]))->matches(['b' => [2], 'a' => 1]));
+        Assert::false($this->matcher(Arg::equalTo(['a' => 1]))->matches(['a' => 1, 'b' => 2]));
+        Assert::false($this->matcher(Arg::equalTo(['a' => 1]))->matches(['b' => 1]));
+        Assert::false($this->matcher(Arg::equalTo([1]))->matches(new Book()));
     }
 
     public function equalToComparesEnumsAndClosuresByIdentity(): void
     {
         $closure = static fn(): int => 1;
 
-        Assert::true(self::matcher(Arg::equalTo(Suit::Hearts))->matches(Suit::Hearts));
-        Assert::false(self::matcher(Arg::equalTo(Suit::Hearts))->matches(Suit::Spades));
-        Assert::true(self::matcher(Arg::equalTo($closure))->matches($closure));
-        Assert::false(self::matcher(Arg::equalTo($closure))->matches(static fn(): int => 1));
+        Assert::true($this->matcher(Arg::equalTo(Suit::Hearts))->matches(Suit::Hearts));
+        Assert::false($this->matcher(Arg::equalTo(Suit::Hearts))->matches(Suit::Spades));
+        Assert::true($this->matcher(Arg::equalTo($closure))->matches($closure));
+        Assert::false($this->matcher(Arg::equalTo($closure))->matches(static fn(): int => 1));
     }
 
     public function equalToComparesDatesByInstantAndZone(): void
     {
-        $matcher = self::matcher(Arg::equalTo(new \DateTimeImmutable('2026-01-01 10:00', new \DateTimeZone('UTC'))));
+        $matcher = $this->matcher(Arg::equalTo(new \DateTimeImmutable('2026-01-01 10:00', new \DateTimeZone('UTC'))));
 
         Assert::true($matcher->matches(new \DateTimeImmutable('2026-01-01 10:00', new \DateTimeZone('UTC'))));
         Assert::false($matcher->matches(new \DateTimeImmutable('2026-01-01 11:00', new \DateTimeZone('+01:00'))));
@@ -131,15 +131,15 @@ final class ValueObjectMatcherTest
         $c = new Node('c');
         $c->next = $c;
 
-        Assert::true(self::matcher(Arg::equalTo($a))->matches($b));
-        Assert::false(self::matcher(Arg::equalTo($a))->matches($c));
+        Assert::true($this->matcher(Arg::equalTo($a))->matches($b));
+        Assert::false($this->matcher(Arg::equalTo($a))->matches($c));
 
         $loop = [1];
         $loop[] = &$loop;
         $other = [1];
         $other[] = &$other;
 
-        Assert::false(self::matcher(Arg::equalTo($loop))->matches($other));
+        Assert::false($this->matcher(Arg::equalTo($loop))->matches($other));
     }
 
     public function equalToRefusesACaptor(): void
@@ -154,8 +154,8 @@ final class ValueObjectMatcherTest
     {
         $copy = unserialize(serialize($value));
 
-        Assert::true(self::matcher(Arg::equalTo($value))->matches($copy));
-        Assert::true(self::matcher(Arg::equalTo(new Book(serialize($value))))->matches(new Book(serialize($copy))));
+        Assert::true($this->matcher(Arg::equalTo($value))->matches($copy));
+        Assert::true($this->matcher(Arg::equalTo(new Book(serialize($value))))->matches(new Book(serialize($copy))));
     }
 
     /**
@@ -170,8 +170,8 @@ final class ValueObjectMatcherTest
     public function equalToIsSymmetric(mixed $left, mixed $right): void
     {
         Assert::same(
-            self::matcher(Arg::equalTo($left))->matches($right),
-            self::matcher(Arg::equalTo($right))->matches($left),
+            $this->matcher(Arg::equalTo($left))->matches($right),
+            $this->matcher(Arg::equalTo($right))->matches($left),
         );
     }
 
@@ -191,7 +191,7 @@ final class ValueObjectMatcherTest
 
     public function whichPropertyReadsAPublicProperty(): void
     {
-        $matcher = self::matcher(Arg::whichProperty('to', 'a@b.c'));
+        $matcher = $this->matcher(Arg::whichProperty('to', 'a@b.c'));
 
         Assert::true($matcher->matches(new Email('a@b.c')));
         Assert::false($matcher->matches(new Email('x@y.z')));
@@ -200,15 +200,15 @@ final class ValueObjectMatcherTest
 
     public function whichPropertyIsAMismatchForAnythingItMayNotRead(): void
     {
-        Assert::false(self::matcher(Arg::whichProperty('priority', 0))->matches(new Email('a@b.c')));
-        Assert::false(self::matcher(Arg::whichProperty('missing', null))->matches(new Email('a@b.c')));
-        Assert::false(self::matcher(Arg::whichProperty('to', 'a@b.c'))->matches('a@b.c'));
-        Assert::false(self::matcher(Arg::whichProperty('count', null))->matches(new Node('n')));
-        Assert::false(self::matcher(Arg::whichProperty('unset', null))->matches(new Node('n')));
-        Assert::true(self::matcher(Arg::whichProperty('next', null))->matches(new Node('n')));
+        Assert::false($this->matcher(Arg::whichProperty('priority', 0))->matches(new Email('a@b.c')));
+        Assert::false($this->matcher(Arg::whichProperty('missing', null))->matches(new Email('a@b.c')));
+        Assert::false($this->matcher(Arg::whichProperty('to', 'a@b.c'))->matches('a@b.c'));
+        Assert::false($this->matcher(Arg::whichProperty('count', null))->matches(new Node('n')));
+        Assert::false($this->matcher(Arg::whichProperty('unset', null))->matches(new Node('n')));
+        Assert::true($this->matcher(Arg::whichProperty('next', null))->matches(new Node('n')));
     }
 
-    private static function matcher(mixed $matcher): ArgumentMatcher
+    private function matcher(mixed $matcher): ArgumentMatcher
     {
         \assert($matcher instanceof ArgumentMatcher);
 

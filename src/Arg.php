@@ -160,7 +160,7 @@ final class Arg
      * @template T of object
      *
      * @param class-string<T>             $type
-     * @param (callable(T): bool)|null    $where
+     * @param (callable(T): bool)|null    $where asked only of an instance of `$type`
      */
     public static function instanceOf(string $type, ?callable $where = null): mixed
     {
@@ -176,6 +176,8 @@ final class Arg
      * demand the instance the test built and the subject never sees. Never
      * `==`: scalars stay strict, and a cyclic graph is a mismatch rather than a
      * fatal error.
+     *
+     * @param mixed $value the expected value; an object is compared by its properties
      */
     public static function equalTo(mixed $value): mixed
     {
@@ -281,6 +283,7 @@ final class Arg
      * for a value object exposing `public readonly` fields instead of getters.
      *
      * @param non-empty-string $property public, non-static, initialized
+     * @param mixed            $value    compared with `===`
      */
     public static function whichProperty(string $property, mixed $value): mixed
     {

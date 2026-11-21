@@ -30,6 +30,9 @@ namespace Rasuvaeff\Understudy;
 #[\Attribute(\Attribute::TARGET_CLASS | \Attribute::TARGET_METHOD)]
 final readonly class StrictStubs
 {
+    /**
+     * @param bool $enabled `false` turns strict stubs off where a wider scope turned them on
+     */
     public function __construct(public bool $enabled = true) {}
 
     /**
@@ -40,8 +43,9 @@ final readonly class StrictStubs
      * A method that does not exist on the class is not an error: the class
      * level still answers. A bridge may ask before it knows the method.
      *
-     * @param class-string          $class
-     * @param non-empty-string|null $method
+     * @param class-string          $class   the test class
+     * @param non-empty-string|null $method  the test method, when known
+     * @param bool                  $default the bridge's own setting
      */
     public static function resolve(string $class, ?string $method = null, bool $default = false): bool
     {

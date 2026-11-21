@@ -56,7 +56,7 @@ final class DefaultEvaluatedAtDispatchTest
 
         $calls = Understudy::calls(static fn() => $double->m());
         Assert::same(\count($calls), 2);
-        Assert::same(self::property($calls[0]->args[0], 'n'), 3);
+        Assert::same($this->property($calls[0]->args[0], 'n'), 3);
         Assert::true($calls[0]->args[0] !== $calls[1]->args[0]);
     }
 
@@ -72,7 +72,7 @@ final class DefaultEvaluatedAtDispatchTest
         $double = Understudy::for(self::NAMESPACE . '\\ParentNew\\Contract');
         $double->m();
 
-        Assert::same(self::property(Understudy::lastCall(static fn() => $double->m())?->args[0], 'n'), 1);
+        Assert::same($this->property(Understudy::lastCall(static fn() => $double->m())?->args[0], 'n'), 1);
     }
 
     public function aGlobalConstantHoldingAnObjectIsPassedOn(): void
@@ -119,7 +119,7 @@ final class DefaultEvaluatedAtDispatchTest
         $double = Understudy::for(self::NAMESPACE . '\\SameNew\\Contract', self::NAMESPACE . '\\SameNew\\Other');
         $double->m();
 
-        Assert::same(self::property(Understudy::lastCall(static fn() => $double->m())?->args[0], 'n'), 2);
+        Assert::same($this->property(Understudy::lastCall(static fn() => $double->m())?->args[0], 'n'), 2);
     }
 
     public function selfInTwoDeclaringClassesIsTwoDifferentDefaults(): void
@@ -156,7 +156,7 @@ final class DefaultEvaluatedAtDispatchTest
         Understudy::for($namespace . '\\Contract', $namespace . '\\Other');
     }
 
-    private static function property(mixed $object, string $name): mixed
+    private function property(mixed $object, string $name): mixed
     {
         Assert::true(\is_object($object));
         \assert(\is_object($object));

@@ -52,6 +52,6 @@ final class StrictStubsTest
     public function enabledByDefault(): void
     {
         Assert::true((new StrictStubs())->enabled);
-        Assert::false((new StrictStubs(false))->enabled);
+        Assert::false((new StrictStubs(enabled: false))->enabled);
     }
 }
