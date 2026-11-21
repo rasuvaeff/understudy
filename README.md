@@ -500,6 +500,12 @@ open range. Write the second argument for that.
 one. `verifyAll(strictStubs: true)` additionally fails a stub that was never
 used.
 
+A runner bridge switches that per test class or method with the
+`#[StrictStubs]` attribute (`#[StrictStubs(false)]` turns it off). The method
+wins over its class, the nearest class over a parent, and either over the
+bridge's own default; a bridge asks `StrictStubs::resolve($class, $method,
+$default)` and passes the answer to `verifyAll()`.
+
 `verifyAll()` returns how many checks it verified, so a runner adapter counts
 real assertions instead of a flat one per test. One check is: an expectation
 carrying a claim (`expect()`, or `times()` on a stub); a plain stub under

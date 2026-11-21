@@ -331,6 +331,11 @@ Understudy::verifyAll();                             // checks them all
 Understudy::verifyAll(strictStubs: true);            // and unused stubs
 ```
 
+`#[StrictStubs]` / `#[StrictStubs(false)]` (class or method) is the per-test
+switch runner bridges read: `StrictStubs::resolve($class, $method, $default)`
+answers method attribute, else the nearest class in the hierarchy carrying one,
+else the bridge default — pass the result to `verifyAll(strictStubs: …)`.
+
 `expect()` is a claim about how often a call happens, checked by
 `verifyAll()`. A plain `when()` stub is permission rather than a claim, and
 becomes checkable only through `times()`. `verifyAll()` returns
