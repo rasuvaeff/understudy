@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Codegen;
 
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
-use Rasuvaeff\Understudy\Runtime\Absent;
 
 /**
  * Turns one or more contracts into the signatures a single class can declare.
@@ -22,12 +21,6 @@ use Rasuvaeff\Understudy\Runtime\Absent;
  */
 final class TargetUnifier
 {
-    /** Used when a target declares a variadic without a usable name. */
-    private const string DEFAULT_TAIL_NAME = 'rest';
-
-    private const string ABSENT = '\\' . Absent::class;
-    private const string ABSENT_DEFAULT = self::ABSENT . '::Argument';
-
     private function __construct() {}
 
     /**
@@ -73,17 +66,17 @@ final class TargetUnifier
                     );
                 }
 
-                if (!self::returnTypeSatisfies($classStatic, $interfaceDeclaration)) {
+                if (!ReturnTypeUnifier::satisfies($classStatic, $interfaceDeclaration)) {
                     throw UnsupportedTarget::signatureConflict(
                         $name,
                         self::describe($classStatic) . ' declares `: '
                         . TypeRenderer::returnType(
-                            self::declaredReturnType($classStatic),
+                            ReturnTypeUnifier::declaredType($classStatic),
                             $classStatic->getDeclaringClass(),
                         ) . '`',
                         self::describe($interfaceDeclaration) . ' declares `: '
                         . TypeRenderer::returnType(
-                            self::declaredReturnType($interfaceDeclaration),
+                            ReturnTypeUnifier::declaredType($interfaceDeclaration),
                             $interfaceDeclaration->getDeclaringClass(),
                         ) . '`',
                     );
@@ -257,7 +250,7 @@ final class TargetUnifier
      */
     private static function unifyMethod(string $name, array $declarations): MethodSignature
     {
-        $returnType = self::unifyReturnType($name, $declarations);
+        $returnType = ReturnTypeUnifier::unify($name, $declarations);
         $static = $declarations[0]->isStatic();
 
         foreach ($declarations as $declaration) {
@@ -278,7 +271,7 @@ final class TargetUnifier
         // the override alike. Rendering the later fixed parameters of another
         // target would put them after `...$rest` — which is a parse error, not
         // a wider signature.
-        $variadicAt = self::firstVariadicPosition($declarations);
+        $variadicAt = ParameterUnifier::firstVariadicPosition($declarations);
         $arity = $variadicAt ?? $arity;
 
         $parameters = [];
@@ -288,7 +281,7 @@ final class TargetUnifier
         $optionalParameters = [];
 
         for ($position = 0; $position < $arity; $position++) {
-            $parameter = self::unifyParameter($name, $declarations, $position);
+            $parameter = ParameterUnifier::unify($name, $declarations, $position);
             $parameters[] = $parameter['rendered'];
             $parameterNames[$position] = $parameter['name'];
 
@@ -314,7 +307,7 @@ final class TargetUnifier
         }
 
         if ($variadicAt !== null) {
-            $tail = self::unifyVariadicTail($name, $declarations, $variadicAt);
+            $tail = ParameterUnifier::variadicTail($name, $declarations, $variadicAt);
             $parameters[] = $tail['rendered'];
             $arguments[] = '...$' . $tail['name'];
         }
@@ -398,494 +391,9 @@ final class TargetUnifier
     }
 
     /**
-     * The return type a method declares, tentative ones included.
-     *
-     * PHP's own interfaces carry TENTATIVE return types — `Countable::count()`
-     * is declared `: int`, and `getReturnType()` answers null for it, because
-     * an implementation is still allowed to omit or widen the type until the
-     * grace period ends. Reading only `getReturnType()` therefore made every
-     * built-in contract look untyped, and the generated override declared
-     * `mixed`: legal for `ArrayAccess::offsetGet` (tentatively `mixed` too),
-     * and a deprecation notice for `Countable::count`, on a call as ordinary
-     * as `Understudy::for(Repo::class, Countable::class)`. A future PHP turns
-     * that notice into an error.
-     *
-     * Declaring the tentative type satisfies the contract exactly, so no
-     * `#[\ReturnTypeWillChange]` is needed anywhere.
-     */
-    private static function declaredReturnType(\ReflectionMethod $method): ?\ReflectionType
-    {
-        // hasReturnType() rather than a `??` over the two getters: the two are
-        // mutually exclusive — a method with a tentative type has no declared
-        // one — so either order of a coalesce behaves identically and the
-        // swap is an equivalent mutant nothing can kill.
-        return $method->hasReturnType()
-            ? $method->getReturnType()
-            : $method->getTentativeReturnType();
-    }
-
-    /**
-     * Return types are covariant, so an implementation must satisfy all of
-     * them at once. `int` and `string` have no common subtype: no class can
-     * implement both, and PHP rejects the attempt at compile time.
-     *
-     * @param non-empty-string              $name
-     * @param non-empty-list<\ReflectionMethod> $declarations
-     *
      * @return non-empty-string
      */
-    private static function unifyReturnType(string $name, array $declarations): string
-    {
-        foreach ($declarations as $candidate) {
-            $satisfiesAll = true;
-
-            foreach ($declarations as $required) {
-                if (!self::returnTypeSatisfies($candidate, $required)) {
-                    $satisfiesAll = false;
-
-                    break;
-                }
-            }
-
-            if ($satisfiesAll) {
-                return TypeRenderer::returnType(self::declaredReturnType($candidate), $candidate->getDeclaringClass());
-            }
-        }
-
-        $intersection = self::intersectReturnTypes($declarations);
-
-        if ($intersection !== null) {
-            return $intersection;
-        }
-
-        [$left, $right] = self::conflictingReturnDeclarations($declarations);
-
-        throw UnsupportedTarget::signatureConflict(
-            $name,
-            self::describe($left) . ' declares `: '
-                . TypeRenderer::returnType(self::declaredReturnType($left), $left->getDeclaringClass()) . '`',
-            self::describe($right) . ' declares `: '
-                . TypeRenderer::returnType(self::declaredReturnType($right), $right->getDeclaringClass()) . '`',
-        );
-    }
-
-    /**
-     * Finds the common part of return-type unions. Existing compatible
-     * branches keep their narrower type; otherwise interface-only branches
-     * are combined into an intersection such as `Alpha&Beta`.
-     *
-     * @param non-empty-list<\ReflectionMethod> $declarations
-     *
-     * @return non-empty-string|null
-     */
-    private static function intersectReturnTypes(array $declarations): ?string
-    {
-        $first = $declarations[0];
-        $branches = DnfType::fromReflection(self::declaredReturnType($first), $first->getDeclaringClass())->branches;
-
-        foreach (array_slice($declarations, 1) as $declaration) {
-            $requiredBranches = DnfType::fromReflection(
-                self::declaredReturnType($declaration),
-                $declaration->getDeclaringClass(),
-            )->branches;
-            $intersections = [];
-
-            foreach ($branches as $candidateBranch) {
-                foreach ($requiredBranches as $requiredBranch) {
-                    $intersection = self::intersectReturnBranches($candidateBranch, $requiredBranch);
-
-                    if ($intersection !== null) {
-                        self::addReturnBranch($intersections, $intersection);
-                    }
-                }
-            }
-
-            if ($intersections === []) {
-                return null;
-            }
-
-            $branches = $intersections;
-        }
-
-        return DnfType::of($branches)->render();
-    }
-
-    /**
-     * @param non-empty-list<non-empty-string> $left
-     * @param non-empty-list<non-empty-string> $right
-     *
-     * @return non-empty-list<non-empty-string>|null
-     */
-    private static function intersectReturnBranches(array $left, array $right): ?array
-    {
-        if (DnfType::branchSatisfies($left, $right)) {
-            return $left;
-        }
-
-        if (DnfType::branchSatisfies($right, $left)) {
-            return $right;
-        }
-
-        $atoms = [...$left, ...$right];
-
-        foreach ($atoms as $atom) {
-            if (!DnfType::atomIsInterface($atom)) {
-                return null;
-            }
-        }
-
-        $intersection = [];
-
-        foreach ($atoms as $atom) {
-            $redundant = false;
-
-            foreach ($intersection as $position => $existing) {
-                if (DnfType::atomSatisfies($atom, $existing)) {
-                    unset($intersection[$position]);
-                    continue;
-                }
-
-                if (DnfType::atomSatisfies($existing, $atom)) {
-                    $redundant = true;
-                    break;
-                }
-            }
-
-            if (!$redundant) {
-                $intersection[] = $atom;
-            }
-        }
-
-        /** @var non-empty-list<non-empty-string> */
-        return array_values($intersection);
-    }
-
-    /**
-     * @param list<non-empty-list<non-empty-string>> $branches
-     * @param non-empty-list<non-empty-string>       $candidate
-     */
-    private static function addReturnBranch(array &$branches, array $candidate): void
-    {
-        foreach ($branches as $position => $existing) {
-            if (DnfType::branchSatisfies($candidate, $existing)) {
-                return;
-            }
-
-            if (DnfType::branchSatisfies($existing, $candidate)) {
-                unset($branches[$position]);
-            }
-        }
-
-        $branches[] = $candidate;
-        $branches = array_values($branches);
-    }
-
-
-
-    /**
-     * Reports an actually incompatible pair instead of always blaming the
-     * first two declarations when a later target introduced the conflict.
-     *
-     * @param non-empty-list<\ReflectionMethod> $declarations
-     *
-     * @return array{\ReflectionMethod, \ReflectionMethod}
-     */
-    private static function conflictingReturnDeclarations(array $declarations): array
-    {
-        foreach ($declarations as $leftPosition => $left) {
-            foreach (array_slice($declarations, $leftPosition + 1) as $right) {
-                if (self::returnTypeSatisfies($left, $right) || self::returnTypeSatisfies($right, $left)) {
-                    continue;
-                }
-
-                if (self::intersectReturnTypes([$left, $right]) === null) {
-                    return [$left, $right];
-                }
-            }
-        }
-
-        return [$declarations[0], $declarations[array_key_last($declarations)]];
-    }
-
-    private static function returnTypeSatisfies(\ReflectionMethod $candidate, \ReflectionMethod $required): bool
-    {
-        return DnfType::fromReflection(self::declaredReturnType($candidate), $candidate->getDeclaringClass())
-            ->satisfies(DnfType::fromReflection(self::declaredReturnType($required), $required->getDeclaringClass()));
-    }
-
-
-
-
-
-
-
-    /**
-     * The earliest position at which any target declares a variadic, or null
-     * when none does.
-     *
-     * @param non-empty-list<\ReflectionMethod> $declarations
-     *
-     * @return int<0, max>|null
-     */
-    private static function firstVariadicPosition(array $declarations): ?int
-    {
-        $earliest = null;
-
-        foreach ($declarations as $declaration) {
-            foreach ($declaration->getParameters() as $position => $parameter) {
-                if ($parameter->isVariadic()) {
-                    $earliest = $earliest === null ? $position : min($earliest, $position);
-
-                    break;
-                }
-            }
-        }
-
-        return $earliest;
-    }
-
-    /**
-     * Everything from the first variadic position onwards collapses into one
-     * variadic tail whose type is the union of every parameter any target
-     * declares there or later.
-     *
-     * @param non-empty-string                  $name
-     * @param non-empty-list<\ReflectionMethod> $declarations
-     *
-     * @return array{rendered: non-empty-string, name: non-empty-string}
-     */
-    private static function unifyVariadicTail(string $name, array $declarations, int $from): array
-    {
-        /** @var array<string, true> $types */
-        $types = [];
-        $byReference = null;
-        $byReferenceSource = null;
-        $tailName = self::DEFAULT_TAIL_NAME;
-        $untyped = false;
-        $acceptsMatcher = false;
-
-        foreach ($declarations as $declaration) {
-            foreach (array_slice($declaration->getParameters(), $from) as $parameter) {
-                $rendered = TypeRenderer::parameterType($parameter->getType(), $parameter->getDeclaringClass());
-
-                if ($rendered === '') {
-                    $untyped = true;
-                } else {
-                    foreach (DnfType::parse($rendered)->renderedBranches() as $part) {
-                        $types[$part] = true;
-                    }
-                }
-
-                $acceptsMatcher = $acceptsMatcher || TypeRenderer::acceptsMatcher($parameter->getType());
-
-                if ($byReference !== null && $byReference !== $parameter->isPassedByReference()) {
-                    // Naming `$declaration` on both lines would report the same
-                    // target twice; the other side is whoever set the mode.
-                    \assert($byReferenceSource !== null);
-
-                    throw UnsupportedTarget::signatureConflict(
-                        $name,
-                        self::describe($byReferenceSource) . ' takes its variadic tail by ' . ($byReference ? 'reference' : 'value'),
-                        self::describe($declaration) . ' takes it by ' . ($parameter->isPassedByReference() ? 'reference' : 'value'),
-                    );
-                }
-
-                $byReference = $parameter->isPassedByReference();
-                $byReferenceSource = $declaration;
-
-                if ($parameter->isVariadic() && $tailName === self::DEFAULT_TAIL_NAME) {
-                    // First target wins: `for($primary, ...$interfaces)` treats
-                    // the first contract as the primary one, and the name is
-                    // what a named argument would have to use.
-                    $tailName = $parameter->getName();
-                }
-            }
-        }
-
-        if (!$untyped && !isset($types['mixed']) && !$acceptsMatcher && $types !== []) {
-            $types[TypeRenderer::MATCHER] = true;
-        }
-
-        $type = match (true) {
-            $untyped => '',
-            isset($types['mixed']) => 'mixed',
-            default => implode('|', array_keys($types)),
-        };
-        $rendered = trim($type . ' ' . ($byReference === true ? '&' : '') . '...$' . $tailName);
-        \assert($rendered !== '');
-
-        return ['rendered' => $rendered, 'name' => $tailName];
-    }
-
-    /**
-     * @param non-empty-string              $name
-     * @param non-empty-list<\ReflectionMethod> $declarations
-     *
-     * @return array{rendered: non-empty-string, name: non-empty-string, byReference: bool,
-     *               optional: bool, default: \ReflectionParameter|null}
-     */
-    private static function unifyParameter(string $name, array $declarations, int $position): array
-    {
-        /** @var array<string, true> $types */
-        $types = [];
-        $byReference = null;
-        $firstToDeclare = null;
-        $declaredEverywhere = true;
-        $requiredEverywhere = true;
-        $parameterName = 'p' . $position;
-        $untyped = false;
-        $acceptsMatcher = false;
-        $defaultDeclaredBy = null;
-        $defaultParameter = null;
-
-        foreach ($declarations as $declaration) {
-            $parameter = $declaration->getParameters()[$position] ?? null;
-
-            if ($parameter === null) {
-                $declaredEverywhere = false;
-
-                continue;
-            }
-
-            $rendered = TypeRenderer::parameterType($parameter->getType(), $parameter->getDeclaringClass());
-
-            if ($rendered === '') {
-                $untyped = true;
-            } else {
-                foreach (DnfType::parse($rendered)->renderedBranches() as $part) {
-                    $types[$part] = true;
-                }
-            }
-
-            $acceptsMatcher = $acceptsMatcher || TypeRenderer::acceptsMatcher($parameter->getType());
-
-            if ($firstToDeclare === null) {
-                $firstToDeclare = $declaration;
-                $parameterName = $parameter->getName();
-            }
-
-            if ($byReference !== null && $byReference !== $parameter->isPassedByReference()) {
-                // `$declarations[0]` may not declare this position at all;
-                // name the target that actually did.
-                throw UnsupportedTarget::signatureConflict(
-                    $name,
-                    self::describe($firstToDeclare) . ' takes parameter #' . ($position + 1) . ' by ' . ($byReference ? 'reference' : 'value'),
-                    self::describe($declaration) . ' takes it by ' . ($parameter->isPassedByReference() ? 'reference' : 'value'),
-                );
-            }
-
-            $byReference = $parameter->isPassedByReference();
-            $requiredEverywhere = $requiredEverywhere && !$parameter->isOptional();
-
-            if ($parameter->isDefaultValueAvailable()) {
-                // Two targets disagreeing about the default is the one case
-                // the unifier cannot answer faithfully. Keeping either would
-                // make the other's omitted argument log a value it never
-                // received. A double that answers with a different default
-                // than the real thing is a test that passes for the wrong
-                // reason.
-                //
-                // The default itself is never carried by the generated class
-                // — dispatch reads it from the declaring parameter — so a
-                // single declaration needs no rendering at all, and the
-                // comparison key is computed only when a second one arrives.
-                //
-                // The FIRST target to declare one is the one named against
-                // the disagreeing target, so a conflict among three reads as
-                // one pair and not as whichever two happened to be adjacent.
-                if (!$defaultParameter instanceof \ReflectionParameter) {
-                    $defaultDeclaredBy = $declaration;
-                    $defaultParameter = $parameter;
-                } else {
-                    \assert($defaultDeclaredBy instanceof \ReflectionMethod);
-                    $declaredDefault = DefaultRenderer::render($defaultParameter, $name);
-                    $declared = DefaultRenderer::render($parameter, $name);
-
-                    if ($declaredDefault !== $declared) {
-                        throw UnsupportedTarget::signatureConflict(
-                            $name,
-                            self::describe($defaultDeclaredBy) . ' defaults parameter #' . ($position + 1) . ' to ' . $declaredDefault,
-                            self::describe($declaration) . ' defaults it to ' . $declared,
-                        );
-                    }
-                }
-            }
-        }
-
-        $optional = !$declaredEverywhere || !$requiredEverywhere;
-
-        // An untyped parameter in any target means the union cannot be
-        // expressed at all — every value is already allowed.
-        //
-        // The matcher branch is appended here, once, rather than by each
-        // target's rendering: otherwise unifying `write(int)` with
-        // `write(string)` would interleave it as `int|Matcher|string`.
-        if ($untyped) {
-            $type = '';
-        } elseif (isset($types['mixed'])) {
-            $type = 'mixed';
-        } else {
-            if (!$acceptsMatcher) {
-                $types[TypeRenderer::MATCHER] = true;
-
-                // Exactly where the matcher branch goes, for the same reason
-                // and under the same exemptions: `mixed`, `object` and an
-                // untyped parameter admit the sentinel already, and appending
-                // it to `object` would be the redundant union PHP refuses.
-                //
-                // Every parameter carries it, optional ones included: the
-                // sentinel is how a specification says nothing about a
-                // parameter it did not spell, and a materialized default
-                // in its place would make the omission indistinguishable
-                // from spelling the default value.
-                $types[self::ABSENT] = true;
-            }
-
-            $type = implode('|', array_keys($types));
-
-            // A position optional only because another target does not
-            // declare it has no contract default to put back, so dispatch
-            // fills it with `null` and the type has to admit one. A parameter
-            // that declares its own default needs nothing here: an implicitly
-            // nullable one is reported nullable by Reflection already, and
-            // this branch is the only place the union is real — `mixed|null`
-            // is not a type PHP accepts at all.
-            if ($optional && $defaultParameter === null && !isset($types['null'])) {
-                $type .= '|null';
-            }
-        }
-
-        // Every parameter defaults to the sentinel, so a specification may
-        // physically pass fewer arguments than the method declares — and, for
-        // an optional parameter, so that leaving it unspelled stays visible as
-        // such instead of arriving as the contract's default value.
-        //
-        // Keeping an omitted argument observable is still the rule for a real
-        // call: `tag('alpha')` must log the same arguments as `tag('alpha', 1)`,
-        // or the two would verify as different calls. Dispatch materializes the
-        // declared default for a sentinel that survives into one, and raises
-        // the `ArgumentCountError` PHP would have raised where the contract
-        // declares no default at all.
-        $rendered = trim(sprintf(
-            '%s %s$%s = %s',
-            $type,
-            $byReference === true ? '&' : '',
-            $parameterName,
-            self::ABSENT_DEFAULT,
-        ));
-        \assert($rendered !== '');
-
-        return [
-            'rendered' => $rendered,
-            'name' => $parameterName,
-            'byReference' => $byReference === true,
-            'optional' => $optional,
-            'default' => $defaultParameter,
-        ];
-    }
-
-
-    private static function describe(\ReflectionMethod $method): string
+    public static function describe(\ReflectionMethod $method): string
     {
         return '`' . $method->getDeclaringClass()->getName() . '::' . $method->getName() . '()`';
     }

@@ -7,19 +7,15 @@ namespace Rasuvaeff\Understudy\Runtime;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
-use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NeverMethodCalled;
 use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
-use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Expectation\ArgumentFormatter;
-use Rasuvaeff\Understudy\FailureKind;
 use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Matcher\ArgumentMatcher;
-use Rasuvaeff\Understudy\VerificationFailure;
 
 /**
  * The registry generated doubles call into, and the owner of every context.
@@ -32,250 +28,14 @@ final class Runtime
     private const int SNAPSHOT_DEPTH = 8;
 
     /**
-     * The doubled classes' own method bodies, by `Class::method`, for inline
-     * forwarding. Class metadata, so it outlives a context: `reset()` drops
-     * doubles, not the shape of the types they stood in for.
-     *
-     * @var array<string, \ReflectionMethod>
-     */
-    private static array $inlineMethods = [];
-
-    /**
-     * The doubles whose real bodies are running right now, innermost last.
-     *
-     * A body that clones `$this` gets a copy of a double, and the generated
-     * `__clone()` cannot tell what it was cloned from — PHP hands it no
-     * reference to the original. Without this frame the copy would be a
-     * default-answering double in the middle of real code that, proxied,
-     * would have gone on working: `withTag()` returning `clone $this`, or a
-     * body computing over an internal copy.
-     *
-     * @var list<object>
-     */
-    private static array $inlineFrames = [];
-
-    /**
-     * How much of {@see $inlineFrames} a `clone` is allowed to see.
-     *
-     * A test's own `answers()`/`returns()` closure runs inside dispatch, which
-     * can be reached from a real body running inline — and a `clone $double`
-     * written there is the test's clone, which the documented rule makes a
-     * fresh double. The frames below the floor are the bodies that happen to
-     * be on the stack underneath; the floor is raised for the span of the
-     * closure, so only what the closure itself enters — `callOriginal()`,
-     * which pushes a frame of its own — is visible to a clone made inside it.
-     */
-    private static int $inlineFloor = 0;
-
-    /**
-     * A stack, not a single context: `scope()` nests one inside another, and
-     * the outer one must come back intact when the inner ends.
-     *
-     * @var list<RuntimeContext>
-     */
-    private static array $main = [];
-
-    /** @var \WeakMap<\Fiber, list<RuntimeContext>>|null */
-    private static ?\WeakMap $fibers = null;
-
-    /**
-     * Keyed by the double object, never by `spl_object_id()`, which PHP reuses
-     * after collection. Routes a call made inside a Fiber back to the context
-     * that created the double.
-     *
-     * @var \WeakMap<object, RuntimeContext>|null
-     */
-    private static ?\WeakMap $owners = null;
-
-    /**
-     * @var \WeakMap<object, true>|null
-     */
-    private static ?\WeakMap $forgotten = null;
-
-    /**
-     * The forgotten doubles a closing `scope()` dropped, as opposed to a
-     * `reset()`. Only the failure message tells them apart: "created before a
-     * reset()" sends the reader looking for a reset() they never wrote when
-     * what ended the double was the scope it was built in.
-     *
-     * @var \WeakMap<object, true>|null
-     */
-    private static ?\WeakMap $droppedByScope = null;
-
-    /**
-     * Doubles retired on purpose through `Understudy::forget()`. The
-     * distinction is for the failure message only: both a reset and a
-     * deliberate retirement make the double unusable, but telling a reader
-     * to look for a reset() they never wrote is worse than the plain truth.
-     *
-     * @var \WeakMap<object, true>|null
-     */
-    private static ?\WeakMap $retiredOnPurpose = null;
-
-    /**
-     * Every context that holds understudies, current or not.
-     *
-     * Isolation and accounting are different questions, and conflating them
-     * cost a silent hole. A Fiber gets its own context so that a recording
-     * phase, a call log and a sequence counter are never shared with a
-     * sibling — that stays. But `verifyAll()`, `reset()`, `idle()` and
-     * `checkpoint()` are asked by a runner adapter from the main flow, about
-     * the test as a whole, and a context they cannot see is a context whose
-     * expectations are never checked: a test body run in a Fiber left an
-     * unmet `expect()` and the suite stayed green.
-     *
-     * Keyed by object id and holding a strong reference, so a Fiber's context
-     * outlives the Fiber long enough to be verified. `reset()` empties it.
-     *
-     * @var array<int, RuntimeContext>
-     */
-    private static array $live = [];
-
-    public static function current(): RuntimeContext
-    {
-        $stack = self::stack();
-
-        if ($stack === []) {
-            $context = self::freshContext();
-            self::push($context);
-
-            return $context;
-        }
-
-        return $stack[count($stack) - 1];
-    }
-
-    public static function currentIfAny(): ?RuntimeContext
-    {
-        $stack = self::stack();
-
-        return $stack === [] ? null : $stack[count($stack) - 1];
-    }
-
-    /**
      * Opens a nested context, so that everything created inside it is dropped
      * when it closes and the enclosing context resumes untouched.
      */
-    public static function pushScope(): RuntimeContext
-    {
-        $context = self::freshContext();
-        self::push($context);
-
-        return $context;
-    }
-
-    public static function popScope(): void
-    {
-        $fiber = \Fiber::getCurrent();
-
-        if (!$fiber instanceof \Fiber) {
-            $context = array_pop(self::$main);
-
-            if ($context instanceof RuntimeContext) {
-                self::retire($context, byScope: true);
-            }
-
-            return;
-        }
-
-        $fibers = self::fibers();
-        /** @var list<RuntimeContext> $stack */
-        $stack = $fibers->offsetExists($fiber) ? $fibers->offsetGet($fiber) : [];
-        $context = array_pop($stack);
-
-        if ($context instanceof RuntimeContext) {
-            self::retire($context, byScope: true);
-        }
-
-        $fibers->offsetSet($fiber, $stack);
-    }
-
-    /**
-     * @return list<RuntimeContext>
-     */
-    private static function stack(): array
-    {
-        $fiber = \Fiber::getCurrent();
-
-        if (!$fiber instanceof \Fiber) {
-            return self::$main;
-        }
-
-        $fibers = self::fibers();
-
-        if (!$fibers->offsetExists($fiber)) {
-            return [];
-        }
-
-        // WeakMap::offsetGet() is typed as nullable regardless of the value
-        // type, and offsetExists() above has already ruled that out.
-        /** @var list<RuntimeContext> $stack */
-        $stack = $fibers->offsetGet($fiber);
-
-        return $stack;
-    }
-
-    private static function push(RuntimeContext $context): void
-    {
-        $fiber = \Fiber::getCurrent();
-
-        if (!$fiber instanceof \Fiber) {
-            self::$main[] = $context;
-
-            return;
-        }
-
-        $stack = self::stack();
-        $stack[] = $context;
-        self::fibers()->offsetSet($fiber, $stack);
-    }
-
     public static function adopt(object $double, DoubleState $state): void
     {
-        $context = self::current();
+        $context = ContextStack::current();
         $context->register($double, $state);
-        self::owners()->offsetSet($double, $context);
-    }
-
-    /**
-     * Records a context as holding understudies, so accounting can reach it
-     * from wherever the adapter stands.
-     */
-    /**
-     * Called where a context comes into being, not once per double adopted
-     * into it: the context is the same for every double a test builds, so
-     * doing it in `adopt()` rewrote the same key on the hottest creation path
-     * there is. A context that ends up holding nothing is harmless here —
-     * accounting walks its states, and it has none.
-     */
-    private static function remember(RuntimeContext $context): void
-    {
-        self::$live[spl_object_id($context)] = $context;
-    }
-
-    private static function unremember(RuntimeContext $context): void
-    {
-        unset(self::$live[spl_object_id($context)]);
-    }
-
-    /**
-     * The current context first, then every other one still holding
-     * understudies — the whole test, in the order a report should read.
-     *
-     * @return list<RuntimeContext>
-     */
-    public static function liveContexts(): array
-    {
-        $current = self::currentIfAny();
-        $contexts = $current instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext ? [$current] : [];
-
-        foreach (self::$live as $context) {
-            if ($context !== $current) {
-                $contexts[] = $context;
-            }
-        }
-
-        return $contexts;
+        Ownership::owners()->offsetSet($double, $context);
     }
 
     /**
@@ -305,44 +65,14 @@ final class Runtime
             return;
         }
 
-        $context = self::current();
+        $context = ContextStack::current();
         $state = new DoubleState($blueprint);
 
-        // Cloned by real code running inline: the copy carries the original's
-        // forwarding, because PHP already copied the state those bodies read
-        // and the alternative is real code holding a double that answers
-        // defaults. Expectations are still not copied — that part of the rule
-        // above stands, and a clone the TEST makes is untouched by this,
-        // whether no body is running at all or the test's own closure was
-        // reached from one ({@see $inlineFloor}).
-        $frames = self::$inlineFrames;
-        $frame = $frames === [] || \count($frames) <= self::$inlineFloor
-            ? null
-            : $frames[\count($frames) - 1];
-
-        // The class is not enough, and the same generated class stands in for
-        // every double of a type: a body handed another double of its own
-        // class — `merge(Basket $other)` — and cloning THAT would otherwise
-        // adopt it on the running double's behalf, giving it bodies to run and
-        // no state copy to run them over. What PHP leaves to go on is the copy
-        // itself, which at this moment is property-identical to whatever it
-        // was cloned from, because the generated `__clone()` does nothing but
-        // call this method.
-        if ($frame !== null && $frame::class === $clone::class && self::isCopyOf($clone, $frame)) {
-            $origin = (self::ownerOf($frame) ?? $context)->stateOf($frame);
-            $target = $origin?->forwardingTarget();
-            $parent = $origin?->inlineParent();
-
-            if ($target !== null && $parent !== null) {
-                $state->setForwardingTarget($target);
-                $state->setMode(Mode::Forwarding);
-                $state->forwardInline($parent);
-            }
-        }
+        Forwarder::inheritForwarding($clone, $state, $context);
 
         $context->register($clone, $state);
 
-        self::owners()->offsetSet($clone, $context);
+        Ownership::owners()->offsetSet($clone, $context);
     }
 
     /**
@@ -380,179 +110,21 @@ final class Runtime
         }
 
         $owner->register($double, new DoubleState($blueprint, nested: true));
-        self::owners()->offsetSet($double, $owner);
+        Ownership::owners()->offsetSet($double, $owner);
 
         return $double;
     }
 
-    public static function ownerOf(object $double): ?RuntimeContext
-    {
-        $owners = self::owners();
-
-        return $owners->offsetExists($double) ? $owners->offsetGet($double) : null;
-    }
-
-    /**
-     * Whether a double's context was torn down under it.
-     *
-     * A one-way latch on purpose: a double belongs to exactly one context for
-     * its whole life, and `for()` hands back a new object every time, so
-     * nothing that was forgotten can become known again.
-     */
-    public static function isForgotten(object $double): bool
-    {
-        return self::$forgotten?->offsetExists($double) ?? false;
-    }
-
-    /**
-     * Whether a double was forgotten by the `scope()` it was created in
-     * closing, rather than by a `reset()`.
-     */
-    public static function isDroppedByScope(object $double): bool
-    {
-        return self::$droppedByScope?->offsetExists($double) ?? false;
-    }
-
-    /**
-     * The refusal for a call or a question that reached a forgotten double,
-     * worded by what forgot it: `forget()`, a closing scope, or a reset.
-     *
-     * @param non-empty-string $member
-     */
-    public static function forgottenDouble(object $double, string $member): ForgottenDouble
-    {
-        if (self::isRetiredOnPurpose($double)) {
-            return ForgottenDouble::onPurpose($member);
-        }
-
-        if (self::isDroppedByScope($double)) {
-            return ForgottenDouble::afterScope($member);
-        }
-
-        return ForgottenDouble::afterReset($member);
-    }
-
-    /**
-     * The refusal for a property touched on a forgotten double, worded the
-     * same way as `forgottenDouble()`.
-     *
-     * @param non-empty-string $property
-     */
-    private static function forgottenProperty(object $double, string $property): ForgottenDouble
-    {
-        if (self::isRetiredOnPurpose($double)) {
-            return ForgottenDouble::propertyOnPurpose($property);
-        }
-
-        if (self::isDroppedByScope($double)) {
-            return ForgottenDouble::propertyAfterScope($property);
-        }
-
-        return ForgottenDouble::propertyAfterReset($property);
-    }
-
-    /**
-     * Whether a double was retired on purpose through `Understudy::forget()`.
-     */
-    public static function isRetiredOnPurpose(object $double): bool
-    {
-        return self::$retiredOnPurpose?->offsetExists($double) ?? false;
-    }
-
-    /**
-     * Retires a double on purpose: its owner's state is dropped, so
-     * verification, `nothingElse()` and reset stop seeing it — a replacement
-     * double must not inherit its stubs into a `strictStubs` verdict. A call
-     * on the object afterwards fails with `ForgottenDouble`, the same guard a
-     * scope close leaves behind.
-     */
-    public static function forget(object $double): void
-    {
-        $owner = self::ownerOf($double);
-
-        // The facade has already answered for a stranger, a retired double and
-        // a foreign context through `stateOf()`; what reaches here is owned.
-        \assert($owner instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext && $owner->stateOf($double) instanceof \Rasuvaeff\Understudy\Runtime\DoubleState);
-
-        $owner->forget($double);
-        self::owners()->offsetUnset($double);
-        self::forgotten()->offsetSet($double, value: true);
-
-        if (!self::$retiredOnPurpose instanceof \WeakMap) {
-            /** @var \WeakMap<object, true> $retired */
-            $retired = new \WeakMap();
-            self::$retiredOnPurpose = $retired;
-        }
-
-        self::$retiredOnPurpose->offsetSet($double, value: true);
-    }
-
-    /**
-     * @return \WeakMap<\Fiber, list<RuntimeContext>>
-     */
-    private static function fibers(): \WeakMap
-    {
-        if (!self::$fibers instanceof \WeakMap) {
-            /** @var \WeakMap<\Fiber, list<RuntimeContext>> $fibers */
-            $fibers = new \WeakMap();
-            self::$fibers = $fibers;
-        }
-
-        return self::$fibers;
-    }
-
-    /**
-     * @return \WeakMap<object, RuntimeContext>
-     */
-    private static function owners(): \WeakMap
-    {
-        if (!self::$owners instanceof \WeakMap) {
-            /** @var \WeakMap<object, RuntimeContext> $owners */
-            $owners = new \WeakMap();
-            self::$owners = $owners;
-        }
-
-        return self::$owners;
-    }
-
-    /**
-     * @return \WeakMap<object, true>
-     */
-    private static function droppedByScope(): \WeakMap
-    {
-        if (!self::$droppedByScope instanceof \WeakMap) {
-            /** @var \WeakMap<object, true> $dropped */
-            $dropped = new \WeakMap();
-            self::$droppedByScope = $dropped;
-        }
-
-        return self::$droppedByScope;
-    }
-
-    /**
-     * @return \WeakMap<object, true>
-     */
-    private static function forgotten(): \WeakMap
-    {
-        if (!self::$forgotten instanceof \WeakMap) {
-            /** @var \WeakMap<object, true> $forgotten */
-            $forgotten = new \WeakMap();
-            self::$forgotten = $forgotten;
-        }
-
-        return self::$forgotten;
-    }
-
     public static function stateOf(object $double): ?DoubleState
     {
-        return self::ownerOf($double)?->stateOf($double);
+        return Ownership::ownerOf($double)?->stateOf($double);
     }
 
     public static function isOwnedByCurrentContext(object $double): bool
     {
-        $owner = self::ownerOf($double);
+        $owner = Ownership::ownerOf($double);
 
-        return $owner instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext && $owner === self::current();
+        return $owner instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext && $owner === ContextStack::current();
     }
 
     /**
@@ -567,7 +139,7 @@ final class Runtime
         // opens the phase in whichever context it runs in, and a double
         // created elsewhere must still signal instead of being treated as a
         // real call.
-        $current = self::current();
+        $current = ContextStack::current();
 
         if ($current->isRecording()) {
             // The signal is retained, not thrown: the closure goes on, so a
@@ -606,7 +178,7 @@ final class Runtime
         $state = $current->stateOf($double);
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            $context = self::ownerOf($double) ?? $current;
+            $context = Ownership::ownerOf($double) ?? $current;
             $state = $context->stateOf($double);
         }
 
@@ -616,7 +188,7 @@ final class Runtime
             // message differs for a double retired through `Understudy::forget()`:
             // sending the reader looking for a stray reset() they never wrote
             // is worse than the plain truth.
-            throw self::forgottenDouble($double, $method);
+            throw Ownership::forgottenDouble($double, $method);
         }
 
         // A by-reference argument is live: whatever answers the call can write
@@ -709,7 +281,7 @@ final class Runtime
             $verdict = $sequence->offer($double, $invocation);
 
             if ($verdict === SequenceVerdict::OutOfTurn) {
-                throw VerificationFailed::of([self::outOfTurn($state, $sequence, $invocation, $double)]);
+                throw VerificationFailed::of([FailureReport::outOfTurn($state->label(), $sequence, $invocation, $double)]);
             }
 
             if ($verdict === SequenceVerdict::Advanced) {
@@ -751,16 +323,17 @@ final class Runtime
 
             // The test's own closure, so a `clone $double` inside it is the
             // test's clone even when a real body is on the stack underneath.
-            // Two integers rather than a saved copy of the stack: this is the
+            // Two integers rather than a saved copy of the stack, and written
+            // here rather than behind a `Forwarder` method: this is the
             // dispatch path, and every stubbed call in a suite pays for it.
-            $floor = self::$inlineFloor;
-            self::$inlineFloor = \count(self::$inlineFrames);
+            $floor = Forwarder::$inlineFloor;
+            Forwarder::$inlineFloor = \count(Forwarder::$inlineFrames);
 
             try {
                 /** @var mixed $answer */
                 $answer = $expectation->performAction($invocation);
             } finally {
-                self::$inlineFloor = $floor;
+                Forwarder::$inlineFloor = $floor;
             }
 
             if ($signature instanceof \Rasuvaeff\Understudy\Codegen\MethodSignature && $signature->returnsNever) {
@@ -785,13 +358,13 @@ final class Runtime
         // default there would make counting a call change what it answers.
         if ($state->mode() === Mode::Forwarding) {
             if ($state->forwardsInline()) {
-                return self::runInline($state, $double, $method, $args);
+                return Forwarder::runInline($state, $double, $method, $args);
             }
 
             // The live arguments, not the log's reading of them: a by-reference
             // parameter is the caller's variable, and the whole point of
             // forwarding is that the real method can write to it.
-            return self::forward($state, $double, $method, $args);
+            return Forwarder::forward($state, $double, $method, $args);
         }
 
         if ($signature instanceof \Rasuvaeff\Understudy\Codegen\MethodSignature && $signature->returnsNever) {
@@ -808,7 +381,7 @@ final class Runtime
         // out of turn — the protocol cannot tell "not part of this" from "you
         // got the order wrong" unless the test says which it is.
         if ($sequence instanceof ArmedSequence && !$matched && $verdict === SequenceVerdict::NotAStep) {
-            throw VerificationFailed::of([self::unconfiguredUnderProtocol($state, $sequence, $invocation, $double)]);
+            throw VerificationFailed::of([FailureReport::unconfiguredUnderProtocol($state->label(), $sequence, $invocation, $double)]);
         }
 
         // A matched expectation means the call was expected, so strictness has
@@ -836,80 +409,6 @@ final class Runtime
             $state->nested,
             $double,
         );
-    }
-
-    /**
-     * One rendering for both refusals: the protocol as a numbered list with
-     * the step due marked, and the call that arrived. One alias table over all
-     * of it, so an object in the step is comparable with the one in the call.
-     *
-     * @return non-empty-string
-     */
-    private static function describeProtocol(ArmedSequence $sequence, Invocation $invocation, object $double): string
-    {
-        return ArgumentFormatter::scope(static function () use ($sequence, $invocation, $double): string {
-            $call = FailureReport::renderCall($invocation);
-            $elsewhere = $sequence->stepsOwnedElsewhere($double);
-            $lines = [];
-
-            foreach ($sequence->describe() as $index => $step) {
-                $lines[] = sprintf(
-                    '    %d. %s%s%s',
-                    $index + 1,
-                    $step,
-                    ($elsewhere[$index] ?? false) ? '   (on another understudy)' : '',
-                    $index + 1 === $sequence->position() ? '   <- due here' : '',
-                );
-            }
-
-            return sprintf("The call was:\n    %s\n\nThe protocol is:\n%s", $call, implode("\n", $lines));
-        });
-    }
-
-    private static function outOfTurn(DoubleState $state, ArmedSequence $sequence, Invocation $invocation, object $double): VerificationFailure
-    {
-        // The step due can read exactly like the call that arrived, because a
-        // protocol spanning two doubles renders every step by its call alone.
-        // Saying whose step it was is the difference between a report and a
-        // riddle.
-        $elsewhere = $sequence->pendingOwner() !== null && $sequence->pendingOwner() !== $double
-            ? ' on another understudy'
-            : '';
-
-        return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
-            kind: FailureKind::OutOfSequence,
-            summary: sprintf(
-                "Understudy `%s` received a protocol call out of turn: step %d of %d was expected to be `%s`%s.\n\n%s",
-                $state->label(),
-                $sequence->position(),
-                $sequence->length(),
-                $sequence->pending()?->describe() ?? 'nothing — the protocol has run out',
-                $elsewhere,
-                self::describeProtocol($sequence, $invocation, $double),
-            ),
-            double: $state->label(),
-            expectation: $sequence->pending()?->describe(),
-            observedCalls: [$invocation],
-            expectedCalls: $sequence->describe(),
-        ));
-    }
-
-    private static function unconfiguredUnderProtocol(DoubleState $state, ArmedSequence $sequence, Invocation $invocation, object $double): VerificationFailure
-    {
-        return ArgumentFormatter::scope(static fn(): VerificationFailure => new VerificationFailure(
-            kind: FailureKind::OutOfSequence,
-            summary: sprintf(
-                "Understudy `%s` is under an armed protocol and received a call that is neither a step nor configured.\n\n%s\n\n"
-                . 'Say it may happen — when(fn () => $double->%s(...))->returns(...) — or make it a step.',
-                $state->label(),
-                self::describeProtocol($sequence, $invocation, $double),
-                $invocation->method,
-            ),
-            double: $state->label(),
-            expectation: $sequence->pending()?->describe(),
-            observedCalls: [$invocation],
-            expectedCalls: $sequence->describe(),
-        ));
     }
 
     /**
@@ -988,17 +487,17 @@ final class Runtime
      */
     private static function propertyState(object $double, string $property): array
     {
-        $current = self::current();
+        $current = ContextStack::current();
         $state = $current->stateOf($double);
         $context = $current;
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            $context = self::ownerOf($double) ?? $current;
+            $context = Ownership::ownerOf($double) ?? $current;
             $state = $context->stateOf($double);
         }
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            throw self::forgottenProperty($double, $property);
+            throw Ownership::forgottenProperty($double, $property);
         }
 
         return [$context, $state];
@@ -1022,7 +521,7 @@ final class Runtime
      */
     public static function referenceSlot(object $double, string $method, array $args): ReferenceSlot
     {
-        $state = (self::ownerOf($double) ?? self::current())->stateOf($double);
+        $state = (Ownership::ownerOf($double) ?? ContextStack::current())->stateOf($double);
 
         // Before `hasActionFor()`, not after: it walks the expectations the
         // way dispatch will, and dispatch will see the arguments with the
@@ -1031,7 +530,7 @@ final class Runtime
         // and the slot would keep the mode's own value instead of the
         // configured one. A recording phase is the exception — the sentinel
         // is what it came for.
-        if ($state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState && !self::current()->isRecording()) {
+        if ($state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState && !ContextStack::current()->isRecording()) {
             self::materializeOmittedArguments($state->blueprint->method($method), $method, $args);
         }
 
@@ -1040,7 +539,7 @@ final class Runtime
         /** @var mixed $value */
         $value = self::dispatch($double, $method, $args);
 
-        if (self::current()->isRecording()) {
+        if (ContextStack::current()->isRecording()) {
             // A recording answers with a throwaway: the per-method slot is
             // state the test can observe through the reference it already
             // holds, and the closure's own value must not land in it.
@@ -1050,11 +549,11 @@ final class Runtime
             return $slot;
         }
 
-        $context = self::ownerOf($double) ?? self::current();
+        $context = Ownership::ownerOf($double) ?? ContextStack::current();
         $state = $context->stateOf($double);
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            throw self::forgottenDouble($double, $method);
+            throw Ownership::forgottenDouble($double, $method);
         }
 
         return $state->referenceSlot($method, $value, replace: $configured);
@@ -1078,297 +577,18 @@ final class Runtime
      */
     public static function callOriginal(object $double, string $method, array $args): mixed
     {
-        $context = self::ownerOf($double) ?? self::current();
+        $context = Ownership::ownerOf($double) ?? ContextStack::current();
         $state = $context->stateOf($double);
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            throw self::forgottenDouble($double, $method);
+            throw Ownership::forgottenDouble($double, $method);
         }
 
         if ($state->forwardsInline()) {
-            return self::runInline($state, $double, $method, $args);
+            return Forwarder::runInline($state, $double, $method, $args);
         }
 
-        return self::forward($state, $double, $method, $args);
-    }
-
-    /**
-     * Runs the real body on the double itself.
-     *
-     * `ReflectionMethod::invokeArgs()` is what makes this possible without
-     * adding anything to the generated class: a reflection taken on the
-     * *doubled* class enters that class's body even though the double
-     * overrides the method — the same non-virtual entry `parent::` gives —
-     * while `$this` inside the body stays the double, so its self-calls
-     * dispatch virtually and land back in the override. Verified on 8.3, 8.4
-     * and 8.5; `spikes/08-inline-forwarding` is the executable form of the
-     * claim. A generated `__understudyReal_*()` sibling would be the other
-     * way, and it is the way this library does not take: every member added
-     * to a double is a name the doubled type can no longer use.
-     *
-     * The arguments are the live ones — a reference survives the array, so a
-     * by-reference parameter still writes to the caller's variable — and the
-     * body runs inside dispatch, so its outcome is recorded like any other
-     * answer's.
-     *
-     * The one thing the proxy form refused and this form has to refuse too: a
-     * real body that builds another instance of itself and hands it out. Under
-     * the proxy it was an instance of the real class the double could not
-     * stand in for; here it is an instance of the generated class, which
-     * satisfies the override's `: static` and so gets past the language. A
-     * `clone $this` is fine — `adoptClone()` gave the copy this double's
-     * forwarding, so it answers for real — but a `new static` belongs to no
-     * context at all, and the next call on it would fail as a double that was
-     * never registered. That is what is refused, by registration rather than
-     * by return type: an unknown instance is broken for every caller, not only
-     * for one whose signature says `static`.
-     *
-     * @param non-empty-string $method
-     * @param list<mixed>      $args
-     */
-    private static function runInline(DoubleState $state, object $double, string $method, array $args): mixed
-    {
-        $parent = $state->inlineParent();
-        \assert($parent !== null);
-
-        // Cached across the suite: the reflection describes a class, and a
-        // fresh one per call is reflection on the dispatch path. Every contract
-        // of the double is satisfied by the donor's class, which IS this class,
-        // so the method is always there to be found.
-        $real = self::$inlineMethods[$parent . '::' . $method] ??= new \ReflectionMethod($parent, $method);
-
-        self::$inlineFrames[] = $double;
-
-        try {
-            /** @var mixed $value */
-            $value = $real->invokeArgs($double, $args);
-        } finally {
-            array_pop(self::$inlineFrames);
-        }
-
-        if (!\is_object($value)) {
-            // Only an object can be the double, its clone, or a `new static`.
-            return $value;
-        }
-
-        if ($value === $double) {
-            // The body's own `return $this`, which already IS the double.
-            return $value;
-        }
-
-        if ($value instanceof $double && !self::ownerOf($value) instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext) {
-            throw OriginalReturnTypeViolation::foreignSelf($state->label(), $method);
-        }
-
-        return $value;
-    }
-
-    /**
-     * Delegates a call to the double's real instance and adopts the result.
-     *
-     * The proxy form of forwarding — the one an interface double has no choice
-     * about, and the one a donor that is a subclass of the doubled class keeps.
-     * The call runs on the remembered instance, `$this` inside it is that
-     * instance, and its self-calls stay inside it. A class double standing in
-     * for exactly the donor's class runs the real bodies on itself instead
-     * ({@see runInline()}), where `$this` stays the double and self-calls
-     * re-enter dispatch.
-     *
-     * @param non-empty-string $method
-     * @param list<mixed>      $args
-     */
-    private static function forward(
-        DoubleState $state,
-        object $double,
-        string $method,
-        array $args,
-    ): mixed {
-        $target = $state->forwardingTarget();
-
-        if ($target === null) {
-            throw OriginalCallUnavailable::withoutTarget($state->label(), $method);
-        }
-
-        // Through a callable rather than `$target->{$method}()`: the method
-        // name is only known at runtime, and a dynamic call on a bare `object`
-        // tells static analysis nothing about what comes back.
-        $call = [$target, $method];
-        \assert(\is_callable($call));
-
-        /** @var mixed $value */
-        $value = $call(...$args);
-
-        return self::adoptForwardedResult($state, $double, $target, $method, $value);
-    }
-
-    /**
-     * A fluent method that returned the real instance has to come back as the
-     * double: the caller holds the double, and handing it the real object would
-     * quietly end the doubling halfway through a chain. Identity is what proves
-     * it — `$value === $target`, not a class check.
-     *
-     * A `static` method that returned *another* instance of the real class
-     * cannot be adopted. That object is not a generated subclass, so returning
-     * it would violate the override's own `: static`, and wrapping it silently
-     * would invent a double the test never asked for.
-     *
-     * @param non-empty-string $method
-     */
-    private static function adoptForwardedResult(
-        DoubleState $state,
-        object $double,
-        object $target,
-        string $method,
-        mixed $value,
-    ): mixed {
-        if ($value === $target) {
-            return $double;
-        }
-
-        $signature = $state->blueprint->method($method);
-
-        if ($signature?->returnType === 'static' && $value instanceof $target) {
-            throw OriginalReturnTypeViolation::foreignInstance($state->label(), $method, $value::class);
-        }
-
-        return $value;
-    }
-
-    /**
-     * Copies the donor instance's initialized state onto the double, so a
-     * parent body run inline works over the values the real object held.
-     *
-     * The double's constructor never ran — beyond the empty scalars
-     * `PropertyDefaults` wrote, nothing on it is initialized — while the
-     * parent bodies inline forwarding runs read `$this->` properties. Every
-     * property the donor has initialized is copied; one the donor left
-     * uninitialized is left (or made) uninitialized on the double, so the
-     * real body sees exactly what it would have seen on the donor — including
-     * PHP's own "must not be accessed before initialization" for a property
-     * nobody set.
-     *
-     * Each property is handled through a reflection against its **declaring**
-     * class: before PHP 8.4 a readonly property can only be initialized from
-     * the scope of the class that declares it, and a reflection reached
-     * through the subclass writes from the subclass's scope.
-     */
-    public static function copyState(object $double, object $donor): void
-    {
-        for ($class = new \ReflectionClass($donor); $class !== false; $class = $class->getParentClass()) {
-            foreach ($class->getProperties() as $property) {
-                if ($property->isStatic() || $property->getDeclaringClass()->getName() !== $class->getName()) {
-                    continue;
-                }
-
-                if (\PHP_VERSION_ID >= 80400 && self::propertyFlag($property, 'hasHooks')) {
-                    // A virtual property has no state to copy; a backed one
-                    // has its backing store, reachable without running the
-                    // hooks — reading through them would execute the donor's
-                    // code during what is test setup.
-                    if (!self::propertyFlag($property, 'isVirtual') && $property->isInitialized($donor)) {
-                        self::propertyMember($property, 'setRawValue', [
-                            $double,
-                            self::propertyMember($property, 'getRawValue', [$donor]),
-                        ]);
-                    }
-
-                    continue;
-                }
-
-                if ($property->isInitialized($donor)) {
-                    $property->setValue($double, $property->getValue($donor));
-
-                    continue;
-                }
-
-                if ($property->isInitialized($double)) {
-                    // The donor's truth is "uninitialized"; the double is
-                    // holding one of the empty-scalar property defaults.
-                    // Restore the donor's reading, or the real body would see
-                    // a value the real object never had.
-                    //
-                    // No visibility dance and no `readonly` guard, because
-                    // only one thing writes a property on a double the
-                    // constructor skipped: `PropertyDefaults`, which writes
-                    // public, writable, non-readonly properties and nothing
-                    // else. That is exactly the set `unset()` from out here
-                    // can reach, and the rest cannot be in this position.
-                    unset($double->{$property->getName()});
-                }
-            }
-        }
-    }
-
-    /**
-     * Whether `$clone` is the copy PHP just took of `$frame`.
-     *
-     * Asked because `__clone()` is handed no reference to what it was cloned
-     * from, and the running body's double is a guess: one generated class
-     * serves every double of a type, so a body that was given another double
-     * of its own class and cloned that one looks identical from here. What
-     * separates them is the state, and this runs before anything could have
-     * changed it — a generated `__clone()` only calls {@see adoptClone()},
-     * never the doubled class's own `__clone()` body, so the copy still holds
-     * exactly what it was copied from.
-     *
-     * `get_mangled_object_vars()` is the whole comparison, and it is the
-     * right reading rather than a shortcut: it answers with the object's own
-     * property table — private properties of every parent under their mangled
-     * names, which a reflection of the double's class cannot reach at all —
-     * and it answers without running anything. A hooked property comes back
-     * as its backing store, not through its `get`, which is the doubled
-     * class's code and must not run while `__clone()` is still deciding what
-     * this copy is; a virtual property has no entry, because it has no state;
-     * a static one belongs to the class both objects share; and a property
-     * nobody initialized is absent, so "the donor never set this" differs
-     * from any value at all. Two tables compare `===`: same keys in the same
-     * order — a copy cannot reorder them — and the same values, which for an
-     * object-valued property means the same object, as a copy holds.
-     *
-     * Two doubles in the same state stay indistinguishable, and that is the
-     * residual of PHP's blind spot rather than something this can close: such
-     * a copy is adopted and runs real bodies where a plain double would have
-     * answered defaults. It runs them over the state the copy already holds,
-     * so nothing reads a value the object never had — the readings are real,
-     * they are simply the other double's.
-     */
-    private static function isCopyOf(object $clone, object $frame): bool
-    {
-        return get_mangled_object_vars($clone) === get_mangled_object_vars($frame);
-    }
-
-    /**
-     * Asks a `ReflectionProperty` member that exists only from PHP 8.4.
-     *
-     * By name rather than as `$property->hasHooks()`, and the name arrives as
-     * a parameter so that nothing can resolve it: Psalm reflects the real
-     * `ReflectionProperty` of the PHP it runs on, so a direct call is an
-     * `UndefinedMethod` under 8.3 — green on a machine with 8.5 and red in
-     * the 8.3 matrix job, which is how this reached CI once. Same idiom as
-     * `Codegen\PropertyDefaults::isWritableFromOutside()`.
-     *
-     * @param non-empty-string $member
-     */
-    private static function propertyFlag(\ReflectionProperty $property, string $member): bool
-    {
-        /** @var mixed $answer */
-        $answer = $property->{$member}();
-
-        return $answer === true;
-    }
-
-    /**
-     * Calls an 8.4-only `ReflectionProperty` member, for the same reason.
-     *
-     * @param non-empty-string $member
-     * @param list<mixed>      $args
-     */
-    private static function propertyMember(\ReflectionProperty $property, string $member, array $args): mixed
-    {
-        /** @var mixed $value */
-        $value = $property->{$member}(...$args);
-
-        return $value;
+        return Forwarder::forward($state, $double, $method, $args);
     }
 
     /**
@@ -1491,119 +711,5 @@ final class Runtime
                 $omitted,
             ),
         ));
-    }
-
-    /**
-     * Drops the current execution context. Adapters call this unconditionally
-     * after each test; sibling Fibers must remain untouched.
-     */
-    public static function reset(): void
-    {
-        $fiber = \Fiber::getCurrent();
-
-        if (!$fiber instanceof \Fiber) {
-            $stack = self::$main;
-        } else {
-            $fibers = self::fibers();
-            /** @var list<RuntimeContext> $stack */
-            $stack = $fibers->offsetExists($fiber) ? $fibers->offsetGet($fiber) : [];
-        }
-
-        // The sweep retires every live context, this one included — a context
-        // is recorded live where it is created, so there is nothing to retire
-        // separately here. It runs before the replacement is opened, because
-        // it would otherwise retire that one too.
-        self::forgetOrphans();
-
-        $position = count($stack) - 1;
-
-        if ($position < 0) {
-            return;
-        }
-
-        $stack[$position] = self::freshContext();
-        // Replacing one slot of a list keeps it a list; psalm widens it to a
-        // plain array because the offset is a variable.
-        /** @var list<RuntimeContext> $stack */
-
-        if (!$fiber instanceof \Fiber) {
-            self::$main = $stack;
-
-            return;
-        }
-
-        self::fibers()->offsetSet($fiber, $stack);
-    }
-
-    /**
-     * The one place a context comes into being, and therefore the one place it
-     * is recorded as live. Recording it per double adopted into it rewrote the
-     * same key on the hottest creation path there is; recording it here happens
-     * once, and no context can be created without it.
-     */
-    private static function freshContext(): RuntimeContext
-    {
-        $context = new RuntimeContext();
-        self::remember($context);
-
-        return $context;
-    }
-
-    /**
-     * Drops every context still holding understudies that the caller is not
-     * standing in — a Fiber's context, most of all.
-     *
-     * Unconditional, including when `reset()` is itself called from inside a
-     * Fiber, because that is the shape the runners actually have. Under Testo
-     * a `#[RunInFiber]` test puts the whole pipeline in one Fiber, and the
-     * assert collector then opens a SECOND one around the body: the adapter's
-     * teardown runs in the outer Fiber while the test's understudies live in
-     * the inner one. A reset that only reached its own Fiber left them behind
-     * to answer the next test.
-     */
-    private static function forgetOrphans(): void
-    {
-        foreach (self::$live as $context) {
-            self::retire($context);
-        }
-
-        self::$live = [];
-    }
-
-    /**
-     * Stamps every double the context held as forgotten and drops its owner.
-     *
-     * The loop looks like something to remove — teardown runs after every test
-     * — and removing it was measured. Marking the context instead and having
-     * `ownerOf()` read the flag made teardown cheaper in isolation and double
-     * creation 13-23% slower in the benchmark, because the owner entries then
-     * live until collection and the map they sit in keeps growing. Eager
-     * removal here is what keeps that map the size of one test.
-     */
-    private static function retire(
-        RuntimeContext $context,
-        bool $byScope = false,
-    ): void {
-        self::unremember($context);
-
-        // Captured values live exactly as long as the call log of the context
-        // they were captured in. The captor object itself survives — it is a
-        // test-owned reader — but holds nothing from a test that ended.
-        foreach ($context->captors() as $captor) {
-            $captor->discard();
-        }
-
-        if (!self::$owners instanceof \WeakMap) {
-            return;
-        }
-
-        foreach ($context->allDoubles() as $double) {
-            self::forgotten()[$double] = true;
-            unset(self::$owners[$double]);
-
-            if ($byScope) {
-                self::droppedByScope()[$double] = true;
-            }
-        }
     }
 }

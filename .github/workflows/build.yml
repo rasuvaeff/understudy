@@ -360,7 +360,12 @@ jobs:
       - name: Point the adapter at this checkout of core
         working-directory: adapter
         run: |
-          composer config repositories.core '{"type":"path","url":"../core","options":{"versions":{"rasuvaeff/understudy":"1.0.0"}}}'
+          # The checkout has no tags, so the path repository is given the
+          # newest released version from CHANGELOG.md: a fixed number goes
+          # stale the moment an adapter raises its constraint on core.
+          version=$(sed -n 's/^## \([0-9][0-9.]*\) .*/\1/p' ../core/CHANGELOG.md | head -n 1)
+          test -n "$version"
+          composer config repositories.core "{\"type\":\"path\",\"url\":\"../core\",\"options\":{\"versions\":{\"rasuvaeff/understudy\":\"$version\"}}}"
           composer update --no-interaction --no-progress
 
       - name: Verify core resolved to the path repository

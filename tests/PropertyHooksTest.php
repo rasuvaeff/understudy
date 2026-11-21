@@ -7,13 +7,18 @@ namespace Rasuvaeff\Understudy\Tests;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
 use Rasuvaeff\Understudy\Codegen\PropertySignature;
+use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Hooks\Clock;
 use Rasuvaeff\Understudy\Understudy;
@@ -35,12 +40,17 @@ use Testo\Test;
  */
 #[Test]
 #[Covers(TargetUnifier::class)]
+#[Covers(ParameterUnifier::class)]
+#[Covers(ReturnTypeUnifier::class)]
 #[Covers(TypeRenderer::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(DoubleFactory::class)]
 #[Covers(Blueprint::class)]
 #[Covers(PropertySignature::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(DoubleState::class)]
 #[Covers(TypeDefaultResolver::class)]
 #[Covers(UnsupportedTarget::class)]

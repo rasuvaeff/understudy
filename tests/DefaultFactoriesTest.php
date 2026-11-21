@@ -7,6 +7,8 @@ namespace Rasuvaeff\Understudy\Tests;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
+use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\DefaultFactories;
@@ -38,6 +40,8 @@ use Testo\Test;
 
 #[Test]
 #[Covers(TargetUnifier::class)]
+#[Covers(ParameterUnifier::class)]
+#[Covers(ReturnTypeUnifier::class)]
 #[Covers(DoubleFactory::class)]
 #[Covers(TypeRenderer::class)]
 #[Covers(Blueprint::class)]

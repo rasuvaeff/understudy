@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Understudy;
@@ -19,6 +22,9 @@ use Testo\Test;
  */
 #[Test]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(ForgottenDouble::class)]
 final class RuntimeDirectTest
 {

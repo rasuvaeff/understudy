@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 — 2026-11-21
+
+- Internal: the three oversized classes are split into `@internal` collaborators (#175). `Runtime` keeps every static entry point generated code and the facade call, and hands the work to `ContextStack` (current context per Fiber, scopes, live contexts), `Ownership` (owner map, forgotten and retired doubles) and `Forwarder` (inline and proxy forwarding, state copy, clone frames); the armed-protocol refusal texts moved to `FailureReport`. The facade's verification checks moved from `Understudy` to `Verifier`. `TargetUnifier` hands return types to `ReturnTypeUnifier` and parameter positions to `ParameterUnifier`. No public signature, message or behaviour changes; `make perf` unchanged within noise.
+
 ## 1.2.0 — 2026-11-21
 
 - **Added.** Value-object matchers (#180): `Arg::instanceOf($class, fn (Foo $f): bool => …)` takes an optional predicate that is asked only of an instance of the class, so it can be typed for it — another type is a mismatch, never a `TypeError` inside the code under test; `Arg::equalTo($value)` compares by structure (same class, equal properties including private ones, arrays by keys and values, `===` on scalars, enums and closures by identity, dates by instant and zone; cycles are safe); `Arg::whichProperty($property, $value)` is `which()` for a public property.

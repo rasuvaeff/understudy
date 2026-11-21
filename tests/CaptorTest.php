@@ -9,17 +9,23 @@ use Rasuvaeff\Understudy\Captor;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
+use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NothingCaptured;
 use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Matcher\Capturing;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Tests\Fixture\Capt\DeliveryOptions;
 use Rasuvaeff\Understudy\Tests\Fixture\Capt\UrlStore;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Expect;
@@ -37,16 +43,22 @@ use function Rasuvaeff\Understudy\when;
  */
 #[Test]
 #[Covers(TargetUnifier::class)]
+#[Covers(ParameterUnifier::class)]
+#[Covers(ReturnTypeUnifier::class)]
 #[Covers(DoubleFactory::class)]
 #[Covers(TypeRenderer::class)]
 #[Covers(Blueprint::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(Captor::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(Capturing::class)]
 #[Covers(Arg::class)]
 #[Covers(Expectation::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(RuntimeContext::class)]
 #[Covers(NothingCaptured::class)]
 final class CaptorTest

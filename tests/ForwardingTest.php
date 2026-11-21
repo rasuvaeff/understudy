@@ -7,6 +7,8 @@ namespace Rasuvaeff\Understudy\Tests;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
+use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\ForwardingTargetMismatch;
@@ -14,6 +16,9 @@ use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
 use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Bookkeeper;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\Chainable;
@@ -22,6 +27,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Fwd\RealChain;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\RealFiller;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\SealedChain;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
 use Testo\Codecov\Covers;
@@ -36,9 +42,15 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Blueprint::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(Invocation::class)]
 #[Covers(TargetUnifier::class)]
+#[Covers(ParameterUnifier::class)]
+#[Covers(ReturnTypeUnifier::class)]
 #[Covers(DoubleFactory::class)]
 final class ForwardingTest
 {

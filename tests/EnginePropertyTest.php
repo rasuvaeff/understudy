@@ -13,6 +13,8 @@ use Rasuvaeff\Understudy\Cardinality;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
+use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\StrictModeViolation;
@@ -21,12 +23,16 @@ use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Outcome;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Support\EngineGenerators;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Lifecycle\AfterTest;
@@ -47,13 +53,19 @@ use function Rasuvaeff\Understudy\when;
  */
 #[Test]
 #[Covers(TargetUnifier::class)]
+#[Covers(ParameterUnifier::class)]
+#[Covers(ReturnTypeUnifier::class)]
 #[Covers(DoubleFactory::class)]
 #[Covers(TypeRenderer::class)]
 #[Covers(Blueprint::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(Cardinality::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(DoubleState::class)]
 #[Covers(Expectation::class)]
 #[Covers(Invocation::class)]

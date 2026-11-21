@@ -8,6 +8,8 @@ use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
+use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
@@ -21,7 +23,10 @@ use Rasuvaeff\Understudy\Expectation\ThrowError;
 use Rasuvaeff\Understudy\ExpectBuilder;
 use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
@@ -40,6 +45,8 @@ use function Rasuvaeff\Understudy\when;
 
 #[Test]
 #[Covers(TargetUnifier::class)]
+#[Covers(ParameterUnifier::class)]
+#[Covers(ReturnTypeUnifier::class)]
 #[Covers(DoubleFactory::class)]
 #[Covers(TypeRenderer::class)]
 #[Covers(Blueprint::class)]
@@ -47,6 +54,9 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(ExpectBuilder::class)]
 #[Covers(WhenBuilder::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(DoubleState::class)]
 #[Covers(Expectation::class)]
 #[Covers(ReturnValue::class)]

@@ -8,6 +8,8 @@ use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Cardinality;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
+use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\DefaultFactories;
@@ -38,7 +40,10 @@ use Rasuvaeff\Understudy\Matcher\InstanceOfType;
 use Rasuvaeff\Understudy\Matcher\Unspelled;
 use Rasuvaeff\Understudy\Outcome;
 use Rasuvaeff\Understudy\Runtime\ArmedSequence;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\SpecificationCall;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
@@ -47,6 +52,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Credentials;
 use Rasuvaeff\Understudy\Tests\Fixture\Defaults\NullableShapes;
 use Rasuvaeff\Understudy\Tests\Fixture\Librarian;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Rasuvaeff\Understudy\WhenBuilder;
 use Rasuvaeff\Understudy\Wiring\Wire;
 use Testo\Assert;
@@ -72,6 +78,7 @@ use function Rasuvaeff\Understudy\when;
  */
 #[Test]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(Wire::class)]
 #[Covers(CannotWire::class)]
 #[Covers(Invocation::class)]
@@ -82,6 +89,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Blueprint::class)]
 #[Covers(DoubleFactory::class)]
 #[Covers(TargetUnifier::class)]
+#[Covers(ParameterUnifier::class)]
+#[Covers(ReturnTypeUnifier::class)]
 #[Covers(TypeRenderer::class)]
 #[Covers(DefaultFactories::class)]
 #[Covers(TypeDefaultResolver::class)]
@@ -107,6 +116,9 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(InvocationSignal::class)]
 #[Covers(SpecificationCall::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(WhenBuilder::class)]
 final class ErrorPathTest
 {

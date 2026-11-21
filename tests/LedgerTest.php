@@ -8,6 +8,8 @@ use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
+use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
@@ -20,7 +22,10 @@ use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
 use Rasuvaeff\Understudy\Outcome;
 use Rasuvaeff\Understudy\Runtime\ArmedSequence;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
@@ -32,6 +37,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Ref\Registry;
 use Rasuvaeff\Understudy\Tests\Support\GoldenMessage;
 use Rasuvaeff\Understudy\Understudy;
 use Rasuvaeff\Understudy\VerificationFailure;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Assert\ExpectNoAssertions;
 use Testo\Codecov\Covers;
@@ -49,12 +55,18 @@ use function Rasuvaeff\Understudy\when;
  */
 #[Test]
 #[Covers(TargetUnifier::class)]
+#[Covers(ParameterUnifier::class)]
+#[Covers(ReturnTypeUnifier::class)]
 #[Covers(DoubleFactory::class)]
 #[Covers(TypeRenderer::class)]
 #[Covers(Blueprint::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(RuntimeContext::class)]
 #[Covers(DoubleState::class)]
 #[Covers(Expectation::class)]

@@ -7,7 +7,9 @@ namespace Rasuvaeff\Understudy\Tests;
 use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
+use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
 use Rasuvaeff\Understudy\Codegen\PropertyDefaults;
+use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\ContextOwnershipViolation;
@@ -39,6 +41,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\AbstractStaticFromInterface;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingContract;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\StaticPingWiderParameter;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Testo\Assert;
 use Testo\Codecov\Covers;
 use Testo\Data\DataProvider;
@@ -51,8 +54,11 @@ use function Rasuvaeff\Understudy\when;
 #[Test]
 #[Covers(DoubleFactory::class)]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(PropertyDefaults::class)]
 #[Covers(TargetUnifier::class)]
+#[Covers(ParameterUnifier::class)]
+#[Covers(ReturnTypeUnifier::class)]
 #[Covers(Blueprint::class)]
 #[Covers(TypeRenderer::class)]
 final class ClassDoubleTest

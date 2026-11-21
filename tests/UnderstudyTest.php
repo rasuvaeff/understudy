@@ -9,6 +9,8 @@ use Rasuvaeff\Understudy\Cardinality;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
+use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
+use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\DefaultFactories;
@@ -42,9 +44,12 @@ use Rasuvaeff\Understudy\Matcher\InstanceOfType;
 use Rasuvaeff\Understudy\Matcher\Unspelled;
 use Rasuvaeff\Understudy\Outcome;
 use Rasuvaeff\Understudy\Runtime\ArmedSequence;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Mode;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Runtime\SpecificationCall;
@@ -70,6 +75,7 @@ use Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterInt;
 use Rasuvaeff\Understudy\Tests\Fixture\VariadicSink;
 use Rasuvaeff\Understudy\Tests\Support\GoldenMessage;
 use Rasuvaeff\Understudy\Understudy;
+use Rasuvaeff\Understudy\Verifier;
 use Rasuvaeff\Understudy\WhenBuilder;
 use Rasuvaeff\Understudy\Wiring\Wire;
 use Testo\Assert;
@@ -86,10 +92,14 @@ use function Rasuvaeff\Understudy\when;
 
 #[Test]
 #[Covers(Understudy::class)]
+#[Covers(Verifier::class)]
 #[Covers(WhenBuilder::class)]
 #[Covers(ExpectBuilder::class)]
 #[Covers(ReturnContract::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(RuntimeContext::class)]
 #[Covers(DoubleState::class)]
 #[Covers(InvocationSignal::class)]
@@ -110,6 +120,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(UnsupportedTarget::class)]
 #[Covers(VerificationFailed::class)]
 #[Covers(TargetUnifier::class)]
+#[Covers(ParameterUnifier::class)]
+#[Covers(ReturnTypeUnifier::class)]
 #[Covers(TypeRenderer::class)]
 #[Covers(Arg::class)]
 #[Covers(Cardinality::class)]
