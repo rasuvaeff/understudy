@@ -15,6 +15,7 @@ use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
 use Rasuvaeff\Understudy\Runtime\ContextStack;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
 use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Dnf\Alpha;
@@ -50,6 +51,7 @@ use Testo\Test;
 #[Covers(MethodSignature::class)]
 #[Covers(TypeDefaultResolver::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
 #[Covers(Ownership::class)]
 #[Covers(ContextStack::class)]
 #[Covers(NoDefaultValue::class)]

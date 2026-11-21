@@ -24,6 +24,7 @@ use Rasuvaeff\Understudy\Outcome;
 use Rasuvaeff\Understudy\Runtime\ArmedSequence;
 use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
 use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
@@ -63,6 +64,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Understudy::class)]
 #[Covers(Verifier::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
 #[Covers(Ownership::class)]
 #[Covers(ContextStack::class)]
 #[Covers(RuntimeContext::class)]

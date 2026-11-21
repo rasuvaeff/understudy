@@ -41,6 +41,7 @@ use Rasuvaeff\Understudy\Matcher\Unspelled;
 use Rasuvaeff\Understudy\Outcome;
 use Rasuvaeff\Understudy\Runtime\ArmedSequence;
 use Rasuvaeff\Understudy\Runtime\ContextStack;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
@@ -115,6 +116,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(InvocationSignal::class)]
 #[Covers(SpecificationCall::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
 #[Covers(Ownership::class)]
 #[Covers(ContextStack::class)]
 #[Covers(WhenBuilder::class)]

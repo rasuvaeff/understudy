@@ -46,6 +46,7 @@ use Rasuvaeff\Understudy\Outcome;
 use Rasuvaeff\Understudy\Runtime\ArmedSequence;
 use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Forwarder;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Mode;
 use Rasuvaeff\Understudy\Runtime\Ownership;
@@ -96,6 +97,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(ExpectBuilder::class)]
 #[Covers(ReturnContract::class)]
 #[Covers(Runtime::class)]
+#[Covers(Forwarder::class)]
 #[Covers(Ownership::class)]
 #[Covers(ContextStack::class)]
 #[Covers(RuntimeContext::class)]
