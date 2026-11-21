@@ -1,0 +1,20 @@
+namespace Rasuvaeff\Understudy\Codegen\Generated;
+
+final class Understudy_GENERATED implements \Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterInt, \Rasuvaeff\Understudy\Tests\Fixture\Unify\WriterString
+{
+    public static function describe(): string
+    {
+        throw \Rasuvaeff\Understudy\Exception\InvalidCallSpecification::staticMethodCalled('describe');
+    }
+
+    public function write(int|string|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent $chunk = \Rasuvaeff\Understudy\Runtime\Absent::Argument): void
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'write', [$chunk]);
+    }
+
+    public function __clone(): void
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::adoptClone($this);
+    }
+
+}

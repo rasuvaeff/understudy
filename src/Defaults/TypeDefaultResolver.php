@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Defaults;
 
+use Rasuvaeff\Understudy\Codegen\DnfType;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
@@ -91,7 +92,10 @@ final class TypeDefaultResolver
         // that has a safe default does, so `Book|string` answers with `''`
         // rather than failing on `Book`.
         if (str_contains($type, '|')) {
-            $branches = self::branchesOf($type);
+            $branches = array_map(
+                static fn(array $branch): string => implode('&', $branch),
+                DnfType::parse($type)->branches,
+            );
 
             if (in_array('null', $branches, strict: true)) {
                 foreach ($branches as $branch) {
@@ -282,56 +286,5 @@ final class TypeDefaultResolver
         return (static function (): \Generator {
             yield from [];
         })();
-    }
-
-    /**
-     * Splits a union while leaving a DNF intersection intact, so `(A&B)|null`
-     * yields `(A&B)` and `null`.
-     *
-     * @return list<non-empty-string>
-     */
-    private static function branchesOf(string $type): array
-    {
-        $branches = [];
-        $depth = 0;
-        $buffer = '';
-
-        foreach (str_split($type) as $character) {
-            $depth += match ($character) {
-                '(' => 1,
-                ')' => -1,
-                default => 0,
-            };
-
-            if ($character === '|' && $depth === 0) {
-                $branches[] = $buffer;
-                $buffer = '';
-
-                continue;
-            }
-
-            $buffer .= $character;
-        }
-
-        $branches[] = $buffer;
-
-        return array_values(array_filter(
-            array_map(self::stripIntersectionParentheses(...), $branches),
-            static fn(string $branch): bool => $branch !== '',
-        ));
-    }
-
-    /**
-     * Reflection renders a DNF intersection as `(A&B)` when it is a union
-     * branch. Unwrapping happens per branch, after the split: applied to a
-     * whole type it would cut `(A&B)|(C&D)` in half — that string also starts
-     * with `(` and ends with `)` — and the halves would then never split,
-     * because the `|` sits at a parenthesis depth the parser reads as -1.
-     */
-    private static function stripIntersectionParentheses(string $type): string
-    {
-        return str_starts_with($type, '(') && str_ends_with($type, ')')
-            ? substr($type, 1, -1)
-            : $type;
     }
 }

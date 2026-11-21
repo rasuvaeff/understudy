@@ -51,9 +51,10 @@ lives outside the closure.
 
 ## 2. `returns()` is checked against the method being specified
 
-The core declares `when(): WhenBuilder<mixed>`, and it has no choice: which
-method is being specified is known only from the closure. The extension fills
-the template parameter in, and PHPStan does the rest:
+Since 1.2.0 the core declares `when(callable(): T): WhenBuilder<T>`, so plain
+PHPStan already takes the template parameter from the closure's return type.
+The extension fills it in from the method being specified wherever that
+inference stops, and PHPStan does the rest:
 
 ```php
 when(fn () => $gate->open(1))->returns('yes');

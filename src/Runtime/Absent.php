@@ -12,7 +12,7 @@ namespace Rasuvaeff\Understudy\Runtime;
  * `Arg::rest()` physically passes fewer arguments than the method declares,
  * and PHP would refuse the call with `ArgumentCountError` before the body
  * could signal. With the sentinel in place the call goes through, the body
- * collects it, and `InvocationSignal` strips the sentinels back off.
+ * collects it, and `SpecificationCall` strips the sentinels back off.
  *
  * Outside recording the sentinel means the code under test omitted a required
  * argument, and dispatch answers with the `ArgumentCountError` PHP itself

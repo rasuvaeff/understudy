@@ -89,9 +89,32 @@ final class DoubleFactory
     }
 
     /**
+     * The PHP source `blueprintFor()` evaluates for these contracts, without
+     * evaluating it. Earlier codegen defects reached users as fatals out of
+     * `eval()`; this is what golden tests of the generated class read.
+     *
      * @param non-empty-list<class-string> $contracts
      */
-    private static function compile(array $contracts, string $key): Blueprint
+    public static function sourceFor(array $contracts): string
+    {
+        /** @var non-empty-list<class-string> $contracts */
+        $contracts = array_values(array_unique($contracts));
+        $targets = self::reflectAll($contracts);
+
+        return self::render(
+            self::generatedClassName(implode('|', $contracts)),
+            $targets,
+            TargetUnifier::unify($targets),
+            self::unifyAbstractHooks($targets),
+        );
+    }
+
+    /**
+     * @param non-empty-list<class-string> $contracts
+     *
+     * @return non-empty-list<\ReflectionClass<object>>
+     */
+    private static function reflectAll(array $contracts): array
     {
         $targets = [];
 
@@ -99,9 +122,23 @@ final class DoubleFactory
             $targets[] = self::reflect($contract, primary: $position === 0);
         }
 
+        return $targets;
+    }
+
+    private static function generatedClassName(string $key): string
+    {
+        return 'Understudy_' . substr(hash('xxh128', $key), 0, 16);
+    }
+
+    /**
+     * @param non-empty-list<class-string> $contracts
+     */
+    private static function compile(array $contracts, string $key): Blueprint
+    {
+        $targets = self::reflectAll($contracts);
         $methods = TargetUnifier::unify($targets);
         $properties = self::unifyAbstractHooks($targets);
-        $generatedClass = 'Understudy_' . substr(hash('xxh128', $key), 0, 16);
+        $generatedClass = self::generatedClassName($key);
 
         $fqcn = self::GENERATED_NAMESPACE . $generatedClass;
 

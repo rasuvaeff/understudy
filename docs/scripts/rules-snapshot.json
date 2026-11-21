@@ -1,8 +1,8 @@
 {
     "phpstan": {
-        "version": "v1.0.1",
-        "reference": "b002d987101830bf69bc35d74a64b63ea3627063",
-        "repoBlob": "https://github.com/rasuvaeff/understudy-phpstan/blob/b002d987101830bf69bc35d74a64b63ea3627063/",
+        "version": "v1.1.0",
+        "reference": "9182867c16103b3003dda1c6f4d6dd493467c3b1",
+        "repoBlob": "https://github.com/rasuvaeff/understudy-phpstan/blob/9182867c16103b3003dda1c6f4d6dd493467c3b1/",
         "registeredRules": [
             "Rasuvaeff\\Understudy\\PhpStan\\Rule\\SpecificationCallRule",
             "Rasuvaeff\\Understudy\\PhpStan\\Rule\\SpecificationStaticCallRule",
@@ -49,9 +49,9 @@
         ]
     },
     "psalm": {
-        "version": "v1.1.0",
-        "reference": "55fdda333da5fadc9eb1d5394f95fe737ac8fcfe",
-        "repoBlob": "https://github.com/rasuvaeff/understudy-psalm/blob/55fdda333da5fadc9eb1d5394f95fe737ac8fcfe/",
+        "version": "v1.2.0",
+        "reference": "3816f565cd6297f348c3e806bfc92c28fd41070d",
+        "repoBlob": "https://github.com/rasuvaeff/understudy-psalm/blob/3816f565cd6297f348c3e806bfc92c28fd41070d/",
         "issues": [
             {
                 "issue": "UnderstudyMisuse",

@@ -22,9 +22,6 @@ use Rasuvaeff\Understudy\Runtime\Absent;
  */
 final class TargetUnifier
 {
-    private const string TARGET_SELF_RETURN_PREFIX = '@target-self:';
-    private const string GENERATED_STATIC_RETURN = '@generated-static';
-
     /** Used when a target declares a variadic without a usable name. */
     private const string DEFAULT_TAIL_NAME = 'rest';
 
@@ -207,8 +204,8 @@ final class TargetUnifier
         \ReflectionClass $implementationClass,
         \ReflectionClass $requiredClass,
     ): bool {
-        $implementationBranches = self::returnTypeBranches($implementation, $implementationClass);
-        $requiredBranches = self::returnTypeBranches($required, $requiredClass);
+        $implementationBranches = DnfType::fromReflection($implementation, $implementationClass)->branches;
+        $requiredBranches = DnfType::fromReflection($required, $requiredClass)->branches;
 
         foreach ($requiredBranches as $requiredBranch) {
             $accepted = false;
@@ -239,7 +236,7 @@ final class TargetUnifier
             $accepted = false;
 
             foreach ($required as $requiredAtom) {
-                if (self::returnAtomSatisfies($requiredAtom, $implementationAtom)) {
+                if (DnfType::atomSatisfies($requiredAtom, $implementationAtom)) {
                     $accepted = true;
 
                     break;
@@ -484,13 +481,13 @@ final class TargetUnifier
     private static function intersectReturnTypes(array $declarations): ?string
     {
         $first = $declarations[0];
-        $branches = self::returnTypeBranches(self::declaredReturnType($first), $first->getDeclaringClass());
+        $branches = DnfType::fromReflection(self::declaredReturnType($first), $first->getDeclaringClass())->branches;
 
         foreach (array_slice($declarations, 1) as $declaration) {
-            $requiredBranches = self::returnTypeBranches(
+            $requiredBranches = DnfType::fromReflection(
                 self::declaredReturnType($declaration),
                 $declaration->getDeclaringClass(),
-            );
+            )->branches;
             $intersections = [];
 
             foreach ($branches as $candidateBranch) {
@@ -510,7 +507,7 @@ final class TargetUnifier
             $branches = $intersections;
         }
 
-        return self::renderReturnBranches($branches);
+        return DnfType::of($branches)->render();
     }
 
     /**
@@ -521,18 +518,18 @@ final class TargetUnifier
      */
     private static function intersectReturnBranches(array $left, array $right): ?array
     {
-        if (self::returnBranchSatisfies($left, $right)) {
+        if (DnfType::branchSatisfies($left, $right)) {
             return $left;
         }
 
-        if (self::returnBranchSatisfies($right, $left)) {
+        if (DnfType::branchSatisfies($right, $left)) {
             return $right;
         }
 
         $atoms = [...$left, ...$right];
 
         foreach ($atoms as $atom) {
-            if (!self::returnAtomIsInterface($atom)) {
+            if (!DnfType::atomIsInterface($atom)) {
                 return null;
             }
         }
@@ -543,12 +540,12 @@ final class TargetUnifier
             $redundant = false;
 
             foreach ($intersection as $position => $existing) {
-                if (self::returnAtomSatisfies($atom, $existing)) {
+                if (DnfType::atomSatisfies($atom, $existing)) {
                     unset($intersection[$position]);
                     continue;
                 }
 
-                if (self::returnAtomSatisfies($existing, $atom)) {
+                if (DnfType::atomSatisfies($existing, $atom)) {
                     $redundant = true;
                     break;
                 }
@@ -570,11 +567,11 @@ final class TargetUnifier
     private static function addReturnBranch(array &$branches, array $candidate): void
     {
         foreach ($branches as $position => $existing) {
-            if (self::returnBranchSatisfies($candidate, $existing)) {
+            if (DnfType::branchSatisfies($candidate, $existing)) {
                 return;
             }
 
-            if (self::returnBranchSatisfies($existing, $candidate)) {
+            if (DnfType::branchSatisfies($existing, $candidate)) {
                 unset($branches[$position]);
             }
         }
@@ -583,37 +580,7 @@ final class TargetUnifier
         $branches = array_values($branches);
     }
 
-    /**
-     * @param non-empty-list<non-empty-list<non-empty-string>> $branches
-     *
-     * @return non-empty-string
-     */
-    private static function renderReturnBranches(array $branches): string
-    {
-        $union = [];
-        $dnf = count($branches) > 1;
 
-        foreach ($branches as $branch) {
-            $intersection = implode('&', array_map(self::renderReturnAtom(...), $branch));
-            $union[] = $dnf && count($branch) > 1 ? '(' . $intersection . ')' : $intersection;
-        }
-
-        return implode('|', $union);
-    }
-
-    /**
-     * @param non-empty-string $atom
-     *
-     * @return non-empty-string
-     */
-    private static function renderReturnAtom(string $atom): string
-    {
-        if (str_starts_with($atom, self::TARGET_SELF_RETURN_PREFIX)) {
-            return '\\' . substr($atom, strlen(self::TARGET_SELF_RETURN_PREFIX));
-        }
-
-        return $atom === self::GENERATED_STATIC_RETURN ? 'static' : $atom;
-    }
 
     /**
      * Reports an actually incompatible pair instead of always blaming the
@@ -642,196 +609,15 @@ final class TargetUnifier
 
     private static function returnTypeSatisfies(\ReflectionMethod $candidate, \ReflectionMethod $required): bool
     {
-        $candidateBranches = self::returnTypeBranches(self::declaredReturnType($candidate), $candidate->getDeclaringClass());
-        $requiredBranches = self::returnTypeBranches(self::declaredReturnType($required), $required->getDeclaringClass());
-
-        foreach ($candidateBranches as $candidateBranch) {
-            $accepted = false;
-
-            foreach ($requiredBranches as $requiredBranch) {
-                if (self::returnBranchSatisfies($candidateBranch, $requiredBranch)) {
-                    $accepted = true;
-
-                    break;
-                }
-            }
-
-            if (!$accepted) {
-                return false;
-            }
-        }
-
-        return true;
+        return DnfType::fromReflection(self::declaredReturnType($candidate), $candidate->getDeclaringClass())
+            ->satisfies(DnfType::fromReflection(self::declaredReturnType($required), $required->getDeclaringClass()));
     }
 
-    /**
-     * @return non-empty-list<non-empty-list<non-empty-string>>
-     */
-    private static function returnTypeBranches(
-        ?\ReflectionType $type,
-        \ReflectionClass $declaringClass,
-    ): array {
-        if (!$type instanceof \ReflectionType) {
-            return [['mixed']];
-        }
 
-        if ($type instanceof \ReflectionUnionType) {
-            $branches = [];
 
-            foreach ($type->getTypes() as $part) {
-                $branches = [...$branches, ...self::returnTypeBranches($part, $declaringClass)];
-            }
 
-            return $branches;
-        }
 
-        if ($type instanceof \ReflectionIntersectionType) {
-            $branch = [];
 
-            foreach ($type->getTypes() as $part) {
-                $branch[] = self::returnTypeAtom($part, $declaringClass);
-            }
-
-            return [$branch];
-        }
-
-        \assert($type instanceof \ReflectionNamedType);
-        $branches = [[self::returnTypeAtom($type, $declaringClass)]];
-
-        if ($type->allowsNull() && !in_array($type->getName(), ['mixed', 'null'], strict: true)) {
-            $branches[] = ['null'];
-        }
-
-        return $branches;
-    }
-
-    /**
-     * @return non-empty-string
-     */
-    private static function returnTypeAtom(
-        \ReflectionNamedType $type,
-        \ReflectionClass $declaringClass,
-    ): string {
-        $name = $type->getName();
-
-        // Reflection resolves `self` in an interface to that interface's FQCN.
-        // Keep its origin so generated `static` can satisfy it without making
-        // two different target interfaces look like the same return type.
-        if ($name === 'self' || (!$type->isBuiltin() && $name === $declaringClass->getName())) {
-            return self::TARGET_SELF_RETURN_PREFIX . $declaringClass->getName();
-        }
-
-        if ($name === 'static') {
-            return self::GENERATED_STATIC_RETURN;
-        }
-
-        if ($name === 'parent') {
-            $parent = $declaringClass->getParentClass();
-
-            return $parent === false ? 'parent' : '\\' . $parent->getName();
-        }
-
-        return $type->isBuiltin() ? $name : '\\' . $name;
-    }
-
-    /**
-     * @param non-empty-list<non-empty-string> $candidate
-     * @param non-empty-list<non-empty-string> $required
-     */
-    private static function returnBranchSatisfies(array $candidate, array $required): bool
-    {
-        foreach ($required as $requiredAtom) {
-            $satisfied = false;
-
-            foreach ($candidate as $candidateAtom) {
-                if (self::returnAtomSatisfies($candidateAtom, $requiredAtom)) {
-                    $satisfied = true;
-
-                    break;
-                }
-            }
-
-            if (!$satisfied) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static function returnAtomSatisfies(string $candidate, string $required): bool
-    {
-        if ($candidate === 'never' || $required === 'mixed' || $candidate === $required) {
-            return true;
-        }
-
-        // The emitted class implements every target interface. Its `static`
-        // return is therefore covariant with each target's own interface type.
-        if ($candidate === self::GENERATED_STATIC_RETURN
-            && str_starts_with($required, self::TARGET_SELF_RETURN_PREFIX)
-        ) {
-            return true;
-        }
-
-        if ($required === 'object') {
-            return $candidate === 'object'
-                || str_starts_with($candidate, '\\')
-                || str_starts_with($candidate, self::TARGET_SELF_RETURN_PREFIX)
-                || $candidate === self::GENERATED_STATIC_RETURN;
-        }
-
-        if ($required === 'bool' && in_array($candidate, ['true', 'false'], strict: true)) {
-            return true;
-        }
-
-        if ($required === 'iterable') {
-            return in_array($candidate, ['array', 'iterable'], strict: true)
-                || (str_starts_with($candidate, '\\') && is_a(ltrim($candidate, '\\'), \Traversable::class, allow_string: true));
-        }
-
-        if ($required === 'callable' && $candidate === '\\Closure') {
-            return true;
-        }
-
-        $candidate = self::returnAtomClass($candidate);
-        $required = self::returnAtomClass($required);
-
-        if ($candidate === null || $required === null) {
-            return false;
-        }
-
-        /** @var class-string $candidateClass */
-        $candidateClass = $candidate;
-        /** @var class-string $requiredClass */
-        $requiredClass = $required;
-
-        return is_a($candidateClass, $requiredClass, allow_string: true);
-    }
-
-    private static function returnAtomIsInterface(string $atom): bool
-    {
-        $class = self::returnAtomClass($atom);
-
-        return $class !== null && interface_exists($class);
-    }
-
-    /**
-     * @return class-string|null
-     */
-    private static function returnAtomClass(string $atom): ?string
-    {
-        if (str_starts_with($atom, self::TARGET_SELF_RETURN_PREFIX)) {
-            /** @var class-string */
-            return substr($atom, strlen(self::TARGET_SELF_RETURN_PREFIX));
-        }
-
-        if (!str_starts_with($atom, '\\')) {
-            return null;
-        }
-
-        /** @var class-string */
-        return ltrim($atom, '\\');
-    }
 
     /**
      * The earliest position at which any target declares a variadic, or null
@@ -885,7 +671,7 @@ final class TargetUnifier
                 if ($rendered === '') {
                     $untyped = true;
                 } else {
-                    foreach (self::splitUnion($rendered) as $part) {
+                    foreach (DnfType::parse($rendered)->renderedBranches() as $part) {
                         $types[$part] = true;
                     }
                 }
@@ -949,12 +735,6 @@ final class TargetUnifier
         $parameterName = 'p' . $position;
         $untyped = false;
         $acceptsMatcher = false;
-        // Two scalars rather than a set keyed by the rendered default:
-        // PHP turns a numeric-string key into an int, so `'5'` and `'5'`
-        // would compare `!==` after a round trip through an array. The
-        // empty string is the "nobody declared one" sentinel —
-        // `renderDefault()` never returns it.
-        $declaredDefault = '';
         $defaultDeclaredBy = null;
         $defaultParameter = null;
 
@@ -972,7 +752,7 @@ final class TargetUnifier
             if ($rendered === '') {
                 $untyped = true;
             } else {
-                foreach (self::splitUnion($rendered) as $part) {
+                foreach (DnfType::parse($rendered)->renderedBranches() as $part) {
                     $types[$part] = true;
                 }
             }
@@ -998,29 +778,36 @@ final class TargetUnifier
             $requiredEverywhere = $requiredEverywhere && !$parameter->isOptional();
 
             if ($parameter->isDefaultValueAvailable()) {
-                $declared = self::renderDefault($parameter, $name);
-
                 // Two targets disagreeing about the default is the one case
-                // the unifier cannot render faithfully. Keeping either would
+                // the unifier cannot answer faithfully. Keeping either would
                 // make the other's omitted argument log a value it never
-                // received, and `null` — which is what this used to do —
-                // makes both wrong at once while widening the type to hide
-                // it. A double that answers with a different default than the
-                // real thing is a test that passes for the wrong reason.
+                // received. A double that answers with a different default
+                // than the real thing is a test that passes for the wrong
+                // reason.
+                //
+                // The default itself is never carried by the generated class
+                // — dispatch reads it from the declaring parameter — so a
+                // single declaration needs no rendering at all, and the
+                // comparison key is computed only when a second one arrives.
                 //
                 // The FIRST target to declare one is the one named against
                 // the disagreeing target, so a conflict among three reads as
                 // one pair and not as whichever two happened to be adjacent.
-                if ($defaultDeclaredBy === null) {
-                    $declaredDefault = $declared;
+                if (!$defaultParameter instanceof \ReflectionParameter) {
                     $defaultDeclaredBy = $declaration;
                     $defaultParameter = $parameter;
-                } elseif ($declaredDefault !== $declared) {
-                    throw UnsupportedTarget::signatureConflict(
-                        $name,
-                        self::describe($defaultDeclaredBy) . ' defaults parameter #' . ($position + 1) . ' to ' . $declaredDefault,
-                        self::describe($declaration) . ' defaults it to ' . $declared,
-                    );
+                } else {
+                    \assert($defaultDeclaredBy instanceof \ReflectionMethod);
+                    $declaredDefault = DefaultRenderer::render($defaultParameter, $name);
+                    $declared = DefaultRenderer::render($parameter, $name);
+
+                    if ($declaredDefault !== $declared) {
+                        throw UnsupportedTarget::signatureConflict(
+                            $name,
+                            self::describe($defaultDeclaredBy) . ' defaults parameter #' . ($position + 1) . ' to ' . $declaredDefault,
+                            self::describe($declaration) . ' defaults it to ' . $declared,
+                        );
+                    }
                 }
             }
         }
@@ -1097,290 +884,6 @@ final class TargetUnifier
         ];
     }
 
-    /**
-     * Splits a rendered union while keeping DNF parentheses intact, so
-     * `(A&B)|null` yields `(A&B)` and `null` rather than four fragments.
-     *
-     * @return list<string>
-     */
-    private static function splitUnion(string $rendered): array
-    {
-        if (str_starts_with($rendered, '?')) {
-            return [substr($rendered, 1), 'null'];
-        }
-
-        $parts = [];
-        $depth = 0;
-        $buffer = '';
-
-        foreach (str_split($rendered) as $character) {
-            if ($character === '(') {
-                $depth++;
-            }
-
-            if ($character === ')') {
-                $depth--;
-            }
-
-            if ($character === '|' && $depth === 0) {
-                $parts[] = $buffer;
-                $buffer = '';
-
-                continue;
-            }
-
-            $buffer .= $character;
-        }
-
-        $parts[] = $buffer;
-
-        return array_values(array_filter($parts, static fn(string $part): bool => $part !== ''));
-    }
-
-    /**
-     * Renders a parameter's default as source the generated class can carry.
-     *
-     * Faithfulness is the point: an omitted argument has to be logged as the
-     * value the target would have received, or `tag('a')` and `tag('a', 1)`
-     * stop verifying as the same call. Anything that cannot be reproduced
-     * exactly rejects the target instead of quietly becoming `null` — a double
-     * that answers with a different default than the real thing is a test that
-     * passes for the wrong reason.
-     *
-     * The source expression comes from `ReflectionParameter::__toString()`,
-     * which renders it fully qualified and without reading the declaring file,
-     * so it works for `eval`'d and internal declarations too. It is also the
-     * only way to *see* an object default without evaluating it:
-     * `getDefaultValue()` on `= new Foo()` runs the constructor.
-     *
-     * @param non-empty-string $method
-     *
-     * @return non-empty-string
-     */
-    private static function renderDefault(\ReflectionParameter $parameter, string $method): string
-    {
-        $source = self::defaultSource($parameter);
-
-        if ($source !== null && self::buildsAnObject($source)) {
-            return self::renderSourceDefault($parameter, $method, $source);
-        }
-
-        if ($parameter->isDefaultValueConstant()) {
-            $rendered = self::renderConstantDefault($parameter);
-
-            if ($rendered !== null) {
-                return $rendered;
-            }
-        }
-
-        return self::renderValueDefault($parameter, $method);
-    }
-
-    /**
-     * The default expression as PHP would print it, or null when Reflection
-     * reports none.
-     */
-    private static function defaultSource(\ReflectionParameter $parameter): ?string
-    {
-        $rendered = (string) $parameter;
-        $position = strpos($rendered, ' = ');
-
-        if ($position === false) {
-            return null;
-        }
-
-        if (!str_ends_with($rendered, ' ]')) {
-            return null;
-        }
-
-        return substr($rendered, $position + \strlen(' = '), -\strlen(' ]'));
-    }
-
-    /**
-     * True when the default builds an object anywhere inside it — `new Foo()`,
-     * but also `[new Foo()]` or `['k' => new Foo()]`, which are just as legal in
-     * an initializer and just as destructive to evaluate: `getDefaultValue()`
-     * runs every constructor in there.
-     *
-     * Quoted text is blanked out first, so a string default that merely contains
-     * the word is not mistaken for an expression.
-     */
-    private static function buildsAnObject(string $source): bool
-    {
-        return preg_match('/\bnew\s+[\\\\A-Za-z_]/', self::withoutStringLiterals($source)) === 1;
-    }
-
-    /**
-     * Blanks out single- and double-quoted runs, keeping the length so nothing
-     * else shifts. An escaped quote stays inside its run.
-     */
-    private static function withoutStringLiterals(string $source): string
-    {
-        return (string) preg_replace_callback(
-            '/\'(?:\\\\.|[^\'\\\\])*\'|"(?:\\\\.|[^"\\\\])*"/s',
-            static fn(array $match): string => str_repeat(' ', \strlen($match[0])),
-            $source,
-        );
-    }
-
-    /**
-     * Renders the default from its own source, which Reflection has already
-     * qualified — and which is the only form reproducible without evaluating it.
-     *
-     * What Reflection does not qualify is `self`, `static` and `parent`: they
-     * would resolve against the generated class, a different class with
-     * different constants, so a target using them is rejected by name.
-     *
-     * @param non-empty-string $method
-     *
-     * @return non-empty-string
-     */
-    private static function renderSourceDefault(\ReflectionParameter $parameter, string $method, string $source): string
-    {
-        if (preg_match('/\b(self|static|parent)\s*::/i', self::withoutStringLiterals($source)) === 1) {
-            $format = 'the default of `$%s` in `%s()` is `%s`, which resolves `self`, `static` or `parent` '
-                . 'against the declaring class. The generated double is a different class, so the value '
-                . 'cannot be reproduced. Give the parameter a default the double can build, or double '
-                . 'an interface.';
-
-            throw UnsupportedTarget::notDoublable(
-                $parameter->getDeclaringClass()?->getName() ?? $method,
-                sprintf($format, $parameter->getName(), $method, $source),
-            );
-        }
-
-        \assert($source !== '');
-
-        return $source;
-    }
-
-    /**
-     * A class constant or enum case, rendered through its declaring class so
-     * that `self::` does not follow the double into a class that never had the
-     * constant. Returns null when the constant cannot be named from outside —
-     * a private or protected one, or a global constant, which Reflection
-     * reports prefixed with the declaring namespace and therefore under a name
-     * that does not exist.
-     *
-     * @return non-empty-string|null
-     */
-    private static function renderConstantDefault(\ReflectionParameter $parameter): ?string
-    {
-        $name = $parameter->getDefaultValueConstantName();
-
-        if ($name === null) {
-            return null;
-        }
-
-        if (!str_contains($name, '::')) {
-            return null;
-        }
-
-        $parts = explode('::', $name, 2);
-        $class = $parts[0];
-        $constant = $parts[1] ?? '';
-        $declaring = $parameter->getDeclaringClass();
-
-        if (\in_array(strtolower($class), ['self', 'static', 'parent'], strict: true)) {
-            if (!$declaring instanceof \ReflectionClass) {
-                return null;
-            }
-
-            if (strtolower($class) === 'parent') {
-                $parent = $declaring->getParentClass();
-
-                if ($parent === false) {
-                    return null;
-                }
-
-                $class = $parent->getName();
-            } else {
-                $class = $declaring->getName();
-            }
-        }
-
-        if (!class_exists($class) && !interface_exists($class) && !enum_exists($class)) {
-            return null;
-        }
-
-        $reflection = new \ReflectionClass($class);
-
-        if (!$reflection->hasConstant($constant)) {
-            return null;
-        }
-
-        $declared = $reflection->getReflectionConstant($constant);
-
-        if ($declared === false || !$declared->isPublic()) {
-            // Reachable only from inside the declaring hierarchy, which the
-            // generated class is not part of; fall back to the value.
-            return null;
-        }
-
-        return '\\' . $class . '::' . $constant;
-    }
-
-    /**
-     * The evaluated value, for everything that survives `var_export()`: scalars,
-     * null, arrays of them, and enum cases. An object anywhere inside would be
-     * rendered as a `::__set_state()` call the double cannot honour, so the
-     * target is rejected rather than given a default that differs from the
-     * contract's.
-     *
-     * @param non-empty-string $method
-     *
-     * @return non-empty-string
-     */
-    private static function renderValueDefault(\ReflectionParameter $parameter, string $method): string
-    {
-        /** @var mixed $value */
-        $value = $parameter->getDefaultValue();
-
-        if (self::holdsPlainObject($value)) {
-            $format = 'the default of `$%s` in `%s()` holds an object that cannot be written back as source. '
-                . 'Give the parameter a scalar, array or enum default, or double an interface.';
-
-            throw UnsupportedTarget::notDoublable(
-                $parameter->getDeclaringClass()?->getName() ?? $method,
-                sprintf($format, $parameter->getName(), $method),
-            );
-        }
-
-        // `var_export()` renders null as `NULL`, which is legal but jarring in
-        // generated source next to hand-written PHP.
-        $rendered = $value === null ? 'null' : var_export($value, return: true);
-        \assert($rendered !== '');
-
-        return $rendered;
-    }
-
-    /**
-     * True when the value is, or contains, an object that is not an enum case.
-     * Enum cases round-trip through `var_export()`; nothing else does.
-     */
-    private static function holdsPlainObject(mixed $value): bool
-    {
-        if ($value instanceof \UnitEnum) {
-            return false;
-        }
-
-        if (\is_object($value)) {
-            return true;
-        }
-
-        if (!\is_array($value)) {
-            return false;
-        }
-
-        /** @var mixed $item */
-        foreach ($value as $item) {
-            if (self::holdsPlainObject($item)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     private static function describe(\ReflectionMethod $method): string
     {

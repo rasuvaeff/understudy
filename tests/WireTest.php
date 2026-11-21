@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests;
 
 use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DnfType;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
@@ -64,6 +65,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Wire::class)]
 #[Covers(CannotWire::class)]
 #[Covers(UnsupportedTarget::class)]
+#[Covers(DnfType::class)]
 final class WireTest
 {
     #[AfterTest]

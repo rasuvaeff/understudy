@@ -40,6 +40,7 @@ use Rasuvaeff\Understudy\Outcome;
 use Rasuvaeff\Understudy\Runtime\ArmedSequence;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Runtime;
+use Rasuvaeff\Understudy\Runtime\SpecificationCall;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Fixture\Credentials;
@@ -104,6 +105,7 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Outcome::class)]
 #[Covers(ArmedSequence::class)]
 #[Covers(InvocationSignal::class)]
+#[Covers(SpecificationCall::class)]
 #[Covers(Runtime::class)]
 #[Covers(WhenBuilder::class)]
 final class ErrorPathTest

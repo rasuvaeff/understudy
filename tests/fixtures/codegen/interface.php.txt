@@ -1,0 +1,50 @@
+namespace Rasuvaeff\Understudy\Codegen\Generated;
+
+final class Understudy_GENERATED implements \Rasuvaeff\Understudy\Tests\Fixture\BookRepository
+{
+    public function find(int|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent $id = \Rasuvaeff\Understudy\Runtime\Absent::Argument): ?\Rasuvaeff\Understudy\Tests\Fixture\Book
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'find', [$id]);
+    }
+
+    public function save(\Rasuvaeff\Understudy\Tests\Fixture\Book|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent $book = \Rasuvaeff\Understudy\Runtime\Absent::Argument): void
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'save', [$book]);
+    }
+
+    public function titles(): array
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'titles', []);
+    }
+
+    public function count(): int
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'count', []);
+    }
+
+    public function abort(string|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent $reason = \Rasuvaeff\Understudy\Runtime\Absent::Argument): never
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'abort', [$reason]);
+    }
+
+    public function stream(): \Generator
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'stream', []);
+    }
+
+    public function describe(): string|int
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'describe', []);
+    }
+
+    public function tag(string|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent $name = \Rasuvaeff\Understudy\Runtime\Absent::Argument, int|\Rasuvaeff\Understudy\Matcher\ArgumentMatcher|\Rasuvaeff\Understudy\Runtime\Absent $weight = \Rasuvaeff\Understudy\Runtime\Absent::Argument): string
+    {
+        return \Rasuvaeff\Understudy\Runtime\Runtime::dispatch($this, 'tag', [$name, $weight]);
+    }
+
+    public function __clone(): void
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::adoptClone($this);
+    }
+
+}

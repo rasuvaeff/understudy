@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests\Codegen;
 
+use Rasuvaeff\Understudy\Codegen\DefaultRenderer;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Testo\Assert;
@@ -20,6 +21,7 @@ use Testo\Test;
  */
 #[Test]
 #[Covers(TargetUnifier::class)]
+#[Covers(DefaultRenderer::class)]
 #[Covers(UnsupportedTarget::class)]
 final class DefaultSourceRenderingTest
 {

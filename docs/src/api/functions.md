@@ -18,7 +18,7 @@ The free functions understudy declares in `src/functions.php`, autoloaded throug
 
 ## expect()
 
-`Rasuvaeff\Understudy\expect()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L43)
+`Rasuvaeff\Understudy\expect()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L47)
 
 ```php
 expect(callable $call): ExpectBuilder
@@ -41,7 +41,7 @@ expectCall;` — or call `Understudy::expect()`, which cannot collide.
 
 ## expectSequence()
 
-`Rasuvaeff\Understudy\expectSequence()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L64)
+`Rasuvaeff\Understudy\expectSequence()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L68)
 
 ```php
 expectSequence(callable ...$calls): void
@@ -64,7 +64,7 @@ expectSequence(
 
 ## verify()
 
-`Rasuvaeff\Understudy\verify()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L88)
+`Rasuvaeff\Understudy\verify()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L92)
 
 ```php
 verify(callable $call, int<0, max>|null $times = NULL, int<0, max>|null $minimum = NULL, int<0, max>|null $maximum = NULL, bool $never = false, callable|null $where = NULL): void
@@ -90,7 +90,7 @@ the closure accepts — the `verify()` counterpart of `->where()`.
 
 ## when()
 
-`Rasuvaeff\Understudy\when()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L20)
+`Rasuvaeff\Understudy\when()` · [Source](https://github.com/rasuvaeff/understudy/blob/master/src/functions.php#L22)
 
 ```php
 when(callable $call): WhenBuilder

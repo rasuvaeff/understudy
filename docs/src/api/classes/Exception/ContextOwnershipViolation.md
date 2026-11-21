@@ -9,7 +9,7 @@ description: "Configuration and verification belong to the context that created 
 
 `Rasuvaeff\Understudy\Exception\ContextOwnershipViolation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ContextOwnershipViolation.php#L14) — **Version:** v1.1.1-9-g056fa15
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Exception/ContextOwnershipViolation.php#L14) — **Version:** v1.1.2-11-g865d5f0
 
 **Extends:** `LogicException`
 

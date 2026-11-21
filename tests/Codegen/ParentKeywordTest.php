@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests\Codegen;
 
+use Rasuvaeff\Understudy\Codegen\DefaultRenderer;
+use Rasuvaeff\Understudy\Codegen\DnfType;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Tests\Fixture\Unify\ParentReturnBase;
@@ -25,6 +27,8 @@ use Testo\Test;
 #[Test]
 #[Covers(TypeRenderer::class)]
 #[Covers(TargetUnifier::class)]
+#[Covers(DefaultRenderer::class)]
+#[Covers(DnfType::class)]
 final class ParentKeywordTest
 {
     #[DataProvider('renderedTypeProvider')]
@@ -60,7 +64,7 @@ final class ParentKeywordTest
 
     public function theUnifierResolvesTheKeywordForAClassWithAParent(): void
     {
-        $atom = new \ReflectionMethod(TargetUnifier::class, 'returnTypeAtom');
+        $atom = new \ReflectionMethod(DnfType::class, 'reflectedAtom');
         $keyword = new class extends \ReflectionNamedType {
             #[\Override]
             public function getName(): string

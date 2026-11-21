@@ -1,0 +1,19 @@
+namespace Rasuvaeff\Understudy\Codegen\Generated;
+
+final class Understudy_GENERATED extends \Rasuvaeff\Understudy\Tests\Fixture\Unify\AbstractOwnStatic
+{
+    public static function tag(): string
+    {
+        throw \Rasuvaeff\Understudy\Exception\InvalidCallSpecification::staticMethodCalled('tag');
+    }
+
+    public function __clone(): void
+    {
+        \Rasuvaeff\Understudy\Runtime\Runtime::adoptClone($this);
+    }
+
+    public function __destruct()
+    {
+    }
+
+}

@@ -394,9 +394,16 @@ seconds instead of the full run's minute — and the full run stays the gate.
   `self`/`static`/`parent`, which would resolve against the generated class, and
   a global constant, which Reflection reports prefixed with the declaring
   namespace and therefore under a name that does not exist.
-- **A default that cannot be reproduced exactly refuses the target.** Answering
-  with a different default than the contract's is a test that passes for the
-  wrong reason.
+- **A default is never carried by the generated class, so it is never refused
+  for being unrenderable.** Dispatch reads it from the declaring parameter,
+  where `self::`/`parent::` still mean the declaring class
+  (`spikes/09-default-at-dispatch`). `DefaultRenderer::render()` is only
+  a comparison key, computed when a second target declares the same position:
+  by value where `var_export()` can render it, otherwise by source with the
+  class keywords qualified. Two targets disagreeing is still a refusal —
+  answering with a different default than the contract's is a test that passes
+  for the wrong reason — and two `self::X` in different classes count as two
+  defaults even when the values happen to agree.
 - **An object default is not always at the front of the expression.**
   `[new Foo()]` and `['k' => new Foo()]` are legal initializers, and evaluating
   either runs a constructor. Detection scans the whole source with quoted runs

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Tests\Defaults;
 
+use Rasuvaeff\Understudy\Codegen\DnfType;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
@@ -24,6 +25,7 @@ use Testo\Test;
 #[Covers(TypeDefaultResolver::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(NoDefaultValue::class)]
+#[Covers(DnfType::class)]
 final class TypeDefaultResolverTest
 {
     #[DataProvider('safeDefaultProvider')]

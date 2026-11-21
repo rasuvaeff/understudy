@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rasuvaeff\Understudy\Wiring;
 
+use Rasuvaeff\Understudy\Codegen\DnfType;
 use Rasuvaeff\Understudy\Exception\CannotWire;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Understudy;
@@ -28,10 +29,12 @@ final class Wire
     private function __construct() {}
 
     /**
-     * @param class-string         $sut
+     * @template T of object
+     *
+     * @param class-string<T>      $sut
      * @param array<string, mixed> $overrides
      *
-     * @return array{sut: object, doubles: array<string, object>}
+     * @return array{sut: T, doubles: array<string, object>}
      */
     public static function build(string $sut, array $overrides): array
     {
@@ -165,22 +168,26 @@ final class Wire
     }
 
     /**
-     * @param class-string $sut
+     * @template T of object
      *
-     * @return \ReflectionClass<object>
+     * @param class-string<T> $sut
+     *
+     * @return \ReflectionClass<T>
      */
     private static function reflectSubject(string $sut): \ReflectionClass
     {
-        /** @var class-string $sut */
-        if (interface_exists($sut)) {
+        // Checked on a copy: narrowing `$sut` itself would lose the template.
+        $name = $sut;
+
+        if (interface_exists($name)) {
             throw CannotWire::notAConcreteClass($sut, 'it is an interface.');
         }
 
-        if (trait_exists($sut)) {
+        if (trait_exists($name)) {
             throw CannotWire::notAConcreteClass($sut, 'it is a trait.');
         }
 
-        if (!class_exists($sut)) {
+        if (!class_exists($name)) {
             throw CannotWire::notAConcreteClass($sut, 'there is no such class.');
         }
 
@@ -230,7 +237,7 @@ final class Wire
             return;
         }
 
-        if (self::matchesType($type, $value)) {
+        if (self::matchesType($parameter, $value)) {
             return;
         }
 
@@ -251,56 +258,15 @@ final class Wire
         $type = $parameter->getType();
 
         foreach ($value as $item) {
-            if ($type instanceof \ReflectionType && !self::matchesType($type, $item)) {
+            if ($type instanceof \ReflectionType && !self::matchesType($parameter, $item)) {
                 throw CannotWire::incompatibleOverride($sut, $parameter->getName(), 'list<' . self::typeName($type) . '>', get_debug_type($item));
             }
         }
     }
 
-    private static function matchesType(\ReflectionType $type, mixed $value): bool
+    private static function matchesType(\ReflectionParameter $parameter, mixed $value): bool
     {
-        if ($value === null) {
-            return $type->allowsNull();
-        }
-
-        if ($type instanceof \ReflectionUnionType) {
-            foreach ($type->getTypes() as $branch) {
-                if (self::matchesType($branch, $value)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        if ($type instanceof \ReflectionIntersectionType) {
-            foreach ($type->getTypes() as $branch) {
-                if (!self::matchesType($branch, $value)) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        \assert($type instanceof \ReflectionNamedType);
-
-        $name = $type->getName();
-
-        return match ($name) {
-            'bool' => is_bool($value),
-            'true' => $value === true,
-            'false' => $value === false,
-            'int' => is_int($value),
-            'float' => is_float($value) || is_int($value),
-            'string' => is_string($value),
-            'array' => is_array($value),
-            'object' => is_object($value),
-            'callable' => is_callable($value),
-            'iterable' => is_iterable($value),
-            'mixed' => true,
-            default => $value instanceof $name,
-        };
+        return DnfType::fromReflection($parameter->getType(), $parameter->getDeclaringClass())->acceptsStrictly($value);
     }
 
     private static function typeName(?\ReflectionType $type): string

@@ -21,9 +21,11 @@ use Rasuvaeff\Understudy\Matcher\IdenticalTo;
 use Rasuvaeff\Understudy\Matcher\InstanceOfType;
 use Rasuvaeff\Understudy\Matcher\IntInRange;
 use Rasuvaeff\Understudy\Matcher\Negated;
+use Rasuvaeff\Understudy\Matcher\PropertyEquals;
 use Rasuvaeff\Understudy\Matcher\QueryEquals;
 use Rasuvaeff\Understudy\Matcher\Satisfying;
 use Rasuvaeff\Understudy\Matcher\StringMatching;
+use Rasuvaeff\Understudy\Matcher\StructurallyEqual;
 use Rasuvaeff\Understudy\Matcher\TailMatcher;
 
 /**
@@ -143,13 +145,45 @@ final class Arg
     }
 
     /**
-     * Matches an object by its class or interface.
+     * Matches an object by its class or interface — and, with `$where`, by
+     * what the predicate says about it:
      *
-     * @param class-string $type
+     * ```php
+     * when(fn () => $mailer->send(Arg::instanceOf(Email::class, fn (Email $e): bool => $e->to === 'a@b.c')))
+     * ```
+     *
+     * The predicate is asked only of an instance of `$type`, so it can be typed
+     * for it: another type is a mismatch, never a `TypeError` thrown inside the
+     * code under test. Like `satisfies()`, a predicate that throws is not
+     * caught — it is the test's own code.
+     *
+     * @template T of object
+     *
+     * @param class-string<T>             $type
+     * @param (callable(T): bool)|null    $where asked only of an instance of `$type`
      */
-    public static function instanceOf(string $type): mixed
+    public static function instanceOf(string $type, ?callable $where = null): mixed
     {
-        return new InstanceOfType($type);
+        return new InstanceOfType($type, $where === null ? null : $where(...));
+    }
+
+    /**
+     * Matches a value equal to this one by structure rather than identity: an
+     * object of the same class whose properties are equal in turn, an array
+     * with the same keys and equal values, a scalar by `===`.
+     *
+     * The by-value comparison for value objects, where `Arg::same()` would
+     * demand the instance the test built and the subject never sees. Never
+     * `==`: scalars stay strict, and a cyclic graph is a mismatch rather than a
+     * fatal error.
+     *
+     * @param mixed $value the expected value; an object is compared by its properties
+     */
+    public static function equalTo(mixed $value): mixed
+    {
+        self::rejectCaptor('equalTo', $value);
+
+        return new StructurallyEqual($value);
     }
 
     /**
@@ -242,6 +276,18 @@ final class Arg
     public static function which(string $method, mixed $value): mixed
     {
         return new QueryEquals($method, $value);
+    }
+
+    /**
+     * Matches an object whose public property holds this value — `which()`
+     * for a value object exposing `public readonly` fields instead of getters.
+     *
+     * @param non-empty-string $property public, non-static, initialized
+     * @param mixed            $value    compared with `===`
+     */
+    public static function whichProperty(string $property, mixed $value): mixed
+    {
+        return new PropertyEquals($property, $value);
     }
 
     /**

@@ -5,10 +5,10 @@
     "require": {
         "php": "8.3 - 8.5",
         "phpdocumentor/reflection-docblock": "^5.6",
-        "rasuvaeff/understudy-phpstan": "^1.0",
+        "rasuvaeff/understudy-phpstan": "^1.1",
         "rasuvaeff/understudy-phpunit": "^1.0",
-        "rasuvaeff/understudy-psalm": "^1.0",
-        "rasuvaeff/understudy-testo": "^1.0"
+        "rasuvaeff/understudy-psalm": "^1.2",
+        "rasuvaeff/understudy-testo": "^1.1"
     },
     "repositories": [
         {

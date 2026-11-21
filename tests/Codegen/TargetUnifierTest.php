@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Rasuvaeff\Understudy\Tests\Codegen;
 
 use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DefaultRenderer;
+use Rasuvaeff\Understudy\Codegen\DnfType;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
@@ -133,8 +135,10 @@ use Testo\Test;
 #[Covers(TypeRenderer::class)]
 #[Covers(Blueprint::class)]
 #[Covers(TargetUnifier::class)]
+#[Covers(DefaultRenderer::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(UnsupportedTarget::class)]
+#[Covers(DnfType::class)]
 final class TargetUnifierTest
 {
     private const string MATCHER = TypeRenderer::MATCHER;

@@ -6,6 +6,8 @@ namespace Rasuvaeff\Understudy\Tests\Codegen;
 
 use Rasuvaeff\Understudy\Arg;
 use Rasuvaeff\Understudy\Codegen\Blueprint;
+use Rasuvaeff\Understudy\Codegen\DefaultRenderer;
+use Rasuvaeff\Understudy\Codegen\DnfType;
 use Rasuvaeff\Understudy\Codegen\DoubleFactory;
 use Rasuvaeff\Understudy\Codegen\MethodSignature;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
@@ -50,8 +52,10 @@ use Testo\Test;
 #[Covers(Blueprint::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(TargetUnifier::class)]
+#[Covers(DefaultRenderer::class)]
 #[Covers(TypeRenderer::class)]
 #[Covers(UnsupportedTarget::class)]
+#[Covers(DnfType::class)]
 final class TargetUnifierEdgeTest
 {
     #[AfterTest]

@@ -53,6 +53,26 @@ Understudy::verifyAll(strictStubs: true);
 
 :::
 
+## Per class or per test method
+
+`#[StrictStubs]` (and `#[StrictStubs(false)]`) is the one switch every bridge
+reads, on a test class or a test method:
+
+```php
+#[StrictStubs]
+final class CheckoutTest
+{
+    #[StrictStubs(false)]
+    public function legacyPath(): void {}
+}
+```
+
+The method wins over its class, the nearest class in the hierarchy over a
+parent, and any attribute over the bridge's own setting above. The engine only
+declares it; a bridge asks `StrictStubs::resolve($class, $method, $default)`
+and hands the answer to `verifyAll()`. A bridge release that reads it is
+needed before the attribute has an effect.
+
 ## Strictness per double is a different thing
 
 Do not confuse the two:

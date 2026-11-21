@@ -7,15 +7,21 @@ namespace Rasuvaeff\Understudy\Matcher;
 use Rasuvaeff\Understudy\Exception\InvalidSpecificationArgument;
 
 /**
+ * @template T of object
+ *
  * @internal
  */
 final readonly class InstanceOfType implements ArgumentMatcher
 {
     /**
-     * @param class-string $type
+     * @param class-string<T>           $type
+     * @param (\Closure(T): bool)|null    $where asked only of an instance of `$type`, so a
+     *                                           predicate typed for it never sees another type
      */
-    public function __construct(private string $type)
-    {
+    public function __construct(
+        private string $type,
+        private ?\Closure $where = null,
+    ) {
         // A type nothing can be an instance of matches nothing, forever, and
         // says so nowhere: the reader sees "expected … but it was never
         // called" and looks for the cause in the subject under test. The
@@ -30,12 +36,18 @@ final readonly class InstanceOfType implements ArgumentMatcher
     #[\Override]
     public function matches(mixed $argument): bool
     {
-        return $argument instanceof $this->type;
+        if (!$argument instanceof $this->type) {
+            return false;
+        }
+
+        return !$this->where instanceof \Closure || ($this->where)($argument);
     }
 
     #[\Override]
     public function describe(): string
     {
-        return 'instanceOf(' . $this->type . ')';
+        return $this->where instanceof \Closure
+            ? 'instanceOf(' . $this->type . ', satisfies(…))'
+            : 'instanceOf(' . $this->type . ')';
     }
 }

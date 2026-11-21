@@ -224,13 +224,14 @@ hook (a readonly class may only be extended by a readonly class, and a hooked
 property cannot be readonly), and a by-reference `&get` hook. A concrete hook
 on a class target is inherited and keeps running the target's own code.
 
-Parameter defaults are reproduced rather than approximated: a class constant is
-rendered through its declaring class, an enum case as itself, and an object
-default from its own source expression — `new Stamp(7)` and `[new Stamp(7)]`
-alike — which is never evaluated while the double is generated. A default whose
-source names `self`, `static` or `parent` refuses the target, because those
-resolve against the generated class and would answer something the contract
-never promised.
+Parameter defaults are the contract's own, never approximated: the generated
+class carries none, and a call that omits an argument receives the default
+evaluated from the declaring parameter, in the declaring class — so
+`new Stamp(self::LIMIT)`, `[new Stamp(7)]` and a constant holding an object
+all work, and an object default is built per call, as PHP builds it. Nothing
+is evaluated while the double is generated. Two targets that declare
+different defaults for the same parameter are refused; two `self::` defaults
+in different classes count as different.
 
 ### Doubling a final class
 
@@ -335,10 +336,13 @@ own `TypeError`.
 | `Arg::allOf(...)` | everything the operands accept; an operand is a matcher or a literal |
 | `Arg::anyOf(...)` | anything at least one operand accepts, so `anyOf('draft', 'review')` reads as a set |
 | `Arg::instanceOf($class)` | an instance of the class or interface |
+| `Arg::instanceOf($class, fn (Foo $f): bool => …)` | an instance the typed predicate accepts; another type is a mismatch, never a `TypeError` |
+| `Arg::equalTo($value)` | equal by structure: same class, equal properties (private ones included), `===` on scalars; cycles are safe |
 | `Arg::satisfies($fn)` | whatever the predicate accepts |
 | `Arg::containing($entries)` | an array holding these entries and possibly more |
 | `Arg::count(minimum:, maximum:)` | an array or `Countable` of that size |
 | `Arg::which($method, $value)` | an object whose getter answers this value |
+| `Arg::whichProperty($property, $value)` | an object whose public property holds this value |
 | `Arg::none()` | an empty variadic tail — last argument only |
 | `Arg::remaining()` | the whole variadic tail, any length — last argument only |
 | `Arg::rest()` | declared parameters left unspelled — last argument only |
@@ -400,8 +404,9 @@ describes part of an array, and it reads matchers in its own entries —
 `Arg::containing(['id' => Arg::int(min: 1)])`, nested as deep as the payload
 goes.
 
-`Arg::which()` calls only a public, non-static method that needs no arguments.
-A getter that throws counts as a mismatch, never as an error — matching runs
+`Arg::which()` calls only a public, non-static method that needs no arguments,
+and `Arg::whichProperty()` reads only a public, non-static, initialized
+property. A getter (or `get` hook) that throws counts as a mismatch, never as an error — matching runs
 while the code under test is executing, and a matcher must not be the thing
 that breaks it.
 
@@ -494,6 +499,12 @@ open range. Write the second argument for that.
 `when()` stub is permission rather than a claim — `->times(2)` turns it into
 one. `verifyAll(strictStubs: true)` additionally fails a stub that was never
 used.
+
+A runner bridge switches that per test class or method with the
+`#[StrictStubs]` attribute (`#[StrictStubs(false)]` turns it off). The method
+wins over its class, the nearest class over a parent, and either over the
+bridge's own default; a bridge asks `StrictStubs::resolve($class, $method,
+$default)` and passes the answer to `verifyAll()`.
 
 `verifyAll()` returns how many checks it verified, so a runner adapter counts
 real assertions instead of a flat one per test. One check is: an expectation
