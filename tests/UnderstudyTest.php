@@ -44,9 +44,11 @@ use Rasuvaeff\Understudy\Matcher\InstanceOfType;
 use Rasuvaeff\Understudy\Matcher\Unspelled;
 use Rasuvaeff\Understudy\Outcome;
 use Rasuvaeff\Understudy\Runtime\ArmedSequence;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
 use Rasuvaeff\Understudy\Runtime\Mode;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Runtime\SpecificationCall;
@@ -94,6 +96,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(ExpectBuilder::class)]
 #[Covers(ReturnContract::class)]
 #[Covers(Runtime::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(RuntimeContext::class)]
 #[Covers(DoubleState::class)]
 #[Covers(InvocationSignal::class)]

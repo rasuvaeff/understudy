@@ -22,7 +22,9 @@ use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
 use Rasuvaeff\Understudy\Tests\Support\ConfigureExpectCommand;
@@ -67,6 +69,8 @@ use Testo\Test;
 #[Covers(Understudy::class)]
 #[Covers(Verifier::class)]
 #[Covers(Runtime::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(DoubleState::class)]
 #[Covers(Expectation::class)]
 #[Covers(Cardinality::class)]

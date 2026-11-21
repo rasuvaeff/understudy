@@ -16,6 +16,8 @@ use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\InvalidCallSpecification;
 use Rasuvaeff\Understudy\Exception\VerificationFailed;
 use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
@@ -50,6 +52,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Understudy::class)]
 #[Covers(Verifier::class)]
 #[Covers(Runtime::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(RuntimeContext::class)]
 #[Covers(Invocation::class)]
 #[Covers(ForgottenDouble::class)]

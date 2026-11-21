@@ -16,6 +16,8 @@ use Rasuvaeff\Understudy\Exception\OriginalCallUnavailable;
 use Rasuvaeff\Understudy\Exception\OriginalReturnTypeViolation;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
 use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Cls\Bookkeeper;
 use Rasuvaeff\Understudy\Tests\Fixture\Fwd\Chainable;
@@ -39,6 +41,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Blueprint::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(Runtime::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(Understudy::class)]
 #[Covers(Verifier::class)]
 #[Covers(Invocation::class)]

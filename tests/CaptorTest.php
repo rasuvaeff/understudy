@@ -17,6 +17,8 @@ use Rasuvaeff\Understudy\Exception\MatcherLeaked;
 use Rasuvaeff\Understudy\Exception\NothingCaptured;
 use Rasuvaeff\Understudy\Expectation\Expectation;
 use Rasuvaeff\Understudy\Matcher\Capturing;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\RuntimeContext;
 use Rasuvaeff\Understudy\Tests\Fixture\Capt\DeliveryOptions;
@@ -53,6 +55,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Arg::class)]
 #[Covers(Expectation::class)]
 #[Covers(Runtime::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(RuntimeContext::class)]
 #[Covers(NothingCaptured::class)]
 final class CaptorTest

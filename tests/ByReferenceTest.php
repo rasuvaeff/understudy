@@ -12,7 +12,9 @@ use Rasuvaeff\Understudy\Codegen\ParameterUnifier;
 use Rasuvaeff\Understudy\Codegen\ReturnTypeUnifier;
 use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Ref\RealRegistry;
 use Rasuvaeff\Understudy\Tests\Fixture\Ref\Registry;
@@ -29,6 +31,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Blueprint::class)]
 #[Covers(MethodSignature::class)]
 #[Covers(Runtime::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(DoubleState::class)]
 #[Covers(TargetUnifier::class)]
 #[Covers(ParameterUnifier::class)]

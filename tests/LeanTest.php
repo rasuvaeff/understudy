@@ -14,7 +14,9 @@ use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Exception\OutcomeUnavailable;
 use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Lean\LeanStore;
 use Rasuvaeff\Understudy\Tests\Fixture\Lean\Payload;
@@ -46,6 +48,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(Understudy::class)]
 #[Covers(Verifier::class)]
 #[Covers(Runtime::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(DoubleState::class)]
 #[Covers(Invocation::class)]
 #[Covers(OutcomeUnavailable::class)]

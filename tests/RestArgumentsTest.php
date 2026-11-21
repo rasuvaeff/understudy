@@ -19,7 +19,9 @@ use Rasuvaeff\Understudy\Matcher\AnyRest;
 use Rasuvaeff\Understudy\Matcher\Unspelled;
 use Rasuvaeff\Understudy\Matcher\UnspelledTail;
 use Rasuvaeff\Understudy\Runtime\Absent;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\InvocationSignal;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Runtime\SpecificationCall;
 use Rasuvaeff\Understudy\Tests\Fixture\Rest\WideStorage;
@@ -61,6 +63,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(SpecificationCall::class)]
 #[Covers(InvalidCallSpecification::class)]
 #[Covers(Runtime::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 final class RestArgumentsTest
 {
     private WideStorage $storage;

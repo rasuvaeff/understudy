@@ -15,7 +15,9 @@ use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\ForgottenDouble;
 use Rasuvaeff\Understudy\Exception\UnsupportedTarget;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Hooks\Clock;
 use Rasuvaeff\Understudy\Understudy;
@@ -45,6 +47,8 @@ use Testo\Test;
 #[Covers(Blueprint::class)]
 #[Covers(PropertySignature::class)]
 #[Covers(Runtime::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(DoubleState::class)]
 #[Covers(TypeDefaultResolver::class)]
 #[Covers(UnsupportedTarget::class)]

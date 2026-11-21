@@ -65,89 +65,14 @@ final class Runtime
      */
     private static int $inlineFloor = 0;
 
-    /**
-     * A stack, not a single context: `scope()` nests one inside another, and
-     * the outer one must come back intact when the inner ends.
-     *
-     * @var list<RuntimeContext>
-     */
-    private static array $main = [];
-
-    /** @var \WeakMap<\Fiber, list<RuntimeContext>>|null */
-    private static ?\WeakMap $fibers = null;
-
-    /**
-     * Keyed by the double object, never by `spl_object_id()`, which PHP reuses
-     * after collection. Routes a call made inside a Fiber back to the context
-     * that created the double.
-     *
-     * @var \WeakMap<object, RuntimeContext>|null
-     */
-    private static ?\WeakMap $owners = null;
-
-    /**
-     * @var \WeakMap<object, true>|null
-     */
-    private static ?\WeakMap $forgotten = null;
-
-    /**
-     * The forgotten doubles a closing `scope()` dropped, as opposed to a
-     * `reset()`. Only the failure message tells them apart: "created before a
-     * reset()" sends the reader looking for a reset() they never wrote when
-     * what ended the double was the scope it was built in.
-     *
-     * @var \WeakMap<object, true>|null
-     */
-    private static ?\WeakMap $droppedByScope = null;
-
-    /**
-     * Doubles retired on purpose through `Understudy::forget()`. The
-     * distinction is for the failure message only: both a reset and a
-     * deliberate retirement make the double unusable, but telling a reader
-     * to look for a reset() they never wrote is worse than the plain truth.
-     *
-     * @var \WeakMap<object, true>|null
-     */
-    private static ?\WeakMap $retiredOnPurpose = null;
-
-    /**
-     * Every context that holds understudies, current or not.
-     *
-     * Isolation and accounting are different questions, and conflating them
-     * cost a silent hole. A Fiber gets its own context so that a recording
-     * phase, a call log and a sequence counter are never shared with a
-     * sibling — that stays. But `verifyAll()`, `reset()`, `idle()` and
-     * `checkpoint()` are asked by a runner adapter from the main flow, about
-     * the test as a whole, and a context they cannot see is a context whose
-     * expectations are never checked: a test body run in a Fiber left an
-     * unmet `expect()` and the suite stayed green.
-     *
-     * Keyed by object id and holding a strong reference, so a Fiber's context
-     * outlives the Fiber long enough to be verified. `reset()` empties it.
-     *
-     * @var array<int, RuntimeContext>
-     */
-    private static array $live = [];
-
     public static function current(): RuntimeContext
     {
-        $stack = self::stack();
-
-        if ($stack === []) {
-            $context = self::freshContext();
-            self::push($context);
-
-            return $context;
-        }
-
-        return $stack[count($stack) - 1];
+        return ContextStack::current();
     }
 
     public static function currentIfAny(): ?RuntimeContext
     {
-        $stack = self::stack();
-
-        return $stack === [] ? null : $stack[count($stack) - 1];
+        return ContextStack::currentIfAny();
     }
 
     /**
@@ -156,104 +81,23 @@ final class Runtime
      */
     public static function pushScope(): RuntimeContext
     {
-        $context = self::freshContext();
-        self::push($context);
-
-        return $context;
+        return ContextStack::pushScope();
     }
 
     public static function popScope(): void
     {
-        $fiber = \Fiber::getCurrent();
-
-        if (!$fiber instanceof \Fiber) {
-            $context = array_pop(self::$main);
-
-            if ($context instanceof RuntimeContext) {
-                self::retire($context, byScope: true);
-            }
-
-            return;
-        }
-
-        $fibers = self::fibers();
-        /** @var list<RuntimeContext> $stack */
-        $stack = $fibers->offsetExists($fiber) ? $fibers->offsetGet($fiber) : [];
-        $context = array_pop($stack);
+        $context = ContextStack::popScope();
 
         if ($context instanceof RuntimeContext) {
             self::retire($context, byScope: true);
         }
-
-        $fibers->offsetSet($fiber, $stack);
-    }
-
-    /**
-     * @return list<RuntimeContext>
-     */
-    private static function stack(): array
-    {
-        $fiber = \Fiber::getCurrent();
-
-        if (!$fiber instanceof \Fiber) {
-            return self::$main;
-        }
-
-        $fibers = self::fibers();
-
-        if (!$fibers->offsetExists($fiber)) {
-            return [];
-        }
-
-        // WeakMap::offsetGet() is typed as nullable regardless of the value
-        // type, and offsetExists() above has already ruled that out.
-        /** @var list<RuntimeContext> $stack */
-        $stack = $fibers->offsetGet($fiber);
-
-        return $stack;
-    }
-
-    private static function push(RuntimeContext $context): void
-    {
-        $fiber = \Fiber::getCurrent();
-
-        if (!$fiber instanceof \Fiber) {
-            self::$main[] = $context;
-
-            return;
-        }
-
-        $stack = self::stack();
-        $stack[] = $context;
-        self::fibers()->offsetSet($fiber, $stack);
     }
 
     public static function adopt(object $double, DoubleState $state): void
     {
-        $context = self::current();
+        $context = ContextStack::current();
         $context->register($double, $state);
-        self::owners()->offsetSet($double, $context);
-    }
-
-    /**
-     * Records a context as holding understudies, so accounting can reach it
-     * from wherever the adapter stands.
-     */
-    /**
-     * Called where a context comes into being, not once per double adopted
-     * into it: the context is the same for every double a test builds, so
-     * doing it in `adopt()` rewrote the same key on the hottest creation path
-     * there is. A context that ends up holding nothing is harmless here —
-     * accounting walks its states, and it has none.
-     */
-    private static function remember(RuntimeContext $context): void
-    {
-        self::$live[spl_object_id($context)] = $context;
-    }
-
-    private static function unremember(RuntimeContext $context): void
-    {
-        unset(self::$live[spl_object_id($context)]);
+        Ownership::owners()->offsetSet($double, $context);
     }
 
     /**
@@ -264,16 +108,7 @@ final class Runtime
      */
     public static function liveContexts(): array
     {
-        $current = self::currentIfAny();
-        $contexts = $current instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext ? [$current] : [];
-
-        foreach (self::$live as $context) {
-            if ($context !== $current) {
-                $contexts[] = $context;
-            }
-        }
-
-        return $contexts;
+        return ContextStack::liveContexts();
     }
 
     /**
@@ -303,7 +138,7 @@ final class Runtime
             return;
         }
 
-        $context = self::current();
+        $context = ContextStack::current();
         $state = new DoubleState($blueprint);
 
         // Cloned by real code running inline: the copy carries the original's
@@ -327,7 +162,7 @@ final class Runtime
         // was cloned from, because the generated `__clone()` does nothing but
         // call this method.
         if ($frame !== null && $frame::class === $clone::class && self::isCopyOf($clone, $frame)) {
-            $origin = (self::ownerOf($frame) ?? $context)->stateOf($frame);
+            $origin = (Ownership::ownerOf($frame) ?? $context)->stateOf($frame);
             $target = $origin?->forwardingTarget();
             $parent = $origin?->inlineParent();
 
@@ -340,7 +175,7 @@ final class Runtime
 
         $context->register($clone, $state);
 
-        self::owners()->offsetSet($clone, $context);
+        Ownership::owners()->offsetSet($clone, $context);
     }
 
     /**
@@ -378,179 +213,54 @@ final class Runtime
         }
 
         $owner->register($double, new DoubleState($blueprint, nested: true));
-        self::owners()->offsetSet($double, $owner);
+        Ownership::owners()->offsetSet($double, $owner);
 
         return $double;
     }
 
     public static function ownerOf(object $double): ?RuntimeContext
     {
-        $owners = self::owners();
-
-        return $owners->offsetExists($double) ? $owners->offsetGet($double) : null;
+        return Ownership::ownerOf($double);
     }
 
-    /**
-     * Whether a double's context was torn down under it.
-     *
-     * A one-way latch on purpose: a double belongs to exactly one context for
-     * its whole life, and `for()` hands back a new object every time, so
-     * nothing that was forgotten can become known again.
-     */
     public static function isForgotten(object $double): bool
     {
-        return self::$forgotten?->offsetExists($double) ?? false;
+        return Ownership::isForgotten($double);
     }
 
-    /**
-     * Whether a double was forgotten by the `scope()` it was created in
-     * closing, rather than by a `reset()`.
-     */
     public static function isDroppedByScope(object $double): bool
     {
-        return self::$droppedByScope?->offsetExists($double) ?? false;
+        return Ownership::isDroppedByScope($double);
     }
 
     /**
-     * The refusal for a call or a question that reached a forgotten double,
-     * worded by what forgot it: `forget()`, a closing scope, or a reset.
-     *
      * @param non-empty-string $member
      */
     public static function forgottenDouble(object $double, string $member): ForgottenDouble
     {
-        if (self::isRetiredOnPurpose($double)) {
-            return ForgottenDouble::onPurpose($member);
-        }
-
-        if (self::isDroppedByScope($double)) {
-            return ForgottenDouble::afterScope($member);
-        }
-
-        return ForgottenDouble::afterReset($member);
+        return Ownership::forgottenDouble($double, $member);
     }
 
-    /**
-     * The refusal for a property touched on a forgotten double, worded the
-     * same way as `forgottenDouble()`.
-     *
-     * @param non-empty-string $property
-     */
-    private static function forgottenProperty(object $double, string $property): ForgottenDouble
-    {
-        if (self::isRetiredOnPurpose($double)) {
-            return ForgottenDouble::propertyOnPurpose($property);
-        }
-
-        if (self::isDroppedByScope($double)) {
-            return ForgottenDouble::propertyAfterScope($property);
-        }
-
-        return ForgottenDouble::propertyAfterReset($property);
-    }
-
-    /**
-     * Whether a double was retired on purpose through `Understudy::forget()`.
-     */
     public static function isRetiredOnPurpose(object $double): bool
     {
-        return self::$retiredOnPurpose?->offsetExists($double) ?? false;
+        return Ownership::isRetiredOnPurpose($double);
     }
 
-    /**
-     * Retires a double on purpose: its owner's state is dropped, so
-     * verification, `nothingElse()` and reset stop seeing it — a replacement
-     * double must not inherit its stubs into a `strictStubs` verdict. A call
-     * on the object afterwards fails with `ForgottenDouble`, the same guard a
-     * scope close leaves behind.
-     */
     public static function forget(object $double): void
     {
-        $owner = self::ownerOf($double);
-
-        // The facade has already answered for a stranger, a retired double and
-        // a foreign context through `stateOf()`; what reaches here is owned.
-        \assert($owner instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext && $owner->stateOf($double) instanceof \Rasuvaeff\Understudy\Runtime\DoubleState);
-
-        $owner->forget($double);
-        self::owners()->offsetUnset($double);
-        self::forgotten()->offsetSet($double, value: true);
-
-        if (!self::$retiredOnPurpose instanceof \WeakMap) {
-            /** @var \WeakMap<object, true> $retired */
-            $retired = new \WeakMap();
-            self::$retiredOnPurpose = $retired;
-        }
-
-        self::$retiredOnPurpose->offsetSet($double, value: true);
-    }
-
-    /**
-     * @return \WeakMap<\Fiber, list<RuntimeContext>>
-     */
-    private static function fibers(): \WeakMap
-    {
-        if (!self::$fibers instanceof \WeakMap) {
-            /** @var \WeakMap<\Fiber, list<RuntimeContext>> $fibers */
-            $fibers = new \WeakMap();
-            self::$fibers = $fibers;
-        }
-
-        return self::$fibers;
-    }
-
-    /**
-     * @return \WeakMap<object, RuntimeContext>
-     */
-    private static function owners(): \WeakMap
-    {
-        if (!self::$owners instanceof \WeakMap) {
-            /** @var \WeakMap<object, RuntimeContext> $owners */
-            $owners = new \WeakMap();
-            self::$owners = $owners;
-        }
-
-        return self::$owners;
-    }
-
-    /**
-     * @return \WeakMap<object, true>
-     */
-    private static function droppedByScope(): \WeakMap
-    {
-        if (!self::$droppedByScope instanceof \WeakMap) {
-            /** @var \WeakMap<object, true> $dropped */
-            $dropped = new \WeakMap();
-            self::$droppedByScope = $dropped;
-        }
-
-        return self::$droppedByScope;
-    }
-
-    /**
-     * @return \WeakMap<object, true>
-     */
-    private static function forgotten(): \WeakMap
-    {
-        if (!self::$forgotten instanceof \WeakMap) {
-            /** @var \WeakMap<object, true> $forgotten */
-            $forgotten = new \WeakMap();
-            self::$forgotten = $forgotten;
-        }
-
-        return self::$forgotten;
+        Ownership::forget($double);
     }
 
     public static function stateOf(object $double): ?DoubleState
     {
-        return self::ownerOf($double)?->stateOf($double);
+        return Ownership::ownerOf($double)?->stateOf($double);
     }
 
     public static function isOwnedByCurrentContext(object $double): bool
     {
-        $owner = self::ownerOf($double);
+        $owner = Ownership::ownerOf($double);
 
-        return $owner instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext && $owner === self::current();
+        return $owner instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext && $owner === ContextStack::current();
     }
 
     /**
@@ -565,7 +275,7 @@ final class Runtime
         // opens the phase in whichever context it runs in, and a double
         // created elsewhere must still signal instead of being treated as a
         // real call.
-        $current = self::current();
+        $current = ContextStack::current();
 
         if ($current->isRecording()) {
             // The signal is retained, not thrown: the closure goes on, so a
@@ -604,7 +314,7 @@ final class Runtime
         $state = $current->stateOf($double);
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            $context = self::ownerOf($double) ?? $current;
+            $context = Ownership::ownerOf($double) ?? $current;
             $state = $context->stateOf($double);
         }
 
@@ -614,7 +324,7 @@ final class Runtime
             // message differs for a double retired through `Understudy::forget()`:
             // sending the reader looking for a stray reset() they never wrote
             // is worse than the plain truth.
-            throw self::forgottenDouble($double, $method);
+            throw Ownership::forgottenDouble($double, $method);
         }
 
         // A by-reference argument is live: whatever answers the call can write
@@ -912,17 +622,17 @@ final class Runtime
      */
     private static function propertyState(object $double, string $property): array
     {
-        $current = self::current();
+        $current = ContextStack::current();
         $state = $current->stateOf($double);
         $context = $current;
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            $context = self::ownerOf($double) ?? $current;
+            $context = Ownership::ownerOf($double) ?? $current;
             $state = $context->stateOf($double);
         }
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            throw self::forgottenProperty($double, $property);
+            throw Ownership::forgottenProperty($double, $property);
         }
 
         return [$context, $state];
@@ -946,7 +656,7 @@ final class Runtime
      */
     public static function referenceSlot(object $double, string $method, array $args): ReferenceSlot
     {
-        $state = (self::ownerOf($double) ?? self::current())->stateOf($double);
+        $state = (Ownership::ownerOf($double) ?? ContextStack::current())->stateOf($double);
 
         // Before `hasActionFor()`, not after: it walks the expectations the
         // way dispatch will, and dispatch will see the arguments with the
@@ -955,7 +665,7 @@ final class Runtime
         // and the slot would keep the mode's own value instead of the
         // configured one. A recording phase is the exception — the sentinel
         // is what it came for.
-        if ($state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState && !self::current()->isRecording()) {
+        if ($state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState && !ContextStack::current()->isRecording()) {
             self::materializeOmittedArguments($state->blueprint->method($method), $method, $args);
         }
 
@@ -964,7 +674,7 @@ final class Runtime
         /** @var mixed $value */
         $value = self::dispatch($double, $method, $args);
 
-        if (self::current()->isRecording()) {
+        if (ContextStack::current()->isRecording()) {
             // A recording answers with a throwaway: the per-method slot is
             // state the test can observe through the reference it already
             // holds, and the closure's own value must not land in it.
@@ -974,11 +684,11 @@ final class Runtime
             return $slot;
         }
 
-        $context = self::ownerOf($double) ?? self::current();
+        $context = Ownership::ownerOf($double) ?? ContextStack::current();
         $state = $context->stateOf($double);
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            throw self::forgottenDouble($double, $method);
+            throw Ownership::forgottenDouble($double, $method);
         }
 
         return $state->referenceSlot($method, $value, replace: $configured);
@@ -1002,11 +712,11 @@ final class Runtime
      */
     public static function callOriginal(object $double, string $method, array $args): mixed
     {
-        $context = self::ownerOf($double) ?? self::current();
+        $context = Ownership::ownerOf($double) ?? ContextStack::current();
         $state = $context->stateOf($double);
 
         if (!$state instanceof \Rasuvaeff\Understudy\Runtime\DoubleState) {
-            throw self::forgottenDouble($double, $method);
+            throw Ownership::forgottenDouble($double, $method);
         }
 
         if ($state->forwardsInline()) {
@@ -1080,7 +790,7 @@ final class Runtime
             return $value;
         }
 
-        if ($value instanceof $double && !self::ownerOf($value) instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext) {
+        if ($value instanceof $double && !Ownership::ownerOf($value) instanceof \Rasuvaeff\Understudy\Runtime\RuntimeContext) {
             throw OriginalReturnTypeViolation::foreignSelf($state->label(), $method);
         }
 
@@ -1423,92 +1133,22 @@ final class Runtime
      */
     public static function reset(): void
     {
-        $fiber = \Fiber::getCurrent();
-
-        if (!$fiber instanceof \Fiber) {
-            $stack = self::$main;
-        } else {
-            $fibers = self::fibers();
-            /** @var list<RuntimeContext> $stack */
-            $stack = $fibers->offsetExists($fiber) ? $fibers->offsetGet($fiber) : [];
-        }
-
         // The sweep retires every live context, this one included — a context
         // is recorded live where it is created, so there is nothing to retire
         // separately here. It runs before the replacement is opened, because
         // it would otherwise retire that one too.
-        self::forgetOrphans();
-
-        $position = count($stack) - 1;
-
-        if ($position < 0) {
-            return;
-        }
-
-        $stack[$position] = self::freshContext();
-        // Replacing one slot of a list keeps it a list; psalm widens it to a
-        // plain array because the offset is a variable.
-        /** @var list<RuntimeContext> $stack */
-
-        if (!$fiber instanceof \Fiber) {
-            self::$main = $stack;
-
-            return;
-        }
-
-        self::fibers()->offsetSet($fiber, $stack);
-    }
-
-    /**
-     * The one place a context comes into being, and therefore the one place it
-     * is recorded as live. Recording it per double adopted into it rewrote the
-     * same key on the hottest creation path there is; recording it here happens
-     * once, and no context can be created without it.
-     */
-    private static function freshContext(): RuntimeContext
-    {
-        $context = new RuntimeContext();
-        self::remember($context);
-
-        return $context;
-    }
-
-    /**
-     * Drops every context still holding understudies that the caller is not
-     * standing in — a Fiber's context, most of all.
-     *
-     * Unconditional, including when `reset()` is itself called from inside a
-     * Fiber, because that is the shape the runners actually have. Under Testo
-     * a `#[RunInFiber]` test puts the whole pipeline in one Fiber, and the
-     * assert collector then opens a SECOND one around the body: the adapter's
-     * teardown runs in the outer Fiber while the test's understudies live in
-     * the inner one. A reset that only reached its own Fiber left them behind
-     * to answer the next test.
-     */
-    private static function forgetOrphans(): void
-    {
-        foreach (self::$live as $context) {
+        foreach (ContextStack::drainLive() as $context) {
             self::retire($context);
         }
 
-        self::$live = [];
+        ContextStack::renewCurrent();
     }
 
-    /**
-     * Stamps every double the context held as forgotten and drops its owner.
-     *
-     * The loop looks like something to remove — teardown runs after every test
-     * — and removing it was measured. Marking the context instead and having
-     * `ownerOf()` read the flag made teardown cheaper in isolation and double
-     * creation 13-23% slower in the benchmark, because the owner entries then
-     * live until collection and the map they sit in keeps growing. Eager
-     * removal here is what keeps that map the size of one test.
-     */
     private static function retire(
         RuntimeContext $context,
         bool $byScope = false,
     ): void {
-        self::unremember($context);
+        ContextStack::unremember($context);
 
         // Captured values live exactly as long as the call log of the context
         // they were captured in. The captor object itself survives — it is a
@@ -1517,17 +1157,6 @@ final class Runtime
             $captor->discard();
         }
 
-        if (!self::$owners instanceof \WeakMap) {
-            return;
-        }
-
-        foreach ($context->allDoubles() as $double) {
-            self::forgotten()[$double] = true;
-            unset(self::$owners[$double]);
-
-            if ($byScope) {
-                self::droppedByScope()[$double] = true;
-            }
-        }
+        Ownership::retire($context, $byScope);
     }
 }

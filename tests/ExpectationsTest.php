@@ -23,7 +23,9 @@ use Rasuvaeff\Understudy\Expectation\ThrowError;
 use Rasuvaeff\Understudy\ExpectBuilder;
 use Rasuvaeff\Understudy\FailureReport;
 use Rasuvaeff\Understudy\Invocation;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
 use Rasuvaeff\Understudy\Runtime\DoubleState;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Book;
 use Rasuvaeff\Understudy\Tests\Fixture\BookRepository;
@@ -51,6 +53,8 @@ use function Rasuvaeff\Understudy\when;
 #[Covers(ExpectBuilder::class)]
 #[Covers(WhenBuilder::class)]
 #[Covers(Runtime::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(DoubleState::class)]
 #[Covers(Expectation::class)]
 #[Covers(ReturnValue::class)]

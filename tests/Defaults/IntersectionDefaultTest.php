@@ -14,6 +14,8 @@ use Rasuvaeff\Understudy\Codegen\TargetUnifier;
 use Rasuvaeff\Understudy\Codegen\TypeRenderer;
 use Rasuvaeff\Understudy\Defaults\TypeDefaultResolver;
 use Rasuvaeff\Understudy\Exception\NoDefaultValue;
+use Rasuvaeff\Understudy\Runtime\ContextStack;
+use Rasuvaeff\Understudy\Runtime\Ownership;
 use Rasuvaeff\Understudy\Runtime\Runtime;
 use Rasuvaeff\Understudy\Tests\Fixture\Dnf\Alpha;
 use Rasuvaeff\Understudy\Tests\Fixture\Dnf\Beta;
@@ -48,6 +50,8 @@ use Testo\Test;
 #[Covers(MethodSignature::class)]
 #[Covers(TypeDefaultResolver::class)]
 #[Covers(Runtime::class)]
+#[Covers(Ownership::class)]
+#[Covers(ContextStack::class)]
 #[Covers(NoDefaultValue::class)]
 #[Covers(DnfType::class)]
 final class IntersectionDefaultTest
