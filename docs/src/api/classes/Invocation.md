@@ -9,7 +9,7 @@ description: "One recorded call on an understudy."
 
 `Rasuvaeff\Understudy\Invocation`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L21) — **Version:** v1.2.1-1-g1380481
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/Invocation.php#L21) — **Version:** v1.2.2
 
 One recorded call on an understudy.
 
