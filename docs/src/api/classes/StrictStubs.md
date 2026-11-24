@@ -9,7 +9,7 @@ description: "Switches strict stubs — `verifyAll(strictStubs: true)`, where a 
 
 `Rasuvaeff\Understudy\StrictStubs`
 
-**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/StrictStubs.php#L31) — **Version:** v1.2.1-1-g1380481
+**Class** — **Package:** [rasuvaeff/understudy](https://github.com/rasuvaeff/understudy) — [Source](https://github.com/rasuvaeff/understudy/blob/master/src/StrictStubs.php#L31) — **Version:** v1.2.2
 
 Switches strict stubs — `verifyAll(strictStubs: true)`, where a stub
 configured but never called fails the test — for one test class or one test
