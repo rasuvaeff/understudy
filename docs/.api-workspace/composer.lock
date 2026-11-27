@@ -3385,7 +3385,7 @@
             "dist": {
                 "type": "path",
                 "url": "../..",
-                "reference": "1a0a67c726f61d56d2189c552b99e6794f1fdbb1"
+                "reference": "8360aae70bdc585d6e92e7d220e448aa60bc81ab"
             },
             "require": {
                 "ext-tokenizer": "*",
@@ -3398,7 +3398,7 @@
                 "maglnet/composer-require-checker": "^4.17",
                 "rasuvaeff/property-testing-testo": "^1.0",
                 "rasuvaeff/rector-named-literals": "^1.0",
-                "rector/rector": "^2.4",
+                "rector/rector": "^2.9.2",
                 "roave/backward-compatibility-check": "^8.0",
                 "testo/bridge-infection": "^0.1.6",
                 "testo/testo": "^0.10.25",
@@ -3594,21 +3594,21 @@
         },
         {
             "name": "rasuvaeff/understudy-phpunit",
-            "version": "v1.1.1",
+            "version": "v1.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rasuvaeff/understudy-phpunit.git",
-                "reference": "e97f168a2bf660f04e47c49abca71c91ddf0961a"
+                "reference": "0f8e8c9ef2fefd8205539eaf8fe47a5635ad0b1b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpunit/zipball/e97f168a2bf660f04e47c49abca71c91ddf0961a",
-                "reference": "e97f168a2bf660f04e47c49abca71c91ddf0961a",
+                "url": "https://api.github.com/repos/rasuvaeff/understudy-phpunit/zipball/0f8e8c9ef2fefd8205539eaf8fe47a5635ad0b1b",
+                "reference": "0f8e8c9ef2fefd8205539eaf8fe47a5635ad0b1b",
                 "shasum": ""
             },
             "require": {
                 "php": "8.3 - 8.6",
-                "phpunit/phpunit": "^11.5 || ^12.0 || ^13.0",
+                "phpunit/phpunit": "^11.5.50 || ^12.5.8 || ^13.0",
                 "rasuvaeff/understudy": "^1.2"
             },
             "require-dev": {
@@ -3654,8 +3654,8 @@
                 "issues": "https://github.com/rasuvaeff/understudy-phpunit/issues",
                 "source": "https://github.com/rasuvaeff/understudy-phpunit"
             },
-            "time": "2026-11-22T06:52:39+00:00",
-            "published-time": "2026-11-22T06:53:09+00:00"
+            "time": "2026-11-27T15:09:14+00:00",
+            "published-time": "2026-11-27T15:14:55+00:00"
         },
         {
             "name": "rasuvaeff/understudy-psalm",
