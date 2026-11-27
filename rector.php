@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Rasuvaeff\RectorNamedLiterals\AddNameToLiteralArgumentRector;
 use Rector\Config\RectorConfig;
-use Rector\CodeQuality\Rector\Identical\FlipTypeControlToUseExclusiveTypeRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveEmptyClassMethodRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPublicMethodParameterRector;
@@ -25,8 +24,6 @@ return RectorConfig::configure()
         // `mixed`, so Psalm's MixedAssignment has to be answered with a type,
         // not silenced.
         RemoveUselessVarTagRector::class,
-        // `$x === null` reads clearer than `!$x instanceof FQCN` in guards.
-        FlipTypeControlToUseExclusiveTypeRector::class,
         // A fixture's *shape* is the input under test: a promoted constructor
         // property, a default moved onto a declaration, an unused parameter
         // dropped — each is an improvement to ordinary code and a silent change

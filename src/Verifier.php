@@ -56,6 +56,7 @@ final class Verifier
             throw VerificationFailed::of($failures);
         }
 
+        /** @var int<0, max> $checks counted by reference inside the closure */
         return $checks;
     }
 
