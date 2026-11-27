@@ -536,8 +536,8 @@ seconds instead of the full run's minute — and the full run stays the gate.
   `Forwarder`'s `inlineMethods` cache keys, `ArgumentFormatter`'s `null` and `NAN` match arms
   (the default arm renders both identically on PHP 8.4).
 - **Rector and Psalm pull in opposite directions here.** `RemoveUselessVarTag`
-  and `FlipTypeControlToUseExclusiveType` are skipped in `rector.php` with the
-  reasons written down; do not add skips beyond those without the same.
+  is skipped in `rector.php` with the reason written down; do not add skips
+  without the same.
 - **Every gate here reads the working tree; a consumer downloads
   `git archive`.** Between the two there is `export-ignore` and nothing else,
   which is how 116K of feasibility spikes shipped in 0.1.0. `bin/consumer-smoke`
