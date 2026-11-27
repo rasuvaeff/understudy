@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.3 — 2026-11-27
+
+- Docs: the agent skill states the supported PHP range 8.3–8.6.
+
 ## 1.2.2 — 2026-11-21
 
 - **Changed:** PHP 8.6 is supported: the `php` constraint is widened to
